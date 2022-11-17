@@ -96,8 +96,7 @@ def _load_es_domains(
         Records=domain_list,
         Region=region,
         AWS_ACCOUNT_ID=aws_account_id,
-        aws_update_tag=aws_update_tag,
-        es_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
     for domain in domain_list:

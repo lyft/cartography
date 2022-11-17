@@ -122,7 +122,7 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
     UNWIND $alias_list AS alias
     MERGE (a:KMSAlias{id: alias.AliasArn})
     ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = alias.TargetKeyId,
-    a.borneo_id = {alias_borneo_id}
+    a.borneo_id = apoc.create.uuid()
     SET a.aliasname = alias.AliasName, a.lastupdated = {UpdateTag}
     WITH a, alias
     MATCH (kmskey:KMSKey{id: alias.TargetKeyId})
@@ -134,8 +134,7 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
     neo4j_session.run(
         ingest_aliases,
         alias_list=aliases,
-        UpdateTag=update_tag,
-        alias_borneo_id=str(uuid.uuid4())
+        UpdateTag=update_tag
     )
 
 
@@ -149,7 +148,7 @@ def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], 
     MERGE (g:KMSGrant{id: grant.GrantId})
     ON CREATE SET g.firstseen = timestamp(), g.granteeprincipal = grant.GranteePrincipal,
     g.creationdate = grant.CreationDate,
-    g.borneo_id = {grant_borneo_id}
+    g.borneo_id = apoc.create.uuid()
     SET g.name = grant.GrantName, g.lastupdated = {UpdateTag}
     WITH g, grant
     MATCH (kmskey:KMSKey{id: grant.KeyId})
@@ -166,8 +165,7 @@ def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], 
     neo4j_session.run(
         ingest_grants,
         grants=grants_list,
-        UpdateTag=update_tag,
-        grant_borneo_id=str(uuid.uuid4())
+        UpdateTag=update_tag
     )
 
 
@@ -309,7 +307,7 @@ def load_kms_keys(
     MERGE (kmskey:KMSKey{id:k.KeyId})
     ON CREATE SET kmskey.firstseen = timestamp(),
     kmskey.arn = k.Arn, kmskey.creationdate = k.CreationDate,
-    kmskey.borneo_id = {kms_borneo_id}
+    kmskey.borneo_id = apoc.create.uuid()
     SET kmskey.deletiondate = k.DeletionDate,
     kmskey.validto = k.ValidTo,
     kmskey.enabled = k.Enabled,
@@ -337,8 +335,7 @@ def load_kms_keys(
         key_list=data,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        kms_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
 

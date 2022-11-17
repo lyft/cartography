@@ -67,7 +67,7 @@ def load_sqs_queues(
     UNWIND $Queues as sqs_queue
         MERGE (queue:SQSQueue{id: sqs_queue.QueueArn})
         ON CREATE SET queue.firstseen = timestamp(), queue.url = sqs_queue.url,
-            queue.borneo_id = {queue_borneo_id}
+            queue.borneo_id = apoc.create.uuid()
         SET queue.name = sqs_queue.name, queue.region = {Region}, queue.arn = sqs_queue.QueueArn,
             queue.created_timestamp = sqs_queue.CreatedTimestamp, queue.delay_seconds = sqs_queue.DelaySeconds,
             queue.last_modified_timestamp = sqs_queue.LastModifiedTimestamp,
@@ -118,8 +118,7 @@ def load_sqs_queues(
         Queues=queues,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        queue_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
     _attach_dead_letter_queues(neo4j_session, dead_letter_queues, aws_update_tag)

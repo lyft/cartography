@@ -49,7 +49,7 @@ def load_eks_clusters(
                 cluster.name = {ClusterName},
                 cluster.region = {Region},
                 cluster.created_at = {CreatedAt},
-                cluster.borneo_id = {cluster_borneo_id}
+                cluster.borneo_id = apoc.create.uuid()
     SET cluster.lastupdated = {aws_update_tag},
         cluster.endpoint = {ClusterEndpoint},
         cluster.endpoint_public_access = {ClusterEndointPublic},
@@ -81,8 +81,7 @@ def load_eks_clusters(
             ClusterLogging=_process_logging(cluster),
             Region=region,
             aws_update_tag=aws_update_tag,
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            cluster_borneo_id=str(uuid.uuid4())
+            AWS_ACCOUNT_ID=current_aws_account_id
         )
 
 

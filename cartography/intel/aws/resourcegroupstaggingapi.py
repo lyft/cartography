@@ -157,7 +157,7 @@ def _load_tags_tx(
             MERGE
             (aws_tag:AWSTag:Tag{id:input_tag.Key + ":" + input_tag.Value})
             ON CREATE SET aws_tag.firstseen = timestamp(),
-            aws_tag.borneo_id = {tag_borneo_id}
+            aws_tag.borneo_id = apoc.create.uuid()
 
             SET aws_tag.lastupdated = $UpdateTag,
             aws_tag.key = input_tag.Key,
@@ -177,8 +177,7 @@ def _load_tags_tx(
         TagData=tag_data,
         UpdateTag=aws_update_tag,
         Region=region,
-        Account=current_aws_account_id,
-        tag_borneo_id=str(uuid.uuid4())
+        Account=current_aws_account_id
     )
 
 

@@ -122,7 +122,7 @@ def load_apigateway_rest_apis(
     MERGE (rest_api:APIGatewayRestAPI{id:r.id})
     ON CREATE SET rest_api.firstseen = timestamp(),
     rest_api.createddate = r.createdDate,
-    rest_api.borneo_id = {rest_api_borneo_id}
+    rest_api.borneo_id = apoc.create.uuid()
     SET rest_api.version = r.version,
     rest_api.minimumcompressionsize = r.minimumCompressionSize,
     rest_api.disableexecuteapiendpoint = r.disableExecuteApiEndpoint,
@@ -145,8 +145,7 @@ def load_apigateway_rest_apis(
         rest_apis_list=rest_apis,
         aws_update_tag=aws_update_tag,
         Region=region,
-        AWS_ACCOUNT_ID=current_aws_account_id,
-        rest_api_borneo_id=str(uuid.uuid4())
+        AWS_ACCOUNT_ID=current_aws_account_id
     )
 
 
@@ -197,7 +196,7 @@ def _load_apigateway_stages(
     MERGE (s:APIGatewayStage{id: stage.arn})
     ON CREATE SET s.firstseen = timestamp(), s.stagename = stage.stageName,
     s.createddate = stage.createdDate,
-    s.borneo_id = {stage_borneo_id}
+    s.borneo_id = apoc.create.uuid()
     SET s.deploymentid = stage.deploymentId,
     s.clientcertificateid = stage.clientCertificateId,
     s.cacheclusterenabled = stage.cacheClusterEnabled,
@@ -221,8 +220,7 @@ def _load_apigateway_stages(
     neo4j_session.run(
         ingest_stages,
         stages_list=stages,
-        UpdateTag=update_tag,
-        stage_borneo_id=str(uuid.uuid4())
+        UpdateTag=update_tag
     )
 
 
@@ -237,7 +235,7 @@ def _load_apigateway_certificates(
     UNWIND $certificates_list as certificate
     MERGE (c:APIGatewayClientCertificate{id: certificate.clientCertificateId})
     ON CREATE SET c.firstseen = timestamp(), c.createddate = certificate.createdDate,
-    c.borneo_id = {cert_borneo_id}
+    c.borneo_id = apoc.create.uuid()
     SET c.lastupdated = {UpdateTag}, c.expirationdate = certificate.expirationDate
     WITH c, certificate
     MATCH (stage:APIGatewayStage{id: certificate.stageArn})
@@ -256,8 +254,7 @@ def _load_apigateway_certificates(
     neo4j_session.run(
         ingest_certificates,
         certificates_list=certificates,
-        UpdateTag=update_tag,
-        cert_borneo_id=str(uuid.uuid4())
+        UpdateTag=update_tag
     )
 
 
@@ -272,7 +269,7 @@ def _load_apigateway_resources(
     UNWIND $resources_list AS res
     MERGE (s:APIGatewayResource{id: res.id})
     ON CREATE SET s.firstseen = timestamp(),
-    s.borneo_id = {resource_borneo_id}
+    s.borneo_id = apoc.create.uuid()
     SET s.path = res.path,
     s.pathpart = res.pathPart,
     s.parentid = res.parentId,
@@ -287,8 +284,7 @@ def _load_apigateway_resources(
     neo4j_session.run(
         ingest_resources,
         resources_list=resources,
-        UpdateTag=update_tag,
-        resource_borneo_id=str(uuid.uuid4())
+        UpdateTag=update_tag
     )
 
 

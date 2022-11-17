@@ -43,7 +43,7 @@ def load_hub(
     WITH $Hub AS hub
     MERGE (n:SecurityHub{id: hub.HubArn})
     ON CREATE SET n.firstseen = timestamp(),
-    n.borneo_id = {hub_borneo_id}
+    n.borneo_id = apoc.create.uuid()
     SET n.subscribed_at = hub.SubscribedAt, n.auto_enable_controls = hub.AutoEnableControls,
         n.lastupdated = $aws_update_tag
     WITH n
@@ -56,8 +56,7 @@ def load_hub(
         ingest_hub,
         Hub=data,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        hub_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
 

@@ -71,7 +71,7 @@ def load_dynamodb_tables(
     MERGE (table:DynamoDBTable{id: {Arn}})
     ON CREATE SET table.firstseen = timestamp(), table.arn = {Arn}, table.name = {TableName},
     table.region = {Region},
-    table.borneo_id = {table_borneo_id}
+    table.borneo_id = apoc.create.uuid()
     SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.size = {Size},
     table.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
     table.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
@@ -93,8 +93,7 @@ def load_dynamodb_tables(
             TableName=table['Table']['TableName'],
             Rows=table['Table']['ItemCount'],
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-            table_borneo_id=str(uuid.uuid4())
+            aws_update_tag=aws_update_tag
         )
         load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag)
 
@@ -108,7 +107,7 @@ def load_dynamodb_gsi(
     MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: {Arn}})
     ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = {Arn}, gsi.name = {GSIName},
     gsi.region = {Region},
-    gsi.borneo_id = {gsi_borneo_id}
+    gsi.borneo_id = apoc.create.uuid()
     SET gsi.lastupdated = {aws_update_tag},
     gsi.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
     gsi.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
@@ -129,8 +128,7 @@ def load_dynamodb_gsi(
             ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughput']['WriteCapacityUnits'],
             GSIName=gsi['IndexName'],
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-            gsi_borneo_id=str(uuid.uuid4())
+            aws_update_tag=aws_update_tag
         )
 
 

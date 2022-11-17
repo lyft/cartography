@@ -37,7 +37,7 @@ def load_secrets(
     UNWIND $Secrets as secret
         MERGE (s:SecretsManagerSecret{id: secret.ARN})
         ON CREATE SET s.firstseen = timestamp(),
-            s.borneo_id = {secret_borneo_id}
+            s.borneo_id = apoc.create.uuid()
         SET s.name = secret.Name, s.description = secret.Description, s.kms_key_id = secret.KmsKeyId,
             s.rotation_enabled = secret.RotationEnabled, s.rotation_lambda_arn = secret.RotationLambdaARN,
             s.rotation_rules_automatically_after_days = secret.RotationRules.AutomaticallyAfterDays,
@@ -64,8 +64,7 @@ def load_secrets(
         Secrets=data,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        secret_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
 

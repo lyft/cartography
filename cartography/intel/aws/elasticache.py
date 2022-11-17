@@ -61,7 +61,7 @@ def load_elasticache_clusters(
             cluster.topic_arn = elasticache_cluster.NotificationConfiguration.TopicArn,
             cluster.id = elasticache_cluster.CacheClusterId,
             cluster.region = {region},
-            cluster.borneo_id = {cluster_borneo_id}
+            cluster.borneo_id = apoc.create.uuid()
         SET cluster.lastupdated = {aws_update_tag}
 
         WITH cluster, elasticache_cluster
@@ -75,7 +75,7 @@ def load_elasticache_clusters(
         MERGE (topic:ElasticacheTopic{id: elasticache_cluster.NotificationConfiguration.TopicArn})
         ON CREATE SET topic.firstseen = timestamp(),
             topic.arn = elasticache_cluster.NotificationConfiguration.TopicArn,
-            topic.borneo_id = {topic_borneo_id}
+            topic.borneo_id = apoc.create.uuid()
         SET topic.lastupdated = {aws_update_tag},
             topic.status = elasticache_cluster.NotificationConfiguration.Status
 
@@ -94,9 +94,7 @@ def load_elasticache_clusters(
         clusters=clusters,
         region=region,
         aws_update_tag=update_tag,
-        aws_account_id=aws_account_id,
-        cluster_borneo_id=str(uuid.uuid4()),
-        topic_borneo_id=str(uuid.uuid4())
+        aws_account_id=aws_account_id
     )
 
 

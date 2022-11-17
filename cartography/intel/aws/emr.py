@@ -65,7 +65,7 @@ def load_emr_clusters(
             cluster.arn = emr_cluster.ClusterArn,
             cluster.id = emr_cluster.Id,
             cluster.region = {Region},
-            cluster.borneo_id = {cluster_borneo_id}
+            cluster.borneo_id = apoc.create.uuid()
         SET cluster.name = emr_cluster.Name,
             cluster.instance_collection_type = emr_cluster.InstanceCollectionType,
             cluster.log_encryption_kms_key_id = emr_cluster.LogEncryptionKmsKeyId,
@@ -99,8 +99,7 @@ def load_emr_clusters(
         Clusters=cluster_data,
         Region=region,
         aws_update_tag=aws_update_tag,
-        AWS_ACCOUNT_ID=current_aws_account_id,
-        cluster_borneo_id=str(uuid.uuid4())
+        AWS_ACCOUNT_ID=current_aws_account_id
     ).consume()
 
 

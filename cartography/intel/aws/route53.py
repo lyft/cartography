@@ -64,7 +64,7 @@ def load_a_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag
             a.firstseen = timestamp(),
             a.name = record.name,
             a.type = record.type,
-            a.borneo_id = {record_borneo_id}
+            a.borneo_id = apoc.create.uuid()
         SET
             a.lastupdated = $update_tag,
             a.value = record.value
@@ -77,8 +77,7 @@ def load_a_records(neo4j_session: neo4j.Session, records: List[Dict], update_tag
     neo4j_session.run(
         ingest_records,
         records=records,
-        update_tag=update_tag,
-        record_borneo_id=str(uuid.uuid4())
+        update_tag=update_tag
     )
 
 
@@ -92,7 +91,7 @@ def load_alias_records(neo4j_session: neo4j.Session, records: List[Dict], update
             a.firstseen = timestamp(),
             a.name = record.name,
             a.type = record.type,
-            a.borneo_id = {record_borneo_id}
+            a.borneo_id = apoc.create.uuid()
         SET
             a.lastupdated = $update_tag,
             a.value = record.value
@@ -105,8 +104,7 @@ def load_alias_records(neo4j_session: neo4j.Session, records: List[Dict], update
     neo4j_session.run(
         ingest_records,
         records=records,
-        update_tag=update_tag,
-        record_borneo_id=str(uuid.uuid4())
+        update_tag=update_tag
     )
 
 
@@ -119,7 +117,7 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
             a.firstseen = timestamp(),
             a.name = record.name,
             a.type = record.type,
-            a.borneo_id = {record_borneo_id}
+            a.borneo_id = apoc.create.uuid()
         SET
             a.lastupdated = $update_tag,
             a.value = record.value
@@ -132,8 +130,7 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
     neo4j_session.run(
         ingest_records,
         records=records,
-        update_tag=update_tag,
-        record_borneo_id=str(uuid.uuid4())
+        update_tag=update_tag
     )
 
 
@@ -144,7 +141,7 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
     ON CREATE SET
         zone.firstseen = timestamp(),
         zone.name = {ZoneName},
-        zone.borneo_id = {zone_borneo_id}
+        zone.borneo_id = apoc.create.uuid()
     SET
         zone.lastupdated = $update_tag,
         zone.comment = $Comment,
@@ -162,8 +159,7 @@ def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, upd
         Comment=zone['comment'],
         PrivateZone=zone['privatezone'],
         AWS_ACCOUNT_ID=current_aws_id,
-        update_tag=update_tag,
-        zone_borneo_id=str(uuid.uuid4())
+        update_tag=update_tag
     )
 
 
@@ -176,7 +172,7 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
             a.firstseen = timestamp(),
             a.name = record.name,
             a.type = record.type,
-            a.borneo_id = record.borneo_id
+            a.borneo_id = apoc.create.uuid()
         SET
             a.lastupdated = $update_tag,
             a.value = record.name
@@ -198,8 +194,7 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
     neo4j_session.run(
         ingest_records,
         records=records,
-        update_tag=update_tag,
-        record_borneo_id=str(uuid.uuid4())
+        update_tag=update_tag
     )
 
     # Map the official name servers for a domain.

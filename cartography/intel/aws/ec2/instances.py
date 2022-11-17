@@ -253,13 +253,32 @@ def load_ec2_instance_nodes(
         current_aws_account_id: str,
         update_tag: int,
 ) -> None:
-    load(
-        neo4j_session,
-        EC2InstanceSchema(),
-        data,
-        Region=region,
-        AWS_ID=current_aws_account_id,
-        lastupdated=update_tag,
+    query = """
+        UNWIND {ebs_mappings_list} as em
+            MERGE (vol:EBSVolume{id: em.Ebs.VolumeId})
+            ON CREATE SET vol.firstseen = timestamp(),
+            vol.borneo_id = apoc.create.uuid(),
+            vol.region = {region}
+            SET vol.lastupdated = {update_tag},
+                vol.deleteontermination = em.Ebs.DeleteOnTermination,
+                vol.snapshotid = vol.SnapshotId
+            WITH vol, em
+            MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+            MERGE (aa)-[r:RESOURCE]->(vol)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = {update_tag}
+            WITH vol, em
+            MATCH (instance:EC2Instance{instanceid: em.InstanceId})
+            MERGE (vol)-[r:ATTACHED_TO]->(instance)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = {update_tag}
+    """
+    tx.run(
+        query,
+        ebs_mappings_list=ebs_data,
+        update_tag=update_tag,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        region=region
     )
 
 

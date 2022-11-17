@@ -46,7 +46,7 @@ def load_rds_clusters(
         MERGE (cluster:RDSCluster{id: rds_cluster.DBClusterArn})
         ON CREATE SET cluster.firstseen = timestamp(),
             cluster.arn = rds_cluster.DBClusterArn,
-            cluster.borneo_id = {cluster_borneo_id}
+            cluster.borneo_id = apoc.create.uuid()
         SET cluster.allocated_storage = rds_cluster.AllocatedStorage,
             cluster.availability_zones = rds_cluster.AvailabilityZones,
             cluster.backup_retention_period = rds_cluster.BackupRetentionPeriod,
@@ -108,8 +108,7 @@ def load_rds_clusters(
         Clusters=data,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        cluster_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
 
@@ -141,7 +140,7 @@ def load_rds_instances(
         MERGE (rds:RDSInstance{id: rds_instance.DBInstanceArn})
         ON CREATE SET rds.firstseen = timestamp(),
             rds.arn = rds_instance.DBInstanceArn,
-            rds.borneo_id = {instance_borneo_id}
+            rds.borneo_id = apoc.create.uuid()
         SET rds.db_instance_identifier = rds_instance.DBInstanceIdentifier,
             rds.db_instance_class = rds_instance.DBInstanceClass,
             rds.engine = rds_instance.Engine,
@@ -212,8 +211,7 @@ def load_rds_instances(
         Instances=data,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        instance_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
     _attach_ec2_security_groups(neo4j_session, secgroups, aws_update_tag)
     _attach_ec2_subnet_groups(neo4j_session, subnets, region, current_aws_account_id, aws_update_tag)
@@ -328,7 +326,7 @@ def _attach_ec2_subnet_groups(
     UNWIND $SubnetGroups as rds_sng
         MERGE (sng:DBSubnetGroup{id: rds_sng.arn})
         ON CREATE SET sng.firstseen = timestamp(),
-            sng.borneo_id = {subnet_group_borneo_id}
+            sng.borneo_id = apoc.create.uuid()
         SET sng.name = rds_sng.DBSubnetGroupName,
             sng.vpc_id = rds_sng.VpcId,
             sng.description = rds_sng.DBSubnetGroupDescription,
@@ -349,8 +347,7 @@ def _attach_ec2_subnet_groups(
     neo4j_session.run(
         attach_rds_to_subnet_group,
         SubnetGroups=db_sngs,
-        aws_update_tag=aws_update_tag,
-        subnet_group_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
     _attach_ec2_subnets_to_subnetgroup(neo4j_session, db_sngs, region, current_aws_account_id, aws_update_tag)
 

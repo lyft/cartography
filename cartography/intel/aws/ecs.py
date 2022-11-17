@@ -138,7 +138,7 @@ def load_ecs_clusters(
     UNWIND $Clusters AS cluster
         MERGE (c:ECSCluster{id: cluster.clusterArn})
         ON CREATE SET c.firstseen = timestamp(),
-            c.borneo_id = {cluster_borneo_id}
+            c.borneo_id = apoc.create.uuid()
         SET c.name = cluster.clusterName, c.region = {Region},
             c.arn = cluster.clusterArn,
             c.ecc_kms_key_id = cluster.configuration.executeCommandConfiguration.kmsKeyId,
@@ -171,8 +171,7 @@ def load_ecs_clusters(
         Clusters=clusters,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        cluster_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
 
@@ -189,7 +188,7 @@ def load_ecs_container_instances(
     UNWIND $Instances AS instance
         MERGE (i:ECSContainerInstance{id: instance.containerInstanceArn})
         ON CREATE SET i.firstseen = timestamp(),
-            i.borneo_id = {instance_borneo_id}
+            i.borneo_id = apoc.create.uuid()
         SET i.ec2_instance_id = instance.ec2InstanceId, i.region = {Region},
             i.arn = instance.containerInstanceArn,
             i.capacity_provider_name = instance.capacityProviderName,
@@ -220,8 +219,7 @@ def load_ecs_container_instances(
         Instances=instances,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        instance_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
 
@@ -238,7 +236,7 @@ def load_ecs_services(
     UNWIND $Services AS service
         MERGE (s:ECSService{id: service.serviceArn})
         ON CREATE SET s.firstseen = timestamp(),
-            s.borneo_id = {service_borneo_id}
+            s.borneo_id = apoc.create.uuid()
         SET s.name = service.serviceName, s.region = {Region},
             s.arn = service.serviceArn,
             s.cluster_arn = service.clusterArn,
@@ -284,8 +282,7 @@ def load_ecs_services(
         Services=services,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        service_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
 
@@ -301,7 +298,7 @@ def load_ecs_task_definitions(
     UNWIND $Definitions AS def
         MERGE (d:ECSTaskDefinition{id: def.taskDefinitionArn})
         ON CREATE SET d.firstseen = timestamp(),
-            d.borneo_id = {definition_borneo_id}
+            d.borneo_id = apoc.create.uuid()
         SET d.arn = def.taskDefinitionArn, d.region = {Region},
             d.family = def.family,
             d.task_role_arn = def.taskRoleArn,
@@ -351,8 +348,7 @@ def load_ecs_task_definitions(
         Definitions=task_definitions,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        definition_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
     load_ecs_container_definitions(
@@ -377,7 +373,7 @@ def load_ecs_tasks(
     UNWIND $Tasks AS task
         MERGE (t:ECSTask{id: task.taskArn})
         ON CREATE SET t.firstseen = timestamp(),
-            t.borneo_id = {task_borneo_id}
+            t.borneo_id = apoc.create.uuid()
         SET t.arn = task.taskArn, t.region = {Region},
             t.availability_zone = task.availabilityZone,
             t.capacity_provider_name = task.capacityProviderName,
@@ -445,8 +441,7 @@ def load_ecs_tasks(
         Tasks=tasks,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        task_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
     load_ecs_containers(
@@ -470,7 +465,7 @@ def load_ecs_container_definitions(
     UNWIND $Definitions AS def
         MERGE (d:ECSContainerDefinition{id: def._taskDefinitionArn + "-" + def.name})
         ON CREATE SET d.firstseen = timestamp(),
-            d.borneo_id = {definition_borneo_id}
+            d.borneo_id = apoc.create.uuid()
         SET d.task_definition_arn = def._taskDefinitionArn, d.region = {Region},
             d.name = def.name,
             d.image = def.image,
@@ -506,8 +501,7 @@ def load_ecs_container_definitions(
         Definitions=data,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        definition_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
 
@@ -523,7 +517,7 @@ def load_ecs_containers(
     UNWIND $Containers AS container
         MERGE (c:ECSContainer{id: container.containerArn})
         ON CREATE SET c.firstseen = timestamp(),
-            c.borneo_id = {container_borneo_id}
+            c.borneo_id = apoc.create.uuid()
         SET c.arn = container.containerArn, c.region = {Region},
             c.task_arn = container.taskArn,
             c.name = container.name,
@@ -550,8 +544,7 @@ def load_ecs_containers(
         Containers=data,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-        container_borneo_id=str(uuid.uuid4())
+        aws_update_tag=aws_update_tag
     )
 
 

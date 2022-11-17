@@ -44,7 +44,7 @@ def load_redshift_cluster_data(
     MERGE (cluster:RedshiftCluster{id: $Arn})
     ON CREATE SET cluster.firstseen = timestamp(),
     cluster.arn = {Arn},
-    cluster.borneo_id = {cluster_borneo_id}
+    cluster.borneo_id = apoc.create.uuid()
     SET cluster.availability_zone = {AZ},
     cluster.cluster_create_time = {ClusterCreateTime},
     cluster.cluster_identifier = {ClusterIdentifier},
@@ -87,8 +87,7 @@ def load_redshift_cluster_data(
             VpcId=cluster.get('VpcId'),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-            cluster_borneo_id=str(uuid.uuid4())
+            aws_update_tag=aws_update_tag
         )
         _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag)
         _attach_iam_roles(neo4j_session, cluster, aws_update_tag)
