@@ -77,7 +77,7 @@ def _load_es_domains(
     es.encryption_at_rest_options_enabled = record.EncryptionAtRestOptions.Enabled,
     es.encryption_at_rest_options_kms_key_id = record.EncryptionAtRestOptions.KmsKeyId,
     es.log_publishing_options_cloudwatch_log_group_arn = record.LogPublishingOptions.CloudWatchLogsLogGroupArn,
-    es.log_publishing_options_enabled = record.LogPublishingOptions.Enabled
+    es.log_publishing_options_enabled = record.LogPublishingOptions.Enabled,
     es.region = {Region}
     WITH es
     MATCH (account:AWSAccount{id: $AWS_ACCOUNT_ID})
