@@ -61,7 +61,7 @@ def _load_es_domains(
     UNWIND $Records as record
     MERGE (es:ESDomain{id: record.DomainId})
     ON CREATE SET es.firstseen = timestamp(), es.arn = record.ARN, es.domainid = record.DomainId,
-    es.borneo_id = {es_borneo_id}
+    es.borneo_id = apoc.create.uuid()
     SET es.lastupdated = {aws_update_tag}, es.deleted = record.Deleted, es.created = record.created,
     es.endpoint = record.Endpoint, es.elasticsearch_version = record.ElasticsearchVersion,
     es.elasticsearch_cluster_config_instancetype = record.ElasticsearchClusterConfig.InstanceType,
