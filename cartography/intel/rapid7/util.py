@@ -207,7 +207,6 @@ def rapid7_hosts(
                 limit = data["page"]["totalResources"]
 
         except requests.HTTPError as exception:
-            logger.warning("GetAssets0: %s", resp.content)
             logger.exception("GetAssets0: %s", exception)
             return result_array
 
