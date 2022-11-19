@@ -1,0 +1,10 @@
+{
+  "statements": [
+    {
+      "query": "WITH datetime()-duration('P3D') AS threshold MATCH (h:AzureMonitorHost) WHERE h.lastupdated < threshold WITH h LIMIT $LIMIT_SIZE DETACH DELETE (h)",
+      "iterative": true,
+      "iterationsize": 100
+    }
+  ],
+  "name": "cleanup azuremonitor"
+}

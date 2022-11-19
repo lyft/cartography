@@ -185,6 +185,22 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--azuremonitor-workspace-name',
+            type=str,
+            default=None,
+            help=(
+                'Name of used Azure Log Analytics Workspace name for labelling. Authentication from environment.'
+            ),
+        )
+        parser.add_argument(
+            '--azuremonitor-workspace-id',
+            type=str,
+            default=None,
+            help=(
+                'Azure Log Analytics Workspace id (guid). Authentication from environment.'
+            ),
+        )
+        parser.add_argument(
             '--aws-requested-syncs',
             type=str,
             default=None,
