@@ -59,19 +59,19 @@ def extract_rapid7_configurations_subscriptionid(configurations: Any[str, list])
     subscription_id = ""
     for line in configurations:
         if line["name"] == "azure":
-            logger.warning("line: %s", line)
+            logger.debug("line: %s", line)
             if isinstance(line["value"], str):
                 azure = json.loads(line["value"])
             else:
                 azure = line["value"]
             subscription_id = extract_sub_from_resourceid(azure["resourceId"])
-            logger.warning(
+            logger.debug(
                 "extract_rapid7_configurations_subscriptionid0: %s (%s)",
                 subscription_id,
                 azure["resourceId"],
             )
 
-    logger.warning("extract_rapid7_configurations_subscriptionid: %s", subscription_id)
+    logger.debug("extract_rapid7_configurations_subscriptionid: %s", subscription_id)
     return subscription_id
 
 
@@ -95,7 +95,7 @@ def extract_rapid7_configurations_resourcegroup(configurations: Any[str, list]) 
                 azure = line["value"]
             resource_group = extract_rg_from_resourceid(azure["resourceId"])
 
-    logger.warning("extract_rapid7_configurations_resourcegroup: %s", resource_group)
+    logger.debug("extract_rapid7_configurations_resourcegroup: %s", resource_group)
     return resource_group
 
 
@@ -112,14 +112,14 @@ def extract_rapid7_configurations_resourceid(configurations: Any[str, list]) -> 
     resource_id = ""
     for line in configurations:
         if line["name"] == "azure":
-            logger.warning("line: %s", line)
+            logger.debug("line: %s", line)
             if isinstance(line["value"], str):
                 azure = json.loads(line["value"])
             else:
                 azure = line["value"]
             resource_id = azure["resourceId"]
 
-    logger.warning("extract_rapid7_configurations_resourceid: %s", resource_id)
+    logger.debug("extract_rapid7_configurations_resourceid: %s", resource_id)
     return resource_id
 
 
@@ -136,14 +136,14 @@ def extract_rapid7_configurations_instanceid(configurations: Any[str, list]) -> 
     instance_id = ""
     for line in configurations:
         if line["name"] == "azure":
-            logger.warning("line: %s", line)
+            logger.debug("line: %s", line)
             if isinstance(line["value"], str):
                 azure = json.loads(line["value"])
             else:
                 azure = line["value"]
             instance_id = azure["instanceId"]
 
-    logger.warning("extract_rapid7_configurations_instanceid: %s", instance_id)
+    logger.debug("extract_rapid7_configurations_instanceid: %s", instance_id)
     return instance_id
 
 
