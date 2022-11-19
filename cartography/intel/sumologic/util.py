@@ -5,7 +5,7 @@ cartography/intel/sumologic/util
 import datetime
 import json
 import logging
-from array import array
+from typing import List
 from typing import Tuple
 
 from msticpy.data.data_providers import QueryProvider
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def sumologic_hosts(
     authorization: Tuple[str, str, str],
     timeout_max: int = 600,
-) -> array:
+) -> List:
     """
     Get Sumologic (Logging) coverage inventory
 
@@ -78,4 +78,4 @@ def sumologic_hosts(
         return flatten_data
 
     logger.warning("No data returned")
-    return {}
+    return []
