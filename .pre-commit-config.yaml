@@ -26,7 +26,7 @@ repos:
         # disable a few rewrites which will cause autopep8 to reflow
         args: [--in-place, '--ignore=E265,E501,W504']
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v2.24.0
+    rev: v2.31.0
     hooks:
     -   id: pyupgrade
         args: [--py36-plus]
@@ -80,6 +80,7 @@ repos:
         name: Semgrep Bandit
         types: [python]
         exclude: "^cli/tests/.+$|^scripts/.+$|^cli/setup.py$"
+        args: ["--config", "https://semgrep.dev/p/bandit", "--error"]
 -   repo: https://github.com/PyCQA/bandit
     rev: 1.7.4
     hooks:
