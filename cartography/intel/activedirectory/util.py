@@ -5,7 +5,6 @@ cartography/intel/activedirectory/util
 import json
 import logging
 import os
-from typing import Dict
 from typing import List
 from typing import Tuple
 
@@ -16,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def activedirectory_hosts(
     authorization: Tuple[str, str],
-) -> List[Dict]:
+) -> List:
     """
     Get ActiveDirectory (Logging) coverage inventory
 

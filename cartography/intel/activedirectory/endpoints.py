@@ -1,5 +1,5 @@
 """
-cartography/intel/sumologic/endpoints
+cartography/intel/activedirectory/endpoints
 """
 # pylint: disable=missing-function-docstring,too-many-arguments
 import logging
