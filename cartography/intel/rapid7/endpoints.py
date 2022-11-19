@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def sync_hosts(
     neo4j_session: neo4j.Session,
     update_tag: int,
-    authorization: Tuple[str, str, str, bool],
+    authorization: Tuple[str, str, str, str, str, int],
 ) -> None:
     r7_hosts = rapid7_hosts(authorization)
     for host_data in r7_hosts:
@@ -42,6 +42,7 @@ def load_host_data(
         SET h.r7_assessedForPolicies = host.assessedForPolicies,
             h.r7_assessedForVulnerabilities = host.assessedForVulnerabilities,
             h.hostname = host.hostName,
+            h.short_hostname = host.short_hostname,
             h.r7_ip = host.ip,
             h.r7_mac = host.mac,
             h.r7_os = host.os,
@@ -59,6 +60,7 @@ def load_host_data(
             h.tool_first_seen = host.tool_first_seen,
             h.tool_last_seen = host.tool_last_seen,
             h.r7_type = host.type,
+            h.r7_sites = host.sites,
             h.cloud_provider = host.cloud_provider,
             h.instance_id = host.instance_id,
             h.subscription_id = host.subscription_id,
@@ -72,7 +74,7 @@ def load_host_data(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $update_tag
     """
-    logger.info("Loading %s rapid7 hosts.", len(data))
+    logger.debug("Loading %s rapid7 hosts.", len(data))
     neo4j_session.run(
         ingestion_cypher_query,
         Hosts=data,

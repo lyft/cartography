@@ -31,9 +31,13 @@ def start_rapid7_ingestion(
         "UPDATE_TAG": config.update_tag,
     }
     if (
-        not config.rapid7_user or
-        not config.rapid7_password or
-        not config.rapid7_server_url
+        (
+            not config.rapid7_user or
+            not config.rapid7_password or
+            not config.rapid7_server_url
+        ) and
+        (not config.rapid7_dirpath or not config.rapid7_server_url) and
+        (not config.rapid7_report_id or not config.rapid7_server_url)
     ):
         logger.error("rapid7 config not found")
         return
@@ -43,6 +47,8 @@ def start_rapid7_ingestion(
         config.rapid7_password,
         config.rapid7_server_url,
         config.rapid7_verify_cert,
+        config.rapid7_dirpath,
+        config.rapid7_report_id,
     )
     # pylint: disable=too-many-function-args
     sync_hosts(

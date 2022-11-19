@@ -123,6 +123,8 @@ class Config:
         rapid7_password=None,
         rapid7_server_url=None,
         rapid7_verify_cert=None,
+        rapid7_dirpath=None,
+        rapid7_report_id=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -162,7 +164,9 @@ class Config:
         self.crowdstrike_client_id = crowdstrike_client_id
         self.crowdstrike_client_secret = crowdstrike_client_secret
         self.crowdstrike_api_url = crowdstrike_api_url
-        self.rapid7_user = rapid7_user,
-        self.rapid7_password = rapid7_password,
-        self.rapid7_server_url = rapid7_server_url,
-        self.rapid7_verify_cert = rapid7_verify_cert,
+        self.rapid7_user = rapid7_user
+        self.rapid7_password = rapid7_password
+        self.rapid7_server_url = rapid7_server_url
+        self.rapid7_verify_cert = rapid7_verify_cert
+        self.rapid7_dirpath = rapid7_dirpath
+        self.rapid7_report_id = rapid7_report_id

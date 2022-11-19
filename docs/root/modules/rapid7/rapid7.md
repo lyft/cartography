@@ -12,6 +12,15 @@
 
 Placeholder representation of a single [Rapid7 Host or asset](https://help.rapid7.com/insightvm/en-us/api/index.html#operation/getAssets). This node is the minimal data necessary to map an asset.
 
+For report, you can use [SQL Query Export](https://docs.rapid7.com/insightvm/creating-reports-based-on-sql-queries/) like
+```
+select da.asset_id,da.mac_address,da.ip_address,da.host_name,da.operating_system_id,da.sites,da.last_assessed_for_vulnerabilities,fa.scan_started,fa.scan_finished,fa.vulnerabilities,fa.critical_vulnerabilities,fa.moderate_vulnerabilities,fa.vulnerability_instances,fa.riskscore,fa.pci_status,dos.asset_type,dos.description,dos.vendor,dos.family,dos.name,dos.version,dos.architecture,dos.system,dos.cpe,daui.source,daui.unique_id
+FROM dim_asset da
+JOIN fact_asset fa USING (asset_id)
+JOIN dim_operating_system dos USING (operating_system_id)
+JOIN dim_asset_unique_id daui USING (asset_id)
+```
+
 | Field | Description |
 |-------|--------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
@@ -20,6 +29,7 @@ Placeholder representation of a single [Rapid7 Host or asset](https://help.rapid
 | r7_assessedForPolicies | assessedForPolicies |
 | r7_assessedForVulnerabilities | assessedForVulnerabilities |
 | hostname | hostName |
+| short_hostname | short hostname, lowercase|
 | r7_ip | ip |
 | r7_mac | mac address |
 | r7_os | os |
@@ -48,6 +58,8 @@ Placeholder representation of a single [Rapid7 Host or asset](https://help.rapid
 | r7_vulnerabilities_moderate | vulnerabilities_moderate |
 | r7_vulnerabilities_severe | vulnerabilities_severe |
 | r7_vulnerabilities_total | vulnerabilities_total |
+| r7_type | type |
+| r7_sites | sites |
 | cloud_provider | cloud_provider |
 | instance_id | instance_id |
 | subscription_id | subscription_id |

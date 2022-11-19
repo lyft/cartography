@@ -414,16 +414,31 @@ class CLI:
             type=str,
             default=None,
             help=(
-                'The url of the Rapid7 InsightsVM server.'
+                'The url of the Rapid7 InsightsVM server. Required in all Rapid7 data retrieval.'
             ),
         )
-        # FIXME! not passed correctly
         parser.add_argument(
             '--rapid7-verify-cert',
-            type=bool,
-            default=True,
+            type=str,
+            default="True",
             help=(
                 'Validate https certificate of Rapid7 InsightsVM server.'
+            ),
+        )
+        parser.add_argument(
+            '--rapid7-report-id',
+            type=str,
+            default=None,
+            help=(
+                'Rapid7 report id if downloading report option. Use a negative id to list accessible reports.'
+            ),
+        )
+        parser.add_argument(
+            '--rapid7-dirpath',
+            type=str,
+            default=None,
+            help=(
+                'Directory path where to find Rapid7 csv data if using that option.'
             ),
         )
         parser.add_argument(
