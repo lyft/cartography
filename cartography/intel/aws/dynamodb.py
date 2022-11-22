@@ -18,6 +18,7 @@ from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
 from cartography.util import merge_module_sync_metadata
 from cartography.util import timeit
+from cartography.util import dict_value_to_str
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
@@ -74,7 +75,8 @@ def load_dynamodb_tables(
     table.borneo_id = apoc.create.uuid()
     SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.size = {Size},
     table.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
-    table.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits}
+    table.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits},
+    table.creationdate = {CreateDate}
     WITH table
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(table)
@@ -93,7 +95,8 @@ def load_dynamodb_tables(
             TableName=table['Table']['TableName'],
             Rows=table['Table']['ItemCount'],
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
+            CreateDate = dict_value_to_str(table['Table'], 'CreationDateTime')
         )
         load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag)
 
