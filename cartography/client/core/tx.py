@@ -148,11 +148,40 @@ def read_single_dict_tx(tx: neo4j.Transaction, query: str, **kwargs) -> Dict[str
     return value
 
 
-def _write_list_of_dicts_tx(
+def write_list_of_dicts_tx(
         tx: neo4j.Transaction,
         query: str,
         **kwargs,
 ) -> None:
+    """
+    Writes a list of dicts to Neo4j. This is called by passing it as a function param to neo4j.write_transaction().
+
+    Example usage:
+        dict_list: List[Dict[Any, Any]] = [{...}, ...]
+
+        neo4j_driver = neo4j.driver(... args ...)
+        neo4j_session = neo4j_driver.Session(... args ...)
+
+        neo4j_session.write_transaction(
+            write_list_of_dicts_tx,
+            '''
+            UNWIND $DictList as data
+                MERGE (a:SomeNode{id: data.id})
+                SET
+                    a.other_field = $other_field,
+                    a.yet_another_kwarg_field = $yet_another_kwarg_field
+                ...
+            ''',
+            DictList=dict_list,
+            other_field='some extra value',
+            yet_another_kwarg_field=1234
+        )
+
+    :param tx: The neo4j transaction
+    :param query: The Neo4j write query that you want to run
+    :param kwargs: Keyword args to be supplied to the Neo4j query
+    :return: None
+    """
     # TODO batch this to 10k items by default and make the batch size configurable
     tx.run(query, kwargs)
 
@@ -160,10 +189,25 @@ def _write_list_of_dicts_tx(
 def load_graph_data(
         neo4j_session: neo4j.Session,
         query: str,
+        dict_list: List[Dict[str, Any]],
         **kwargs,
 ) -> None:
+    """
+    Writes data to the graph.
+    :param neo4j_session: The Neo4j session
+    :param query: The Neo4j write query to run. This must follow the UNWIND + MERGE pattern. For example:
+    UNWIND $DictList as item
+        MERGE (a:SomeNode{id: item.id})
+        SET
+            a.field1 = item.field1,
+            ...
+    :param dict_list: The data to load to the graph represented as a list of dicts.
+    :param kwargs: Keyword args to be supplied to the Neo4j query. MUST have 'DictList' as a key.
+    :return: None
+    """
     neo4j_session.write_transaction(
-        _write_list_of_dicts_tx,
+        write_list_of_dicts_tx,
         query,
+        DictList=dict_list,
         **kwargs,
     )

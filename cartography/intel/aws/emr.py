@@ -122,7 +122,7 @@ def load_emr_clusters(
     load_graph_data(
         neo4j_session,
         ingestion_query,
-        DictList=cluster_data,
+        cluster_data,
         lastupdated=aws_update_tag,
         Region=region,
         AccountId=current_aws_account_id,
