@@ -14,6 +14,8 @@ from typing import Optional
 from typing import TypeVar
 from typing import Union
 
+import backoff
+import boto3
 import botocore
 import neo4j
 
@@ -33,6 +35,7 @@ logger = logging.getLogger(__name__)
 STATUS_SUCCESS = 0
 STATUS_FAILURE = 1
 STATUS_KEYBOARD_INTERRUPT = 130
+DEFAULT_BATCH_SIZE = 1000
 
 
 def run_analysis_job(
@@ -92,12 +95,11 @@ def merge_module_sync_metadata(
             n:SyncMetadata, n.firstseen=timestamp()
         SET n.syncedtype='${synced_type}',
             n.grouptype='${group_type}',
-            n.groupid={group_id},
-            n.lastupdated={UPDATE_TAG}
+            n.groupid='${group_id}',
+            n.lastupdated=$UPDATE_TAG
     """)
     neo4j_session.run(
         template.safe_substitute(group_type=group_type, group_id=group_id, synced_type=synced_type),
-        group_id=group_id,
         UPDATE_TAG=update_tag,
     )
     stat_handler.incr(f'{group_type}_{group_id}_{synced_type}_lastupdated', update_tag)
@@ -133,7 +135,46 @@ def timeit(method: F) -> F:
     return cast(F, timed)
 
 
+def aws_paginate(
+    client: boto3.client,
+    method_name: str,
+    object_name: str,
+    **kwargs: Any,
+) -> List[Dict]:
+    '''
+    Helper method for boilerplate boto3 pagination
+    The **kwargs will be forwarded to the paginator
+    '''
+    paginator = client.get_paginator(method_name)
+    items = []
+    i = 0
+    for i, page in enumerate(paginator.paginate(**kwargs), start=1):
+        if i % 100 == 0:
+            logger.info(f'fetching page number {i}')
+        if object_name in page:
+            items.extend(page[object_name])
+        else:
+            logger.warning(
+                f'''aws_paginate: Key "{object_name}" is not present, check if this is a typo.
+If not, then the AWS datatype somehow does not have this key.''',
+            )
+    return items
+
+
 AWSGetFunc = TypeVar('AWSGetFunc', bound=Callable[..., List])
+
+# fix for AWS TooManyRequestsException
+# https://github.com/lyft/cartography/issues/297
+# https://github.com/lyft/cartography/issues/243
+# https://github.com/lyft/cartography/issues/65
+# https://github.com/lyft/cartography/issues/25
+
+
+def backoff_handler(details: Dict) -> None:
+    """
+    Handler that will be executed on exception by backoff mechanism
+    """
+    logger.warning("Backing off {wait:0.1f} seconds after {tries} tries. Calling function {target}".format(**details))
 
 
 # TODO Move this to cartography.intel.aws.util.common
@@ -153,9 +194,21 @@ def aws_handle_regions(func: AWSGetFunc) -> AWSGetFunc:
         'AuthFailure',
         'InvalidClientTokenId',
         'UnrecognizedClientException',
+        'InternalServerErrorException',
     ]
 
     @wraps(func)
+    # fix for AWS TooManyRequestsException
+    # https://github.com/lyft/cartography/issues/297
+    # https://github.com/lyft/cartography/issues/243
+    # https://github.com/lyft/cartography/issues/65
+    # https://github.com/lyft/cartography/issues/25
+    @backoff.on_exception(
+        backoff.expo,
+        botocore.exceptions.ClientError,
+        max_time=600,
+        on_backoff=backoff_handler,
+    )
     def inner_function(*args, **kwargs):  # type: ignore
         try:
             return func(*args, **kwargs)
@@ -198,7 +251,7 @@ def camel_to_snake(name: str) -> str:
     return re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
 
 
-def batch(items: Iterable, size: int = 1000) -> List[List]:
+def batch(items: Iterable, size: int = DEFAULT_BATCH_SIZE) -> List[List]:
     '''
     Takes an Iterable of items and returns a list of lists of the same items,
      batched into chunks of the provided `size`.

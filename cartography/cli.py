@@ -7,7 +7,6 @@ import sys
 import cartography.config
 import cartography.sync
 import cartography.util
-from cartography.experimental_neo4j_4x_support import patch_driver
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
 
@@ -99,6 +98,16 @@ class CLI:
                 'which is the same as the Neo4j driver default. See '
                 'https://neo4j.com/docs/driver-manual/1.7/client-applications/#driver-config-connection-pool-management'
                 '.'
+            ),
+        )
+        parser.add_argument(
+            '--neo4j-database',
+            type=str,
+            default=None,
+            help=(
+                'The name of the database in Neo4j to connect to. If not specified, uses the config settings of your '
+                'Neo4j database itself to infer which database is set to default. '
+                'See https://neo4j.com/docs/api/python-driver/4.4/api.html#database.'
             ),
         )
         # TODO add the below parameters to a 'sync' subparser
@@ -363,6 +372,14 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--pagerduty-request-timeout',
+            type=int,
+            default=None,
+            help=(
+                'Seconds to timeout for pagerduty API sessions.'
+            ),
+        )
+        parser.add_argument(
             '--crowdstrike-client-id-env-var',
             type=str,
             default=None,
@@ -384,15 +401,6 @@ class CLI:
             default=None,
             help=(
                 'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
-            ),
-        )
-        parser.add_argument(
-            '--experimental-neo4j-4x-support',
-            default=False,
-            action='store_true',
-            help=(
-                'enable the experimental suppor for neo4j 4.x. Can also be enabled by environment variable. '
-                'See cartography.__init__.py'
             ),
         )
         return parser
@@ -523,10 +531,6 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
-
-        if config.experimental_neo4j_4x_support:
-            cartography.EXPERIMENTAL_NEO4J_4X_SUPPORT = True
-            patch_driver()
 
         # Run cartography
         try:

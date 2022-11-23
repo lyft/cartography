@@ -35,7 +35,7 @@ def test_transform_and_load_extensions(neo4j_session):
     )
 
     query = """
-    MATCH(ext:ChromeExtension{id:{ExtensionId}})
+    MATCH(ext:ChromeExtension{id:$ExtensionId})
     RETURN
     ext.id,
     ext.extension_id,
@@ -157,7 +157,7 @@ def test_transform_and_load_user_extensions(neo4j_session):
     )
 
     query = """
-    MATCH(user:GSuiteUser{email:{GSuiteEmail}})
+    MATCH(user:GSuiteUser{email:$GSuiteEmail})
     RETURN user.id, user.email
     """
     expected_user_email = 'user@example.com'
@@ -184,7 +184,7 @@ def test_user_to_extension(neo4j_session):
     _ensure_local_neo4j_has_test_extensions_data(neo4j_session)
     _ensure_local_neo4j_has_test_user_extensions_data(neo4j_session)
     query = """
-    MATCH(user:GSuiteUser)-[:INSTALLS]->(ext:ChromeExtension{id:{ExtensionId}})
+    MATCH(user:GSuiteUser)-[:INSTALLS]->(ext:ChromeExtension{id:$ExtensionId})
     RETURN user.email, ext.id, ext.name
     """
     expected_extension_id = 'f06981cbc72a3c6e2e9e736cbdaef4865a4571bc|1.0'

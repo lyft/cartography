@@ -15,6 +15,10 @@ class Config:
     :type neo4j_max_connection_lifetime: int
     :param neo4j_max_connection_lifetime: Time in seconds for Neo4j driver to consider a TCP connection alive.
         See https://neo4j.com/docs/driver-manual/1.7/client-applications/. Optional.
+    :type neo4j_database: string
+    :param neo4j_database: The name of the database in Neo4j to connect to. If not specified, uses your Neo4j database
+    settings to infer which database is set to default.
+    See https://neo4j.com/docs/api/python-driver/4.4/api.html#database. Optional.
     :type update_tag: int
     :param update_tag: Update tag for a cartography sync run. Optional.
     :type aws_sync_all_profiles: bool
@@ -73,6 +77,8 @@ class Config:
     :param k8s_kubeconfig: Path to kubeconfig file for kubernetes cluster(s). Optional
     :type: pagerduty_api_key: str
     :param pagerduty_api_key: API authentication key for pagerduty. Optional.
+    :type: pagerduty_request_timeout: int
+    :param pagerduty_request_timeout: Seconds to timeout for pagerduty session requests. Optional
     :type: nist_cve_url: str
     :param nist_cve_url: NIST CVE data provider base URI, e.g. https://nvd.nist.gov/feeds/json/cve/1.1. Optional.
     """
@@ -83,6 +89,7 @@ class Config:
         neo4j_user=None,
         neo4j_password=None,
         neo4j_max_connection_lifetime=None,
+        neo4j_database=None,
         update_tag=None,
         aws_sync_all_profiles=False,
         aws_best_effort_mode=False,
@@ -111,6 +118,7 @@ class Config:
         statsd_host=None,
         statsd_port=None,
         pagerduty_api_key=None,
+        pagerduty_request_timeout=None,
         nist_cve_url=None,
         cve_enabled=False,
         crowdstrike_client_id=None,
@@ -121,6 +129,7 @@ class Config:
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
         self.neo4j_max_connection_lifetime = neo4j_max_connection_lifetime
+        self.neo4j_database = neo4j_database
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.aws_best_effort_mode = aws_best_effort_mode
@@ -149,6 +158,7 @@ class Config:
         self.statsd_host = statsd_host
         self.statsd_port = statsd_port
         self.pagerduty_api_key = pagerduty_api_key
+        self.pagerduty_request_timeout = pagerduty_request_timeout
         self.nist_cve_url = nist_cve_url
         self.cve_enabled = cve_enabled
         self.crowdstrike_client_id = crowdstrike_client_id

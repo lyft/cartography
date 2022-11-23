@@ -5,7 +5,7 @@ from typing import Union
 from kubernetes import config
 from kubernetes.client import ApiClient
 from kubernetes.client import CoreV1Api
-from kubernetes.client import NetworkingV1beta1Api
+from kubernetes.client import NetworkingV1Api
 
 
 class KubernetesContextNotFound(Exception):
@@ -20,7 +20,7 @@ class K8CoreApiClient(CoreV1Api):
         super().__init__(api_client=api_client)
 
 
-class K8NetworkingApiClient(NetworkingV1beta1Api):
+class K8NetworkingApiClient(NetworkingV1Api):
     def __init__(self, name: str, api_client: ApiClient = None) -> None:
         self.name = name
         if not api_client:

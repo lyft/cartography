@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.63.0'
+__version__ = '0.67.0rc1'
 
 
 setup(
@@ -28,10 +28,11 @@ setup(
     },
     dependency_links=[],
     install_requires=[
+        "backoff>=2.1.2",
         "boto3>=1.15.1",
         "botocore>=1.18.1",
         "dnspython>=1.15.0",
-        "neo4j>=4.4.4",
+        "neo4j>=4.4.4,<5.0.0",
         "policyuniverse>=1.1.0.0",
         "google-api-python-client>=1.7.8",
         "oauth2client>=4.1.3",
@@ -52,7 +53,7 @@ setup(
         "azure-mgmt-storage>=16.0.0",
         "azure-mgmt-sql<=1.0.0",
         "azure-identity>=1.5.0",
-        "kubernetes>=18.20.0,<=21.7.0",
+        "kubernetes>=22.6.0",
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
     ],
