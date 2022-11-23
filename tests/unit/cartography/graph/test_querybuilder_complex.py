@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-from dataclasses import Field
-from typing import Any
 from typing import List
 from typing import Optional
 
@@ -80,7 +78,7 @@ class InterestingAssetSchema(CartographyNodeSchema):
     label: str = 'InterestingNode'
     properties: SimpleNodeProperties = SimpleNodeProperties()
     subresource_relationship: InterestingAssetToSubResourceRel = InterestingAssetToSubResourceRel()
-    other_relationships: Field[Any] = default_field(
+    other_relationships: Optional[List[CartographyRelSchema]] = default_field(
         [
             InterestingAssetToHelloAssetRel(),
             InterestingAssetToWorldAssetRel(),

@@ -1,7 +1,6 @@
 import logging
 from copy import copy
 from dataclasses import asdict
-from dataclasses import Field
 from dataclasses import field
 from string import Template
 from typing import Any
@@ -19,7 +18,7 @@ from cartography.graph.model import PropertyRef
 logger = logging.getLogger(__name__)
 
 
-def default_field(obj: Any) -> Field:
+def default_field(obj: Any):
     """
     Helper function from https://stackoverflow.com/questions/52063759/passing-default-list-argument-to-dataclasses.
     We use this so that we can work around how dataclass fields disallow mutable objects by wrapping them in lambdas.
