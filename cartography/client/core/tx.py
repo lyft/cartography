@@ -151,25 +151,19 @@ def read_single_dict_tx(tx: neo4j.Transaction, query: str, **kwargs) -> Dict[str
 def _write_list_of_dicts_tx(
         tx: neo4j.Transaction,
         query: str,
-        dict_list: List[Dict[Any, Any]],
-        update_tag: int,
         **kwargs,
 ) -> None:
     # TODO batch this to 10k items by default and make the batch size configurable
-    tx.run(query, DictList=dict_list, UpdateTag=update_tag, kwargs=kwargs)
+    tx.run(query, kwargs)
 
 
 def load_graph_data(
         neo4j_session: neo4j.Session,
         query: str,
-        dict_list: List[Dict[Any, Any]],
-        update_tag: int,
         **kwargs,
 ) -> None:
     neo4j_session.write_transaction(
         _write_list_of_dicts_tx,
         query,
-        dict_list,
-        update_tag,
-        kwargs,
+        **kwargs,
     )
