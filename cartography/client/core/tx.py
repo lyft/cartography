@@ -177,9 +177,9 @@ def write_list_of_dicts_tx(
             yet_another_kwarg_field=1234
         )
 
-    :param tx: The neo4j transaction
-    :param query: The Neo4j write query that you want to run
-    :param kwargs: Keyword args to be supplied to the Neo4j query
+    :param tx: The neo4j transaction.
+    :param query: The Neo4j write query that you want to run.
+    :param kwargs: Keyword args to be supplied to the Neo4j query.
     :return: None
     """
     # TODO batch this to 10k items by default and make the batch size configurable
@@ -202,7 +202,7 @@ def load_graph_data(
             a.field1 = item.field1,
             ...
     :param dict_list: The data to load to the graph represented as a list of dicts.
-    :param kwargs: Keyword args to be supplied to the Neo4j query. MUST have 'DictList' as a key.
+    :param kwargs: Keyword args to be supplied to the Neo4j query.
     :return: None
     """
     neo4j_session.write_transaction(
