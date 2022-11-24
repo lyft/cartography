@@ -57,9 +57,10 @@ def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, 
     return cluster_details
 
 
+# TODO - how to autogenerate CREATE INDEX script from this?
 @dataclass
 class EMRClusterNodeProperties(CartographyNodeProperties):
-    arn: PropertyRef = PropertyRef('ClusterArn')
+    arn: PropertyRef = PropertyRef('ClusterArn', indexed=True)
     auto_terminate: PropertyRef = PropertyRef('AutoTerminate')
     autoscaling_role: PropertyRef = PropertyRef('AutoScalingRole')
     custom_ami_id: PropertyRef = PropertyRef('CustomAmiId')
