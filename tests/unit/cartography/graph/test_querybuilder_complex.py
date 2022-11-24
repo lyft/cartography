@@ -29,15 +29,18 @@ class InterestingAssetToSubResourceRelProps(CartographyRelProperties):
     yet_another_rel_field: PropertyRef = PropertyRef("YetAnotherRelField")
 
 
-# (:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource)
 @dataclass
 class InterestingAssetToSubResourceRel(CartographyRelSchema):
+    """
+    Define a sub-resource relationship
+    (:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource)
+    """
     target_node_label: str = 'SubResource'
     target_node_key: str = 'id'
+    target_node_key_property_ref: PropertyRef = PropertyRef('sub_resource_id', static=True)
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RELATIONSHIP_LABEL"
     properties: InterestingAssetToSubResourceRelProps = InterestingAssetToSubResourceRelProps()
-    dict_field_ref: PropertyRef = PropertyRef('subresource_id', static=True)
 
 
 @dataclass
@@ -45,15 +48,18 @@ class InterestingAssetToHelloAssetRelProps(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', static=True)
 
 
-# (:InterestingAsset)-[:ASSOCIATED_WITH]->(:HelloAsset)
 @dataclass
 class InterestingAssetToHelloAssetRel(CartographyRelSchema):
+    """
+    Define an additional relationship
+    (:InterestingAsset)-[:ASSOCIATED_WITH]->(:HelloAsset)
+    """
     target_node_label: str = 'HelloAsset'
     target_node_key: str = 'id'
+    target_node_key_property_ref: PropertyRef = PropertyRef('hello_asset_id')
     direction: LinkDirection = LinkDirection.OUTWARD
     rel_label: str = "ASSOCIATED_WITH"
     properties: InterestingAssetToHelloAssetRelProps = InterestingAssetToHelloAssetRelProps()
-    dict_field_ref: PropertyRef = PropertyRef('hello_asset_id')
 
 
 @dataclass
@@ -61,15 +67,18 @@ class InterestingAssetToWorldAssetRelProps(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', static=True)
 
 
-# (:InterestingAsset)<-[:CONNECTED]-(:WorldAsset)
 @dataclass
 class InterestingAssetToWorldAssetRel(CartographyRelSchema):
+    """
+    Define yet another relationship.
+    (:InterestingAsset)<-[:CONNECTED]-(:WorldAsset)
+    """
     target_node_label: str = 'WorldAsset'
     target_node_key: str = 'id'
+    target_node_key_property_ref: PropertyRef = PropertyRef('world_asset_id')
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "CONNECTED"
     properties: InterestingAssetToWorldAssetRelProps = InterestingAssetToWorldAssetRelProps()
-    dict_field_ref: PropertyRef = PropertyRef('world_asset_id')
 
 
 @dataclass
@@ -77,7 +86,7 @@ class InterestingAssetSchema(CartographyNodeSchema):
     extra_labels: Optional[List[str]] = default_field(['AnotherNodeLabel', 'YetAnotherNodeLabel'])
     label: str = 'InterestingNode'
     properties: SimpleNodeProperties = SimpleNodeProperties()
-    subresource_relationship: InterestingAssetToSubResourceRel = InterestingAssetToSubResourceRel()
+    sub_resource_relationship: InterestingAssetToSubResourceRel = InterestingAssetToSubResourceRel()
     other_relationships: Optional[List[CartographyRelSchema]] = default_field(
         [
             InterestingAssetToHelloAssetRel(),
@@ -101,7 +110,7 @@ def test_build_ingestion_query_complex():
                 i:AnotherNodeLabel:YetAnotherNodeLabel
 
             WITH i, item
-            MATCH (j:SubResource{id: $subresource_id})
+            MATCH (j:SubResource{id: $sub_resource_id})
             MERGE (i)<-[r:RELATIONSHIP_LABEL]-(j)
             ON CREATE SET r.firstseen = timestamp()
             SET

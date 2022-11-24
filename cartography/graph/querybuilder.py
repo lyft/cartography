@@ -37,8 +37,31 @@ def default_field(obj: Any):
 
 def _build_node_properties_statement(
         node_property_map: Dict[str, PropertyRef],
-        node_extra_labels: Optional[List[str]],
+        node_extra_labels: Optional[List[str]] = None,
 ) -> Optional[str]:
+    """
+    Given a node property map (key = graph node attribute names as str, value = PropertyRef telling whether the
+    associated value is located on the data dict or from a kwarg variable), generate a Neo4j SET clause.
+
+    In this code example:
+
+        node_property_map: Dict[str, PropertyRef] = {
+            'id': PropertyRef("Id"),
+            'node_prop_1': PropertyRef("Prop1"),
+            'node_prop_2': PropertyRef("Prop2", static=True),
+        }
+        set_clause: str = _build_node_properties_statement(node_property_map)
+
+    The returned set_clause will be:
+
+        i.id = item.Id,
+        i.node_prop_1 = item.Prop1,
+        i.node_prop_2 = $Prop2
+
+    :param node_property_map: Mapping of node attribute names as str to PropertyRef objects
+    :param node_extra_labels: Optional list of extra labels to set on the node as str
+    :return: The resulting Neo4j SET clause to set the given attributes on the node
+    """
     ingest_fields_template = Template('i.$node_property = $property_ref')
     set_clause = ''
 
@@ -58,6 +81,27 @@ def _build_node_properties_statement(
 
 
 def _build_rel_properties_statement(rel_var: str, rel_property_map: Optional[Dict[str, PropertyRef]] = None) -> str:
+    """
+    Given a relationship property map (key = relationship attribute names as str, value = PropertyRef telling whether
+    the associated value is located on the data dict or from a kwarg variable), generate a Neo4j SET clause.
+
+    In this code example:
+
+        rel_property_map: Dict[str, PropertyRef] = {
+            'rel_prop_1': PropertyRef("Prop1"),
+            'rel_prop_2': PropertyRef("Prop2", static=True),
+        }
+        set_clause: str = _build_rel_properties_statement('r', rel_property_map)
+
+    The returned set_clause will be:
+
+        r.rel_prop_1 = item.Prop1,
+        r.rel_prop_2 = $Prop2
+
+    :param rel_var: The variable name to use for the relationship in the Neo4j query
+    :param rel_property_map: Mapping of relationship attribute names as str to PropertyRef objects
+    :return: The resulting Neo4j SET clause to set the given attributes on the relationship
+    """
     set_clause = ''
     ingest_fields_template = Template('$rel_var.$rel_property = $property_ref')
 
@@ -73,9 +117,18 @@ def _build_rel_properties_statement(rel_var: str, rel_property_map: Optional[Dic
     return set_clause
 
 
-def _build_attach_sub_resource_statement(sub_resource_link: Optional[CartographyRelSchema]) -> str:
+def _build_attach_sub_resource_statement(sub_resource_link: Optional[CartographyRelSchema] = None) -> str:
     """
-    Attaches sub resource to node i.
+    Generates a Neo4j statement to attach a sub resource to a node. A 'sub resource' is a term we made up to describe
+    billing units of a given resource. For example,
+    - In AWS, the sub resource is an AWSAccount.
+    - In Azure, the sub resource is a Subscription.
+    - In GCP, the sub resource is a GCPProject.
+    - etc.
+    This is a private function not meant to be called outside of build_ingest_query().
+    :param sub_resource_link: Optional: The CartographyRelSchema object connecting previous node(s) to the sub resource.
+    :return: a Neo4j clause that connects previous node(s) to a sub resource, taking into account the labels, attribute
+    keys, and directionality. If sub_resource_link is None, return an empty string.
     """
     if not sub_resource_link:
         return ''
@@ -103,7 +156,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
     attach_sub_resource_statement = sub_resource_attach_template.safe_substitute(
         SubResourceLabel=sub_resource_link.target_node_label,
         SubResourceKey=sub_resource_link.target_node_key,
-        SubResourceRef=sub_resource_link.dict_field_ref,
+        SubResourceRef=sub_resource_link.target_node_key_property_ref,
         RelMergeClause=rel_merge_clause,
         SubResourceRelLabel=sub_resource_link.rel_label,
         set_rel_properties_statement=_build_rel_properties_statement('r', rel_props_as_dict),
@@ -111,11 +164,19 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
     return attach_sub_resource_statement
 
 
-def _build_attach_additional_links_statement(additional_links: Optional[List[CartographyRelSchema]]) -> str:
+def _build_attach_additional_links_statement(
+        additional_relationships: Optional[List[CartographyRelSchema]] = None,
+) -> str:
     """
-    Attaches one or more CartographyRels to node i.
+    Generates a Neo4j statement to attaches one or more CartographyRelSchemas to node(s) previously mentioned in the
+    query.
+    This is a private function not meant to be called outside of build_ingestion_query().
+    :param additional_relationships: Optional list of CartographyRelSchema describing what other relationships should
+    be created from the previous node(s) in this query.
+    :return: A Neo4j clause that connects previous node(s) to the given additional_links., taking into account the
+    labels, attribute keys, and directionality. If additional_relationships is None, return an empty string.
     """
-    if not additional_links:
+    if not additional_relationships:
         return ''
 
     # TODO - support matching on multiple properties
@@ -130,7 +191,7 @@ def _build_attach_additional_links_statement(additional_links: Optional[List[Car
         """,
     )
     links = []
-    for num, link in enumerate(additional_links):
+    for num, link in enumerate(additional_relationships):
         node_var = f"n{num}"
         rel_var = f"r{num}"
 
@@ -146,7 +207,7 @@ def _build_attach_additional_links_statement(additional_links: Optional[List[Car
         )
 
         # Give a helpful error message when forgetting to put `()` when instantiating a CartographyRelSchema, as this
-        # somehow isn't caught by IDEs like PyCharm.
+        # isn't always caught by IDEs like PyCharm.
         try:
             rel_props_as_dict: Dict[str, PropertyRef] = asdict(link.properties)
         except TypeError as e:
@@ -162,7 +223,7 @@ def _build_attach_additional_links_statement(additional_links: Optional[List[Car
         additional_ref = additional_links_template.safe_substitute(
             AddlLabel=link.target_node_label,
             AddlKey=link.target_node_key,
-            AddlRef=link.dict_field_ref,
+            AddlRef=link.target_node_key_property_ref,
             node_var=node_var,
             rel_var=rel_var,
             RelMerge=rel_merge,
@@ -174,6 +235,17 @@ def _build_attach_additional_links_statement(additional_links: Optional[List[Car
 
 
 def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
+    """
+    Generates a Neo4j query from the given CartographyNodeSchema to ingest the specified nodes and relationships so that
+    cartography module authors don't need to handwrite their own queries. This involves processing all attached
+    CartographyRelSchema objects.
+    :param node_schema: The CartographyNodeSchema object to build a Neo4j query from.
+    :return: An optimized Neo4j query that can be used to ingest nodes and relationships.
+    Important notes:
+    - The query assumes that a list of dicts will be passed to it through parameter $DictList.
+    - The query sets firstseen attributes on all of the nodes and relationships that it creates.
+    - The resulting query uses the UNWIND + MERGE pattern for batching and speed.
+    """
     query_template = Template(
         """
         UNWIND $DictList AS item
@@ -181,8 +253,8 @@ def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
             ON CREATE SET i.firstseen = timestamp()
             SET
                 $set_node_properties_statement
-                $attach_sub_resource_statement
-                $attach_additional_links_statement
+            $attach_sub_resource_statement
+            $attach_additional_links_statement
         """,
     )
 
@@ -193,7 +265,7 @@ def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
         node_label=node_schema.label,
         dict_id_field=node_props.id,
         set_node_properties_statement=_build_node_properties_statement(node_props_as_dict, node_schema.extra_labels),
-        attach_sub_resource_statement=_build_attach_sub_resource_statement(node_schema.subresource_relationship),
+        attach_sub_resource_statement=_build_attach_sub_resource_statement(node_schema.sub_resource_relationship),
         attach_additional_links_statement=_build_attach_additional_links_statement(node_schema.other_relationships),
     )
     return ingest_query

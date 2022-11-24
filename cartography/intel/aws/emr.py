@@ -94,17 +94,17 @@ class EMRClusterToAwsAccountRelProperties(CartographyRelProperties):
 class EMRClusterToAWSAccount(CartographyRelSchema):
     target_node_label: str = 'AWSAccount'
     target_node_key: str = 'id'
+    target_node_key_property_ref: PropertyRef = PropertyRef('AccountId', static=True)
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RESOURCE"
     properties: EMRClusterToAwsAccountRelProperties = EMRClusterToAwsAccountRelProperties()
-    dict_field_ref: PropertyRef = PropertyRef('AccountId', static=True)
 
 
 @dataclass
 class EMRClusterSchema(CartographyNodeSchema):
     label: str = 'EMRCluster'
     properties: EMRClusterNodeProperties = EMRClusterNodeProperties()
-    subresource_relationship: CartographyRelSchema = EMRClusterToAWSAccount()
+    sub_resource_relationship: CartographyRelSchema = EMRClusterToAWSAccount()
 
 
 @timeit

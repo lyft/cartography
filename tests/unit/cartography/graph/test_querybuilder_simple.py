@@ -33,14 +33,17 @@ class SimpleNodeToSubResourceRelProps(CartographyRelProperties):
 
 
 @dataclass
-# (:EMRCluster)<-[:RESOURCE]-(:AWSAccount)
 class SimpleNodeToSubResourceRel(CartographyRelSchema):
+    """
+    Define a sub resource rel:
+    (:EMRCluster)<-[:RESOURCE]-(:AWSAccount)
+    """
     target_node_label: str = 'SubResource'
     target_node_key: str = 'id'
+    target_node_key_property_ref: PropertyRef = PropertyRef('sub_resource_id', static=True)
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RELATIONSHIP_LABEL"
     properties: SimpleNodeToSubResourceRelProps = SimpleNodeToSubResourceRelProps()
-    dict_field_ref: PropertyRef = PropertyRef('subresource_id', static=True)
 
 
 @dataclass
@@ -52,11 +55,11 @@ class SimpleNodeSchema(CartographyNodeSchema):
 @dataclass
 class SimpleNodeWithSubResourceSchema(CartographyNodeSchema):
     """
-    Same as SimpleNodeSchema but with a subresource relationship now.
+    Same as SimpleNodeSchema but with a sub-resource relationship now.
     """
     label: str = 'SimpleNode'
     properties: SimpleNodeProperties = SimpleNodeProperties()
-    subresource_relationship: CartographyRelSchema = SimpleNodeToSubResourceRel()
+    sub_resource_relationship: CartographyRelSchema = SimpleNodeToSubResourceRel()
 
 
 def test_simplenode_sanity_checks():
@@ -66,7 +69,7 @@ def test_simplenode_sanity_checks():
     schema: SimpleNodeSchema = SimpleNodeSchema()
     # Assert that the unimplemented, non-abstract properties have None values.
     assert schema.extra_labels is None
-    assert schema.subresource_relationship is None
+    assert schema.sub_resource_relationship is None
     assert schema.other_relationships is None
 
 
@@ -94,7 +97,7 @@ def test_build_ingestion_query_with_subresource():
                 i.property2 = item.property2
 
             WITH i, item
-            MATCH (j:SubResource{id: $subresource_id})
+            MATCH (j:SubResource{id: $sub_resource_id})
             MERGE (i)<-[r:RELATIONSHIP_LABEL]-(j)
             ON CREATE SET r.firstseen = timestamp()
             SET
