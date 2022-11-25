@@ -41,7 +41,7 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
             bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
         except ClientError as e:
             if _is_common_exception(e, bucket):
-                bucket['Region'] = None
+                bucket['Region'] = 'us-east-1'
                 logger.warning("skipping bucket='{}' due to exception.".format(bucket['Name']))
                 continue
             else:
@@ -751,7 +751,7 @@ def sync(
     if common_job_parameters['aws_resource_name'] is not None:
         logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
         # bucket_data is updated in the function itself
-        filtered = filterfn.filter_resources(bucket_data, common_job_parameters['aws_resource_name'], 's3')
+        bucket_data = filterfn.filter_resources(bucket_data, common_job_parameters['aws_resource_name'], 's3')
         resourceFound = True
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
     if (not resourceFound):
