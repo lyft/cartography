@@ -751,7 +751,7 @@ def sync(
     if common_job_parameters['aws_resource_name'] is not None:
         logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
         # bucket_data is updated in the function itself
-        bucket_data = filterfn.filter_resources(bucket_data, common_job_parameters['aws_resource_name'], 's3')
+        filtered = filterfn.filter_resources(bucket_data, common_job_parameters['aws_resource_name'], 's3')
         resourceFound = True
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
     if (not resourceFound):
