@@ -57,23 +57,22 @@ def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, 
     return cluster_details
 
 
-# TODO - how to autogenerate CREATE INDEX script from this?
 @dataclass
 class EMRClusterNodeProperties(CartographyNodeProperties):
-    arn: PropertyRef = PropertyRef('ClusterArn', indexed=True)
+    arn: PropertyRef = PropertyRef('ClusterArn')
     auto_terminate: PropertyRef = PropertyRef('AutoTerminate')
     autoscaling_role: PropertyRef = PropertyRef('AutoScalingRole')
     custom_ami_id: PropertyRef = PropertyRef('CustomAmiId')
     firstseen: PropertyRef = PropertyRef('firstseen')
     id: PropertyRef = PropertyRef('Id')
     instance_collection_type: PropertyRef = PropertyRef('InstanceCollectionType')
-    lastupdated: PropertyRef = PropertyRef('lastupdated', static=True)
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     log_encryption_kms_key_id: PropertyRef = PropertyRef('LogEncryptionKmsKeyId')
     log_uri: PropertyRef = PropertyRef('LogUri')
     master_public_dns_name: PropertyRef = PropertyRef('MasterPublicDnsName')
     name: PropertyRef = PropertyRef('Name')
     outpost_arn: PropertyRef = PropertyRef('OutpostArn')
-    region: PropertyRef = PropertyRef('Region', static=True)
+    region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
     release_label: PropertyRef = PropertyRef('ReleaseLabel')
     repo_upgrade_on_boot: PropertyRef = PropertyRef('RepoUpgradeOnBoot')
     requested_ami_version: PropertyRef = PropertyRef('RequestedAmiVersion')
@@ -87,7 +86,7 @@ class EMRClusterNodeProperties(CartographyNodeProperties):
 
 @dataclass
 class EMRClusterToAwsAccountRelProperties(CartographyRelProperties):
-    lastupdated: PropertyRef = PropertyRef('lastupdated', static=True)
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
 @dataclass
@@ -95,7 +94,7 @@ class EMRClusterToAwsAccountRelProperties(CartographyRelProperties):
 class EMRClusterToAWSAccount(CartographyRelSchema):
     target_node_label: str = 'AWSAccount'
     target_node_key: str = 'id'
-    target_node_key_property_ref: PropertyRef = PropertyRef('AccountId', static=True)
+    target_node_key_property_ref: PropertyRef = PropertyRef('AccountId', set_in_kwargs=True)
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RESOURCE"
     properties: EMRClusterToAwsAccountRelProperties = EMRClusterToAwsAccountRelProperties()

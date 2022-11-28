@@ -17,14 +17,14 @@ from tests.unit.cartography.graph.test_querybuilder_simple import SimpleNodeProp
 @dataclass
 class InterestingAssetProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('Id')
-    lastupdated: PropertyRef = PropertyRef('lastupdated', static=True)
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     property1: PropertyRef = PropertyRef('property1')
     property2: PropertyRef = PropertyRef('property2')
 
 
 @dataclass
 class InterestingAssetToSubResourceRelProps(CartographyRelProperties):
-    lastupdated: PropertyRef = PropertyRef('lastupdated', static=True)
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     another_rel_field: PropertyRef = PropertyRef('AnotherField')
     yet_another_rel_field: PropertyRef = PropertyRef("YetAnotherRelField")
 
@@ -32,12 +32,12 @@ class InterestingAssetToSubResourceRelProps(CartographyRelProperties):
 @dataclass
 class InterestingAssetToSubResourceRel(CartographyRelSchema):
     """
-    Define a sub-resource relationship
+    Define a sub resource relationship
     (:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource)
     """
     target_node_label: str = 'SubResource'
     target_node_key: str = 'id'
-    target_node_key_property_ref: PropertyRef = PropertyRef('sub_resource_id', static=True)
+    target_node_key_property_ref: PropertyRef = PropertyRef('sub_resource_id', set_in_kwargs=True)
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RELATIONSHIP_LABEL"
     properties: InterestingAssetToSubResourceRelProps = InterestingAssetToSubResourceRelProps()
@@ -45,7 +45,7 @@ class InterestingAssetToSubResourceRel(CartographyRelSchema):
 
 @dataclass
 class InterestingAssetToHelloAssetRelProps(CartographyRelProperties):
-    lastupdated: PropertyRef = PropertyRef('lastupdated', static=True)
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
 @dataclass
@@ -64,7 +64,7 @@ class InterestingAssetToHelloAssetRel(CartographyRelSchema):
 
 @dataclass
 class InterestingAssetToWorldAssetRelProps(CartographyRelProperties):
-    lastupdated: PropertyRef = PropertyRef('lastupdated', static=True)
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
 @dataclass

@@ -21,12 +21,14 @@ logger = logging.getLogger(__name__)
 def default_field(obj: Any):
     """
     Helper function from https://stackoverflow.com/questions/52063759/passing-default-list-argument-to-dataclasses.
-    We use this so that we can work around how dataclass fields disallow mutable objects by wrapping them in lambdas.
-    Put another way, writing `field(default_factory=lambda: ['Label1', 'Label2'])` is so much more work than writing
-    `default_field(['Label1', 'Label2']`.
+    We use this so that we can work around how dataclass field default values disallow mutable objects (like Lists) by
+    wrapping them in lambdas.
 
-    Note that if the Field is decorated with @property (like everything in our object model), then we will need to also
-    use this technique to correctly implement the setter:
+    Put another way, writing `field(default_factory=lambda: ['Label1', 'Label2'])` is so much
+    more work than writing `default_field(['Label1', 'Label2']`.
+
+    Note that if the Field is decorated with @property (like everything in our object model), then the dataclass needs
+    to also use this technique to keep typehints happy:
     https://florimond.dev/en/posts/2018/10/reconciling-dataclasses-and-properties-in-python/.
 
     :param obj: The mutable default object (e.g. a List) that we want to set as a default for a dataclass field.
@@ -38,21 +40,20 @@ def default_field(obj: Any):
 def _build_node_properties_statement(
         node_property_map: Dict[str, PropertyRef],
         node_extra_labels: Optional[List[str]] = None,
-) -> Optional[str]:
+) -> str:
     """
-    Given a node property map (key = graph node attribute names as str, value = PropertyRef telling whether the
-    associated value is located on the data dict or from a kwarg variable), generate a Neo4j SET clause.
+    Generate a Neo4j clause that sets node properties using the given mapping of attribute names to PropertyRefs.
 
-    In this code example:
+    As seen in this example,
 
         node_property_map: Dict[str, PropertyRef] = {
             'id': PropertyRef("Id"),
             'node_prop_1': PropertyRef("Prop1"),
-            'node_prop_2': PropertyRef("Prop2", static=True),
+            'node_prop_2': PropertyRef("Prop2", set_in_kwargs=True),
         }
         set_clause: str = _build_node_properties_statement(node_property_map)
 
-    The returned set_clause will be:
+    the returned set_clause will be:
 
         i.id = item.Id,
         i.node_prop_1 = item.Prop1,
@@ -63,15 +64,12 @@ def _build_node_properties_statement(
     :return: The resulting Neo4j SET clause to set the given attributes on the node
     """
     ingest_fields_template = Template('i.$node_property = $property_ref')
-    set_clause = ''
 
-    # If the node_property_map contains more than just `id`, generate a SET statement for the other fields.
-    if len(node_property_map.keys()) > 1:
-        set_clause += ',\n'.join([
-            ingest_fields_template.safe_substitute(node_property=node_property, property_ref=property_ref)
-            for node_property, property_ref in node_property_map.items()
-            if node_property != 'id'  # Make sure to exclude setting the `id` again.
-        ])
+    set_clause = ',\n'.join([
+        ingest_fields_template.safe_substitute(node_property=node_property, property_ref=property_ref)
+        for node_property, property_ref in node_property_map.items()
+        if node_property != 'id'  # The `MERGE` clause will have already set `id`; let's not set it again.
+    ])
 
     # Set extra labels on the node if specified
     if node_extra_labels:
@@ -82,8 +80,8 @@ def _build_node_properties_statement(
 
 def _build_rel_properties_statement(rel_var: str, rel_property_map: Optional[Dict[str, PropertyRef]] = None) -> str:
     """
-    Given a relationship property map (key = relationship attribute names as str, value = PropertyRef telling whether
-    the associated value is located on the data dict or from a kwarg variable), generate a Neo4j SET clause.
+    Generate a Neo4j clause that sets relationship properties using the given mapping of attribute names to
+    PropertyRefs.
 
     In this code example:
 
@@ -93,7 +91,7 @@ def _build_rel_properties_statement(rel_var: str, rel_property_map: Optional[Dic
         }
         set_clause: str = _build_rel_properties_statement('r', rel_property_map)
 
-    The returned set_clause will be:
+    the returned set_clause will be:
 
         r.rel_prop_1 = item.Prop1,
         r.rel_prop_2 = $Prop2
@@ -168,7 +166,7 @@ def _build_attach_additional_links_statement(
         additional_relationships: Optional[List[CartographyRelSchema]] = None,
 ) -> str:
     """
-    Generates a Neo4j statement to attaches one or more CartographyRelSchemas to node(s) previously mentioned in the
+    Generates a Neo4j statement to attach one or more CartographyRelSchemas to node(s) previously mentioned in the
     query.
     This is a private function not meant to be called outside of build_ingestion_query().
     :param additional_relationships: Optional list of CartographyRelSchema describing what other relationships should
@@ -237,14 +235,15 @@ def _build_attach_additional_links_statement(
 def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
     """
     Generates a Neo4j query from the given CartographyNodeSchema to ingest the specified nodes and relationships so that
-    cartography module authors don't need to handwrite their own queries. This involves processing all attached
-    CartographyRelSchema objects.
+    cartography module authors don't need to handwrite their own queries.
     :param node_schema: The CartographyNodeSchema object to build a Neo4j query from.
     :return: An optimized Neo4j query that can be used to ingest nodes and relationships.
     Important notes:
+    - The resulting query uses the UNWIND + MERGE pattern (see
+      https://neo4j.com/docs/cypher-manual/current/clauses/unwind/#unwind-creating-nodes-from-a-list-parameter) to batch
+      load the data for speed.
     - The query assumes that a list of dicts will be passed to it through parameter $DictList.
-    - The query sets firstseen attributes on all of the nodes and relationships that it creates.
-    - The resulting query uses the UNWIND + MERGE pattern for batching and speed.
+    - The query sets `firstseen` attributes on all the nodes and relationships that it creates.
     """
     query_template = Template(
         """

@@ -9,8 +9,6 @@ from typing import Optional
 
 class LinkDirection(Enum):
     """
-    If a CartographyNodeSchema has relationships, then it will have one or more CartographyRelSchemas.
-
     Each CartographyRelSchema has a LinkDirection that determines whether the relationship points toward the original
     node ("INWARD") or away from the original node ("OUTWARD").
 
@@ -36,31 +34,30 @@ class LinkDirection(Enum):
 
 class PropertyRef:
     """
-    We dynamically build Neo4j queries and allow module authors to define a schema for their nodes and relationships.
+    PropertyRefs represent properties on cartography nodes and relationships.
 
-    The end result is we write dicts to Neo4j. To define nodes and rels, we need a mechanism to allow the schema to
-    refer to properties on the data dict.
-
-    A PropertyRef is how we reference properties on the data dict when dynamically creating queries.
+    cartography takes lists of Python dicts and loads them to Neo4j. PropertyRefs allow our dynamically generated Neo4j
+    ingestion queries to set values for a given node or relationship property from (A) a field on the dict being
+    processed (PropertyRef.override=False, default), or (B) from a single variable provided by a keyword argument
+    (PropertyRef.override=True).
     """
 
-    def __init__(self, name: str, static=False):
+    def __init__(self, name: str, set_in_kwargs=False):
         """
-        :param name: The name of the property as seen on the data dict
-        :param static: If true, the property is not defined on the data dict, and we expect to find the property in the
-        kwargs.
+        :param name: The name of the property
+        :param set_in_kwargs: Optional. If True, the property is not defined on the data dict, and we expect to find the
+        property in the kwargs.
         If False, looks for the property in the data dict.
         Defaults to False.
         """
         self.name = name
-        # TODO consider naming this something better
-        self.static = static
+        self.set_in_kwargs = set_in_kwargs
 
     def _parameterize_name(self) -> str:
         return f"${self.name}"
 
     def __repr__(self) -> str:
-        return f"item.{self.name}" if not self.static else self._parameterize_name()
+        return f"item.{self.name}" if not self.set_in_kwargs else self._parameterize_name()
 
 
 @dataclass
@@ -103,39 +100,8 @@ class CartographyRelSchema(abc.ABC):
     """
     Abstract base dataclass that represents a cartography relationship.
 
-    A CartographyNodeSchema is composed of a CartographyRelSchema. The CartographyRelSchema contains properties that
-    make it possible to connect the CartographyNodeSchema to other existing nodes in the graph.
-
-    As example usage, this code:
-
-        class EMRCluster(CartographyNodeSchema):
-            label: str = "EMRCluster"
-            properties: EMRClusterNodeProperties = EMRClusterNodeProperties()
-            sub_resource_relationship: CartographyRelSchema = EMRClusterToAWSAccount()
-
-        class EMRClusterToAWSAccount(CartographyRelSchema):
-            target_node_label: str = 'AWSAccount'
-            target_node_key: str = 'id'
-            direction: LinkDirection = LinkDirection.INWARD
-            rel_label: str = "RESOURCE"
-            properties: EMRClusterToAwsAccountRelProperties = EMRClusterToAwsAccountRelProperties()
-            target_node_key_property_ref: PropertyRef = PropertyRef('AccountId', static=True)
-
-
-    generates a Neo4j query that looks like this:
-
-        UNWIND $DictList AS item
-            MERGE (i:EMRCluster{id: <... Expand the EMRClusterNodeProperties here ...>})
-            ON CREATE SET i.firstseen = timestamp()
-            SET
-                // ... Expand EMRClusterNodeProperties here ...
-
-            WITH i, item
-            MATCH (j:AWSAccount{id: $AccountId})
-            MERGE (i)<-[r:RESOURCE]-(j)
-            ON CREATE SET r.firstseen = timestamp()
-            SET
-                // ... Expand EMRClusterToAwsAccountRelProperties here ...
+    The CartographyRelSchema contains properties that make it possible to connect the CartographyNodeSchema to other
+    existing nodes in the graph.
     """
     @property
     @abc.abstractmethod
@@ -157,7 +123,7 @@ class CartographyRelSchema(abc.ABC):
     @abc.abstractmethod
     def target_node_key(self) -> str:
         """
-        :return: The attribute on the target node used to uniquely identify what node to connect to.
+        :return: The attribute name on the target_node_label used to uniquely identify what node to connect to.
         """
         pass
 
@@ -165,8 +131,8 @@ class CartographyRelSchema(abc.ABC):
     @abc.abstractmethod
     def target_node_key_property_ref(self) -> PropertyRef:
         """
-        :return: The value of the target node attribute used to uniquely identify what node to connect to.
-        This is given as a PropertyRef.
+        :return: The value of the target_node_key used to uniquely identify what node to connect to. This is given as a
+        PropertyRef.
         """
         pass
 
@@ -246,17 +212,23 @@ class CartographyNodeSchema(abc.ABC):
 
     @other_relationships.setter
     def other_relationships(self, other_rels: List[CartographyRelSchema]) -> None:
+        """
+        Boilerplate setter function used to keep typehints happy.
+        """
         self._other_relationships = other_rels
 
     @property
     def extra_labels(self) -> Optional[List[str]]:
         """
         Optional.
-        Allows subclasses to specify extra labels on the node.
+        Allows specifying extra labels on the node.
         :return: None if not overriden. Else return a str list of the extra labels specified on the node.
         """
         return self._extra_labels
 
     @extra_labels.setter
     def extra_labels(self, labels: List[str]) -> None:
+        """
+        Boilerplate setter function used to keep typehints happy.
+        """
         self._extra_labels = labels

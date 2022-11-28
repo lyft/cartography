@@ -1,12 +1,3 @@
-"""
-Test cases
-
-- Single node label
-- Multiple node labels
-- Node properties x
-- Relationship properties x
-- Additional links
-"""
 from dataclasses import dataclass
 
 from cartography.graph.model import CartographyNodeProperties
@@ -19,31 +10,13 @@ from cartography.graph.querybuilder import build_ingestion_query
 from tests.unit.cartography.graph.helpers import remove_leading_whitespace_and_empty_lines
 
 
+# Test defining a simple node with no relationships.
 @dataclass
 class SimpleNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('Id')
-    lastupdated: PropertyRef = PropertyRef('lastupdated', static=True)
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     property1: PropertyRef = PropertyRef('property1')
     property2: PropertyRef = PropertyRef('property2')
-
-
-@dataclass
-class SimpleNodeToSubResourceRelProps(CartographyRelProperties):
-    lastupdated: PropertyRef = PropertyRef('lastupdated', static=True)
-
-
-@dataclass
-class SimpleNodeToSubResourceRel(CartographyRelSchema):
-    """
-    Define a sub resource rel:
-    (:EMRCluster)<-[:RESOURCE]-(:AWSAccount)
-    """
-    target_node_label: str = 'SubResource'
-    target_node_key: str = 'id'
-    target_node_key_property_ref: PropertyRef = PropertyRef('sub_resource_id', static=True)
-    direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "RELATIONSHIP_LABEL"
-    properties: SimpleNodeToSubResourceRelProps = SimpleNodeToSubResourceRelProps()
 
 
 @dataclass
@@ -52,11 +25,24 @@ class SimpleNodeSchema(CartographyNodeSchema):
     properties: SimpleNodeProperties = SimpleNodeProperties()
 
 
+# Test defining a simple node with a sub resource rel: (:SimpleNode)<-[:RESOURCE]-(:SubResource)
+@dataclass
+class SimpleNodeToSubResourceRelProps(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass
+class SimpleNodeToSubResourceRel(CartographyRelSchema):
+    target_node_label: str = 'SubResource'
+    target_node_key: str = 'id'
+    target_node_key_property_ref: PropertyRef = PropertyRef('sub_resource_id', set_in_kwargs=True)
+    direction: LinkDirection = LinkDirection.INWARD
+    rel_label: str = "RELATIONSHIP_LABEL"
+    properties: SimpleNodeToSubResourceRelProps = SimpleNodeToSubResourceRelProps()
+
+
 @dataclass
 class SimpleNodeWithSubResourceSchema(CartographyNodeSchema):
-    """
-    Same as SimpleNodeSchema but with a sub-resource relationship now.
-    """
     label: str = 'SimpleNode'
     properties: SimpleNodeProperties = SimpleNodeProperties()
     sub_resource_relationship: CartographyRelSchema = SimpleNodeToSubResourceRel()
@@ -64,7 +50,7 @@ class SimpleNodeWithSubResourceSchema(CartographyNodeSchema):
 
 def test_simplenode_sanity_checks():
     """
-    Test creating a simple node schema with no relationships
+    Test creating a simple node schema with no relationships.
     """
     schema: SimpleNodeSchema = SimpleNodeSchema()
     # Assert that the unimplemented, non-abstract properties have None values.
@@ -75,7 +61,7 @@ def test_simplenode_sanity_checks():
 
 def test_simplenode_with_subresource_sanity_checks():
     """
-    Test creating a simple node schema with a subresource relationship
+    Test creating a simple node schema with no relationships and ensure that the optional attributes are indeed None.
     """
     schema: SimpleNodeWithSubResourceSchema = SimpleNodeWithSubResourceSchema()
     # Assert that the unimplemented, non-abstract properties have None values.
@@ -83,7 +69,10 @@ def test_simplenode_with_subresource_sanity_checks():
     assert schema.other_relationships is None
 
 
-def test_build_ingestion_query_with_subresource():
+def test_build_ingestion_query_with_sub_resource():
+    """
+    Test creating a simple node schema with a sub resource relationship.
+    """
     # Act
     query = build_ingestion_query(SimpleNodeWithSubResourceSchema())
 

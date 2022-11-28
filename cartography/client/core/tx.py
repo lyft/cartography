@@ -7,6 +7,8 @@ from typing import Union
 
 import neo4j
 
+from cartography.util import batch
+
 
 def read_list_of_values_tx(tx: neo4j.Transaction, query: str, **kwargs) -> List[Union[str, int]]:
     """
@@ -154,9 +156,10 @@ def write_list_of_dicts_tx(
         **kwargs,
 ) -> None:
     """
-    Writes a list of dicts to Neo4j. This is called by passing it as a function param to neo4j.write_transaction().
+    Writes a list of dicts to Neo4j.
 
     Example usage:
+        import neo4j
         dict_list: List[Dict[Any, Any]] = [{...}, ...]
 
         neo4j_driver = neo4j.driver(... args ...)
@@ -177,12 +180,11 @@ def write_list_of_dicts_tx(
             yet_another_kwarg_field=1234
         )
 
-    :param tx: The neo4j transaction.
-    :param query: The Neo4j write query that you want to run.
+    :param tx: The neo4j write transaction.
+    :param query: The Neo4j write query to run.
     :param kwargs: Keyword args to be supplied to the Neo4j query.
     :return: None
     """
-    # TODO batch this to 10k items by default and make the batch size configurable
     tx.run(query, kwargs)
 
 
@@ -195,19 +197,16 @@ def load_graph_data(
     """
     Writes data to the graph.
     :param neo4j_session: The Neo4j session
-    :param query: The Neo4j write query to run. This must follow the UNWIND + MERGE pattern. For example:
-    UNWIND $DictList as item
-        MERGE (a:SomeNode{id: item.id})
-        SET
-            a.field1 = item.field1,
-            ...
+    :param query: The Neo4j write query to run. This query is not meant to be handwritten, rather it should be generated
+    with cartography.graph.querybuilder.build_ingestion_query().
     :param dict_list: The data to load to the graph represented as a list of dicts.
-    :param kwargs: Keyword args to be supplied to the Neo4j query.
+    :param kwargs: Allows additional keyword args to be supplied to the Neo4j query.
     :return: None
     """
-    neo4j_session.write_transaction(
-        write_list_of_dicts_tx,
-        query,
-        DictList=dict_list,
-        **kwargs,
-    )
+    for data_batch in batch(dict_list, size=10000):
+        neo4j_session.write_transaction(
+            write_list_of_dicts_tx,
+            query,
+            DictList=data_batch,
+            **kwargs,
+        )
