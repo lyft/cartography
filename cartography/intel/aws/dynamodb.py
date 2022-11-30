@@ -76,7 +76,10 @@ def load_dynamodb_tables(
     SET table.lastupdated = {aws_update_tag}, table.rows = {Rows}, table.size = {Size},
     table.provisioned_throughput_read_capacity_units = {ProvisionedThroughputReadCapacityUnits},
     table.provisioned_throughput_write_capacity_units = {ProvisionedThroughputWriteCapacityUnits},
-    table.creationdate = {CreateDate}
+    table.creationdate = {CreateDate},
+    table.table_encryption_enabled = {TableEncryptionEnabled},
+    table.table_encrypted_type = {TableEncryptedType},
+    table.table_encrypted_kms_arn = {TableEncryptedKmsArn}
     WITH table
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(table)
@@ -96,7 +99,10 @@ def load_dynamodb_tables(
             Rows=table['Table']['ItemCount'],
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
-            CreateDate = dict_value_to_str(table['Table'], 'CreationDateTime')
+            CreateDate = dict_value_to_str(table['Table'], 'CreationDateTime'),
+            TableEncryptionEnabled=table['Table'].get('SSEDescription', {}).get('Status'),
+            TableEncryptedType=table['Table'].get('SSEDescription', {}).get('SSEType'),
+            TableEncryptedKmsArn=table['Table'].get('SSEDescription', {}).get('KMSMasterKeyArn')
         )
         load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag)
 

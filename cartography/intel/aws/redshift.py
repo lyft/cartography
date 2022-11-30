@@ -60,13 +60,27 @@ def load_redshift_cluster_data(
     cluster.publicly_accessible = {PubliclyAccessible},
     cluster.vpc_id = {VpcId},
     cluster.lastupdated = {aws_update_tag},
-    cluster.region = {Region}
+    cluster.region = {Region},
+    cluster.logging_enabled = {logging_enabled},
+    cluster.allow_version_upgrade = {allowVersionUpgrade},
+    cluster.enhanced_vpc_routing_enabled = {enhancedVpcRouting},
+    cluster.require_ssl = {requireSSL}
     WITH cluster
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(cluster)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $aws_update_tag
     """
+
+    paramList = cluster['ClusterParameterGroups']['ClusterParameterStatusList']
+    loggingEnabled = False
+    requireSSL = False
+    for item in paramList:
+        if item["ParameterName"] == "enable_user_activity_logging" and item["ParameterApplyStatus"] == "in-sync":
+            loggingEnabled = True
+        if item["ParameterName"] == "require_ssl" and item["ParameterApplyStatus"] == "in-sync":
+            requireSSL = True
+
     for cluster in clusters:
         neo4j_session.run(
             ingest_cluster,
@@ -87,7 +101,11 @@ def load_redshift_cluster_data(
             VpcId=cluster.get('VpcId'),
             Region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag
+            aws_update_tag=aws_update_tag,
+            logging_enabled=loggingEnabled,
+            allowVersionUpgrade=cluster["AllowVersionUpgrade"],
+            enhancedVpcRouting=cluster["EnhancedVpcRouting"],
+            requireSSL=requireSSL
         )
         _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag)
         _attach_iam_roles(neo4j_session, cluster, aws_update_tag)

@@ -57,7 +57,8 @@ def load_eks_clusters(
         cluster.version = {ClusterVersion},
         cluster.platform_version = {ClusterPlatformVersion},
         cluster.status = {ClusterStatus},
-        cluster.audit_logging = {ClusterLogging}
+        cluster.audit_logging = {ClusterLogging},
+        cluster.secrets_encrypted = {ClusterSecretsEncrypted}
     WITH cluster
     MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
     MERGE (owner)-[r:RESOURCE]->(cluster)
@@ -81,7 +82,8 @@ def load_eks_clusters(
             ClusterLogging=_process_logging(cluster),
             Region=region,
             aws_update_tag=aws_update_tag,
-            AWS_ACCOUNT_ID=current_aws_account_id
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            ClusterSecretsEncrypted=True if ('secrets' in cluster.get('encryptionConfig', {})[0].get('resources')) else False
         )
 
 
