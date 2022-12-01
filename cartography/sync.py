@@ -78,7 +78,7 @@ class Sync:
         :param config: Configuration for the sync run.
         """
         logger.info("Starting sync with update tag '%d'", config.update_tag)
-        with neo4j_driver.session() as neo4j_session:
+        with neo4j_driver.session(database=config.neo4j_database) as neo4j_session:
             for stage_name, stage_func in self._stages.items():
                 logger.info("Starting sync stage '%s'", stage_name)
                 try:
