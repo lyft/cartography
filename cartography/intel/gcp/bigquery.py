@@ -33,7 +33,7 @@ def get_bigquery_dataset(bigquery: Resource, project_id: str, common_job_paramet
     """
     try:
         datasets = []
-        request = bigquery.datasets().list(project=project_id, maxResults=5000)
+        request = bigquery.datasets().list(projectId=project_id, maxResults=5000)
         while request is not None:
             response = request.execute()
             if 'datasets' in response:
@@ -281,7 +281,7 @@ def cleanup_gcp_bigquery(neo4j_session: neo4j.Session, common_job_parameters: Di
 @timeit
 def sync(
     neo4j_session: neo4j.Session, bigquery: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, regions: List,
 ) -> None:
     """
     Get GCP Bigquery using the Cloud Bigquery resource object, ingest to Neo4j, and clean up old data.

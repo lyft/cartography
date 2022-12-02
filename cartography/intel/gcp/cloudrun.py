@@ -38,7 +38,7 @@ def get_cloudrun_authorized_domains(cloudrun: Resource, project_id: str, common_
             response = request.execute()
             if response.get('domains', []):
                 domains.extend(response.get('domains', []))
-            request = cloudrun.namespaces().authorizeddomains().list_next(previous_request=request,previous_response=response)
+            request = cloudrun.namespaces().authorizeddomains().list_next(previous_request=request, previous_response=response)
         if common_job_parameters.get('pagination', {}).get('cloudrun', None):
             pageNo = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageNo"]
             pageSize = common_job_parameters.get("pagination", {}).get("cloudrun", None)["pageSize"]
@@ -76,15 +76,15 @@ def get_cloudrun_authorized_domains(cloudrun: Resource, project_id: str, common_
         else:
             raise
 
+
 def transform_authorized_domains(domains: List[Dict], project_id: str) -> List[Dict]:
     authorized_domains = []
     for domain in domains:
         domain['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloudrun_domain')
         domain['id'] = f"projects/{project_id}/authorizedDomains/{domain['id']}"
         authorized_domains.append(domain)
-    
+
     return authorized_domains
-    
 
 
 @timeit
@@ -143,6 +143,7 @@ def get_cloudrun_configurations(cloudrun: Resource, project_id: str, common_job_
         else:
             raise
 
+
 @timeit
 def transform_configurations(configurations: List[Dict], project_id: str) -> List[Dict]:
     configurations = []
@@ -152,6 +153,7 @@ def transform_configurations(configurations: List[Dict], project_id: str) -> Lis
         configurations.append(item)
 
     return configurations
+
 
 @timeit
 def get_cloudrun_domainmappings(cloudrun: Resource, project_id: str, common_job_parameters) -> List[Dict]:
@@ -208,6 +210,7 @@ def get_cloudrun_domainmappings(cloudrun: Resource, project_id: str, common_job_
         else:
             raise
 
+
 @timeit
 def transform_mappings(mappings: List[Dict], project_id: str) -> List[Dict]:
     mappings = []
@@ -217,6 +220,7 @@ def transform_mappings(mappings: List[Dict], project_id: str) -> List[Dict]:
         mappings.append(item)
 
     return mappings
+
 
 @timeit
 def get_cloudrun_revisions(cloudrun: Resource, project_id: str, common_job_parameters) -> List[Dict]:
@@ -274,17 +278,19 @@ def get_cloudrun_revisions(cloudrun: Resource, project_id: str, common_job_param
         else:
             raise
 
+
 @timeit
 def transform_revisions(revisions: List[Dict], project_id: str) -> List[Dict]:
     revisions = []
     for item in revisions:
         item['region'] = item.get('metadata').get('labels').get('cloud.googleapis.com/location')
         item['service_name'] = item.get('metadata').get('labels').get('serving.knative.dev/route')
-        item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
-                cloud_run_service_name=item['service_name'], region=item['region'], resource_name='cloud_run_revision')
+        item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
+                                                                cloud_run_service_name=item['service_name'], region=item['region'], resource_name='cloud_run_revision')
         item['id'] = f"projects/{project_id}/revisions/{item.get('metadata').get('name')}"
         revisions.append(item)
     return revisions
+
 
 @timeit
 def get_cloudrun_routes(cloudrun: Resource, project_id: str, common_job_parameters) -> List[Dict]:
@@ -341,6 +347,7 @@ def get_cloudrun_routes(cloudrun: Resource, project_id: str, common_job_paramete
         else:
             raise
 
+
 @timeit
 def transform_routes(routes: List[Dict], project_id: str) -> List[Dict]:
     for item in routes:
@@ -349,6 +356,7 @@ def transform_routes(routes: List[Dict], project_id: str) -> List[Dict]:
         routes.append(item)
 
     return routes
+
 
 @timeit
 def get_cloudrun_services(cloudrun: Resource, project_id: str, common_job_parameters) -> List[Dict]:
@@ -416,16 +424,17 @@ def get_cloudrun_services(cloudrun: Resource, project_id: str, common_job_parame
         else:
             raise
 
+
 @timeit
 def transform_services(services: List[Dict], project_id: str) -> List[Dict]:
     services = []
     for item in services:
         item['region'] = item.get('metadata').get('labels').get('cloud.googleapis.com/location')
-        item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
-                cloud_run_service_name=item.get('metadata').get('name'), region=item['region'], resource_name='cloud_run_service')
+        item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
+                                                                cloud_run_service_name=item.get('metadata').get('name'), region=item['region'], resource_name='cloud_run_service')
         item['id'] = f"projects/{project_id}/services/{item.get('metadata').get('name')}"
         services.append(item)
-    
+
     return services
 
 
@@ -465,7 +474,7 @@ def _load_cloudrun_authorized_domains_tx(
         authorized_domain.name = ad.name,
         authorized_domain.region = $region,
         authorized_domain.lastupdated = $gcp_update_tag,
-        authorized_domain.consolelink = ad.consolelink,
+        authorized_domain.consolelink = ad.consolelink
     WITH authorized_domain
     MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(authorized_domain)
@@ -753,7 +762,7 @@ def _load_cloudrun_services_tx(
         service.selfLink = svc.metadata.selfLink,
         service.uid = svc.metadata.uid,
         service.region = svc.region,
-        service.consolelink = sv.consolelink,
+        service.consolelink = svc.consolelink,
         service.resourceVersion = svc.metadata.resourceVersion,
         service.creationTimestamp = svc.metadata.creationTimestamp,
         service.deletionTimestamp = svc.metadata.deletionTimestamp,
