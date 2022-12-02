@@ -774,7 +774,7 @@ def sync_usages(
     common_job_parameters: Dict,
 ) -> None:
     for network in networks_list:
-        usages = get_usages_list(networks_list, client)
+        usages = get_usages_list(network, client)
         networks_usages_list = transform_usages(usages, network, common_job_parameters)
         load_usages(neo4j_session, networks_usages_list, update_tag)
     cleanup_usages(neo4j_session, common_job_parameters)

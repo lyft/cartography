@@ -330,7 +330,7 @@ def sync_key_vaults(
 ) -> None:
     client = get_key_vaults_client(credentials.arm_credentials, subscription_id)
     key_vaults = get_key_vaults_list(client)
-    key_vaults_list = transform_key_vaults(client, key_vaults, regions, common_job_parameters)
+    key_vaults_list = transform_key_vaults(key_vaults, regions, common_job_parameters)
 
     if common_job_parameters.get('pagination', {}).get('key_vaults', None):
         pageNo = common_job_parameters.get("pagination", {}).get("key_vaults", None)["pageNo"]
