@@ -72,16 +72,15 @@ def load_redshift_cluster_data(
     SET r.lastupdated = $aws_update_tag
     """
 
-    paramList = cluster['ClusterParameterGroups']['ClusterParameterStatusList']
-    loggingEnabled = False
-    requireSSL = False
-    for item in paramList:
-        if item["ParameterName"] == "enable_user_activity_logging" and item["ParameterApplyStatus"] == "in-sync":
-            loggingEnabled = True
-        if item["ParameterName"] == "require_ssl" and item["ParameterApplyStatus"] == "in-sync":
-            requireSSL = True
-
     for cluster in clusters:
+        paramList = cluster['ClusterParameterGroups']['ClusterParameterStatusList']
+        loggingEnabled = False
+        requireSSL = False
+        for item in paramList:
+            if item["ParameterName"] == "enable_user_activity_logging" and item["ParameterApplyStatus"] == "in-sync":
+                loggingEnabled = True
+            if item["ParameterName"] == "require_ssl" and item["ParameterApplyStatus"] == "in-sync":
+                requireSSL = True
         neo4j_session.run(
             ingest_cluster,
             Arn=cluster['arn'],
