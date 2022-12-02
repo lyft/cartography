@@ -47,7 +47,7 @@ def get_sqs_queue_attributes(
     """
     client = boto3_session.client('sqs')
 
-    queue_attributes = []
+    queue_attributes: Dict[str, Any] = {}
     for queue_url in queue_urls:
         try:
             response = client.get_queue_attributes(QueueUrl=queue_url['name'], AttributeNames=['All'])

@@ -166,7 +166,7 @@ def get_tags_list(
 
 def _load_tags_tx(tx: neo4j.Transaction, tags_list: List[Dict], update_tag: int, common_job_parameters: Dict) -> None:
     ingest_tag = """
-   UNWIND $tags_list AS tag
+    UNWIND $tags_list AS tag
     MERGE (t:AzureTag{id: tag.id})
     ON CREATE SET t.firstseen = timestamp(),
     t.type = tag.type,
@@ -174,14 +174,15 @@ def _load_tags_tx(tx: neo4j.Transaction, tags_list: List[Dict], update_tag: int,
     t.resource_group = tag.resource_group
     SET t.lastupdated = $update_tag,
     t.value = tag.value,
-    t.name = tag.name
     t.key = tag.key
     WITH t,tag
-    MATCH (l) where l.id = tag.resource_id
+    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
+    (:AzureTenant{id: $AZURE_TENANT_ID})-[:RESOURCE]->
+    (:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})-[*]->(l)
+    where l.id = tag.resource_id
     MERGE (l)-[r:TAGGED]->(t)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
-
     """
 
     tx.run(

@@ -237,6 +237,7 @@ def _sync_multiple_accounts(
         )
 
     del common_job_parameters["AWS_ID"]
+    return True
 
     # Commented this out to support multi-account setup
     # # There may be orphan Principals which point outside of known AWS accounts. This job cleans
@@ -337,9 +338,9 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             common_job_parameters,
         )
 
-    run_analysis_job(
-        'aws_eks_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+        run_analysis_job(
+            'aws_eks_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
     return common_job_parameters

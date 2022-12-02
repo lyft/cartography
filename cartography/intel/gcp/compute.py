@@ -924,11 +924,11 @@ def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_u
 
         logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
 
-    for instance in instances_list:
-        _attach_instance_tags(session, instance, gcp_update_tag)
-        _attach_gcp_nics(session, instance, gcp_update_tag)
-        _attach_gcp_vpc(session, instance['partial_uri'], gcp_update_tag)
-        _attach_instance_service_account(session, instance, gcp_update_tag)
+    # for instance in instances_list:
+    #     _attach_instance_tags(session, instance, gcp_update_tag)
+    #     _attach_gcp_nics(session, instance, gcp_update_tag)
+    #     _attach_gcp_vpc(session, instance['partial_uri'], gcp_update_tag)
+    #     _attach_instance_service_account(session, instance, gcp_update_tag)
 
 
 @timeit
@@ -1348,7 +1348,7 @@ def _attach_gcp_nic_access_configs(
             AccessConfigId=access_config_id,
             Type=ac['type'],
             Name=ac['name'],
-            ConsoleLink=ac.get('consolelink'),
+            ConsoleLink=ac['consolelink'],
             NatIP=ac.get('natIP', None),
             SetPublicPtr=ac.get('setPublicPtr', None),
             PublicPtrDomainName=ac.get('publicPtrDomainName', None),
