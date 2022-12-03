@@ -477,12 +477,13 @@ def get_function_apps_deployments_list(
         )
         return []
 
+
 def transform_deployments(deployments_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_deployments_list: List[Dict] = []
     for deployment in deployments_list:
         x = deployment['id'].split('/')
-        deployment['consolelink'] = azure_console_link.get_console_link(id=deployment['id'],\
-                     primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+        deployment['consolelink'] = azure_console_link.get_console_link(id=deployment['id'],
+                                                                        primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
         deployment['resource_group'] = x[x.index('resourceGroups') + 1]
         deployment['function_app_id'] = deployment[
             'id'
@@ -491,6 +492,7 @@ def transform_deployments(deployments_list: List[Dict], function: Dict, common_j
     function_apps_deployments_list.extend(deployments_list)
 
     return function_apps_deployments_list
+
 
 def _load_function_apps_deployments_tx(
     tx: neo4j.Transaction,
@@ -541,7 +543,7 @@ def sync_function_apps_deployments(
 ) -> None:
     for function in function_apps_list:
         deployments_list = get_function_apps_deployments_list(
-            function, client, common_job_parameters
+            function, client
         )
         function_apps_deployments_list = transform_deployments(deployments_list, function, common_job_parameters)
         load_function_apps_deployments(
@@ -571,12 +573,13 @@ def get_function_apps_backups_list(
         logger.warning(f"Error while retrieving function apps backups - {e}")
         return []
 
+
 def transform_backups(backups_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_backups_list: List[Dict] = []
     for backup in backups_list:
         x = backup['id'].split('/')
-        backup['consolelink'] = azure_console_link.get_console_link(id=backup['id'],\
-                     primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+        backup['consolelink'] = azure_console_link.get_console_link(id=backup['id'],
+                                                                    primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
         backup['resource_group'] = x[x.index('resourceGroups') + 1]
         backup['function_app_id'] = backup['id'][
             :backup['id'].
@@ -586,6 +589,7 @@ def transform_backups(backups_list: List[Dict], function: Dict, common_job_param
     function_apps_backups_list.extend(backups_list)
 
     return function_apps_backups_list
+
 
 def _load_function_apps_backups_tx(
     tx: neo4j.Transaction,
@@ -636,7 +640,7 @@ def sync_function_apps_backups(
 ) -> None:
     for function in function_apps_list:
         backups_list = get_function_apps_backups_list(
-            function, client, common_job_parameters
+            function, client
         )
         function_apps_backups_list = transform_backups(backups_list, function, common_job_parameters)
         load_function_apps_backups(
@@ -668,12 +672,13 @@ def get_function_apps_processes_list(
         logger.warning(f"Error while retrieving function apps processes - {e}")
         return []
 
+
 def transform_processes(processes_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_processes_list: List[Dict] = []
     for process in processes_list:
         x = process['id'].split('/')
-        process['consolelink'] = azure_console_link.get_console_link(id=process['id'],\
-                     primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+        process['consolelink'] = azure_console_link.get_console_link(id=process['id'],
+                                                                     primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
         process['resource_group'] = x[x.index('resourceGroups') + 1]
         process['function_app_id'] = process['id'][
             :process['id'].
@@ -682,7 +687,7 @@ def transform_processes(processes_list: List[Dict], function: Dict, common_job_p
         process["location"] = function.get("location", "global")
     function_apps_processes_list.extend(processes_list)
 
-    return function_apps_processes_list    
+    return function_apps_processes_list
 
 
 def _load_function_apps_processes_tx(
@@ -736,7 +741,7 @@ def sync_function_apps_processes(
         processes_list = get_function_apps_processes_list(
             function, client, common_job_parameters
         )
-        function_apps_processes_list = transform_processes(processes_list, function, common_job_parameters )
+        function_apps_processes_list = transform_processes(processes_list, function, common_job_parameters)
         load_function_apps_processes(
             neo4j_session, function_apps_processes_list,
             update_tag,
@@ -764,6 +769,7 @@ def get_function_apps_snapshots_list(
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving function apps snapshots - {e}")
         return []
+
 
 def transform_snapshots(snapshots_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_snapshots_list: List[Dict] = []
@@ -794,7 +800,7 @@ def _load_function_apps_snapshots_tx(
     f.region = function_snapshot.location,
     f.type = function_snapshot.type
     SET f.name = function_snapshot.name,
-    f.consolelink = function.consolelink,
+    f.consolelink = function_snapshot.consolelink,
     f.lastupdated = $azure_update_tag,
     f.resource_group_name=function_snapshot.resource_group
     WITH f, function_snapshot
@@ -830,7 +836,7 @@ def sync_function_apps_snapshots(
 ) -> None:
     for function in function_apps_list:
         snapshots_list = get_function_apps_snapshots_list(
-            function, client, common_job_parameters
+            function, client
         )
         function_apps_snapshots_list = transform_snapshots(snapshots_list, function, common_job_parameters)
         load_function_apps_snapshots(
@@ -860,6 +866,7 @@ def get_function_apps_webjobs_list(
         logger.warning(f"Error while retrieving function apps webjobs - {e}")
         return []
 
+
 def transform_webjobs(webjobs_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_webjobs_list: List[Dict] = []
     for webjob in webjobs_list:
@@ -874,6 +881,7 @@ def transform_webjobs(webjobs_list: List[Dict], function: Dict, common_job_param
     function_apps_webjobs_list.extend(webjobs_list)
 
     return function_apps_webjobs_list
+
 
 def _load_function_apps_webjobs_tx(
     tx: neo4j.Transaction,

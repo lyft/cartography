@@ -412,8 +412,8 @@ def sync_global_instance_groups(
         instance_groups = get_global_instance_groups(compute, project_id, zone, common_job_parameters)
         global_instance_groups = transform_global_instance_groups(instance_groups, project_id, zone)
         load_instance_groups(neo4j_session, global_instance_groups, project_id, gcp_update_tag)
-        cleanup_instance_groups(neo4j_session, common_job_parameters)
         label.sync_labels(neo4j_session, global_instance_groups, gcp_update_tag, common_job_parameters, 'instance_group', 'GCPInstanceGroup')
+    cleanup_instance_groups(neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -424,7 +424,7 @@ def sync_regional_instance_groups(
 
     if regions:
         for region in regions:
-            instance_groups = get_regional_instance_groups(compute, project_id, region)
+            instance_groups = get_regional_instance_groups(compute, project_id, region, common_job_parameters)
             regional_instance_groups = transform_regional_instance_groups(instance_groups, project_id, region)
             load_instance_groups(neo4j_session, regional_instance_groups, project_id, gcp_update_tag)
             cleanup_instance_groups(neo4j_session, common_job_parameters)
@@ -616,7 +616,7 @@ def sync_regional_url_maps(
             maps = get_regional_url_maps(compute, project_id, region)
             regional_maps = transform_regional_url_maps(maps, region, project_id)
             load_url_maps(neo4j_session, regional_maps, project_id, gcp_update_tag)
-            cleanup_url_maps(neo4j_session,common_job_parameters)
+            cleanup_url_maps(neo4j_session, common_job_parameters)
             label.sync_labels(neo4j_session, regional_maps, gcp_update_tag, common_job_parameters, 'url_map', 'GCPUrlMap')
 
 
@@ -698,7 +698,7 @@ def load_ssl_policies_tx(
         policy.uniqueId = pol.id,
         policy.region = pol.region,
         policy.name = pol.name,
-        polciy.consolelink = pol.consolelink,
+        policy.consolelink = pol.consolelink,
         policy.minTlsVersion = pol.minTlsVersion,
         policy.lastupdated = $gcp_update_tag
     WITH policy
