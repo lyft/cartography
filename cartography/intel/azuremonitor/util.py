@@ -33,7 +33,9 @@ def monitor_query(
     """
     try:
         response = client.query_workspace(
-            workspace_id=workspace_id, query=query, timespan=(start_time, end_time),
+            workspace_id=workspace_id,
+            query=query,
+            timespan=(start_time, end_time),
         )
         if response.status == LogsQueryStatus.PARTIAL:
             error = response.partial_error
@@ -86,23 +88,29 @@ def azuremonitor_hosts(
     logger.warning("Using App registration identity: %s", azure_token)
     client = LogsQueryClient(azure_token)
 
-    syslog_query = f"""search in (Syslog) "*"
+    syslog_query = (
+        f"""search in (Syslog) "*"
 | where TimeGenerated >= datetime({start_time})
 | where TimeGenerated <= datetime({end_time})
 | extend resource_group = extract("/resourcegroups/([0-9a-zA-Z.-]+)/providers/", 1, _ResourceId)
-| summarize min(TimeGenerated), max(TimeGenerated) by Computer,_SubscriptionId,resource_group,_ResourceId,TenantId,SourceSystem,HostIP
+| summarize min(TimeGenerated), max(TimeGenerated) by Computer,_SubscriptionId,"""
+        """resource_group,_ResourceId,TenantId,SourceSystem,HostIP
 | extend firstseen = min_TimeGenerated, lastseen = max_TimeGenerated
 | project-away min_TimeGenerated, max_TimeGenerated"""
+    )
     df_syslog = monitor_query(client, workspace_id, syslog_query, start_time, end_time)
     df_syslog["systemtype"] = "linux"
 
-    win_query = f"""search in (Event, SecurityEvent) "*"
+    win_query = (
+        f"""search in (Event, SecurityEvent) "*"
 | where TimeGenerated >= datetime({start_time})
 | where TimeGenerated <= datetime({end_time})
 | extend resource_group = extract("/resourcegroups/([0-9a-zA-Z.-]+)/providers/", 1, _ResourceId)
-| summarize min(TimeGenerated), max(TimeGenerated) by Computer,_SubscriptionId,resource_group,_ResourceId,TenantId,SourceSystem
+| summarize min(TimeGenerated), max(TimeGenerated) by Computer,_SubscriptionId,"""
+        """resource_group,_ResourceId,TenantId,SourceSystem
 | extend firstseen = min_TimeGenerated, lastseen = max_TimeGenerated
 | project-away min_TimeGenerated, max_TimeGenerated"""
+    )
     df_win = monitor_query(client, workspace_id, win_query, start_time, end_time)
     df_win["systemtype"] = "windows"
 
@@ -113,10 +121,12 @@ def azuremonitor_hosts(
     logger.info("AzureMonitor count final: %s", df_sentinel.shape[0])
 
     df_sentinel["lastseen"] = pandas.to_datetime(
-        df_sentinel["lastseen"], unit="s",
+        df_sentinel["lastseen"],
+        unit="s",
     ).dt.strftime("%Y-%m-%dT%H:%M:%S")
     df_sentinel["firstseen"] = pandas.to_datetime(
-        df_sentinel["firstseen"], unit="s",
+        df_sentinel["firstseen"],
+        unit="s",
     ).dt.strftime("%Y-%m-%dT%H:%M:%S")
 
     df_sentinel.rename(
