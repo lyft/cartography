@@ -543,7 +543,7 @@ def sync_function_apps_deployments(
 ) -> None:
     for function in function_apps_list:
         deployments_list = get_function_apps_deployments_list(
-            function, client, common_job_parameters
+            function, client
         )
         function_apps_deployments_list = transform_deployments(deployments_list, function, common_job_parameters)
         load_function_apps_deployments(
@@ -640,7 +640,7 @@ def sync_function_apps_backups(
 ) -> None:
     for function in function_apps_list:
         backups_list = get_function_apps_backups_list(
-            function, client, common_job_parameters
+            function, client
         )
         function_apps_backups_list = transform_backups(backups_list, function, common_job_parameters)
         load_function_apps_backups(
@@ -836,7 +836,7 @@ def sync_function_apps_snapshots(
 ) -> None:
     for function in function_apps_list:
         snapshots_list = get_function_apps_snapshots_list(
-            function, client, common_job_parameters
+            function, client
         )
         function_apps_snapshots_list = transform_snapshots(snapshots_list, function, common_job_parameters)
         load_function_apps_snapshots(

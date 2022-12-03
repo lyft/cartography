@@ -58,12 +58,12 @@ def load_backend_buckets_tx(
     project_id: str, gcp_update_tag: int,
 ) -> None:
     query = """
-    UNWIND {Buckets} as b
+    UNWIND $Buckets as b
     MERGE (bucket:GCPBackendBucket{id:b.id})
     ON CREATE SET
         bucket.firstseen = timestamp()
     SET
-        bucket.lastupdated = {gcp_update_tag},
+        bucket.lastupdated = $gcp_update_tag,
         bucket.region = b.region,
         bucket.uniqueId = b.id,
         bucket.name = b.bucketName,
@@ -72,11 +72,11 @@ def load_backend_buckets_tx(
         bucket.defaultTtl = b.cdnPolicy.defaultTtl,
         bucket.maxTtl = b.cdnPolicy.maxTtl
     WITH bucket
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id:$ProjectId})
     MERGE (owner)-[r:RESOURCE]->(bucket)
     ON CREATE SET
         r.firstseen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
     tx.run(
         query,
@@ -169,12 +169,12 @@ def load_backend_services_tx(
 ) -> None:
 
     query = """
-    UNWIND {Services} as s
+    UNWIND $Services as s
     MERGE (service:GCPBackendService{id:s.id})
     ON CREATE SET
         service.firstseen = timestamp()
     SET
-        service.lastupdated = {gcp_update_tag},
+        service.lastupdated = $gcp_update_tag,
         service.region = s.region,
         service.type = s.type,
         service.uniqueId = s.id,
@@ -186,11 +186,11 @@ def load_backend_services_tx(
         service.defaultTtl = s.defaultTtl,
         service.negativeCaching = s.cdnPolicy.negativeCaching
     WITH service
-    MATCH (owner:GCPProject{id:{ProjectId}})
+    MATCH (owner:GCPProject{id:$ProjectId})
     MERGE (owner)-[r:RESOURCE]->(service)
     ON CREATE SET
         r.firstseeen = timestamp()
-    SET r.lastupdated = {gcp_update_tag}
+    SET r.lastupdated = $gcp_update_tag
     """
 
     tx.run(
@@ -250,7 +250,7 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
                 req = compute.regionBackendServices().list(project=project_id, region=region)
                 while req is not None:
                     res = req.execute()
-                    if req.get('items'):
+                    if res.get('items'):
                         for region_service in req['items']:
                             region_service['region'] = region
                             region_service['type'] = 'regional'
@@ -322,7 +322,7 @@ def get_global_url_maps(compute: Resource, project_id: str) -> List[Dict]:
         while req is not None:
             res = req.execute()
             if res.get('items'):
-                global_url_maps.extend(res.get('items',[]))
+                global_url_maps.extend(res.get('items', []))
             req = compute.urlMaps().list_next(previous_request=req, previous_response=res)
 
         return global_url_maps
@@ -338,6 +338,7 @@ def get_global_url_maps(compute: Resource, project_id: str) -> List[Dict]:
         else:
             raise
 
+
 @timeit
 def transform_global_url_maps(url_maps: List[Dict], project_id: str) -> List[Dict]:
     global_url_maps = []
@@ -349,6 +350,7 @@ def transform_global_url_maps(url_maps: List[Dict], project_id: str) -> List[Dic
         global_url_maps.append(url_map)
 
     return global_url_maps
+
 
 @timeit
 def load_url_maps(session: neo4j.Session, url_maps: List[Dict], project_id: str, update_tag: int) -> None:
@@ -435,7 +437,7 @@ def sync_global_url_maps(
 def get_regional_url_maps(compute: Resource, project_id: str, region: Dict) -> List[Dict]:
     regional_url_maps = []
     try:
-        req = compute.regionUrlMaps().list(project=project_id, region=region['name'])
+        req = compute.regionUrlMaps().list(project=project_id, region=region)
         while req is not None:
             res = req.execute()
             if res.get('items'):
@@ -454,6 +456,7 @@ def get_regional_url_maps(compute: Resource, project_id: str, region: Dict) -> L
             return []
         else:
             raise
+
 
 @timeit
 def transform_regional_url_maps(url_maps: List[Dict], region: Dict, project_id: str) -> List[Dict]:
@@ -478,7 +481,7 @@ def sync_regional_url_maps(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, regions: list,
     gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    
+
     regional_maps = []
     for region in regions:
         maps = get_regional_url_maps(compute, project_id, region)

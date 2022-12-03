@@ -141,7 +141,7 @@ def get_logging_sinks(logging: Resource, project_id: str) -> List[Dict]:
                     sink['region'] = 'global'
                     sink['id'] = f"projects/{project_id}/sinks/{sink['name']}"
                     sink['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloud_logging_sink')
-                    sink.append(sink)
+                    sinks.append(sink)
             req = logging.projects().sinks().list_next(previous_request=req, previous_response=res)
 
         return sinks
