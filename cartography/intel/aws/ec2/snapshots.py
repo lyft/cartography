@@ -5,7 +5,6 @@ from typing import List
 
 import boto3
 import neo4j
-
 from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -14,6 +13,7 @@ from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
+
 
 @timeit
 @aws_handle_regions

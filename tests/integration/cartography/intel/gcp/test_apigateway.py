@@ -105,9 +105,9 @@ def test_apigateway_location_relationships(neo4j_session):
     # Create Test GCP Project
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {ProjectId}})
+        MERGE (gcp:GCPProject{id: $ProjectId})
         ON CREATE SET gcp.firstseen = timestamp()
-        SET gcp.lastupdated = {UPDATE_TAG}
+        SET gcp.lastupdated = $UPDATE_TAG
         """,
         ProjectId=TEST_PROJECT_ID,
         UPDATE_TAG=TEST_UPDATE_TAG,
@@ -151,9 +151,9 @@ def test_apigateway_api_relationships(neo4j_session):
     # Create Test GCP Project
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {ProjectId}})
+        MERGE (gcp:GCPProject{id: $ProjectId})
         ON CREATE SET gcp.firstseen = timestamp()
-        SET gcp.lastupdated = {UPDATE_TAG}
+        SET gcp.lastupdated = $UPDATE_TAG
         """,
         ProjectId=TEST_PROJECT_ID,
         UPDATE_TAG=TEST_UPDATE_TAG,

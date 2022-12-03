@@ -7,8 +7,10 @@ from typing import List
 import boto3
 import neo4j
 
+from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
 from cartography.util import dict_value_to_str
+from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 from cloudconsolelink.clouds.aws import AWSLinker
@@ -135,8 +137,9 @@ def get_rds_security_groups(boto3_session: boto3.session.Session, region: str) -
         secgroups.extend(page['DBSecurityGroups'])
     return secgroups
 
+
 @timeit
-def transfrom_rds_sgs(secgs: List[Dict], region: str, account_id:str) -> List[Dict]:
+def transfrom_rds_sgs(secgs: List[Dict], region: str, account_id: str) -> List[Dict]:
     secgroups = []
     for secgroup in secgs:
         secgroup['GroupId'] = secgroup.get('EC2SecurityGroups', {}).get('EC2SecurityGroupId', '')
@@ -144,8 +147,9 @@ def transfrom_rds_sgs(secgs: List[Dict], region: str, account_id:str) -> List[Di
         secgroup['consolelink'] = aws_console_link.get_console_link(arn=group_arn)
         secgroup['region'] = region
         secgroups.append(secgroup)
-    
+
     return secgroups
+
 
 def load_rds_security_groups(session: neo4j.Session, secgroups: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_rds_security_groups_tx, secgroups, current_aws_account_id, aws_update_tag)
@@ -255,6 +259,7 @@ def get_rds_snapshots(boto3_session: boto3.session.Session, region: str) -> List
         snapshots.extend(page['DBSnapshots'])
     return snapshots
 
+
 @timeit
 def transform_snapshots(snps: List[Dict], region: str) -> List[Dict]:
     snapshots = []
@@ -266,6 +271,7 @@ def transform_snapshots(snps: List[Dict], region: str) -> List[Dict]:
         snapshots.append(snapshot)
 
     return snapshots
+
 
 def load_rds_snapshots(session: neo4j.Session, snapshots: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_rds_snapshots_tx, snapshots, current_aws_account_id, aws_update_tag)
@@ -372,6 +378,7 @@ def get_rds_cluster_data(boto3_session: boto3.session.Session, region: str) -> L
         clusters.extend(page['DBClusters'])
     return clusters
 
+
 @timeit
 def transform_clusters(cls: List[Dict], region: str) -> List[Dict]:
     clusters = []
@@ -382,6 +389,7 @@ def transform_clusters(cls: List[Dict], region: str) -> List[Dict]:
         clusters.append(cluster)
 
     return clusters
+
 
 @timeit
 def load_rds_clusters(

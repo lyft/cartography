@@ -478,7 +478,7 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
             if key.get('AccessKeyId'):
                 neo4j_session.run(
                     ingest_account_key,
-                    consolelink = consolelink,
+                    consolelink=consolelink,
                     UserName=username,
                     AccessKeyId=key['AccessKeyId'],
                     CreateDate=str(key['CreateDate']),
@@ -606,7 +606,7 @@ def load_policy_statements(
     neo4j_session.run(
         ingest_policy_statement,
         PolicyId=policy_id,
-        consolelink = consolelink,
+        consolelink=consolelink,
         PolicyName=policy_name,
         Statements=statements,
         region="global",
@@ -820,7 +820,7 @@ def sync_service_access_data(neo4j_session, access_data, principal_arn, principa
             ingest_service_usage,
             ID=access["Id"],
             SERVICE=access["ServiceName"],
-            CONSOLE_LINK = aws_console_link.get_console_link(arn=principal_arn),
+            CONSOLE_LINK=aws_console_link.get_console_link(arn=principal_arn),
             SERVICE_NAMESPACE=access["ServiceNamespace"],
             LAST_AUTHENTICATED_DATE=access["LastAuthenticated"],
             LAST_AUTHENTICATED_ENTITY=access["LastAuthenticatedEntity"],

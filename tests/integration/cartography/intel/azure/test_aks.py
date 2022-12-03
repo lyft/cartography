@@ -40,9 +40,9 @@ def test_load_clusters(neo4j_session):
 def test_load_network_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureSubscription{id: {subscription_id}})
+        MERGE (as:AzureSubscription{id: $subscription_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         subscription_id=TEST_SUBSCRIPTION_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -105,9 +105,9 @@ def test_load_container_registries(neo4j_session):
 def test_load_container_registry_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureSubscription{id: {subscription_id}})
+        MERGE (as:AzureSubscription{id: $subscription_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         subscription_id=TEST_SUBSCRIPTION_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -418,9 +418,9 @@ def test_load_container_groups(neo4j_session):
 def test_load_container_group_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureSubscription{id: {subscription_id}})
+        MERGE (as:AzureSubscription{id: $subscription_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         subscription_id=TEST_SUBSCRIPTION_ID,
         update_tag=TEST_UPDATE_TAG,

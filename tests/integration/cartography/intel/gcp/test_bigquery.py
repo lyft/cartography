@@ -60,9 +60,9 @@ def test_bigquery_dataset_relationship(neo4j_session):
     # Create Test GCPProject
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {PROJECT_NUMBER}})
+        MERGE (gcp:GCPProject{id: $PROJECT_NUMBER})
         ON CREATE SET gcp.firstseen = timestamp()
-        SET gcp.lastupdated = {UPDATE_TAG}
+        SET gcp.lastupdated = $UPDATE_TAG
         """,
         PROJECT_NUMBER=TEST_PROJECT_NUMBER,
         UPDATE_TAG=TEST_UPDATE_TAG,
@@ -130,6 +130,5 @@ def test_bigquey_dataset_table_relationship(neo4j_session):
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
-
 
     assert actual == expected

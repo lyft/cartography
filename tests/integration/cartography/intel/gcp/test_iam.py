@@ -162,9 +162,9 @@ def test_roles_relationships(neo4j_session):
     # Create Test GCPProject
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {PROJECT_NUMBER}})
+        MERGE (gcp:GCPProject{id: $PROJECT_NUMBER})
         ON CREATE SET gcp.firstseen = timestamp()
-        SET gcp.lastupdated = {UPDATE_TAG}
+        SET gcp.lastupdated = $UPDATE_TAG
         """,
         PROJECT_NUMBER=TEST_PROJECT_NUMBER,
         UPDATE_TAG=TEST_UPDATE_TAG,
@@ -202,9 +202,9 @@ def test_service_accounts_relationships(neo4j_session):
     # Create Test GCPProject
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {PROJECT_NUMBER}})
+        MERGE (gcp:GCPProject{id: $PROJECT_NUMBER})
         ON CREATE SET gcp.firstseen = timestamp()
-        SET gcp.lastupdated = {UPDATE_TAG}
+        SET gcp.lastupdated = $UPDATE_TAG
         """,
         PROJECT_NUMBER=TEST_PROJECT_NUMBER,
         UPDATE_TAG=TEST_UPDATE_TAG,
@@ -273,7 +273,7 @@ def test_service_accounts_keys_relationships(neo4j_session):
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
-
+    print(actual)
     assert actual == expected
 
 
@@ -281,9 +281,9 @@ def test_users_relationships(neo4j_session):
     # Create Test GCPProject
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {CUSTOMER_ID}})
+        MERGE (gcp:GCPProject{id: $CUSTOMER_ID})
         ON CREATE SET gcp.firstseen = timestamp()
-        SET gcp.lastupdated = {UPDATE_TAG}
+        SET gcp.lastupdated = $UPDATE_TAG
         """,
         CUSTOMER_ID=TEST_CUSTOMER_ID,
         UPDATE_TAG=TEST_UPDATE_TAG,
@@ -321,9 +321,9 @@ def test_groups_relationships(neo4j_session):
     # Create Test GCPProject
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {CUSTOMER_ID}})
+        MERGE (gcp:GCPProject{id: $CUSTOMER_ID})
         ON CREATE SET gcp.firstseen = timestamp()
-        SET gcp.lastupdated = {UPDATE_TAG}
+        SET gcp.lastupdated = $UPDATE_TAG
         """,
         CUSTOMER_ID=TEST_CUSTOMER_ID,
         UPDATE_TAG=TEST_UPDATE_TAG,
@@ -361,9 +361,9 @@ def test_domains_relationships(neo4j_session):
     # Create Test GCPProject
     neo4j_session.run(
         """
-        MERGE (gcp:GCPProject{id: {CUSTOMER_ID}})
+        MERGE (gcp:GCPProject{id: $CUSTOMER_ID})
         ON CREATE SET gcp.firstseen = timestamp()
-        SET gcp.lastupdated = {UPDATE_TAG}
+        SET gcp.lastupdated = $UPDATE_TAG
         """,
         CUSTOMER_ID=TEST_PROJECT_NUMBER,
         UPDATE_TAG=TEST_UPDATE_TAG,

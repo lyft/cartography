@@ -59,10 +59,10 @@ def get_services(client: K8sClient, cluster: Dict, pods: List[Dict]) -> List[Dic
 
 def load_services(session: Session, data: List[Dict], update_tag: int) -> None:
     ingestion_cypher_query = """
-    UNWIND {services} as k8service
+    UNWIND $services as k8service
         MERGE (service:KubernetesService {id: k8service.uid})
         ON CREATE SET service.firstseen = timestamp()
-        SET service.lastupdated = {update_tag},
+        SET service.lastupdated = $update_tag,
             service.name = k8service.name,
             service.created_at = k8service.creation_timestamp,
             service.deleted_at = k8service.deletion_timestamp,
@@ -74,13 +74,13 @@ def load_services(session: Session, data: List[Dict], update_tag: int) -> None:
         MATCH (cluster:KubernetesCluster {id: cuid})-[:HAS_NAMESPACE]->(space:KubernetesNamespace {name: ns})
         MERGE (space)-[rel1:HAS_SERVICE]->(service)
         ON CREATE SET rel1.firstseen = timestamp()
-        SET rel1.lastupdated = {update_tag}
+        SET rel1.lastupdated = $update_tag
         WITH service, k8pods
         UNWIND k8pods as k8pod
             MATCH (pod:KubernetesPod {id: k8pod.uid})
             MERGE (service)-[rel2:SERVES_POD]->(pod)
             ON CREATE SET rel2.firstseen = timestamp()
-            SET rel2.lastupdated = {update_tag}
+            SET rel2.lastupdated = $update_tag
     """
     logger.info(f"Loading {len(data)} kubernetes services.")
     session.run(ingestion_cypher_query, services=data, update_tag=update_tag)

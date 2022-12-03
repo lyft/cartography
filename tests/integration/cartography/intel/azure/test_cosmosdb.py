@@ -45,9 +45,9 @@ def test_load_database_account_data_relationships(neo4j_session):
     # Create Test Azure Subscription
     neo4j_session.run(
         """
-        MERGE (as:AzureSubscription{id: {subscription_id}})
+        MERGE (as:AzureSubscription{id: $subscription_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         subscription_id=TEST_SUBSCRIPTION_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -471,6 +471,7 @@ def test_load_cosmosdb_virtual_network_rules(neo4j_session):
             neo4j_session,
             database_account,
             TEST_UPDATE_TAG,
+            common_job_parameters={'Azure_Primary_AD_Domain_Name': 'cdx'}
         )
 
     expected_nodes = {
@@ -503,6 +504,7 @@ def test_load_cosmosdb_virtual_network_rules_relationships(neo4j_session):
             neo4j_session,
             database_account,
             TEST_UPDATE_TAG,
+            common_job_parameters={'Azure_Primary_AD_Domain_Name': None}
         )
 
     expected = {

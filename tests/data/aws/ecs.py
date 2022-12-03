@@ -1,5 +1,5 @@
 import datetime
-
+from datetime import timezone as tz
 
 GET_ECS_CLUSTERS = [
     {
@@ -62,7 +62,7 @@ GET_ECS_CONTAINER_INSTANCES = [
             {'name': 'ecs.capability.branch-cni-plugin-version', 'value': 'a0000000-'},
             {'name': 'ecs.ami-id', 'value': 'ami-00000000000000000'},
         ],
-        'registeredAt': datetime.datetime(2021, 10, 12, 12, 19, 6, 294000),
+        'registeredAt': datetime.datetime(2021, 10, 12, 12, 19, 6, 294000, tzinfo=tz.utc),
         'attachments': [],
         'tags': [],
     },
@@ -105,8 +105,8 @@ GET_ECS_SERVICES = [
                 'pendingCount': 0,
                 'runningCount': 1,
                 'failedTasks': 0,
-                'createdAt': datetime.datetime(2021, 12, 28, 6, 42, 3, 786000),
-                'updatedAt': datetime.datetime(2021, 12, 28, 6, 45, 4, 665000),
+                'createdAt': datetime.datetime(2021, 12, 28, 6, 42, 3, 786000, tzinfo=tz.utc),
+                'updatedAt': datetime.datetime(2021, 12, 28, 6, 45, 4, 665000, tzinfo=tz.utc),
                 'launchType': 'FARGATE',
                 'platformVersion': '1.4.0',
                 'networkConfiguration': {
@@ -122,7 +122,7 @@ GET_ECS_SERVICES = [
         ],
         'roleArn': 'arn:aws:iam::000000000000:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS',
         'events': [],
-        'createdAt': datetime.datetime(2021, 9, 8, 10, 15, 57, 44000),
+        'createdAt': datetime.datetime(2021, 9, 8, 10, 15, 57, 44000, tzinfo=tz.utc),
         'placementConstraints': [],
         'placementStrategy': [],
         'networkConfiguration': {
@@ -211,7 +211,7 @@ GET_ECS_TASK_DEFINITIONS = [
         'requiresCompatibilities': ['FARGATE'],
         'cpu': '256',
         'memory': '512',
-        'registeredAt': datetime.datetime(2021, 7, 20, 2, 11, 30, 570000),
+        'registeredAt': datetime.datetime(2021, 7, 20, 2, 11, 30, 570000, tzinfo=tz.utc),
         'registeredBy': 'arn:aws:sts::000000000000:assumed-role/AWSReservedSSO_role-test/test_user@example.com',
     },
 ]
@@ -256,7 +256,7 @@ GET_ECS_TASKS = [
         'availabilityZone': 'us-east-1a',
         'clusterArn': 'arn:aws:ecs:us-east-1:000000000000:cluster/test_cluster',
         'connectivity': 'CONNECTED',
-        'connectivityAt': datetime.datetime(2021, 12, 28, 6, 42, 27, 78000),
+        'connectivityAt': datetime.datetime(2021, 12, 28, 6, 42, 27, 78000, tzinfo=tz.utc),
         'containers': [
             {
                 'containerArn': 'arn:aws:ecs:us-east-1:000000000000:container/test_instance/00000000000000000000000000000000/00000000-0000-0000-0000-000000000000',  # noqa:E501
@@ -276,7 +276,7 @@ GET_ECS_TASKS = [
                 'healthStatus': 'UNKNOWN',
                 'managedAgents': [
                     {
-                        'lastStartedAt': datetime.datetime(2021, 12, 28, 6, 43, 16, 321000),
+                        'lastStartedAt': datetime.datetime(2021, 12, 28, 6, 43, 16, 321000, tzinfo=tz.utc),
                         'name': 'ExecuteCommandAgent',
                         'lastStatus': 'RUNNING',
                     },
@@ -287,7 +287,7 @@ GET_ECS_TASKS = [
             },
         ],
         'cpu': '1024',
-        'createdAt': datetime.datetime(2021, 12, 28, 6, 42, 23, 184000),
+        'createdAt': datetime.datetime(2021, 12, 28, 6, 42, 23, 184000, tzinfo=tz.utc),
         'desiredStatus': 'RUNNING',
         'enableExecuteCommand': True,
         'group': 'service:test_service',
@@ -304,9 +304,9 @@ GET_ECS_TASKS = [
             'inferenceAcceleratorOverrides': [],
         },
         'platformVersion': '1.4.0',
-        'pullStartedAt': datetime.datetime(2021, 12, 28, 6, 42, 36, 31000),
-        'pullStoppedAt': datetime.datetime(2021, 12, 28, 6, 43, 8, 114000),
-        'startedAt': datetime.datetime(2021, 12, 28, 6, 43, 14, 190000),
+        'pullStartedAt': datetime.datetime(2021, 12, 28, 6, 42, 36, 31000, tzinfo=tz.utc),
+        'pullStoppedAt': datetime.datetime(2021, 12, 28, 6, 43, 8, 114000, tzinfo=tz.utc),
+        'startedAt': datetime.datetime(2021, 12, 28, 6, 43, 14, 190000, tzinfo=tz.utc),
         'startedBy': 'ecs-svc/0000000000000000000',
         'tags': [],
         'taskArn': 'arn:aws:ecs:us-east-1:000000000000:task/test_task/00000000000000000000000000000000',

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_load_balancer_v2_listeners(client: botocore.client.BaseClient, load_balancer_arn: str) -> List[Dict]:
+def get_load_balancer_v2_listeners(client: botocore.client.BaseClient, load_balancer_arn: str, region: str) -> List[Dict]:
     paginator = client.get_paginator('describe_listeners')
     listeners: List[Dict] = []
     try:
@@ -25,7 +25,7 @@ def get_load_balancer_v2_listeners(client: botocore.client.BaseClient, load_bala
             listeners.extend(page['Listeners'])
 
     except Exception as e:
-        logger.warning(f"Failed retrieve load balancer listeners for region - {region}. Error - {e}")
+        logger.warning(f"Failed retrieve load balancer listeners for region -{region} . Error - {e}")
 
     return listeners
 
@@ -58,7 +58,7 @@ def get_loadbalancer_v2_data(boto3_session: boto3.Session, region: str) -> List[
 
     # Make extra calls to get listeners
     for elbv2 in elbv2s:
-        elbv2['Listeners'] = get_load_balancer_v2_listeners(client, elbv2['LoadBalancerArn'])
+        elbv2['Listeners'] = get_load_balancer_v2_listeners(client, elbv2['LoadBalancerArn'], region)
         elbv2['TargetGroups'] = get_load_balancer_v2_target_groups(client, elbv2['LoadBalancerArn'])
         elbv2['region'] = region
     return elbv2s

@@ -15,7 +15,7 @@ def sync(
         neo4j_session: neo4j.Session,
         manager: Manager,
         projects_resources: dict,
-        digitalocean_update_tag: str,
+        digitalocean_update_tag: int,
         common_job_parameters: dict,
 ) -> None:
     sync_droplets(neo4j_session, manager, projects_resources, digitalocean_update_tag, common_job_parameters)
@@ -26,7 +26,7 @@ def sync_droplets(
         neo4j_session: neo4j.Session,
         manager: Manager,
         projects_resources: dict,
-        digitalocean_update_tag: str,
+        digitalocean_update_tag: int,
         common_job_parameters: dict,
 ) -> None:
     logger.info("Syncing Droplets")
@@ -80,7 +80,7 @@ def _get_project_id_for_droplet(droplet_id: int, project_resources: dict) -> Opt
 
 
 @timeit
-def load_droplets(neo4j_session: neo4j.Session, data: list, digitalocean_update_tag: str) -> None:
+def load_droplets(neo4j_session: neo4j.Session, data: list, digitalocean_update_tag: int) -> None:
     query = """
         MERGE (p:DOProject{id:$ProjectId})
         ON CREATE SET p.firstseen = timestamp()

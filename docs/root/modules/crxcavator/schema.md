@@ -58,7 +58,7 @@ Placeholder representation of a single G Suite [user object](https://developers.
 | price | Extension price in webstore if applicable |
 | report\_link | URL of full extension report on crxcavator.io |
 
- ### Relationships
+#### Relationships
 
 - GSuiteUsers install ChromeExtensions.
 

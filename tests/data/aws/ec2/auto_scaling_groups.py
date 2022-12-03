@@ -1,4 +1,5 @@
 import datetime
+from datetime import timezone as tz
 
 
 GET_LAUNCH_CONFIGURATIONS = [
@@ -29,7 +30,7 @@ GET_LAUNCH_CONFIGURATIONS = [
             'Enabled': False,
         },
         'IamInstanceProfile': 'example',
-        'CreatedTime': datetime.datetime(2021, 9, 21, 10, 55, 34, 222000),
+        'CreatedTime': datetime.datetime(2021, 9, 21, 10, 55, 34, 222000, tzinfo=tz.utc),
         'EbsOptimized': True,
     },
 ]

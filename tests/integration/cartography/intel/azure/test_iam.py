@@ -35,9 +35,9 @@ def test_load_users(neo4j_session):
 def test_load_user_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureTenant{id: {tenant_id}})
+        MERGE (as:AzureTenant{id: $tenant_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         tenant_id=TEST_TENANT_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -96,9 +96,9 @@ def test_load_groups(neo4j_session):
 def test_load_group_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureTenant{id: {tenant_id}})
+        MERGE (as:AzureTenant{id: $tenant_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         tenant_id=TEST_TENANT_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -157,9 +157,9 @@ def test_load_applications(neo4j_session):
 def test_load_application_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureTenant{id: {tenant_id}})
+        MERGE (as:AzureTenant{id: $tenant_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         tenant_id=TEST_TENANT_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -218,9 +218,9 @@ def test_load_service_accounts(neo4j_session):
 def test_load_service_account_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureTenant{id: {tenant_id}})
+        MERGE (as:AzureTenant{id: $tenant_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         tenant_id=TEST_TENANT_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -279,9 +279,9 @@ def test_load_domains(neo4j_session):
 def test_load_domain_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureTenant{id: {tenant_id}})
+        MERGE (as:AzureTenant{id: $tenant_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         tenant_id=TEST_TENANT_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -321,6 +321,7 @@ def test_load_roles(neo4j_session):
         TEST_TENANT_ID,
         DESCRIBE_ROLES,
         TEST_UPDATE_TAG,
+        SUBSCRIPTION_ID=None
     )
 
     expected_nodes = {
@@ -340,9 +341,9 @@ def test_load_roles(neo4j_session):
 def test_load_role_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureTenant{id: {tenant_id}})
+        MERGE (as:AzureTenant{id: $tenant_id})
         ON CREATE SET as.firstseen = timestamp()
-        SET as.lastupdated = {update_tag}
+        SET as.lastupdated = $update_tag
         """,
         tenant_id=TEST_TENANT_ID,
         update_tag=TEST_UPDATE_TAG,
@@ -360,6 +361,7 @@ def test_load_role_relationships(neo4j_session):
         TEST_TENANT_ID,
         DESCRIBE_ROLES,
         TEST_UPDATE_TAG,
+        SUBSCRIPTION_ID=None
     )
 
     expected = {

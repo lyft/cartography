@@ -237,7 +237,7 @@ def _load_ec2_instances_tx(
     )
 
 
-def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, region: str, update_tag: str) -> None:
+def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, region: str, update_tag: int) -> None:
     query = """
         MATCH (instance:EC2Instance{id: $InstanceId})
         MERGE (subnet:EC2Subnet{subnetid: $SubnetId})
@@ -275,13 +275,13 @@ def _load_ec2_key_pairs_tx(
         tx: neo4j.Transaction,
         key_pairs: List[Dict[str, Any]],
         current_aws_account_id: str,
-        update_tag: str,
+        update_tag: int,
 ) -> None:
     query = """
         UNWIND $KeyPairs as key_pair
             MERGE (keypair:KeyPair:EC2KeyPair{arn: key_pair.KeyARN, id: key_pair.KeyARN})
             ON CREATE SET keypair.firstseen = timestamp()
-            SET keypair.keyname = key_pair.KeyName, keypair.region = key_pair.Region, keypair.lastupdated = {update_tag}
+            SET keypair.keyname = key_pair.KeyName, keypair.region = key_pair.Region, keypair.lastupdated = $update_tag
             WITH keypair, key_pair
             MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
             MERGE (aa)-[r:RESOURCE]->(keypair)
@@ -319,7 +319,7 @@ def _load_ec2_security_groups_tx(
         tx: neo4j.Transaction,
         security_groups: List[Dict[str, Any]],
         current_aws_account_id: str,
-        update_tag: str,
+        update_tag: int,
 ) -> None:
     query = """
         UNWIND $SecurityGroups as sg
@@ -466,24 +466,24 @@ def sync_ec2_instance_ebs_volumes_tx(
         update_tag: str,
 ) -> None:
     query = """
-        UNWIND {EBSVolumes} as volume
+        UNWIND $EBSVolumes as volume
             MERGE (vol:EBSVolume{id: volume.VolumeId})
             ON CREATE SET vol.firstseen = timestamp()
-            SET vol.lastupdated = {update_tag},
+            SET vol.lastupdated = $update_tag,
             vol.region = volume.Region,
             vol.deleteontermination = volume.DeleteOnTermination
 
             WITH vol, volume
-            MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+            MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
             MERGE (aa)-[r:RESOURCE]->(vol)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
 
             WITH vol, volume
             MATCH (instance:EC2Instance{instanceid: volume.InstanceId})
             MERGE (vol)-[r:ATTACHED_TO]->(instance)
             ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = {update_tag}
+            SET r.lastupdated = $update_tag
     """
     tx.run(
         query,

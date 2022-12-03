@@ -59,7 +59,7 @@ def load_load_balancer_listeners(
     neo4j_session.run(
         ingest_listener,
         LoadBalancerId=load_balancer_id,
-        consolelink = consolelink,
+        consolelink=consolelink,
         Listeners=listener_data,
         update_tag=update_tag,
     )
@@ -150,7 +150,7 @@ def load_load_balancers(
             SCHEME=lb.get("Scheme", ""),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
-            consolelink = consolelink,
+            consolelink=consolelink,
             Arn=load_balancer_arn,
             update_tag=update_tag,
         )

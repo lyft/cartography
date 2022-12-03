@@ -41,6 +41,7 @@ def get_client_certificates(boto3_session: boto3.session.Session, region: str) -
         logger.error(f'Failed to call Apigateway get_client_certificates: {region} - {e}')
         return certificates
 
+
 @timeit
 def transform_client_certificates(certs: List[Dict], region: str, account_id: str) -> List[Dict]:
     certificates = []
@@ -223,6 +224,7 @@ def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseCl
 
     return response
 
+
 @timeit
 def transform_rest_api_client_certificate(certs: List[Dict], api_id: str, api_region: str) -> List[Dict]:
     certificates = []
@@ -232,7 +234,8 @@ def transform_rest_api_client_certificate(certs: List[Dict], api_id: str, api_re
         certificates.append(certificate)
 
     return certificates
-    
+
+
 @timeit
 def get_rest_api_resources(api: Dict, client: botocore.client.BaseClient) -> List[Any]:
     """

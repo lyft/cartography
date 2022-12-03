@@ -74,9 +74,9 @@ def _load_trusted_origins(
     """
 
     ingest = """
-    MATCH (org:OktaOrganization{id: {ORG_ID}})
+    MATCH (org:OktaOrganization{id: $ORG_ID})
     WITH org
-    UNWIND {TRUSTED_LIST} as data
+    UNWIND $TRUSTED_LIST as data
     MERGE (new:OktaTrustedOrigin{id: data.id})
     ON CREATE SET new.firstseen = timestamp()
     SET new.name = data.name,
@@ -87,11 +87,11 @@ def _load_trusted_origins(
     new.created_by = data.created_by,
     new.okta_last_updated = data.okta_last_updated,
     new.okta_last_updated_by = data.okta_last_updated_by,
-    new.lastupdated = {okta_update_tag}
+    new.lastupdated = $okta_update_tag
     WITH org, new
     MERGE (org)-[r:RESOURCE]->(new)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {okta_update_tag}
+    SET r.lastupdated = $okta_update_tag
     """
 
     neo4j_session.run(

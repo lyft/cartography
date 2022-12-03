@@ -1,7 +1,12 @@
+import argparse
 import logging
 import time
 import traceback
 from collections import OrderedDict
+from typing import Callable
+from typing import List
+from typing import Tuple
+from typing import Union
 
 import neo4j.exceptions
 from neo4j import GraphDatabase
@@ -11,17 +16,31 @@ import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.create_indexes
 import cloudanix
-from cartography.stats import set_stats_client
+# from cartography.stats import set_stats_client
 import cartography.intel.azure
 # from cartography.scoped_stats_client import ScopedStatsClient
 # import cartography.intel.crxcavator.crxcavator
 # import cartography.intel.digitalocean
-import cartography.intel.gcp
+# import cartography.intel.gcp
 # import cartography.intel.github
 # import cartography.intel.gsuite
 # import cartography.intel.okta
 # import cartography.intel.kubernetes
 # import cartography.intel.okta
+import cartography.intel.crowdstrike
+import cartography.intel.crxcavator.crxcavator
+import cartography.intel.cve
+import cartography.intel.digitalocean
+import cartography.intel.gcp
+import cartography.intel.github
+import cartography.intel.gsuite
+import cartography.intel.kubernetes
+import cartography.intel.oci
+import cartography.intel.okta
+from cartography.config import Config
+from cartography.stats import set_stats_client
+from cartography.util import STATUS_FAILURE
+from cartography.util import STATUS_SUCCESS
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +59,7 @@ class Sync:
         # NOTE we may need meta-stages at some point to allow hooking into pre-sync, sync, and post-sync
         self._stages = OrderedDict()
 
-    def add_stage(self, name, func):
+    def add_stage(self, name: str, func: Callable) -> None:
         """
         Add one stage to the sync task.
 
@@ -51,7 +70,7 @@ class Sync:
         """
         self._stages[name] = func
 
-    def add_stages(self, stages):
+    def add_stages(self, stages: List[Tuple[str, Callable]]) -> None:
         """
         Add multiple stages to the sync task.
 
@@ -61,7 +80,7 @@ class Sync:
         for name, func in stages:
             self.add_stage(name, func)
 
-    def run(self, neo4j_driver, config):
+    def run(self, neo4j_driver: neo4j.Driver, config: Union[Config, argparse.Namespace]) -> int:
         """
         Execute all stages in the sync task in sequence.
 
@@ -96,7 +115,7 @@ class Sync:
         return response
 
 
-def run_with_config(sync, config):
+def run_with_config(sync: Sync, config: Union[Config, argparse.Namespace]) -> int:
     """
     Execute the cartography.sync.Sync.run method with parameters built from the given configuration object.
 
@@ -158,14 +177,14 @@ def run_with_config(sync, config):
                 ),
                 e,
             )
-        return 1
+        return STATUS_FAILURE
     default_update_tag = int(time.time())
     if not config.update_tag:
         config.update_tag = default_update_tag
     return sync.run(neo4j_driver, config)
 
 
-def build_default_sync():
+def build_default_sync() -> Sync:
     """
     Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
 

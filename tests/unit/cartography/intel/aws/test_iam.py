@@ -30,3 +30,8 @@ def test__parse_principal_entries():
     assert principal_entries[1] == ("Service", "test-service-1")
     assert principal_entries[2] == ("Service", "test-service-2")
     assert principal_entries[3] == ("Federated", "test-provider-1")
+
+
+def test_get_account_from_arn():
+    result = iam.get_account_from_arn("arn:aws:iam::081157660428:role/TestRole")
+    assert result == "081157660428"

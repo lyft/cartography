@@ -137,6 +137,7 @@ def get_firestore_indexes(firestore: Resource, database: Dict, project_id: str) 
             return []
     return firestore_indexes
 
+
 @timeit
 def transform_indexes(indexes: List[Dict], database: Dict, project_id: str) -> List[Dict]:
     firestore_indexes = []
@@ -240,7 +241,7 @@ def _load_firestore_indexes_tx(
         ix.queryScope = index.queryScope,
         ix.region = index.region,
         ix.state = index.state,
-        ix.lastupdated = $gcp_update_tag
+        ix.lastupdated = $gcp_update_tag,
         ix.consolelink = index.consolelink
         
     WITH ix,index

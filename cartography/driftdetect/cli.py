@@ -239,6 +239,6 @@ def main(argv=None):
     :return: The return code.
     """
     logging.basicConfig(level=logging.INFO)
-    logging.getLogger('neo4j.bolt').setLevel(logging.WARNING)
+    logging.getLogger('neo4j').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
     return CLI(prog="cartography-detectdrift").main(argv)

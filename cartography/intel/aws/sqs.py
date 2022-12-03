@@ -4,6 +4,7 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Tuple
 
 import boto3
 import neo4j
@@ -40,7 +41,7 @@ def get_sqs_queue_list(boto3_session: boto3.session.Session, region: str) -> Lis
 def get_sqs_queue_attributes(
         boto3_session: boto3.session.Session,
         queue_urls: List[str],
-) -> Dict[str, Any]:
+) -> List[Tuple[str, Any]]:
     """
     Iterates over all SQS queues. Returns a dict with url as key, and attributes as value.
     """

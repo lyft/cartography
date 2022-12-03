@@ -35,6 +35,7 @@ def get_domains(boto3_session: boto3.session.Session, region: str) -> List[Dict]
         logger.error(f'Failed to call Route53Domains list_domains: {region} - {e}')
         return domains
 
+
 @timeit
 def transform_domains(boto3_session: boto3.session.Session, dms: List[Dict], region: str, account_id: str) -> List[Dict]:
     domains = []
@@ -51,6 +52,7 @@ def transform_domains(boto3_session: boto3.session.Session, dms: List[Dict], reg
         logger.error(f'Failed to call Route53Domains list_domains: {region} - {e}')
 
     return domains
+
 
 def load_domains(session: neo4j.Session, domains: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_domains_tx, domains, current_aws_account_id, aws_update_tag)
@@ -212,7 +214,7 @@ def load_cname_records(neo4j_session: neo4j.Session, records: List[Dict], update
 @timeit
 def load_zone(neo4j_session: neo4j.Session, zone: Dict, current_aws_id: str, update_tag: int) -> None:
     ingest_z = """
-    MERGE (zone:DNSZone:AWSDNSZone{zoneid:{ZoneId}})
+    MERGE (zone:DNSZone:AWSDNSZone{zoneid: $ZoneId})
     ON CREATE SET zone.firstseen = timestamp(),
     zone.region = $region,
     zone.name = $ZoneName
@@ -246,7 +248,7 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
     MERGE (a:DNSRecord:AWSDNSRecord{id: record.id})
     ON CREATE SET a.firstseen = timestamp(), a.name = record.name,
     a.region = record.Region,
-    a.consolelink = {consolelink},
+    a.consolelink = $consolelink,
     a.type = record.type
     SET a.lastupdated = $update_tag, a.value = record.name
     WITH a,record
@@ -266,7 +268,7 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
     neo4j_session.run(
         ingest_records,
         records=records,
-        consolelink = consolelink,
+        consolelink=consolelink,
         update_tag=update_tag,
     )
 
@@ -274,7 +276,7 @@ def load_ns_records(neo4j_session: neo4j.Session, records: List[Dict], zone_name
     map_ns_records = """
     UNWIND $servers as server
     MATCH (ns:NameServer{id:server})
-    MATCH (zone:AWSDNSZone{zoneid:{zoneid}})
+    MATCH (zone:AWSDNSZone{zoneid: $zoneid})
     MERGE (ns)<-[r:NAMESERVER]-(zone)
     SET r.lastupdated = $update_tag
     """
@@ -412,6 +414,13 @@ def load_dns_details(
     neo4j_session: neo4j.Session, dns_details: List[Tuple[Dict, List[Dict]]], current_aws_id: str,
     update_tag: int,
 ) -> None:
+    """
+    Create the paths
+    (:AWSAccount)--(:AWSDNSZone)--(:AWSDNSRecord),
+    (:AWSDNSZone)--(:NameServer),
+    (:AWSDNSRecord{type:"NS"})-[:DNS_POINTS_TO]->(:NameServer),
+    (:AWSDNSRecord)-[:DNS_POINTS_TO]->(:AWSDNSRecord).
+    """
     for zone, zone_record_sets in dns_details:
         zone_a_records = []
         zone_alias_records = []
@@ -473,6 +482,7 @@ def get_zones(client: botocore.client.BaseClient) -> List[Dict]:
         hosted_zones.extend(page['HostedZones'])
     return hosted_zones
 
+
 @timeit
 def transform_zones(client: botocore, zns: List[Dict]) -> List[Tuple[Dict, List[Dict]]]:
     results: List[Tuple[Dict, List[Dict]]] = []
@@ -482,6 +492,7 @@ def transform_zones(client: botocore, zns: List[Dict]) -> List[Tuple[Dict, List[
         record_sets = get_zone_record_sets(client, hosted_zone['Id'])
         results.append((hosted_zone, record_sets))
     return results
+
 
 def _create_dns_record_id(zoneid: str, name: str, record_type: str) -> str:
     return "/".join([zoneid, name, record_type])

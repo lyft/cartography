@@ -2,7 +2,7 @@ import logging
 import os.path
 import time
 
-import neobolt.exceptions
+import neo4j.exceptions
 from marshmallow import ValidationError
 from neo4j import GraphDatabase
 
@@ -34,7 +34,7 @@ def run_get_states(config):
             config.neo4j_uri,
             auth=neo4j_auth,
         )
-    except neobolt.exceptions.ServiceUnavailable as e:
+    except neo4j.exceptions.ServiceUnavailable as e:
         logger.debug("Error occurred during Neo4j connect.", exc_info=True)
         logger.error(
             (
@@ -45,7 +45,7 @@ def run_get_states(config):
             e,
         )
         return
-    except neobolt.exceptions.AuthError as e:
+    except neo4j.exceptions.AuthError as e:
         logger.debug("Error occurred during Neo4j auth.", exc_info=True)
         if not neo4j_auth:
             logger.error(
@@ -86,7 +86,7 @@ def run_get_states(config):
                 logger.exception(msg)
             except FileNotFoundError as err:
                 logger.exception(err)
-            except neobolt.exceptions.CypherSyntaxError as err:
+            except neo4j.exceptions.CypherSyntaxError as err:
                 logger.exception(err)
 
 

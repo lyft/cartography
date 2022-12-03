@@ -1,3 +1,5 @@
+import copy
+
 import cartography.intel.aws.resourcegroupstaggingapi as rgta
 import tests.data.aws.resourcegroupstaggingapi as test_data
 
@@ -38,6 +40,7 @@ def test_get_short_id_from_lb2_arn():
 
 
 def test_transform_tags():
-    assert 'resource_id' not in test_data.GET_RESOURCES_RESPONSE[0]
-    rgta.transform_tags(test_data.GET_RESOURCES_RESPONSE, 'ec2:instance')
-    assert 'resource_id' in test_data.GET_RESOURCES_RESPONSE[0]
+    get_resources_response = copy.deepcopy(test_data.GET_RESOURCES_RESPONSE)
+    assert 'resource_id' not in get_resources_response[0]
+    rgta.transform_tags(get_resources_response, 'ec2:instance')
+    assert 'resource_id' in get_resources_response[0]

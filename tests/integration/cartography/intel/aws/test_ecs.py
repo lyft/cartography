@@ -115,7 +115,7 @@ def test_load_ecs_services(neo4j_session, *args):
             "test_service",
             "arn:aws:ecs:us-east-1:000000000000:cluster/test_cluster",
             "ACTIVE",
-            1631076357,
+            1631096157,
         ),
     }
 
@@ -164,7 +164,7 @@ def test_load_ecs_task_definitions(neo4j_session, *args):
             "test_family",
             "ACTIVE",
             4,
-            1626727290,
+            1626747090,
         ),
     }
 
@@ -237,7 +237,7 @@ def test_load_ecs_tasks(neo4j_session, *args):
             "arn:aws:ecs:us-east-1:000000000000:task-definition/test_definition:0",
             "arn:aws:ecs:us-east-1:000000000000:cluster/test_cluster",
             "service:test_service",
-            1640653943,
+            1640673743,
         ),
     }
 

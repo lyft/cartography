@@ -13,6 +13,7 @@ def test_load_gcp_projects(neo4j_session):
         neo4j_session,
         tests.data.gcp.crm.GCP_ORGANIZATIONS,
         TEST_UPDATE_TAG,
+        common_job_parameters={'WORKSPACE_ID': '', 'GCP_PROJECT_ID': ''}
     )
     cartography.intel.gcp.crm.load_gcp_folders(
         neo4j_session,
@@ -23,6 +24,7 @@ def test_load_gcp_projects(neo4j_session):
         neo4j_session,
         tests.data.gcp.crm.GCP_PROJECTS,
         TEST_UPDATE_TAG,
+        common_job_parameters={'WORKSPACE_ID': '', 'GCP_PROJECT_ID': ''}
     )
 
     # Ensure the sample project gets ingested correctly
@@ -40,7 +42,7 @@ def test_load_gcp_projects(neo4j_session):
     # Expect (GCPProject{project-232323})<-[:RESOURCE]-(GCPFolder{1414})
     #             <-[:RESOURCE]-(GCPOrganization{1337}) to be connected
     query = """
-    MATCH (p:GCPProject{id:{ProjectId}})<-[:RESOURCE]-(f:GCPFolder)<-[:RESOURCE]-(o:GCPOrganization)
+    MATCH (p:GCPProject{id:$ProjectId})<-[:RESOURCE]-(f:GCPFolder)<-[:RESOURCE]-(o:GCPOrganization)
     RETURN p.id, f.id, o.id
     """
     nodes = neo4j_session.run(
@@ -72,6 +74,8 @@ def test_load_gcp_projects_without_parent(neo4j_session):
         neo4j_session,
         tests.data.gcp.crm.GCP_PROJECTS_WITHOUT_PARENT,
         TEST_UPDATE_TAG,
+        common_job_parameters={'WORKSPACE_ID': '', 'GCP_PROJECT_ID': ''}
+
     )
 
     expected_nodes = {

@@ -16,6 +16,7 @@ from cloudconsolelink.clouds.aws import AWSLinker
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
 
+
 @timeit
 @aws_handle_regions
 def get_volumes(boto3_session: boto3.session.Session, region: str) -> List[Dict]:

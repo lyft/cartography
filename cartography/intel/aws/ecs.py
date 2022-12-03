@@ -18,6 +18,7 @@ from cloudconsolelink.clouds.aws import AWSLinker
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
 
+
 @timeit
 @aws_handle_regions
 def get_ecs_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
@@ -78,8 +79,8 @@ def get_ecs_services(cluster_arn: str, boto3_session: boto3.session.Session, reg
     service_arns: List[str] = []
     for page in paginator.paginate(cluster=cluster_arn):
         service_arns.extend(page.get('serviceArns', []))
-    for i in range(0, len(service_arns), 100):
-        service_arn_chunk = service_arns[i:i + 100]
+    for i in range(0, len(service_arns), 10):
+        service_arn_chunk = service_arns[i:i + 10]
         service_chunk = client.describe_services(
             cluster=cluster_arn,
             services=service_arn_chunk,

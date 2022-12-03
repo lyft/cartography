@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.52.0'
+__version__ = '0.66.0rc2'
 
 
 setup(
@@ -14,6 +14,7 @@ setup(
     license='apache2',
     packages=find_packages(exclude=['tests*']),
     package_data={
+        'cartography': ['py.typed'],
         'cartography.data': [
             '*.cypher',
             '*.yaml',
@@ -28,21 +29,21 @@ setup(
     dependency_links=[],
     install_requires=[
         "cloudconsolelink>=1.0.0",
+        "backoff>=2.1.2",
         "boto3>=1.15.1",
         "botocore>=1.18.1",
         "dnspython>=1.15.0",
-        "neo4j>=1.7.6,<4.0.0",
-        "neobolt>=1.7.0,<4.0.0",
+        "neo4j>=4.4.4,<5.0.0",
         "policyuniverse>=1.1.0.0",
         "google-api-python-client>=1.7.8",
         "oauth2client>=4.1.3",
         "marshmallow>=3.0.0rc7",
+        "oci>=2.71.0",
         "okta<1.0.0",
         "pyyaml>=5.3.1",
         "requests>=2.22.0",
         "statsd",
         "packaging",
-        "cryptography<3.4,>=3.2",
         "python-digitalocean>=1.16.0",
         "adal>=1.2.4",
         "azure-cli-core>=2.26.0",
@@ -62,8 +63,9 @@ setup(
         "azure-mgmt-resource>=10.2.0",
         "azure-mgmt-network>=2.7.0",
         "azure-mgmt-web>=0.35.0",
-        "kubernetes>=18.20.0",
+        "kubernetes>=22.6.0",
         "pdpyras>=4.3.0",
+        "crowdstrike-falconpy>=0.5.1",
     ],
     extras_require={
         ':python_version<"3.7"': [

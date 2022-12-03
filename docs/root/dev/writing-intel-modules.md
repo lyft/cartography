@@ -60,8 +60,8 @@ There are many best practices to consider here.
 #### Handling cartography's `update_tag`:
 
 `cartography`'s global [config object carries around an `update_tag` property](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/cli.py#L91-L98)
-which is a tag/label associated with the current sync. Cartography's CLI code [sets this to a Unix timestamp of when the CLI was run](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/sync.py#L131-L134),
-but in theory could be anything provided that it is unique per sync.
+which is a tag/label associated with the current sync.
+Cartography's CLI code [sets this to a Unix timestamp of when the CLI was run](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/sync.py#L131-L134).
 
 All `cartography` intel modules need to set the `lastupdated` property on all nodes and all relationships to this
 `update_tag`. You can see a couple examples of this in our
@@ -120,13 +120,13 @@ MERGE (n:NodeType)-[r:RELATIONSHIP]->(n2:NodeType2)
     - Every `MERGE` query that creates a new node should look like this
 
         ```cypher
-        ON CREATE SET n.firstseen = {UpdateTag}
+        ON CREATE SET n.firstseen = $UpdateTag
         SET
-        n.lastupdated = {UpdateTag},
-        node.field1 = {value1},
-        node.field2 = {value2},
+        n.lastupdated = $UpdateTag,
+        node.field1 = $value1,
+        node.field2 = $value2,
         ...
-        node.fieldN = {valueN}
+        node.fieldN = $valueN
         ```
 
 - To handle relationships in this case,
@@ -134,9 +134,9 @@ MERGE (n:NodeType)-[r:RELATIONSHIP]->(n2:NodeType2)
     - Every `MERGE` query that creates a new relationship should look like this
 
         ```cypher
-        ON CREATE SET r.firstseen = {UpdateTag}
+        ON CREATE SET r.firstseen = $UpdateTag
         SET
-        r.lastupdated = {UpdateTag}
+        r.lastupdated = $UpdateTag
         ```
 
 #### Connecting different node types with the `_attach` pattern
