@@ -522,7 +522,6 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
 
             elif member.startswith('serviceAccount:'):
                 serviceAccount = {
-
                     'id': member[len('serviceAccount:'):],
                     "parent": binding['parent'],
                     "parent_id": binding['parent_id'],

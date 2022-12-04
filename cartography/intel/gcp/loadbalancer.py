@@ -42,7 +42,6 @@ def get_compute_zones(compute: Resource, project_id: str) -> List[Dict]:
         else:
             raise
 
-
 @timeit
 def get_global_health_checks(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
     global_health_checks = []
@@ -85,7 +84,6 @@ def get_global_health_checks(compute: Resource, project_id: str, common_job_para
         else:
             raise
 
-
 @timeit
 def transform_global_health_checks(health_checks: List, project_id: str):
     list_health_checks = []
@@ -99,7 +97,6 @@ def transform_global_health_checks(health_checks: List, project_id: str):
         list_health_checks.append(health_check)
 
     return list_health_checks
-
 
 @timeit
 def get_regional_health_checks(compute: Resource, project_id: str, region: str, common_job_parameters) -> List[Dict]:
@@ -159,11 +156,9 @@ def transfrom_regional_health_checks(health_checks: List, project_id: str, regio
 
     return list_health_checks
 
-
 @timeit
 def load_health_checks(session: neo4j.Session, health_checks: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_health_checks_tx, health_checks, project_id, update_tag)
-
 
 @timeit
 def load_health_checks_tx(
@@ -199,11 +194,9 @@ def load_health_checks_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
-
 @timeit
 def cleanup_health_checks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('gcp_health_checks_cleanup.json', neo4j_session, common_job_parameters)
-
 
 @timeit
 def sync_global_health_checks(
@@ -266,7 +259,6 @@ def get_global_instance_groups(compute: Resource, project_id: str, zone: Dict, c
                 common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
         return global_instance_groups
-
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
@@ -278,7 +270,6 @@ def get_global_instance_groups(compute: Resource, project_id: str, zone: Dict, c
             return []
         else:
             raise
-
 
 @timeit
 def transform_global_instance_groups(instance_groups: List, project_id: str, zone: dict):
@@ -293,7 +284,6 @@ def transform_global_instance_groups(instance_groups: List, project_id: str, zon
         list_instance_groups.append(instancegroup)
 
     return list_instance_groups
-
 
 @timeit
 def get_regional_instance_groups(compute: Resource, project_id: str, region: str, common_job_parameters) -> List[Resource]:
@@ -326,7 +316,6 @@ def get_regional_instance_groups(compute: Resource, project_id: str, region: str
                 common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
         return regional_instance_groups
-
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
@@ -338,7 +327,6 @@ def get_regional_instance_groups(compute: Resource, project_id: str, region: str
             return []
         else:
             raise
-
 
 @timeit
 def transform_regional_instance_groups(instance_groups: List, project_id: str, region: str):
@@ -354,11 +342,9 @@ def transform_regional_instance_groups(instance_groups: List, project_id: str, r
 
     return list_instance_groups
 
-
 @timeit
 def load_instance_groups(session: neo4j.Session, instance_groups: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_instance_groups_tx, instance_groups, project_id, update_tag)
-
 
 @timeit
 def load_instance_groups_tx(
@@ -395,11 +381,9 @@ def load_instance_groups_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
-
 @timeit
 def cleanup_instance_groups(neo4j_session: neo4j.Session, common_job_parameters) -> None:
     run_cleanup_job('gcp_instance_groups_cleanup.json', neo4j_session, common_job_parameters)
-
 
 @timeit
 def sync_global_instance_groups(
@@ -474,7 +458,6 @@ def get_global_url_maps(compute: Resource, project_id: str, common_job_parameter
         else:
             raise
 
-
 @timeit
 def transfrom_global_url_maps(url_maps: List, project_id: str):
     list_url_maps = []
@@ -487,7 +470,6 @@ def transfrom_global_url_maps(url_maps: List, project_id: str):
         list_url_maps.append(url_map)
 
     return list_url_maps
-
 
 @timeit
 def get_regional_url_maps(compute: Resource, project_id: str, region: str, common_job_parameters) -> List[Dict]:
@@ -518,7 +500,6 @@ def get_regional_url_maps(compute: Resource, project_id: str, region: str, commo
                 has_next_page = True
                 regional_url_maps = regional_url_maps[page_start:page_end]
                 common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
-
         return regional_url_maps
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -531,7 +512,6 @@ def get_regional_url_maps(compute: Resource, project_id: str, region: str, commo
             return []
         else:
             raise
-
 
 @timeit
 def transform_regional_url_maps(maps: List, region: str, project_id: str):
@@ -550,7 +530,6 @@ def transform_regional_url_maps(maps: List, region: str, project_id: str):
 @timeit
 def load_url_maps(session: neo4j.Session, url_maps: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_url_maps_tx, url_maps, project_id, update_tag)
-
 
 @timeit
 def load_url_maps_tx(
@@ -586,11 +565,9 @@ def load_url_maps_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
-
 @timeit
 def cleanup_url_maps(neo4j_session: neo4j.Session, common_job_parameters) -> None:
     run_cleanup_job('gcp_url_maps_cleanup.json', neo4j_session, common_job_parameters)
-
 
 @timeit
 def sync_global_url_maps(
@@ -663,7 +640,6 @@ def get_ssl_plocies(compute: Resource, project_id: str, common_job_parameters) -
         else:
             raise
 
-
 @timeit
 def transfrom_ssl_policies(ssl_policies: List, project_id: str):
     list_ssl_policies = []
@@ -681,7 +657,6 @@ def transfrom_ssl_policies(ssl_policies: List, project_id: str):
 @timeit
 def load_ssl_policies(session: neo4j.Session, ssl_policies: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_ssl_policies_tx, ssl_policies, project_id, update_tag)
-
 
 @timeit
 def load_ssl_policies_tx(
@@ -716,11 +691,9 @@ def load_ssl_policies_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
-
 @timeit
 def cleanup_ssl_policies(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('gcp_ssl_policies_cleanup.json', neo4j_session, common_job_parameters)
-
 
 @timeit
 def sync_ssl_policies(
@@ -739,7 +712,6 @@ def sync(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict, regions: List,
 ) -> None:
-
     tic = time.perf_counter()
 
     logger.info(f"Syncing load balancer for project {project_id}, at {tic}")

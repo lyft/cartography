@@ -44,7 +44,7 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
         if common_job_parameters.get('pagination', {}).get('storage', None):
             pageNo = common_job_parameters.get("pagination", {}).get("storage", None)["pageNo"]
             pageSize = common_job_parameters.get("pagination", {}).get("storage", None)["pageSize"]
-            totalPages = len(res['items']) / pageSize
+            totalPages = len(res.get('items', [])) / pageSize
             if int(totalPages) != totalPages:
                 totalPages = totalPages + 1
             totalPages = int(totalPages)
@@ -56,11 +56,11 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
                 ] - 1
             ) * common_job_parameters.get('pagination', {}).get('storage', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('storage', None)['pageSize']
-            if page_end > len(res['items']) or len(res['items']) == page_end:
-                res['items'] = res['items'][page_start:]
+            if page_end > len(res.get('items', [])) or len(res.get('items', [])) == page_end:
+                res['items'] = res.get('items', [])[page_start:]
             else:
                 has_next_page = True
-                res['items'] = res['items'][page_start:page_end]
+                res['items'] = res.get('items', [])[page_start:page_end]
                 common_job_parameters['pagination']['storage']['hasNextPage'] = has_next_page
         return res
     except HttpError as e:

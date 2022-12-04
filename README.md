@@ -20,16 +20,16 @@ Start [here](https://lyft.github.io/cartography/install.html).
 
 ## Supported platforms
 
--   [Amazon Web Services](https://lyft.github.io/cartography/modules/aws/index.html) - API Gateway, Config, EC2, ECS, ECR, Elasticsearch, Elastic Kubernetes Service (EKS), DynamoDB, IAM, KMS, Launch Configurations, Launch Templates, Lambda, RDS, Redshift, Route53, S3, Secrets Manager, Security Hub, SQS, STS, Tags
--   [Google Cloud Platform](https://lyft.github.io/cartography/modules/gcp/index.html) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine (GKE), IAM, API Gateway, Cloud KMS, Cloudrun, GCP SQL, Firestore, Bigtable, Cloud Function
--   [Google GSuite](https://lyft.github.io/cartography/modules/gsuite/index.html) - users, groups
--   [Duo CRXcavator](https://lyft.github.io/cartography/modules/crxcavator/index.html) - Chrome extensions, GSuite users
--   [Okta](https://lyft.github.io/cartography/modules/okta/index.html) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
--   [Github](https://lyft.github.io/cartography/modules/github/index.html) - repos, branches, users
--   [DigitalOcean](https://lyft.github.io/cartography/modules/digitalocean/index.html)
--   [Microsoft Azure](https://lyft.github.io/cartography/modules/azure/index.html) - CosmosDB, SQL, Storage, Virtual Machine, Function App, Network, Resource Group, Tag, IAM, Key Vaults, AKS
--   [Kubernetes](https://lyft.github.io/cartography/modules/kubernetes/index.html) - Cluster, Namespace, Service, Pod, Container
--   [PagerDuty](https://lyft.github.io/cartography/modules/pagerduty/index.html) - Users, teams, services, schedules, escalation policies, integrations, vendors
+- [Amazon Web Services](https://lyft.github.io/cartography/modules/aws/index.html) - API Gateway, Config, EC2, ECS, ECR, Elasticsearch, Elastic Kubernetes Service (EKS), DynamoDB, IAM, KMS, Launch Configurations, Launch Templates, Lambda, RDS, Redshift, Route53, S3, Secrets Manager, Security Hub, SQS, STS, Tags
+- [Google Cloud Platform](https://lyft.github.io/cartography/modules/gcp/index.html) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine (GKE), IAM, API Gateway, Cloud KMS, Cloudrun, GCP SQL, Firestore, Bigtable, Cloud Function
+- [Google GSuite](https://lyft.github.io/cartography/modules/gsuite/index.html) - users, groups
+- [Duo CRXcavator](https://lyft.github.io/cartography/modules/crxcavator/index.html) - Chrome extensions, GSuite users
+- [Okta](https://lyft.github.io/cartography/modules/okta/index.html) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
+- [Github](https://lyft.github.io/cartography/modules/github/index.html) - repos, branches, users
+- [DigitalOcean](https://lyft.github.io/cartography/modules/digitalocean/index.html)
+- [Microsoft Azure](https://lyft.github.io/cartography/modules/azure/index.html) - CosmosDB, SQL, Storage, Virtual Machine, Function App, Network, Resource Group, Tag, IAM, Key Vaults, AKS
+- [Kubernetes](https://lyft.github.io/cartography/modules/kubernetes/index.html) - Cluster, Namespace, Service, Pod, Container
+- [PagerDuty](https://lyft.github.io/cartography/modules/pagerduty/index.html) - Users, teams, services, schedules, escalation policies, integrations, vendors
 
 ## Usage
 
@@ -37,15 +37,15 @@ Start with our [tutorial](https://lyft.github.io/cartography/usage/tutorial.html
 
 ## Contact
 
--   Join us on `#cartography` on the [Lyft OSS Slack](https://join.slack.com/t/lyftoss/shared_invite/enQtOTYzODg5OTQwNDE2LTFiYjgwZWM3NTNhMTFkZjc4Y2IxOTI4NTdiNTdhNjQ4M2Q5NTIzMjVjOWI4NmVlNjRiZmU2YzA5NTc3MmFjYTQ).
+- Join us on `#cartography` on the [Lyft OSS Slack](https://join.slack.com/t/lyftoss/shared_invite/enQtOTYzODg5OTQwNDE2LTFiYjgwZWM3NTNhMTFkZjc4Y2IxOTI4NTdiNTdhNjQ4M2Q5NTIzMjVjOWI4NmVlNjRiZmU2YzA5NTc3MmFjYTQ).
 
 ## Community Meeting
 
 Talk to us and see what we're working on at our [monthly community meeting](https://calendar.google.com/calendar/embed?src=lyft.com_p10o6ceuiieq9sqcn1ef61v1io%40group.calendar.google.com&ctz=America%2FLos_Angeles).
 
--   Meeting minutes are [here](https://docs.google.com/document/d/1VyRKmB0dpX185I15BmNJZpfAJ_Ooobwz0U1WIhjDxvw).
--   Recorded videos are posted [here](https://www.youtube.com/playlist?list=PLMga2YJvAGzidUWJB_fnG7EHI4wsDDsE1).
--   Our current project road map is [here](https://docs.google.com/document/d/18MOsGI-isFvag1fGk718Aht7wQPueWd4SqOI9KapBa8/edit#heading=h.15nsmgmjaaml).
+- Meeting minutes are [here](https://docs.google.com/document/d/1VyRKmB0dpX185I15BmNJZpfAJ_Ooobwz0U1WIhjDxvw).
+- Recorded videos are posted [here](https://www.youtube.com/playlist?list=PLMga2YJvAGzidUWJB_fnG7EHI4wsDDsE1).
+- Our current project road map is [here](https://docs.google.com/document/d/18MOsGI-isFvag1fGk718Aht7wQPueWd4SqOI9KapBa8/edit#heading=h.15nsmgmjaaml).
 
 ## Contributing
 

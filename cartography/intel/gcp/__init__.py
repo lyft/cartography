@@ -28,14 +28,12 @@ logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
         iam apigateway cloudkms cloudrun sql bigtable firestore pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer apikey bigquery',
-
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
     'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey bigquery',
-
 )
 service_names = Services(
     compute='compute.googleapis.com',
@@ -53,7 +51,6 @@ service_names = Services(
     bigtable='bigtableadmin.googleapis.com',
     firestore='firestore.googleapis.com',
     apikey='apikeys.googleapis.com',
-
     bigquery='bigquery.googleapis.com',
 
 )
@@ -334,7 +331,6 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         loadbalancer=_get_compute_resource(credentials),
         apikey=_get_apikey_resource(credentials),
         bigquery=_get_bigquery_resource(credentials),
-
     )
 
 
@@ -554,5 +550,4 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     #     common_job_parameters,
     # )
     del common_job_parameters['service_labels']
-
     return common_job_parameters

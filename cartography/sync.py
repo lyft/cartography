@@ -24,6 +24,7 @@ import cartography.intel.azure
 # import cartography.intel.gcp
 # import cartography.intel.github
 # import cartography.intel.gsuite
+# import cartography.intel.kubernetes
 # import cartography.intel.okta
 # import cartography.intel.kubernetes
 # import cartography.intel.okta

@@ -1,5 +1,4 @@
 # Used by AWS Lambda
-
 import json
 import os
 import logging

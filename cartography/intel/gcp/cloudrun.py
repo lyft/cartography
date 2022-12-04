@@ -667,6 +667,7 @@ def _load_cloudrun_revisions_tx(
         ingest_cloudrun_revisions,
         revisions=revisions,
         ProjectId=project_id,
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -781,6 +782,7 @@ def _load_cloudrun_services_tx(
         ingest_cloudrun_services,
         services=services,
         ProjectId=project_id,
+        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 

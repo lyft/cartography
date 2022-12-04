@@ -1,5 +1,8 @@
 # https://github.com/GoogleCloudPlatform/python-docs-samples/blob/master/pubsub/cloud-client/publisher.py
 # https://google-cloud-python.readthedocs.io/en/0.32.0/pubsub/index.html#publishing
+import logging
+import traceback
+
 from google.cloud import pubsub_v1
 
 from utils.errors import PubSubPublishError
@@ -15,13 +18,15 @@ class PubSubLibrary:
         data = message.encode("utf-8")
 
         try:
-            # When you publish a message, the client returns a future.
-            future = publisher.publish(topic_path, data=data)
-
-            # # When you publish a message, the client returns a message_id
-            # message_id = publisher.publish(topic_path, data=data).result()
+            # When you publish a message, the client returns a message_id
+            message_id = publisher.publish(topic_path, data=data).result()
+            logging.error(f'PubSub publish payload success: {message_id}')
 
             return True
 
-        except Exception as e:
+        except Exception as ex:
+            logging.error(f'PubSub publish payload failed: {str(ex)}')
+
+            traceback.print_exception(type(ex), ex, ex.__traceback__)
+
             raise PubSubPublishError(f'failed to publish message to {topic}')

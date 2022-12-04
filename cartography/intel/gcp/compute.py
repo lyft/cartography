@@ -153,7 +153,6 @@ def sync_compute_disks(
     load_compute_disks(neo4j_session, disks, project_id, gcp_update_tag)
     cleanup_compute_disks(neo4j_session, common_job_parameters)
 
-
 @timeit
 def get_https_proxies(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
     https_proxies = []
@@ -198,7 +197,6 @@ def get_https_proxies(compute: Resource, project_id: str, common_job_parameters)
         else:
             raise
 
-
 @timeit
 def transform_https_proxies(proxies: List, project_id: str) -> List[Resource]:
     list_proxies = []
@@ -209,7 +207,6 @@ def transform_https_proxies(proxies: List, project_id: str) -> List[Resource]:
         list_proxies.append(proxy)
 
     return list_proxies
-
 
 @timeit
 def get_ssl_proxies(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
@@ -255,7 +252,6 @@ def get_ssl_proxies(compute: Resource, project_id: str, common_job_parameters) -
         else:
             raise
 
-
 @timeit
 def transform_ssl_proxies(proxies: List, project_id: str) -> List[Resource]:
     list_proxies = []
@@ -267,11 +263,9 @@ def transform_ssl_proxies(proxies: List, project_id: str) -> List[Resource]:
 
     return list_proxies
 
-
 @timeit
 def load_proxies(session: neo4j.Session, proxies: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_proxies_tx, proxies, project_id, update_tag)
-
 
 @timeit
 def load_proxies_tx(
@@ -306,7 +300,6 @@ def load_proxies_tx(
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
-
 
 @timeit
 def attach_compute_disks_to_inastance(session: neo4j.Session, data_list: List[Dict], instance_id: str, update_tag: int) -> None:
@@ -1661,6 +1654,66 @@ def sync_gcp_ssl_proxies(
     cleanup_gcp_proxies(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, ssl_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
 
+    except ClientError as ex:
+        logger.error("error while syncing gcp firewall rules", ex)
+
+@timeit
+def cleanup_gcp_proxies(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+    Delete out of date GCP Proxies and their relationships
+    :param neo4j_session: The Neo4j session
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    try:
+        run_cleanup_job('gcp_compute_proxies_cleanup.json', neo4j_session, common_job_parameters)
+
+    except ClientError as ex:
+        logger.error("error while syncing gcp proxies", ex)
+
+@timeit
+def sync_gcp_https_proxies(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    """
+    Get GCP Https Proxies, ingest to Neo4j, and clean up old data.
+    :param neo4j_session: The Neo4j session
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID to sync
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    h_proxies = get_https_proxies(compute, project_id, common_job_parameters)
+    https_proxies = transform_https_proxies(h_proxies, project_id)
+    load_proxies(neo4j_session, https_proxies, project_id, gcp_update_tag)
+
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+    cleanup_gcp_proxies(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, https_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
+
+@timeit
+def sync_gcp_ssl_proxies(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    """
+    Get GCP SSL Proxies, ingest to Neo4j, and clean up old data.
+    :param neo4j_session: The Neo4j session
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID to sync
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    s_proxies = get_ssl_proxies(compute, project_id, common_job_parameters)
+    ssl_proxies = transform_ssl_proxies(s_proxies, project_id)
+    load_proxies(neo4j_session, ssl_proxies, project_id, gcp_update_tag)
+
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+    cleanup_gcp_proxies(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, ssl_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
 
 @timeit
 def sync_gcp_instances(

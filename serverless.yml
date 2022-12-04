@@ -99,3 +99,5 @@ package:
     - deploy.sh
     - __main__.py
     - requirements.txt
+    - .env.aws.development.json
+    - .env.aws.production.json

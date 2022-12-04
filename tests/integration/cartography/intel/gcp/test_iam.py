@@ -396,3 +396,64 @@ def test_domains_relationships(neo4j_session):
     }
 
     assert actual == expected
+
+def test_load_api_keys(neo4j_session):
+    data = tests.data.gcp.iam.API_KEY
+    cartography.intel.gcp.iam.load_api_keys(
+        neo4j_session,
+        data,
+        TEST_PROJECT_NUMBER,
+        TEST_UPDATE_TAG,
+    )
+
+    expected_nodes = {
+        'projects/project123/locations/global/keys/key123',
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (r:GCPApiKey) RETURN r.id;
+        """,
+    )
+
+    actual_nodes = {n['r.id'] for n in nodes}
+
+    assert actual_nodes == expected_nodes
+
+def test_api_keys_relationships(neo4j_session):
+    # Create Test GCPProject
+    neo4j_session.run(
+        """
+        MERGE (gcp:GCPProject{id: {PROJECT_NUMBER}})
+        ON CREATE SET gcp.firstseen = timestamp()
+        SET gcp.lastupdated = {UPDATE_TAG}
+        """,
+        PROJECT_NUMBER=TEST_PROJECT_NUMBER,
+        UPDATE_TAG=TEST_UPDATE_TAG,
+    )
+
+    # Load IAM Roles
+    data = tests.data.gcp.iam.API_KEY
+    cartography.intel.gcp.iam.load_api_keys(
+        neo4j_session,
+        data,
+        TEST_PROJECT_NUMBER,
+        TEST_UPDATE_TAG,
+    )
+
+    expected = {
+        (TEST_PROJECT_NUMBER, "projects/project123/locations/global/keys/key123"),
+    }
+
+    # Fetch relationships
+    result = neo4j_session.run(
+        """
+        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPApiKey) RETURN n1.id, n2.id;
+        """,
+    )
+
+    actual = {
+        (r['n1.id'], r['n2.id']) for r in result
+    }
+
+    assert actual == expected
