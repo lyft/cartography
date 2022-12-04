@@ -20,10 +20,12 @@ from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
 
+aws_console_link = AWSLinker()
 
 @timeit
 def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
