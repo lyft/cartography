@@ -1,4 +1,4 @@
-import neobolt.exceptions
+from neo4j.exceptions import ServiceUnavailable, AuthError
 from neo4j import GraphDatabase
 
 
@@ -26,7 +26,7 @@ class GraphLibrary:
                 auth=neo4j_auth,
             )
 
-        except neobolt.exceptions.ServiceUnavailable as e:
+        except ServiceUnavailable as e:
             self.context.logger.debug(
                 "Error occurred during Neo4j connect.", exc_info=True,
             )
@@ -40,7 +40,7 @@ class GraphLibrary:
             )
             return
 
-        except neobolt.exceptions.AuthError as e:
+        except AuthError as e:
             self.context.logger.debug(
                 "Error occurred during Neo4j auth.", exc_info=True,
             )

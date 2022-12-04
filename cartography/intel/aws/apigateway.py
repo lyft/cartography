@@ -12,7 +12,7 @@ import boto3
 import botocore
 import neo4j
 from botocore.config import Config
-from botocore.exceptions import ClientError
+from neo4j.exceptions import ClientError
 from policyuniverse.policy import Policy
 from cloudconsolelink.clouds.aws import AWSLinker
 

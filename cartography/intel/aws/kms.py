@@ -11,7 +11,7 @@ from typing import Tuple
 import boto3
 import botocore
 import neo4j
-from botocore.exceptions import ClientError
+from neo4j.exceptions import ClientError
 from policyuniverse.policy import Policy
 
 from cartography.util import aws_handle_regions

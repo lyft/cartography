@@ -7,7 +7,7 @@ from typing import List
 
 import boto3
 import neo4j
-from botocore.exceptions import ClientError
+from neo4j.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions

@@ -5,7 +5,7 @@ from typing import List
 
 import boto3
 import neo4j
-from botocore.exceptions import ClientError
+from neo4j.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

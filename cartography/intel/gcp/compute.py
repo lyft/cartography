@@ -16,7 +16,7 @@ import neo4j
 from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from neobolt.exceptions import ClientError
+from neo4j.exceptions import ClientError
 
 from . import iam
 from . import label
@@ -1653,9 +1653,6 @@ def sync_gcp_ssl_proxies(
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_proxies(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, ssl_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
-
-    except ClientError as ex:
-        logger.error("error while syncing gcp firewall rules", ex)
 
 @timeit
 def cleanup_gcp_proxies(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:

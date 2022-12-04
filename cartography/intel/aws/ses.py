@@ -2,7 +2,8 @@ import time
 import logging
 from typing import Dict
 from typing import List
-from botocore.exceptions import ClientError, ConnectTimeoutError, EndpointConnectionError
+from neo4j.exceptions import ClientError
+from botocore.exceptions import ConnectTimeoutError, EndpointConnectionError
 from botocore.client import Config
 
 import boto3

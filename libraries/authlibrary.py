@@ -2,7 +2,7 @@
 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sts.html
 # https://docs.aws.amazon.com/STS/latest/APIReference/CommonErrors.html
 from boto3.session import Session
-from botocore.exceptions import ClientError
+from neo4j.exceptions import ClientError
 
 from libraries.kmslibrary import KMSLibrary
 from utils.errors import classify_error

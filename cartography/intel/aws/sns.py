@@ -2,7 +2,7 @@ import time
 import logging
 from typing import Dict
 from typing import List
-from botocore.exceptions import ClientError
+from neo4j.exceptions import ClientError
 
 import boto3
 import neo4j
