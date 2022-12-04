@@ -19,7 +19,9 @@ class SNSLibrary:
         # if it's an offline test, use offline SNS
         if os.getenv('IS_OFFLINE'):
             try:
-                self.sns_client = session.client('sns', region_name=self.context.region, endpoint_url=self.context.sns_offline_url)
+                self.sns_client = session.client(
+                    'sns', region_name=self.context.region, endpoint_url=self.context.sns_offline_url,
+                )
 
             except ClientError as e:
                 raise classify_error(self.context.logger, e, 'Failed to create SNS client')
