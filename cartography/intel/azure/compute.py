@@ -118,13 +118,13 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
 
 def _load_vm_security_groups_relationship(tx: neo4j.Transaction, vm_id: str, data_list: List[Dict], update_tag: int) -> None:
     ingest_vm_sg = """
-    UNWIND {sg_list} AS sg
+    UNWIND $sg_list AS sg
     MATCH (sg:AzureNetworkSecurityGroup{id: sg.id})
     WITH sg
-    MATCH (v:AzureVirtualMachine{id: {vm_id}})
+    MATCH (v:AzureVirtualMachine{id: $vm_id})
     MERGE (v)-[r:MEMBER_NETWORK_SECURITY_GROUP]->(sg)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = {update_tag}
+    SET r.lastupdated = $update_tag
     """
 
     tx.run(

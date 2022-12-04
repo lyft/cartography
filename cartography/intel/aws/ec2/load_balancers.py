@@ -45,7 +45,7 @@ def load_load_balancer_listeners(
     UNWIND $Listeners as data
         MERGE (l:Endpoint:ELBListener{id: elb.id + toString(data.Listener.LoadBalancerPort) +
                 toString(data.Listener.Protocol)})
-        ON CREATE SET l.port = data.Listener.LoadBalancerPort, l.protocol = data.Listener.Protocol, l.consolelink = {consolelink},
+        ON CREATE SET l.port = data.Listener.LoadBalancerPort, l.protocol = data.Listener.Protocol, l.consolelink = $consolelink,
         l.firstseen = timestamp()
         SET l.instance_port = data.Listener.InstancePort, l.instance_protocol = data.Listener.InstanceProtocol,
         l.policy_names = data.PolicyNames,

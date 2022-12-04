@@ -222,7 +222,7 @@ def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseCl
         else:
             return []
 
-    return response
+    return certificates
 
 
 @timeit
@@ -278,7 +278,7 @@ def load_apigateway_rest_apis(
     rest_api.disableexecuteapiendpoint = r.disableExecuteApiEndpoint,
     rest_api.lastupdated = $aws_update_tag,
     rest_api.region = r.region,
-    restApi.consolelink = r.consolelink,
+    rest_api.consolelink = r.consolelink,
     rest_api.arn = r.Arn
     WITH rest_api
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
@@ -293,7 +293,7 @@ def load_apigateway_rest_apis(
         region = api['region']
         api['createdDate'] = str(api['createdDate']) if 'createdDate' in api else None
         api['Arn'] = f"arn:aws:apigateway:{region}::restapis/{api['id']}"
-        api['consolelink'] = aws_console_link.get_console_link(arn=api['arn'])
+        api['consolelink'] = aws_console_link.get_console_link(arn=api['Arn'])
 
     neo4j_session.run(
         ingest_rest_apis,
