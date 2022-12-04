@@ -82,7 +82,7 @@ def transform_bigquey_dataset(bigquery: Resource, datasets: List[Dict], project_
         dataset['id'] = dataset.get('datasetReference', {}).get('datasetId', '')
         dataset['uniqueId'] = f"projects/{project_id}/datasets/{dataset['id']}"
         dataset['details'] = get_dataset_info(bigquery, dataset['id'])
-        dataset['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='bigquery_console')
+        dataset['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='bigquery_home')
         list_dataset.append(dataset)
 
     return list_dataset
@@ -153,7 +153,7 @@ def transform_bigquery_tables(bigquery: Resource, dataset: Dict, tables: List, p
         table['datasetId'] = dataset['id']
         table['uniqueId'] = f"projects/{project_id}/datasets/{dataset['id']}/tables/{table['id']}"
         table['details'] = get_table_info(bigquery, project_id, dataset['id'], table['id'])
-        table['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='bigquery_console')
+        table['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='bigquery_home')
         list_tables.append(table)
 
     return list_tables

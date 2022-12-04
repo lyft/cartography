@@ -148,7 +148,7 @@ def get_cloudrun_configurations(cloudrun: Resource, project_id: str, common_job_
 def transform_configurations(configurations: List[Dict], project_id: str) -> List[Dict]:
     configurations = []
     for item in configurations:
-        item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloudrun_console')
+        item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloudrun_home')
         item['id'] = f"projects/{project_id}/configurations/{item.get('metadata').get('name')}"
         configurations.append(item)
 
@@ -351,7 +351,7 @@ def get_cloudrun_routes(cloudrun: Resource, project_id: str, common_job_paramete
 @timeit
 def transform_routes(routes: List[Dict], project_id: str) -> List[Dict]:
     for item in routes:
-        item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloudrun_console')
+        item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloudrun_home')
         item['id'] = f"projects/{project_id}/routes/{item.get('metadata').get('name')}"
         routes.append(item)
 
