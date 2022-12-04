@@ -4,7 +4,6 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Tuple
 
 import boto3
 import neo4j
@@ -40,8 +39,8 @@ def get_sqs_queue_list(boto3_session: boto3.session.Session, region: str) -> Lis
 @aws_handle_regions
 def get_sqs_queue_attributes(
         boto3_session: boto3.session.Session,
-        queue_urls: List[str],
-) -> List[Tuple[str, Any]]:
+        queue_urls: List[dict],
+) -> Dict[str, Any]:
     """
     Iterates over all SQS queues. Returns a dict with url as key, and attributes as value.
     """
@@ -70,7 +69,7 @@ def load_sqs_queues(
     aws_update_tag: int,
 ) -> None:
     ingest_queues = """
-    UNWIND $Queues as sqs_queue
+    UNWIND {Queues} as sqs_queue
         MERGE (queue:SQSQueue{id: sqs_queue.QueueArn})
         ON CREATE SET queue.firstseen = timestamp(), queue.url = sqs_queue.url
         SET queue.name = sqs_queue.name, queue.region = sqs_queue.region, queue.arn = sqs_queue.QueueArn,
@@ -90,12 +89,12 @@ def load_sqs_queues(
             queue.content_based_deduplication = sqs_queue.ContentBasedDeduplication,
             queue.deduplication_scope = sqs_queue.DeduplicationScope,
             queue.fifo_throughput_limit = sqs_queue.FifoThroughputLimit,
-            queue.lastupdated = $aws_update_tag
+            queue.lastupdated = {aws_update_tag}
         WITH queue
-        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
+        MATCH (owner:AWSAccount{id: {AWS_ACCOUNT_ID}})
         MERGE (owner)-[r:RESOURCE]->(queue)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = $aws_update_tag
+        SET r.lastupdated = {aws_update_tag}
     """
     dead_letter_queues: List[Dict] = []
     queues: List[Dict] = []
@@ -136,11 +135,11 @@ def _attach_dead_letter_queues(neo4j_session: neo4j.Session, data: List[Dict[str
     Attach deadletter queues to their queues.
     """
     attach_deadletter_to_queue = """
-    UNWIND $Relations as relation
+    UNWIND {Relations} as relation
         MATCH (queue:SQSQueue{id: relation.arn}), (deadletter:SQSQueue{id: relation.dead_letter_arn})
         MERGE (queue)-[r:HAS_DEADLETTER_QUEUE]->(deadletter)
         ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = $aws_update_tag
+        SET r.lastupdated = {aws_update_tag}
     """
     neo4j_session.run(
         attach_deadletter_to_queue,
