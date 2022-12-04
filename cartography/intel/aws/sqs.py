@@ -39,7 +39,7 @@ def get_sqs_queue_list(boto3_session: boto3.session.Session, region: str) -> Lis
 @aws_handle_regions
 def get_sqs_queue_attributes(
         boto3_session: boto3.session.Session,
-        queue_urls: List[str],
+        queue_urls: List[dict],
 ) -> Dict[str, Any]:
     """
     Iterates over all SQS queues. Returns a dict with url as key, and attributes as value.

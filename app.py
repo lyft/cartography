@@ -61,14 +61,14 @@ def init_lambda(ctx):
 
 
 def process_request(context, args):
-    context.logger.info(f'request - {args.get("templateType")} - {args.get("sessionString")} - {args.get("eventId")} - {args.get("workspace")}')
+    context.logger.warning(f'request - {args.get("templateType")} - {args.get("sessionString")} - {args.get("eventId")} - {args.get("workspace")}')
 
     svcs = []
-    for svc in args.get('services',[]):
-        page = svc.get('pagination',{}).get('pageSize')
+    for svc in args.get('services', []):
+        page = svc.get('pagination', {}).get('pageSize')
         if page:
             svc['pagination']['pageSize'] = 10000
-        
+
         svcs.append(svc)
 
     creds = get_auth_creds(context, args)
@@ -195,6 +195,7 @@ def get_auth_creds(context, args):
         }
 
     return auth_creds
+
 
 def load_cartography(event, ctx):
     global lambda_init, context

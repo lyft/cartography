@@ -89,7 +89,7 @@ def load_launch_templates(
     """
     for lt in data:
         lt['CreateTime'] = str(time.mktime(lt['CreateTime'].timetuple()))
-        for tv in lt["_template_versions"]:
+        for tv in lt.get("_template_versions", []):
             tv['CreateTime'] = str(time.mktime(tv['CreateTime'].timetuple()))
 
     neo4j_session.run(
