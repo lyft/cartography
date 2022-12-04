@@ -12,7 +12,7 @@ from cartography.util import camel_to_snake
 from cartography.util import dict_date_to_epoch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from neo4j.exceptions import ClientError
+from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)

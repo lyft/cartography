@@ -8,7 +8,7 @@ import boto3
 import botocore.config
 import neo4j
 from policyuniverse.policy import Policy
-from neo4j.exceptions import ClientError
+from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.intel.dns import ingest_dns_record_by_fqdn

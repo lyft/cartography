@@ -16,7 +16,7 @@ import neo4j
 from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from neo4j.exceptions import ClientError
+from botocore.exceptions import ClientError
 
 from . import iam
 from . import label

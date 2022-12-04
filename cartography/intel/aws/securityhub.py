@@ -7,7 +7,7 @@ from typing import List
 import boto3
 import neo4j
 
-from neo4j.exceptions import ClientError
+from botocore.exceptions import ClientError
 from botocore.exceptions import ConnectTimeoutError
 
 from cartography.util import run_cleanup_job
