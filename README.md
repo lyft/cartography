@@ -21,7 +21,7 @@ Start [here](https://lyft.github.io/cartography/install.html).
 ## Supported platforms
 
 - [Amazon Web Services](https://lyft.github.io/cartography/modules/aws/index.html) - API Gateway, Config, EC2, ECS, ECR, Elasticsearch, Elastic Kubernetes Service (EKS), DynamoDB, IAM, KMS, Launch Configurations, Launch Templates, Lambda, RDS, Redshift, Route53, S3, Secrets Manager, Security Hub, SQS, STS, Tags
-- [Google Cloud Platform](https://lyft.github.io/cartography/modules/gcp/index.html) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine (GKE), IAM, API Gateway, Cloud KMS, Cloudrun, GCP SQL, Firestore, Bigtable, Cloud Function
+- [Google Cloud Platform](https://lyft.github.io/cartography/modules/gcp/index.html) - Cloud Resource Manager, Compute, DNS, Storage, Google Kubernetes Engine (GKE), IAM, API Gateway, Cloud KMS, CloudRun, GCP SQL, Firestore, Bigtable, Cloud Function
 - [Google GSuite](https://lyft.github.io/cartography/modules/gsuite/index.html) - users, groups
 - [Duo CRXcavator](https://lyft.github.io/cartography/modules/crxcavator/index.html) - Chrome extensions, GSuite users
 - [Okta](https://lyft.github.io/cartography/modules/okta/index.html) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs

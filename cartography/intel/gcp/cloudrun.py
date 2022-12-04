@@ -810,13 +810,13 @@ def sync(
     common_job_parameters: Dict, regions: list,
 ) -> None:
     """
-        Get GCP Cloud Cloudrun using the Cloud Cloudrun resource object, ingest to Neo4j, and clean up old data.
+        Get GCP Cloud CloudRun using the Cloud CloudRun resource object, ingest to Neo4j, and clean up old data.
 
         :type neo4j_session: The Neo4j session object
         :param neo4j_session: The Neo4j session
 
-        :type cloudrun: The GCP Cloudrun  resource object created by googleapiclient.discovery.build()
-        :param cloudrun: The GCP Cloudrun resource object
+        :type cloudrun: The GCP CloudRun  resource object created by googleapiclient.discovery.build()
+        :param cloudrun: The GCP CloudRun resource object
 
         :type project_id: str
         :param project_id: The project ID of the corresponding project
@@ -832,7 +832,7 @@ def sync(
     """
     tic = time.perf_counter()
 
-    logger.info("Syncing Cloudrun for project '%s', at %s.", project_id, tic)
+    logger.info("Syncing CloudRun for project '%s', at %s.", project_id, tic)
 
     # CLOUDRUN AUTHORIZED DOMAINS
     domains = get_cloudrun_authorized_domains(cloudrun, project_id, common_job_parameters)
@@ -885,4 +885,4 @@ def sync(
     )
 
     toc = time.perf_counter()
-    logger.info(f"Time to process Cloudrun: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process CloudRun: {toc - tic:0.4f} seconds")
