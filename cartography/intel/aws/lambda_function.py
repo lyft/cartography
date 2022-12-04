@@ -150,7 +150,7 @@ def load_lambda_function_details(
             lambda_aliases.extend(aliases)
         if len(event_source_mappings) > 0:
             for event in event_source_mappings:
-                alias['FunctionArn'] = function_arn
+                event['FunctionArn'] = function_arn
                 function_name = function_arn.split(':')[-1]
                 event['region'] = region
                 event['consolelink'] = aws_console_link.get_console_link(arn=f"arn:aws:lambda::{current_aws_account_id}:event-source-mapping/{function_name}")

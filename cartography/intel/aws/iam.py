@@ -979,7 +979,7 @@ def sync_group_memberships(
     current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing IAM group membership for account '%s'.", current_aws_account_id)
-    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) " \
+    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ACCOUNT_ID}) " \
             "return group.name as name, group.arn as arn;"
     groups = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     groups_membership = {group["arn"]: get_group_membership_data(boto3_session, group["name"]) for group in groups}
@@ -997,7 +997,7 @@ def sync_user_access_keys(
     current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
-    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: {AWS_ACCOUNT_ID}}) return user.name as name"
+    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ACCOUNT_ID}) return user.name as name"
     result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
     usernames = [r['name'] for r in result]
     for name in usernames:
@@ -1017,10 +1017,10 @@ def _set_used_state_tx(
     tx: neo4j.Transaction, project_id: str, common_job_parameters: Dict, update_tag: int,
 ) -> None:
     ingest_role_used = """
-    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n:AWSRole)
-    WHERE (n)-[:TRUSTS_AWS_PRINCIPAL]->() AND n.lastupdated = {update_tag}
-    SET n.isUsed = {isUsed}
+    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
+    (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n:AWSRole)
+    WHERE (n)-[:TRUSTS_AWS_PRINCIPAL]->() AND n.lastupdated = $update_tag
+    SET n.isUsed = $isUsed
     """
 
     tx.run(
@@ -1032,11 +1032,11 @@ def _set_used_state_tx(
     )
 
     ingest_entity_used = """
-    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n)
-    WHERE ()-[:TRUSTS_AWS_PRINCIPAL]->(n) AND n.lastupdated = {update_tag}
+    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
+    (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n)
+    WHERE ()-[:TRUSTS_AWS_PRINCIPAL]->(n) AND n.lastupdated = $update_tag
     AND labels(n) IN [['AWSUser'], ['AWSGroup']]
-    SET n.isUsed = {isUsed}
+    SET n.isUsed = $isUsed
     """
 
     tx.run(
@@ -1048,11 +1048,11 @@ def _set_used_state_tx(
     )
 
     ingest_entity_unused = """
-    MATCH (:CloudanixWorkspace{id: {WORKSPACE_ID}})-[:OWNER]->
-    (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(n)
-    WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = {update_tag}
+    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
+    (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n)
+    WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = $update_tag
     AND labels(n) IN [['AWSUser'], ['AWSGroup'], ['AWSRole']]
-    SET n.isUsed = {isUsed}
+    SET n.isUsed = $isUsed
     """
 
     tx.run(

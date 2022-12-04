@@ -142,7 +142,8 @@ def get_rds_security_groups(boto3_session: boto3.session.Session, region: str) -
 def transfrom_rds_sgs(secgs: List[Dict], region: str, account_id: str) -> List[Dict]:
     secgroups = []
     for secgroup in secgs:
-        secgroup['GroupId'] = secgroup.get('EC2SecurityGroups', {}).get('EC2SecurityGroupId', '')
+        secgroup['GroupId'] = secgroup.get('DBSecurityGroupName', '')
+        secgroup['arn'] = secgroup.get('DBSecurityGroupArn', '')
         group_arn = f"arn:aws:ec2:{region}:{account_id}:security-group/{secgroup['GroupId']}"
         secgroup['consolelink'] = aws_console_link.get_console_link(arn=group_arn)
         secgroup['region'] = region
