@@ -16,7 +16,7 @@ class Logger():
         # https://docs.python.org/3/library/logging.html#logrecord-attributes
 
         # Simplify log output for Production
-        if os.getenv('CDX_APP_ENV') == 'production':
+        if os.getenv('CDX_APP_ENV') == 'PRODUCTION':
             formatter = logging.Formatter('%(levelname)-s - %(filename)s - Line:%(lineno)d - %(message)s - %(context)s', '%Y-%m-%d %H:%M:%S')
 
         else:

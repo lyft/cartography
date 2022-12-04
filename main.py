@@ -148,13 +148,13 @@ def publish_response(logger, req, resp):
             if 'requestTopic' in req['params']:
                 # Result should be pushed to "requestTopic" passed in the request
                 status = pubsub_helper.publish(
-                    os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['requestTopic'],
+                    os.environ['CDX_PROJECT_ID'], json.dumps(body), req['params']['requestTopic'],
                 )
 
         elif 'resultTopic' in req['params']:
             # Result should be pushed to "resultTopic" passed in the request
             # status = pubsub_helper.publish(
-            #     os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'],
+            #     os.environ['CDX_PROJECT_ID'], json.dumps(body), req['params']['resultTopic'],
             # )
 
             logger.info(f'Result not published anywhere. since we want to avoid query when inventory is refreshed')
@@ -163,7 +163,7 @@ def publish_response(logger, req, resp):
         else:
             logger.info('publishing results to CARTOGRAPHY_RESULT_TOPIC')
             status = pubsub_helper.publish(
-                os.environ['CLOUDANIX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'],
+                os.environ['CDX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'],
             )
 
         logger.info(f'result published to PubSub with status: {status}')
