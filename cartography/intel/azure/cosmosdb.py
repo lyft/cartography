@@ -685,7 +685,7 @@ def _load_cassandra_keyspaces(neo4j_session: neo4j.Session, cassandra_keyspaces:
     """
     ingest_cassandra_keyspaces = """
     UNWIND $cassandra_keyspaces_list AS keyspace
-    MERGE (ck:AzureCosmosDBCassandraKeyspace{id: keyspace.id})
+    MERGE (ck:AzureCosmosDBCassandraKeySpace{id: keyspace.id})
     ON CREATE SET ck.firstseen = timestamp(), ck.type = keyspace.type,
     ck.location = keyspace.location,
     ck.region = keyspace.location
@@ -968,7 +968,7 @@ def _load_cassandra_tables(neo4j_session: neo4j.Session, cassandra_tables: List[
     ct.defaultttl = table.resource.default_ttl,
     ct.analyticalttl = table.resource.analytical_storage_ttl
     WITH ct, table
-    MATCH (ck:AzureCosmosDBCassandraKeyspace{id: table.keyspace_id})
+    MATCH (ck:AzureCosmosDBCassandraKeySpace{id: table.keyspace_id})
     MERGE (ck)-[r:CONTAINS]->(ct)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag

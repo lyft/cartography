@@ -604,7 +604,7 @@ def test_load_cassandra_keyspaces(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureCosmosDBCassandraKeyspace) RETURN r.id;
+        MATCH (r:AzureCosmosDBCassandraKeySpace) RETURN r.id;
         """,
     )
     actual_nodes = {n['r.id'] for n in nodes}
@@ -639,7 +639,7 @@ def test_load_cassandra_keyspaces_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureCosmosDBAccount)-[:CONTAINS]->(n2:AzureCosmosDBCassandraKeyspace) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBAccount)-[:CONTAINS]->(n2:AzureCosmosDBCassandraKeySpace) RETURN n1.id, n2.id;
         """,
     )
 
@@ -877,7 +877,7 @@ def test_load_cassandra_tables_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureCosmosDBCassandraKeyspace)-[:CONTAINS]->(n2:AzureCosmosDBCassandraTable) RETURN n1.id, n2.id;
+        MATCH (n1:AzureCosmosDBCassandraKeySpace)-[:CONTAINS]->(n2:AzureCosmosDBCassandraTable) RETURN n1.id, n2.id;
         """,
     )
 

@@ -890,7 +890,7 @@ def _load_function_apps_webjobs_tx(
 ) -> None:
     ingest_function_apps_webjob = """
     UNWIND $function_apps_webjobs_list as function_webjob
-    MERGE (f:AzureFunctionAppWebjob{id: function_webjob.id})
+    MERGE (f:AzureFunctionAppWebJob{id: function_webjob.id})
     ON CREATE SET f.firstseen = timestamp(),
     f.location = function_webjob.location,
     f.region = function_webjob.location,

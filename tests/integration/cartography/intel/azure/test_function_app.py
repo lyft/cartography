@@ -450,7 +450,7 @@ def test_load_function_app_webjobs(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:AzureFunctionAppWebjob) RETURN r.id;
+        MATCH (r:AzureFunctionAppWebJob) RETURN r.id;
         """, )
     actual_nodes = {n['r.id'] for n in nodes}
 
@@ -486,7 +486,7 @@ def test_load_function_app_webjob_relationships(neo4j_session):
 
     result = neo4j_session.run(
         """
-        MATCH (n1:AzureFunctionApp)-[:CONTAIN]->(n2:AzureFunctionAppWebjob) RETURN n1.id, n2.id;
+        MATCH (n1:AzureFunctionApp)-[:CONTAIN]->(n2:AzureFunctionAppWebJob) RETURN n1.id, n2.id;
         """, )
 
     actual = {(r['n1.id'], r['n2.id']) for r in result}
