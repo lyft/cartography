@@ -32,6 +32,7 @@ def process_request(msg: Dict):
             "refresh_token": msg.get('refreshToken'),
             "graph_scope": os.environ.get('graph_scope'),
             "azure_scope": os.environ.get('azure_scope'),
+            "vault_scope": os.environ.get('vault_scope'),
         },
         "neo4j": {
             "uri": os.environ.get('neo4juri'),
