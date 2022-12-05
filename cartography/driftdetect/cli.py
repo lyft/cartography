@@ -193,7 +193,7 @@ class CLI:
             if config.command == 'get-state':
                 run_get_states(config)
             elif config.command == 'get-drift':
-                run_drift_detection(config)
+                return run_drift_detection(config)
             elif config.command == 'add-shortcut':
                 run_add_shortcut(config)
             else:
