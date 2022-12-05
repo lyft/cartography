@@ -29,7 +29,6 @@ def get_security_contacts_list(client: SecurityCenter) -> List[Dict]:
     try:
         security_contacts = list(map(lambda x: x.as_dict(), client.security_contacts.list()))
         return security_contacts
-
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving security contacts - {e}")
         return []
@@ -100,7 +99,7 @@ def sync_security_contacts(
             totalPages = int(totalPages)
             if pageNo < totalPages or pageNo == totalPages:
                 logger.info(f'pages process for security_contacts {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('ssecuritycenter', {})[
+            page_start = (common_job_parameters.get('pagination', {}).get('securitycenter', {})[
                 'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('securitycenter', {})['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('securitycenter', {})['pageSize']
             if page_end > len(security_contacts_list) or page_end == len(security_contacts_list):
