@@ -19,8 +19,8 @@ def load_security_contacts(session: neo4j.Session, subscription_id: str, data_li
     session.write_transaction(_load_security_contacts_tx, subscription_id, data_list, update_tag)
 
 
-def get_security_center_client(credentials: Credentials, subscription_id: str, region: str) -> SecurityCenter:
-    client = client = SecurityCenter(credentials, subscription_id, region)
+def get_security_center_client(credentials: Credentials, subscription_id: str) -> SecurityCenter:
+    client = client = SecurityCenter(credentials, subscription_id)
     return client
 
 
@@ -29,6 +29,7 @@ def get_security_contacts_list(client: SecurityCenter) -> List[Dict]:
     try:
         security_contacts = list(map(lambda x: x.as_dict(), client.security_contacts.list()))
         return security_contacts
+
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving security contacts - {e}")
         return []
@@ -36,7 +37,6 @@ def get_security_contacts_list(client: SecurityCenter) -> List[Dict]:
 
 @timeit
 def transform_security_contacts(security_contacts: List[Dict], subscription_id: str, common_job_parameters: str) -> List[Dict]:
-
     security_contacts_data = []
     for contact in security_contacts:
         x = contact['id'].split('/')
@@ -46,6 +46,7 @@ def transform_security_contacts(security_contacts: List[Dict], subscription_id: 
         contact['consolelink'] = azure_console_link.get_console_link(
             id=contact['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
         security_contacts_data.append(contact)
+
     return security_contacts_data
 
 
@@ -85,32 +86,12 @@ def sync_security_contacts(
     common_job_parameters: Dict, regions: List
 ) -> None:
 
-    for region in regions:
-        client = get_security_center_client(credentials, subscription_id, region)
-        contacts = get_security_contacts_list(client)
-        security_contacts_list = transform_security_contacts(contacts, subscription_id, common_job_parameters)
+    client = get_security_center_client(credentials, subscription_id)
+    contacts = get_security_contacts_list(client)
+    security_contacts_list = transform_security_contacts(contacts, subscription_id, common_job_parameters)
 
-        if common_job_parameters.get('pagination', {}).get('securitycenter', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("securitycenter", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("securitycenter", None)["pageSize"]
-            totalPages = len(security_contacts_list) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for security_contacts {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('securitycenter', {})[
-                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('securitycenter', {})['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('securitycenter', {})['pageSize']
-            if page_end > len(security_contacts_list) or page_end == len(security_contacts_list):
-                security_contacts_list = security_contacts_list[page_start:]
-            else:
-                has_next_page = True
-                security_contacts_list = security_contacts_list[page_start:page_end]
-                common_job_parameters['pagination']['securitycenter']['hasNextPage'] = has_next_page
-
-        load_security_contacts(neo4j_session, subscription_id, security_contacts_list, update_tag)
-        cleanup_security_contacts(neo4j_session, common_job_parameters)
+    load_security_contacts(neo4j_session, subscription_id, security_contacts_list, update_tag)
+    cleanup_security_contacts(neo4j_session, common_job_parameters)
 
 
 @timeit
