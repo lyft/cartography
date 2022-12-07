@@ -404,7 +404,7 @@ Representation of an [AWS Policy](https://docs.aws.amazon.com/IAM/latest/APIRefe
 - `AWSPolicy` contains `AWSPolicyStatement`
 
         ```
-        (AWSPolicy)-[STATEMENTS]->(AWSPolicyStatement)
+        (AWSPolicy)-[STATEMENT]->(AWSPolicyStatement)
         ```
 
 ### AWSPolicyStatement
