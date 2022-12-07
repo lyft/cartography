@@ -140,6 +140,10 @@ def get_encryption(bucket: Dict, client: botocore.client.BaseClient) -> Optional
         encryption = client.get_bucket_encryption(Bucket=bucket['Name'])
     except ClientError as e:
         if _is_common_exception(e, bucket):
+            if "ServerSideEncryptionConfigurationNotFoundError" in e.args[0]:
+                return {
+                    "ServerSideEncryptionConfigurationNotFoundError": True
+                }
             pass
         else:
             raise
@@ -639,6 +643,14 @@ def parse_encryption(bucket: str, encryption: Optional[Dict]) -> Optional[Dict]:
     # }
     if encryption is None:
         return None
+    if (encryption.get("ServerSideEncryptionConfigurationNotFoundError")):
+        return {
+            "bucket": bucket,
+            "default_encryption": False,
+            "encryption_algorithm": "NA",
+            "bucket_key_enabled": False,
+            "encryption_key_id": "NA",
+        }
     _ssec = encryption.get('ServerSideEncryptionConfiguration', {})
     # Rules is a list, but only one rule ever exists
     try:
