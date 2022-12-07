@@ -419,7 +419,7 @@ Representation of an [AWS Policy Statement](https://docs.aws.amazon.com/IAM/late
 | actions | (array) The permissions allowed or denied by the statement. Can contain wildcards |
 | notactions | (array) The permission explicitly not matched by the statement |
 | effect | "Allow" or "Deny" - the effect of this statement |
-| **id** | The unique identifier for a statement. <br>If the statement has an Sid the id will be calculated as _AWSPolicy.id_/statements/_Sid_. <br>If the statement has no Sid the id will be calculated as  _AWSPolicy.id_/statements/_index of statement in statement list_ |
+| **id** | The unique identifier for a statement. <br>If the statement has an Sid the id will be calculated as _AWSPolicy.id_/statement/_Sid_. <br>If the statement has no Sid the id will be calculated as  _AWSPolicy.id_/statement/_index of statement in statement list_ |
 
 
 #### Relationships
@@ -427,7 +427,7 @@ Representation of an [AWS Policy Statement](https://docs.aws.amazon.com/IAM/late
 - `AWSPolicy` contains `AWSPolicyStatement`
 
         ```
-        (AWSPolicy)-[STATEMENTS]->(AWSPolicyStatement)
+        (AWSPolicy)-[STATEMENT]->(AWSPolicyStatement)
         ```
 
 
