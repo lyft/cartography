@@ -323,7 +323,7 @@ def _load_s3_encryption(neo4j_session: neo4j.Session, encryption_configs: List[D
     ingest_encryption = """
     UNWIND $encryption_configs AS encryption
     MATCH (s:S3Bucket) where s.name = encryption.bucket
-    SET s.default_encryption = (coalesce(s.default_encryption, false) OR encryption.default_encryption),
+    SET s.default_encryption = coalesce(encryption.default_encryption, s.default_encryption, false),
     s.encryption_algorithm = encryption.encryption_algorithm,
     s.encryption_key_id = encryption.encryption_key_id, s.bucket_key_enabled = encryption.bucket_key_enabled,
     s.lastupdated = $UpdateTag
