@@ -73,7 +73,7 @@ def load_redshift_cluster_data(
     """
 
     for cluster in clusters:
-        paramList = cluster.get('ClusterParameterGroups')[0]['ClusterParameterStatusList']
+        paramList = cluster.get('ClusterParameterGroups')[0].get('ClusterParameterStatusList')
         loggingEnabled = False
         requireSSL = False
         for item in paramList:
