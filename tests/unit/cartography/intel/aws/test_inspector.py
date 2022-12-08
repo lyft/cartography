@@ -25,7 +25,9 @@ def test_get_inspector_findings():
 
 
 def test_transform_inspector_findings_network():
-    findings, _packages = transform_inspector_findings(LIST_FINDINGS_NETWORK)
+    findings, _packages = transform_inspector_findings(
+        LIST_FINDINGS_NETWORK,
+    )
     assert findings == [
         {
             "id": "arn:aws:test123",
@@ -190,29 +192,29 @@ def test_sync(
         [
             mock.call(mock_boto3, "us-east-1", current_aws_account_id),
             mock.call(mock_boto3, "us-east-2", current_aws_account_id),
-        ]
+        ],
     )
     transform_mock.assert_has_calls(
         [
             mock.call([]),
             mock.call([]),
-        ]
+        ],
     )
     load_packages_mock.assert_has_calls(
         [
             mock.call(mock_neo4j, [], "us-east-1", 0),
             mock.call(mock_neo4j, [], "us-east-2", 0),
-        ]
+        ],
     )
     load_findings_mock.assert_has_calls(
         [
             mock.call(mock_neo4j, [], "us-east-1", 0),
             mock.call(mock_neo4j, [], "us-east-2", 0),
-        ]
+        ],
     )
     cleanup_mock.assert_has_calls(
         [
             mock.call(mock_neo4j, {}),
             mock.call(mock_neo4j, {}),
-        ]
+        ],
     )
