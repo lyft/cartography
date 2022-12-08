@@ -56,7 +56,7 @@ def test_load_inspector_findings(neo4j_session):
 
     # Transform the mock data
     transformed_network_findings, _ = transform_inspector_findings(
-        LIST_FINDINGS_NETWORK
+        LIST_FINDINGS_NETWORK,
     )
     (
         transformed_ec2_findings,
@@ -65,13 +65,22 @@ def test_load_inspector_findings(neo4j_session):
 
     # Load the mock data
     load_inspector_findings(
-        neo4j_session, transformed_network_findings, "us-west-2", TEST_UPDATE_TAG
+        neo4j_session,
+        transformed_network_findings,
+        "us-west-2",
+        TEST_UPDATE_TAG,
     )
     load_inspector_findings(
-        neo4j_session, transformed_ec2_findings, "us-west-2", TEST_UPDATE_TAG
+        neo4j_session,
+        transformed_ec2_findings,
+        "us-west-2",
+        TEST_UPDATE_TAG,
     )
     load_inspector_packages(
-        neo4j_session, transformed_package_findings, "us-west-2", TEST_UPDATE_TAG
+        neo4j_session,
+        transformed_package_findings,
+        "us-west-2",
+        TEST_UPDATE_TAG,
     )
 
     # Check Findings

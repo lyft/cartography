@@ -115,29 +115,33 @@ def transform_inspector_findings(results: List[Dict]) -> Tuple[List, List]:
                     "openPortRange"
                 ]["end"]
                 finding["portrange"] = _port_range_string(
-                    f["networkReachabilityDetails"]
+                    f["networkReachabilityDetails"],
                 )
         # Get information about impacted package, and package vuln details
         else:
             vuln_data, new_packages = _process_packages(
-                f["packageVulnerabilityDetails"], f["awsAccountId"], f["findingArn"]
+                f["packageVulnerabilityDetails"],
+                f["awsAccountId"],
+                f["findingArn"],
             )
             if vuln_data.get("impactedfilepaths"):
                 finding["impactedfilepaths"] = "|| ".join(
-                    vuln_data["impactedfilepaths"]
+                    vuln_data["impactedfilepaths"],
                 )
             if vuln_data.get("fixedinversions"):
                 finding["fixedinversions"] = "|| ".join(vuln_data["fixedinversions"])
             if vuln_data.get("impactedpackagemanagers"):
                 finding["impactedpackagemanagers"] = "|| ".join(
-                    vuln_data["impactedpackagemanagers"]
+                    vuln_data["impactedpackagemanagers"],
                 )
             if vuln_data.get("packageremediations"):
                 finding["packageremediations"] = "|| ".join(
-                    vuln_data["packageremediations"]
+                    vuln_data["packageremediations"],
                 )
             if vuln_data.get("sourceLayerHash"):
-                finding["sourceLayerHash"] = "|| ".join(vuln_data["sourceLayerHash"])
+                finding["sourceLayerHash"] = "|| ".join(
+                    vuln_data["sourceLayerHash"],
+                )
 
             finding["vulnerablepackageids"] = ", ".join(new_packages.keys())
             packages = {**packages, **new_packages}
@@ -147,21 +151,21 @@ def transform_inspector_findings(results: List[Dict]) -> Tuple[List, List]:
                 "vulnerabilityId"
             ]
             finding["referenceurls"] = f["packageVulnerabilityDetails"].get(
-                "referenceUrls"
+                "referenceUrls",
             )
             finding["relatedvulnerabilities"] = f["packageVulnerabilityDetails"].get(
-                "relatedVulnerabilities"
+                "relatedVulnerabilities",
             )
             finding["source"] = f["packageVulnerabilityDetails"].get("source")
             finding["sourceurl"] = f["packageVulnerabilityDetails"].get("sourceUrl")
             finding["vendorcreatedat"] = f["packageVulnerabilityDetails"].get(
-                "vendorCreatedAt"
+                "vendorCreatedAt",
             )
             finding["vendorseverity"] = f["packageVulnerabilityDetails"].get(
-                "vendorSeverity"
+                "vendorSeverity",
             )
             finding["vendorupdatedat"] = f["packageVulnerabilityDetails"].get(
-                "vendorUpdatedAt"
+                "vendorUpdatedAt",
             )
         findings_list.append(finding)
     packages_list = transform_inspector_packages(packages)
@@ -177,8 +181,10 @@ def transform_inspector_packages(packages: Dict[str, Any]) -> List[Dict]:
 
 
 def _process_packages(
-    package_details: Dict[str, Any], aws_account_id: str, finding_arn: str
-) -> tuple[Dict[str, Any], Dict[str, Any]]:
+    package_details: Dict[str, Any],
+    aws_account_id: str,
+    finding_arn: str,
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     vuln_details: Dict[str, Any] = defaultdict(lambda: [])
     packages: Dict[str, Any] = {}
     package_vuln_data = package_details.get("packageVulnerabilityDetails")
@@ -187,7 +193,7 @@ def _process_packages(
         vuln_details["referenceurls"] = package_vuln_data.get("referenceUrls")
 
         vuln_details["relatedvulnerabilities"] = package_vuln_data.get(
-            "relatedVulnerabilities"
+            "relatedVulnerabilities",
         )
         vuln_details["source"] = package_vuln_data.get("source")
         vuln_details["sourceurl"] = package_vuln_data.get("sourceUrl")
@@ -197,7 +203,6 @@ def _process_packages(
         vuln_details["vulnerabilityid"] = package_vuln_data.get("vulnerabilityId")
     # Some vuln data is in the package as well
     # we're gonna make one package per uniqueID
-    packages: Dict[str, Any] = {}
     for package in package_details["vulnerablePackages"]:
         new_package = {}
         new_package["id"] = (
@@ -219,7 +224,7 @@ def _process_packages(
             vuln_details["fixedinversions"].append(package.get("fixedInVersion"))
         if package.get("packageManager"):
             vuln_details["impactedpackagemanagers"].append(
-                package.get("packageManager")
+                package.get("packageManager"),
             )
         if package.get("packageremediations"):
             vuln_details["packageremediations"].append(package.get("remediation"))
@@ -413,7 +418,9 @@ def load_inspector_packages(
 @timeit
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job(
-        "aws_import_inspector_cleanup.json", neo4j_session, common_job_parameters
+        "aws_import_inspector_cleanup.json",
+        neo4j_session,
+        common_job_parameters,
     )
 
 
@@ -428,7 +435,7 @@ def sync(
 ) -> None:
     for region in regions:
         logger.info(
-            f"Syncing AWS Inspector findings for account {current_aws_account_id} and region {region}"
+            f"Syncing AWS Inspector findings for account {current_aws_account_id} and region {region}",
         )
         findings = get_inspector_findings(boto3_session, region, current_aws_account_id)
         finding_data, package_data = transform_inspector_findings(findings)
