@@ -25,9 +25,13 @@ def test_load_inspector_findings(neo4j_session):
     )
 
     # Ensure the findings are loaded
-    actual = neo4j_session.run(
-        "MATCH(:AWSInspectorFinding) RETURN count(*) as count",
-    ).single().value()
+    actual = (
+        neo4j_session.run(
+            "MATCH(:AWSInspectorFinding) RETURN count(*) as count",
+        )
+        .single()
+        .value()
+    )
     expected = 2
     assert actual == expected
 
@@ -40,29 +44,44 @@ def test_load_inspector_findings(neo4j_session):
     )
 
     # Ensure the instances are loaded
-    actual = neo4j_session.run(
-        "MATCH(:EC2Instance) RETURN count(*) as count",
-    ).single().value()
+    actual = (
+        neo4j_session.run(
+            "MATCH(:EC2Instance) RETURN count(*) as count",
+        )
+        .single()
+        .value()
+    )
     expected = 2
     assert actual == expected
 
     # Transform the mock data
-    transformed_network_findings, _ = transform_inspector_findings(LIST_FINDINGS_NETWORK)
-    transformed_ec2_findings, transformed_package_findings = transform_inspector_findings(LIST_FINDINGS_EC2_PACKAGE)
+    transformed_network_findings, _ = transform_inspector_findings(
+        LIST_FINDINGS_NETWORK
+    )
+    (
+        transformed_ec2_findings,
+        transformed_package_findings,
+    ) = transform_inspector_findings(LIST_FINDINGS_EC2_PACKAGE)
 
     # Load the mock data
-    load_inspector_findings(neo4j_session, transformed_network_findings, 'us-west-2', TEST_UPDATE_TAG)
-    load_inspector_findings(neo4j_session, transformed_ec2_findings, 'us-west-2', TEST_UPDATE_TAG)
-    load_inspector_packages(neo4j_session, transformed_package_findings, 'us-west-2', TEST_UPDATE_TAG)
+    load_inspector_findings(
+        neo4j_session, transformed_network_findings, "us-west-2", TEST_UPDATE_TAG
+    )
+    load_inspector_findings(
+        neo4j_session, transformed_ec2_findings, "us-west-2", TEST_UPDATE_TAG
+    )
+    load_inspector_packages(
+        neo4j_session, transformed_package_findings, "us-west-2", TEST_UPDATE_TAG
+    )
 
     # Check Findings
     nodes = neo4j_session.run(
         "MATCH (a:AWSInspectorFinding) return a.instanceid",
     )
-    actual_nodes = {(n['a.instanceid']) for n in nodes}
+    actual_nodes = {(n["a.instanceid"]) for n in nodes}
     expected_nodes = {
-        'i-instanceid',
-        'i-88503981029833100',
+        "i-instanceid",
+        "i-88503981029833100",
     }
     assert actual_nodes == set(expected_nodes)
 
@@ -70,22 +89,22 @@ def test_load_inspector_findings(neo4j_session):
     nodes = neo4j_session.run(
         "MATCH (a:AWSInspectorPackage) return a.id",
     )
-    actual_nodes = {(n['a.id']) for n in nodes}
+    actual_nodes = {(n["a.id"]) for n in nodes}
     expected_nodes = {
-        'kernel|X86_64|4.9.17|6.29.amzn1|0',
-        'kernel-tools|X86_64|4.9.17|6.29.amzn1|0',
+        "kernel|X86_64|4.9.17|6.29.amzn1|0",
+        "kernel-tools|X86_64|4.9.17|6.29.amzn1|0",
     }
     assert actual_nodes == set(expected_nodes)
 
     # Check Finding:Package relationship
     nodes = neo4j_session.run(
-        """MATCH (:AWSInspectorFinding)-[:HAS]->(a:AWSInspectorPackage)
+        """MATCH (:AWSInspectorFinding)-[:AFFECTS]->(a:AWSInspectorPackage)
         RETURN a.id""",
     )
-    actual_nodes = {(n['a.id']) for n in nodes}
+    actual_nodes = {(n["a.id"]) for n in nodes}
     expected_nodes = [
-        'kernel-tools|X86_64|4.9.17|6.29.amzn1|0',
-        'kernel|X86_64|4.9.17|6.29.amzn1|0',
+        "kernel-tools|X86_64|4.9.17|6.29.amzn1|0",
+        "kernel|X86_64|4.9.17|6.29.amzn1|0",
     ]
     assert actual_nodes == set(expected_nodes)
 
@@ -94,11 +113,11 @@ def test_load_inspector_findings(neo4j_session):
         """MATCH (a:AWSAccount)-[:RESOURCE]->(:AWSInspectorFinding)
         RETURN a.id""",
     )
-    actual_nodes = {(n['a.id']) for n in nodes}
+    actual_nodes = {(n["a.id"]) for n in nodes}
 
     expected_nodes = [
-        '123456789011',
-        '123456789012',
+        "123456789011",
+        "123456789012",
     ]
     assert actual_nodes == set(expected_nodes)
 
@@ -107,21 +126,21 @@ def test_load_inspector_findings(neo4j_session):
         """MATCH (a:AWSAccount)-[:RESOURCE]->(:AWSInspectorPackage)
         RETURN a.id""",
     )
-    actual_nodes = {(n['a.id']) for n in nodes}
+    actual_nodes = {(n["a.id"]) for n in nodes}
     expected_nodes = [
-        '123456789012',
-        '123456789012',
+        "123456789012",
+        "123456789012",
     ]
     assert actual_nodes == set(expected_nodes)
 
     # Check Instance:Finding relationship
     nodes = neo4j_session.run(
-        """MATCH (:EC2Instance)<-[:AFFECTS]-(a:AWSInspectorFinding)
+        """MATCH (:EC2Instance)<-[:PRESENT_ON]-(a:AWSInspectorFinding)
         RETURN a.id""",
     )
-    actual_nodes = {(n['a.id']) for n in nodes}
+    actual_nodes = {(n["a.id"]) for n in nodes}
     expected_nodes = [
-        'arn:aws:test123',
-        'arn:aws:test456',
+        "arn:aws:test123",
+        "arn:aws:test456",
     ]
     assert actual_nodes == set(expected_nodes)
