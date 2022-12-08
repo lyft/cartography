@@ -84,11 +84,6 @@ def transform_inspector_findings(results: List[Dict]) -> Tuple[List, List]:
         finding["type"] = f["type"]
 
         # Resource information of finding
-        # These need to exist but may be empty, otherwise our merge fails
-        finding["instanceid"] = "None"
-        finding["lambdaid"] = "None"
-        finding["ecrimageid"] = "None"
-        finding["ecrrepositoryid"] = "None"
         # AWS_EC2_INSTANCE will include NETWORK_REACHABILITY
         if f["resources"][0]["type"] == "AWS_EC2_INSTANCE":
             finding["instanceid"] = f["resources"][0]["id"]
@@ -384,10 +379,7 @@ def _load_packages_tx(
             package.version = new_package.version,
             package.release = new_package.release,
             package.epoch = new_package.epoch,
-            package.manager = new_package.packageManager,
-            package.filepath = new_package.filePath,
-            package.fixedinversion = new_package.fixedInVersion,
-            package.sourcelayerhash = new_package.sourceLayerHash
+            package.manager = new_package.packageManager
         WITH package
         MATCH (account:AWSAccount{id: package.awsaccount})
         MERGE (account)-[r:RESOURCE]->(package)
