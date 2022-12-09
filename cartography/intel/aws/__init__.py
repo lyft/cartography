@@ -222,8 +222,6 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     else:
         aws_accounts = organizations.get_aws_account_default(boto3_session)
 
-    logger.info(aws_accounts)
-
     if not aws_accounts:
         logger.warning(
             "No valid AWS credentials could be found. No AWS accounts can be synced. Exiting AWS sync stage.",
