@@ -53,12 +53,13 @@ def _build_node_properties_statement(
         }
         set_clause: str = _build_node_properties_statement(node_property_map)
 
-    the returned set_clause will be:
-
+    the returned set_clause will be
+        ```
         i.id = item.Id,
         i.node_prop_1 = item.Prop1,
         i.node_prop_2 = $Prop2
-
+        ```
+    where `i` is a reference to the Neo4j node.
     :param node_property_map: Mapping of node attribute names as str to PropertyRef objects
     :param node_extra_labels: Optional list of extra labels to set on the node as str
     :return: The resulting Neo4j SET clause to set the given attributes on the node
