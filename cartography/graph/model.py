@@ -78,6 +78,7 @@ class CartographyNodeProperties(abc.ABC):
         """
         Designed to prevent direct instantiation. This workaround is needed since this is both an abstract class and a
         dataclass.
+        See https://stackoverflow.com/q/60590442.
         """
         if self.__class__ == CartographyNodeProperties:
             raise TypeError("Cannot instantiate abstract class.")
