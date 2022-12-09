@@ -155,11 +155,11 @@ def _sync_multiple_accounts(
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
-        # if num_accounts == 1:
-        #     # Use the default boto3 session because boto3 gets confused if you give it a profile name with 1 account
-        #     boto3_session = boto3.Session()
-        # else:
-        boto3_session = boto3.Session(profile_name=profile_name)
+        if num_accounts == 1:
+            # Use the default boto3 session because boto3 gets confused if you give it a profile name with 1 account
+            boto3_session = boto3.Session()
+        else:
+            boto3_session = boto3.Session(profile_name=profile_name)
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
