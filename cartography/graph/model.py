@@ -38,8 +38,8 @@ class PropertyRef:
 
     cartography takes lists of Python dicts and loads them to Neo4j. PropertyRefs allow our dynamically generated Neo4j
     ingestion queries to set values for a given node or relationship property from (A) a field on the dict being
-    processed (PropertyRef.override=False, default), or (B) from a single variable provided by a keyword argument
-    (PropertyRef.override=True).
+    processed (PropertyRef. set_in_kwargs =False, default), or (B) from a single variable provided by a keyword argument
+    (PropertyRef. set_in_kwargs =True).
     """
 
     def __init__(self, name: str, set_in_kwargs=False):
@@ -57,6 +57,11 @@ class PropertyRef:
         return f"${self.name}"
 
     def __repr__(self) -> str:
+        """
+        By default, the querybuilder will render an UNWIND query so that
+        the value for this property will come from the dict being processed.
+        If set_in_kwargs is True, then the value will instead come from kwargs.
+        """
         return f"item.{self.name}" if not self.set_in_kwargs else self._parameterize_name()
 
 
