@@ -237,6 +237,15 @@ def _build_attach_relationships_statement(
         sub_resource_relationship: Optional[CartographyRelSchema],
         other_relationships: Optional[List[CartographyRelSchema]],
 ) -> str:
+    """
+    Use Neo4j subqueries to attach sub resource and/or other relationships.
+    Subqueries allow the query to continue to run even if we only have data for some but not all of the
+    relationships defined by a schema.
+    For example, if an EC2Instance has attachments to NetworkInterfaces and AWSAccounts but our data
+    only includes EC2Instance to AWSAccount information, structuring the ingestion query with sub-
+    queries allows us to build a query that will ignore the null relationships and build the ones that
+    exist.
+    """
     attach_sub_resource_statement = _build_attach_sub_resource_statement(sub_resource_relationship)
     attach_additional_links_statement = _build_attach_additional_links_statement(other_relationships)
 
