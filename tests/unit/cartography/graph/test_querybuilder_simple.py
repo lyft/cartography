@@ -86,11 +86,14 @@ def test_build_ingestion_query_with_sub_resource():
                 i.property2 = item.property2
 
             WITH i, item
-            MATCH (j:SubResource{id: $sub_resource_id})
-            MERGE (i)<-[r:RELATIONSHIP_LABEL]-(j)
-            ON CREATE SET r.firstseen = timestamp()
-            SET
-                r.lastupdated = $lastupdated
+            CALL {
+                WITH i, item
+                OPTIONAL MATCH (j:SubResource{id: $sub_resource_id})
+                MERGE (i)<-[r:RELATIONSHIP_LABEL]-(j)
+                ON CREATE SET r.firstseen = timestamp()
+                SET
+                    r.lastupdated = $lastupdated
+            }
     """
 
     # Assert: compare query outputs while ignoring leading whitespace.

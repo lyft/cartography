@@ -134,8 +134,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
 
     sub_resource_attach_template = Template(
         """
-        WITH i, item
-        MATCH (j:$SubResourceLabel{$SubResourceKey: $SubResourceRef})
+        OPTIONAL MATCH (j:$SubResourceLabel{$SubResourceKey: $SubResourceRef})
         $RelMergeClause
         ON CREATE SET r.firstseen = timestamp()
         SET
@@ -182,7 +181,8 @@ def _build_attach_additional_links_statement(
     additional_links_template = Template(
         """
         WITH i, item
-        MATCH ($node_var:$AddlLabel{$AddlKey: $AddlRef})
+        OPTIONAL MATCH ($node_var:$AddlLabel{$AddlKey: $AddlRef})
+        WITH i, item, $node_var WHERE $node_var IS NOT NULL
         $RelMerge
         ON CREATE SET $rel_var.firstseen = timestamp()
         SET
@@ -230,7 +230,32 @@ def _build_attach_additional_links_statement(
         )
         links.append(additional_ref)
 
-    return '\n'.join(links)
+    return 'UNION'.join(links)
+
+
+def _build_attach_relationships_statement(
+        sub_resource_relationship: Optional[CartographyRelSchema],
+        other_relationships: Optional[List[CartographyRelSchema]],
+) -> str:
+    attach_sub_resource_statement = _build_attach_sub_resource_statement(sub_resource_relationship)
+    attach_additional_links_statement = _build_attach_additional_links_statement(other_relationships)
+
+    statements = []
+    statements += [attach_sub_resource_statement] if attach_sub_resource_statement else []
+    statements += [attach_additional_links_statement] if attach_additional_links_statement else []
+
+    attach_relationships_statement = 'UNION'.join(stmt for stmt in statements)
+
+    query_template = Template(
+        """
+        WITH i, item
+        CALL {
+            WITH i, item
+            $attach_relationships_statement
+        }
+        """
+    )
+    return query_template.safe_substitute(attach_relationships_statement=attach_relationships_statement)
 
 
 def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
@@ -253,8 +278,7 @@ def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
             ON CREATE SET i.firstseen = timestamp()
             SET
                 $set_node_properties_statement
-            $attach_sub_resource_statement
-            $attach_additional_links_statement
+            $attach_relationships_statement
         """,
     )
 
@@ -265,7 +289,9 @@ def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
         node_label=node_schema.label,
         dict_id_field=node_props.id,
         set_node_properties_statement=_build_node_properties_statement(node_props_as_dict, node_schema.extra_labels),
-        attach_sub_resource_statement=_build_attach_sub_resource_statement(node_schema.sub_resource_relationship),
-        attach_additional_links_statement=_build_attach_additional_links_statement(node_schema.other_relationships),
+        attach_relationships_statement=_build_attach_relationships_statement(
+            node_schema.sub_resource_relationship,
+            node_schema.other_relationships,
+        )
     )
     return ingest_query
