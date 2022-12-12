@@ -8,7 +8,6 @@ from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
 from cartography.graph.model import PropertyRef
-
 from cartography.graph.querybuilder import default_field
 from tests.unit.cartography.graph.test_querybuilder_simple import SimpleNodeProperties
 

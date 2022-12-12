@@ -262,7 +262,7 @@ def _build_attach_relationships_statement(
             WITH i, item
             $attach_relationships_statement
         }
-        """
+        """,
     )
     return query_template.safe_substitute(attach_relationships_statement=attach_relationships_statement)
 
@@ -301,6 +301,6 @@ def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
         attach_relationships_statement=_build_attach_relationships_statement(
             node_schema.sub_resource_relationship,
             node_schema.other_relationships,
-        )
+        ),
     )
     return ingest_query

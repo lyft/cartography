@@ -16,7 +16,7 @@ def test_build_ingestion_query_complex():
                 i.property1 = item.property1,
                 i.property2 = item.property2,
                 i:AnotherNodeLabel:YetAnotherNodeLabel
-    
+
             WITH i, item
             CALL {
                 WITH i, item
@@ -27,7 +27,7 @@ def test_build_ingestion_query_complex():
                     r.lastupdated = $lastupdated,
                     r.another_rel_field = item.AnotherField,
                     r.yet_another_rel_field = item.YetAnotherRelField
-    
+
                 UNION
                 WITH i, item
                 OPTIONAL MATCH (n0:HelloAsset{id: item.hello_asset_id})
@@ -36,7 +36,7 @@ def test_build_ingestion_query_complex():
                 ON CREATE SET r0.firstseen = timestamp()
                 SET
                     r0.lastupdated = $lastupdated
-    
+
                 UNION
                 WITH i, item
                 OPTIONAL MATCH (n1:WorldAsset{id: item.world_asset_id})

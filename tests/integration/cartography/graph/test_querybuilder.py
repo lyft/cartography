@@ -1,6 +1,8 @@
 from cartography.client.core.tx import load_graph_data
 from cartography.graph.querybuilder import build_ingestion_query
-from tests.data.graph.querybuilder.sample import MERGE_SUB_RESOURCE_QUERY, MERGE_WORLD_ASSET_QUERY, INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS
+from tests.data.graph.querybuilder.sample import INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS
+from tests.data.graph.querybuilder.sample import MERGE_SUB_RESOURCE_QUERY
+from tests.data.graph.querybuilder.sample import MERGE_WORLD_ASSET_QUERY
 from tests.data.graph.querybuilder.sample_model import InterestingAssetSchema
 
 
@@ -20,7 +22,13 @@ def test_load_graph_data_subset_of_relationships_1(neo4j_session):
 
     # Act
     query = build_ingestion_query(InterestingAssetSchema())
-    load_graph_data(neo4j_session, query, INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS, lastupdated=1, sub_resource_id='sub-resource-id')
+    load_graph_data(
+        neo4j_session,
+        query,
+        INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS,
+        lastupdated=1,
+        sub_resource_id='sub-resource-id',
+    )
 
     # Assert that the InterestingNode to SubResource relationship exists
     expected = {
@@ -76,7 +84,13 @@ def test_load_graph_data_subset_of_relationships_only_sub_resource(neo4j_session
 
     # Act
     query = build_ingestion_query(InterestingAssetSchema())
-    load_graph_data(neo4j_session, query, INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS, lastupdated=1, sub_resource_id='sub-resource-id')
+    load_graph_data(
+        neo4j_session,
+        query,
+        INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS,
+        lastupdated=1,
+        sub_resource_id='sub-resource-id',
+    )
 
     # Assert that the InterestingNode to SubResource relationship exists
     expected = {

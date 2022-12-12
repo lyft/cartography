@@ -17,6 +17,6 @@ INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS = [
         'property2': 'c',
         'AnotherField': 'd',
         'YetAnotherRelField': 'e',
-        'world_asset_id': 'the-worldasset-id-1'
-    }
+        'world_asset_id': 'the-worldasset-id-1',
+    },
 ]
