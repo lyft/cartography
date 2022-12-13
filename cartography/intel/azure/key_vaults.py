@@ -271,6 +271,9 @@ def get_key_vault_certificates(client: CertificateClient, vault: Dict) -> List[D
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving certificates list  - {e}")
         return []
+    except KeyError as e:
+        logger.warning(f"Error while retrieving certificates list  - {e}")
+        return []
 
 
 @timeit
