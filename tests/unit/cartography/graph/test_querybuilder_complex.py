@@ -1,5 +1,5 @@
 from cartography.graph.querybuilder import build_ingestion_query
-from tests.data.graph.querybuilder.sample_model import InterestingAssetSchema
+from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetSchema
 from tests.unit.cartography.graph.helpers import remove_leading_whitespace_and_empty_lines
 
 
@@ -9,7 +9,7 @@ def test_build_ingestion_query_complex():
 
     expected = """
         UNWIND $DictList AS item
-            MERGE (i:InterestingNode{id: item.Id})
+            MERGE (i:InterestingAsset{id: item.Id})
             ON CREATE SET i.firstseen = timestamp()
             SET
                 i.lastupdated = $lastupdated,
@@ -21,6 +21,7 @@ def test_build_ingestion_query_complex():
             CALL {
                 WITH i, item
                 OPTIONAL MATCH (j:SubResource{id: $sub_resource_id})
+                WITH i, item, j WHERE j IS NOT NULL
                 MERGE (i)<-[r:RELATIONSHIP_LABEL]-(j)
                 ON CREATE SET r.firstseen = timestamp()
                 SET

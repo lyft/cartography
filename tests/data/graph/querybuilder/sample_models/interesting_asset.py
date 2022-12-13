@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -9,7 +10,7 @@ from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
 from cartography.graph.model import PropertyRef
 from cartography.graph.querybuilder import default_field
-from tests.unit.cartography.graph.test_querybuilder_simple import SimpleNodeProperties
+from tests.data.graph.querybuilder.sample_models.simple_node import SimpleNodeProperties
 
 
 @dataclass
@@ -34,8 +35,9 @@ class InterestingAssetToSubResourceRel(CartographyRelSchema):
     (:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource)
     """
     target_node_label: str = 'SubResource'
-    target_node_key: str = 'id'
-    target_node_key_property_ref: PropertyRef = PropertyRef('sub_resource_id', set_in_kwargs=True)
+    target_node_key_refs: Dict[str, PropertyRef] = default_field(
+        {'id': PropertyRef('sub_resource_id', set_in_kwargs=True)},
+    )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RELATIONSHIP_LABEL"
     properties: InterestingAssetToSubResourceRelProps = InterestingAssetToSubResourceRelProps()
@@ -53,8 +55,7 @@ class InterestingAssetToHelloAssetRel(CartographyRelSchema):
     (:InterestingAsset)-[:ASSOCIATED_WITH]->(:HelloAsset)
     """
     target_node_label: str = 'HelloAsset'
-    target_node_key: str = 'id'
-    target_node_key_property_ref: PropertyRef = PropertyRef('hello_asset_id')
+    target_node_key_refs: Dict[str, PropertyRef] = default_field({'id': PropertyRef('hello_asset_id')})
     direction: LinkDirection = LinkDirection.OUTWARD
     rel_label: str = "ASSOCIATED_WITH"
     properties: InterestingAssetToHelloAssetRelProps = InterestingAssetToHelloAssetRelProps()
@@ -72,8 +73,7 @@ class InterestingAssetToWorldAssetRel(CartographyRelSchema):
     (:InterestingAsset)<-[:CONNECTED]-(:WorldAsset)
     """
     target_node_label: str = 'WorldAsset'
-    target_node_key: str = 'id'
-    target_node_key_property_ref: PropertyRef = PropertyRef('world_asset_id')
+    target_node_key_refs: Dict[str, PropertyRef] = default_field({'id': PropertyRef('world_asset_id')})
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "CONNECTED"
     properties: InterestingAssetToWorldAssetRelProps = InterestingAssetToWorldAssetRelProps()
@@ -82,7 +82,7 @@ class InterestingAssetToWorldAssetRel(CartographyRelSchema):
 @dataclass
 class InterestingAssetSchema(CartographyNodeSchema):
     extra_labels: Optional[List[str]] = default_field(['AnotherNodeLabel', 'YetAnotherNodeLabel'])
-    label: str = 'InterestingNode'
+    label: str = 'InterestingAsset'
     properties: SimpleNodeProperties = SimpleNodeProperties()
     sub_resource_relationship: InterestingAssetToSubResourceRel = InterestingAssetToSubResourceRel()
     other_relationships: Optional[List[CartographyRelSchema]] = default_field(

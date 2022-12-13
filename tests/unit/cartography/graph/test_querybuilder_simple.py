@@ -1,51 +1,7 @@
-from dataclasses import dataclass
-
-from cartography.graph.model import CartographyNodeProperties
-from cartography.graph.model import CartographyNodeSchema
-from cartography.graph.model import CartographyRelProperties
-from cartography.graph.model import CartographyRelSchema
-from cartography.graph.model import LinkDirection
-from cartography.graph.model import PropertyRef
 from cartography.graph.querybuilder import build_ingestion_query
+from tests.data.graph.querybuilder.sample_models.simple_node import SimpleNodeSchema
+from tests.data.graph.querybuilder.sample_models.simple_node import SimpleNodeWithSubResourceSchema
 from tests.unit.cartography.graph.helpers import remove_leading_whitespace_and_empty_lines
-
-
-# Test defining a simple node with no relationships.
-@dataclass
-class SimpleNodeProperties(CartographyNodeProperties):
-    id: PropertyRef = PropertyRef('Id')
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    property1: PropertyRef = PropertyRef('property1')
-    property2: PropertyRef = PropertyRef('property2')
-
-
-@dataclass
-class SimpleNodeSchema(CartographyNodeSchema):
-    label: str = 'SimpleNode'
-    properties: SimpleNodeProperties = SimpleNodeProperties()
-
-
-# Test defining a simple node with a sub resource rel: (:SimpleNode)<-[:RESOURCE]-(:SubResource)
-@dataclass
-class SimpleNodeToSubResourceRelProps(CartographyRelProperties):
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-
-
-@dataclass
-class SimpleNodeToSubResourceRel(CartographyRelSchema):
-    target_node_label: str = 'SubResource'
-    target_node_key: str = 'id'
-    target_node_key_property_ref: PropertyRef = PropertyRef('sub_resource_id', set_in_kwargs=True)
-    direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "RELATIONSHIP_LABEL"
-    properties: SimpleNodeToSubResourceRelProps = SimpleNodeToSubResourceRelProps()
-
-
-@dataclass
-class SimpleNodeWithSubResourceSchema(CartographyNodeSchema):
-    label: str = 'SimpleNode'
-    properties: SimpleNodeProperties = SimpleNodeProperties()
-    sub_resource_relationship: CartographyRelSchema = SimpleNodeToSubResourceRel()
 
 
 def test_simplenode_sanity_checks():
@@ -89,6 +45,7 @@ def test_build_ingestion_query_with_sub_resource():
             CALL {
                 WITH i, item
                 OPTIONAL MATCH (j:SubResource{id: $sub_resource_id})
+                WITH i, item, j WHERE j IS NOT NULL
                 MERGE (i)<-[r:RELATIONSHIP_LABEL]-(j)
                 ON CREATE SET r.firstseen = timestamp()
                 SET

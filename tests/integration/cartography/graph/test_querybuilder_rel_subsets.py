@@ -1,12 +1,12 @@
 from cartography.client.core.tx import load_graph_data
 from cartography.graph.querybuilder import build_ingestion_query
-from tests.data.graph.querybuilder.sample import INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS
-from tests.data.graph.querybuilder.sample import MERGE_SUB_RESOURCE_QUERY
-from tests.data.graph.querybuilder.sample import MERGE_WORLD_ASSET_QUERY
-from tests.data.graph.querybuilder.sample_model import InterestingAssetSchema
+from tests.data.graph.querybuilder.sample_data.partial_relationships import INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS
+from tests.data.graph.querybuilder.sample_data.partial_relationships import MERGE_SUB_RESOURCE_QUERY
+from tests.data.graph.querybuilder.sample_data.partial_relationships import MERGE_WORLD_ASSET_QUERY
+from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetSchema
 
 
-def test_load_graph_data_subset_of_relationships_1(neo4j_session):
+def test_load_graph_data_subset_of_relationships(neo4j_session):
     """
     Test load_graph_data() if a schema defines multiple relationships but only a subset of them are present in our data.
 
@@ -30,13 +30,13 @@ def test_load_graph_data_subset_of_relationships_1(neo4j_session):
         sub_resource_id='sub-resource-id',
     )
 
-    # Assert that the InterestingNode to SubResource relationship exists
+    # Assert that the InterestingAsset to SubResource relationship exists
     expected = {
         ('interesting-node-id', 'sub-resource-id'),
     }
     result = neo4j_session.run(
         """
-        MATCH (n1:InterestingNode)<-[:RELATIONSHIP_LABEL]-(n2:SubResource) RETURN n1.id, n2.id;
+        MATCH (n1:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(n2:SubResource) RETURN n1.id, n2.id;
         """,
     )
     actual = {
@@ -44,13 +44,13 @@ def test_load_graph_data_subset_of_relationships_1(neo4j_session):
     }
     assert actual == expected
 
-    # Assert that the InterestingNode to HelloAsset relationship does NOT exist
+    # Assert that the InterestingAsset to HelloAsset relationship does NOT exist
     expected = {
         ('interesting-node-id', None),
     }
     result = neo4j_session.run(
         """
-        MATCH (n1:InterestingNode)
+        MATCH (n1:InterestingAsset)
         OPTIONAL MATCH (n1)<-[:ASSOCIATED_WITH]-(n2:HelloAsset)
         RETURN n1.id, n2.id;
         """,
@@ -60,13 +60,13 @@ def test_load_graph_data_subset_of_relationships_1(neo4j_session):
     }
     assert actual == expected
 
-    # Assert that the InterestingNode to WorldAsset relationship exists
+    # Assert that the InterestingAsset to WorldAsset relationship exists
     expected = {
         ('interesting-node-id', 'the-worldasset-id-1'),
     }
     result = neo4j_session.run(
         """
-        MATCH (n1:InterestingNode)<-[:CONNECTED]-(n2:WorldAsset) RETURN n1.id, n2.id;
+        MATCH (n1:InterestingAsset)<-[:CONNECTED]-(n2:WorldAsset) RETURN n1.id, n2.id;
         """,
     )
     actual = {
@@ -79,7 +79,8 @@ def test_load_graph_data_subset_of_relationships_only_sub_resource(neo4j_session
     """
     In this test case, our test data only includes the sub resource relationship
     """
-    # Arrange: add (:SubResource{id:sub-resource-id}) and (:WorldAsset{id: world-asset-id}) to the test graph
+    # Arrange: add (:SubResource{id:sub-resource-id})
+    neo4j_session.run("MATCH (n) DETACH DELETE n;")
     neo4j_session.run(MERGE_SUB_RESOURCE_QUERY)
 
     # Act
@@ -92,13 +93,13 @@ def test_load_graph_data_subset_of_relationships_only_sub_resource(neo4j_session
         sub_resource_id='sub-resource-id',
     )
 
-    # Assert that the InterestingNode to SubResource relationship exists
+    # Assert that the InterestingAsset to SubResource relationship exists
     expected = {
         ('interesting-node-id', 'sub-resource-id'),
     }
     result = neo4j_session.run(
         """
-        MATCH (n1:InterestingNode)<-[:RELATIONSHIP_LABEL]-(n2:SubResource) RETURN n1.id, n2.id;
+        MATCH (n1:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(n2:SubResource) RETURN n1.id, n2.id;
         """,
     )
     actual = {
@@ -106,13 +107,13 @@ def test_load_graph_data_subset_of_relationships_only_sub_resource(neo4j_session
     }
     assert actual == expected
 
-    # Assert that the InterestingNode to HelloAsset relationship does NOT exist
+    # Assert that the InterestingAsset to HelloAsset relationship does NOT exist
     expected = {
         ('interesting-node-id', None),
     }
     result = neo4j_session.run(
         """
-        MATCH (n1:InterestingNode)
+        MATCH (n1:InterestingAsset)
         OPTIONAL MATCH (n1)<-[:ASSOCIATED_WITH]-(n2:HelloAsset)
         RETURN n1.id, n2.id;
         """,
@@ -122,13 +123,13 @@ def test_load_graph_data_subset_of_relationships_only_sub_resource(neo4j_session
     }
     assert actual == expected
 
-    # Assert that the InterestingNode to WorldAsset relationship does NOT exist
+    # Assert that the InterestingAsset to WorldAsset relationship does NOT exist
     expected = {
         ('interesting-node-id', None),
     }
     result = neo4j_session.run(
         """
-        MATCH (n1:InterestingNode)
+        MATCH (n1:InterestingAsset)
         OPTIONAL MATCH (n1)<-[:CONNECTED]-(n2:WorldAsset)
         RETURN n1.id, n2.id;
         """,

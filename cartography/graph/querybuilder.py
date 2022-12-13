@@ -116,6 +116,20 @@ def _build_rel_properties_statement(rel_var: str, rel_property_map: Optional[Dic
     return set_clause
 
 
+def _build_match_clause(key_refs: Dict[str, PropertyRef]) -> str:
+    """
+    Generate a Neo4j match statement on one or more keys and values for a given node.
+    """
+    if not key_refs:
+        raise ValueError(
+            "Failed to create match clause because key_refs is Falsy. Please make sure that the `target_node_key_refs` "
+            "field on all subclasses of CartographyRelSchema are properly defined.",
+        )
+
+    match = Template("$Key: $PropRef")
+    return ', '.join(match.safe_substitute(Key=key, PropRef=prop_ref) for key, prop_ref in key_refs.items())
+
+
 def _build_attach_sub_resource_statement(sub_resource_link: Optional[CartographyRelSchema] = None) -> str:
     """
     Generates a Neo4j statement to attach a sub resource to a node. A 'sub resource' is a term we made up to describe
@@ -134,7 +148,8 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
 
     sub_resource_attach_template = Template(
         """
-        OPTIONAL MATCH (j:$SubResourceLabel{$SubResourceKey: $SubResourceRef})
+        OPTIONAL MATCH (j:$SubResourceLabel{$MatchClause})
+        WITH i, item, j WHERE j IS NOT NULL
         $RelMergeClause
         ON CREATE SET r.firstseen = timestamp()
         SET
@@ -153,8 +168,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
 
     attach_sub_resource_statement = sub_resource_attach_template.safe_substitute(
         SubResourceLabel=sub_resource_link.target_node_label,
-        SubResourceKey=sub_resource_link.target_node_key,
-        SubResourceRef=sub_resource_link.target_node_key_property_ref,
+        MatchClause=_build_match_clause(sub_resource_link.target_node_key_refs),
         RelMergeClause=rel_merge_clause,
         SubResourceRelLabel=sub_resource_link.rel_label,
         set_rel_properties_statement=_build_rel_properties_statement('r', rel_props_as_dict),
@@ -177,11 +191,10 @@ def _build_attach_additional_links_statement(
     if not additional_relationships:
         return ''
 
-    # TODO - support matching on multiple properties
     additional_links_template = Template(
         """
         WITH i, item
-        OPTIONAL MATCH ($node_var:$AddlLabel{$AddlKey: $AddlRef})
+        OPTIONAL MATCH ($node_var:$AddlLabel{$MatchClause})
         WITH i, item, $node_var WHERE $node_var IS NOT NULL
         $RelMerge
         ON CREATE SET $rel_var.firstseen = timestamp()
@@ -221,8 +234,7 @@ def _build_attach_additional_links_statement(
 
         additional_ref = additional_links_template.safe_substitute(
             AddlLabel=link.target_node_label,
-            AddlKey=link.target_node_key,
-            AddlRef=link.target_node_key_property_ref,
+            MatchClause=_build_match_clause(link.target_node_key_refs),
             node_var=node_var,
             rel_var=rel_var,
             RelMerge=rel_merge,

@@ -16,6 +16,7 @@ from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
 from cartography.graph.model import PropertyRef
 from cartography.graph.querybuilder import build_ingestion_query
+from cartography.graph.querybuilder import default_field
 from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -93,8 +94,7 @@ class EMRClusterToAwsAccountRelProperties(CartographyRelProperties):
 # (:EMRCluster)<-[:RESOURCE]-(:AWSAccount)
 class EMRClusterToAWSAccount(CartographyRelSchema):
     target_node_label: str = 'AWSAccount'
-    target_node_key: str = 'id'
-    target_node_key_property_ref: PropertyRef = PropertyRef('AccountId', set_in_kwargs=True)
+    target_node_key_refs: Dict[str, PropertyRef] = default_field({'id': PropertyRef('AccountId', set_in_kwargs=True)})
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RESOURCE"
     properties: EMRClusterToAwsAccountRelProperties = EMRClusterToAwsAccountRelProperties()
@@ -104,7 +104,7 @@ class EMRClusterToAWSAccount(CartographyRelSchema):
 class EMRClusterSchema(CartographyNodeSchema):
     label: str = 'EMRCluster'
     properties: EMRClusterNodeProperties = EMRClusterNodeProperties()
-    sub_resource_relationship: CartographyRelSchema = EMRClusterToAWSAccount()
+    sub_resource_relationship: EMRClusterToAWSAccount = EMRClusterToAWSAccount()
 
 
 @timeit
