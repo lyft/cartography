@@ -5,7 +5,7 @@ from tests.data.graph.querybuilder.sample_data.multiple_attr_match import TEST_C
 from tests.data.graph.querybuilder.sample_models.multiple_attr_match import TestComputer
 
 
-def test_load_graph_data_subset_of_relationships(neo4j_session):
+def test_load_graph_data_match_on_multiple_attrs(neo4j_session):
     """
     Test load_graph_data() if we have a relationship that matches on more than one attribute.
 
