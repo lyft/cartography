@@ -41,7 +41,6 @@ from .ec2.tgw import sync_transit_gateways
 from .ec2.volumes import sync_ebs_volumes
 from .ec2.vpc import sync_vpc
 from .ec2.vpc_peerings import sync_vpc_peerings
-from . import elasticbeanstalk
 
 RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,
@@ -87,5 +86,4 @@ RESOURCE_FUNCTIONS: Dict = {
     'ssm': ssm.sync,
     'inspector': inspector.sync,
     'config': config.sync,
-    'elasticbeanstalk': elasticbeanstalk.sync
 }
