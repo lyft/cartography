@@ -1,12 +1,15 @@
 import logging
 import os
 import re
+import json
 from string import Template
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Pattern
 from typing import Tuple
+from collections import defaultdict
+from enum import Enum
 
 import boto3
 import neo4j
@@ -17,6 +20,10 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
+class Grant(Enum):
+    EXPLICIT_DENY = 0
+    EXPLICIT_ALLOW = 1
+    IMPLICIT_DENY = 2
 
 def evaluate_clause(clause: str, match: str) -> bool:
     """ Evaluates the a clause in IAM. Clauses can be AWS [not]actions and [not]resources
@@ -112,7 +119,7 @@ def evaluate_policy_for_permissions(
         [(bool, bool)] -- (allowed_by_policy, explicitly_denied_by_policy)
         return cases
         (True, False) - The policy allows the action
-        (False, False) - The poliy does not allow the action, but also doesn't explicitly deny it
+        (False, False) - The policy does not allow the action, but also doesn't explicitly deny it
         (False, True) - The policy specifically denies the action. There is no need to evaluate other policies
     """
     allow_statements = [s for s in statements if s["effect"] == "Allow"]
@@ -129,7 +136,7 @@ def evaluate_policy_for_permissions(
     return False, False
 
 
-def principal_allowed_on_resource(policies: Dict, resource_arn: str, permissions: List[str]) -> bool:
+def principal_allowed_on_resource(policies: Dict, resource_arn: str, permissions: List[str]) -> Grant:
     """ Evaluates an enture set of policies for a specific resource for a specific permission.
 
 
@@ -143,21 +150,21 @@ def principal_allowed_on_resource(policies: Dict, resource_arn: str, permissions
     """
     if not isinstance(permissions, list):
         raise ValueError("permissions is not a list")
-    granted = False
+    granted = Grant.IMPLICIT_DENY
     for _, statements in policies.items():
         allowed, explicit_deny = evaluate_policy_for_permissions(statements, permissions, resource_arn)
 
         if explicit_deny:
+            return Grant.EXPLICIT_DENY
 
-            return False
-        if not granted and allowed:
-            granted = True
+        if granted == Grant.IMPLICIT_DENY and allowed:
+            granted = Grant.EXPLICIT_ALLOW
 
     return granted
 
 
-def calculate_permission_relationships(
-    principals: Dict, resource_arns: List[str], permissions: List[str],
+def calculate_permission_relationships_on_iam_principals(
+    iam_principals: Dict, bucket_principals: Dict, resource_arns: List[str], permissions: List[str], anonymous_public: set, identified_public: set
 ) -> List[Dict]:
     """ Evaluate principals permissions to resources
     This currently only evaluates policies on IAM principals. It does not take into account
@@ -176,12 +183,29 @@ def calculate_permission_relationships(
     Returns:
         [dict] -- The allowed mappings
     """
-    allowed_mappings: List[Dict] = []
+    explicit_allow_mappings = set()
+    explicit_deny_mappings = set()
+
     for resource_arn in resource_arns:
-        for principal_arn, policies in principals.items():
-            if principal_allowed_on_resource(policies, resource_arn, permissions):
-                allowed_mappings.append({"principal_arn": principal_arn, "resource_arn": resource_arn})
-    return allowed_mappings
+        for principal_arn, policies in iam_principals.items():
+            mapping = {"principal_arn": principal_arn, "resource_arn": resource_arn}
+            match principal_allowed_on_resource(policies, resource_arn, permissions):
+                case Grant.EXPLICIT_ALLOW:
+                    explicit_allow_mappings.add(mapping)
+                case Grant.EXPLICIT_DENY:
+                    explicit_deny_mappings.add(mapping)
+
+        for principal_arn, policies in bucket_principals.items():
+            mapping = {"principal_arn": principal_arn, "resource_arn": resource_arn}
+            match principal_allowed_on_resource(policies, resource_arn, permissions):
+                case Grant.EXPLICIT_ALLOW:
+                    if mapping not in explicit_deny_mappings:
+                        explicit_allow_mappings.add(mapping)
+                case Grant.EXPLICIT_DENY:
+                    explicit_deny_mappings.add(mapping)
+                    explicit_allow_mappings.discard(mapping)
+
+    return explicit_allow_mappings
 
 
 def parse_statement_node(node_group: List[Any]) -> List[Any]:
@@ -265,6 +289,48 @@ def get_principals_for_account(neo4j_session: neo4j.Session, account_id: str) ->
             principals[principal_arn] = {}
         principals[principal_arn][policy_id] = compile_statement(parse_statement_node(statements))
     return principals
+
+def parse_bucket_principal(statements: List[Any]) -> List[Any]:
+    for statement in statements:
+        if 'principal' in statement:
+            if statement['principal'] == "\"*\"":
+                statement['anonymous public'] = True
+            statement['principal'] = json.loads(statement['principal'])
+            if statement['principal']['AWS'] == "\"*\"":
+                statement['identified public'] = True
+    return statements
+
+def get_buckets_for_account(neo4j_session: neo4j.Session, account_id: str) -> Tuple[Dict, set, set]:
+    get_policy_query = """
+    MATCH
+    (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->
+    (bucket:S3Bucket)-[:POLICY_STATEMENT]->
+    (statement:S3PolicyStatement)
+    RETURN
+    DISTINCT bucket.id as bucket_id, collect(statement) as statements
+    """
+    results = neo4j_session.run(
+        get_policy_query,
+        AccountId=account_id,
+    )
+    principals: Dict[Any, Any] = {}
+    anonymous_public = set()
+    identified_public = set()
+    for r in results:
+        bucket_id = r["bucket_id"]
+        statements = r["statements"]
+        statements = parse_bucket_principal(compile_statement(parse_statement_node(statements)))
+        for statement in statements:
+            if statement['anonymous public']:
+                anonymous_public.add(statement)
+            elif statement['identified public']:
+                identified_public.add(statement)
+            else:
+                for principal_arn in statement['principal']['AWS']:
+                    if principal_arn not in principals:
+                        principals[principal_arn] = defaultdict(list)
+                    principals[principal_arn][bucket_id].append(statement)
+    return principals, anonymous_public, identified_public
 
 
 def get_resource_arns(neo4j_session: neo4j.Session, account_id: str, node_label: str) -> List[Any]:
@@ -359,7 +425,8 @@ def sync(
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
     logger.info("Syncing Permission Relationships for account '%s'.", current_aws_account_id)
-    principals = get_principals_for_account(neo4j_session, current_aws_account_id)
+    iam_principals = get_principals_for_account(neo4j_session, current_aws_account_id)
+    bucket_principals, anonymous_public, identified_public = get_buckets_for_account(neo4j_session, current_aws_account_id)
     pr_file = common_job_parameters["permission_relationships_file"]
     if not pr_file:
         logger.warning(
@@ -379,7 +446,7 @@ def sync(
         target_label = rpr["target_label"]
         resource_arns = get_resource_arns(neo4j_session, current_aws_account_id, target_label)
         logger.info("Syncing relationship '%s' for node label '%s'", relationship_name, target_label)
-        allowed_mappings = calculate_permission_relationships(principals, resource_arns, permissions)
+        allowed_mappings = calculate_permission_relationships_on_iam_principals(iam_principals, bucket_principals, resource_arns, permissions, anonymous_public, identified_public)
         load_principal_mappings(
             neo4j_session, allowed_mappings,
             target_label, relationship_name, update_tag,
