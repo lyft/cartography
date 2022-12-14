@@ -8,6 +8,7 @@ import botocore.exceptions
 import neo4j
 
 from cartography.stats import get_stats_client
+from cartography.util import aws_handle_regions
 from cartography.util import dict_date_to_epoch
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
@@ -18,8 +19,9 @@ stat_handler = get_stats_client(__name__)
 
 
 @timeit
-def get_elasticbeanstalk_applications(boto3_session: boto3.session.Session) -> List[Dict]:
-    client = boto3.client('elasticbeanstalk')
+@aws_handle_regions
+def get_elasticbeanstalk_applications(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
+    client = boto3.client('elasticbeanstalk', region_name=region)
 
     applications = []
 
@@ -32,9 +34,14 @@ def get_elasticbeanstalk_applications(boto3_session: boto3.session.Session) -> L
         for application in applications:
             application['EnvironmentsList'] = get_application_environments(
                 boto3_session,
+                region,
                 application['ApplicationName'],
             )
-            application['VersionsList'] = get_application_versions(boto3_session, application['ApplicationName'])
+            application['VersionsList'] = get_application_versions(
+                boto3_session,
+                region,
+                application['ApplicationName'],
+            )
 
     except botocore.exceptions.ClientError as e:
         logger.warning(
@@ -47,8 +54,11 @@ def get_elasticbeanstalk_applications(boto3_session: boto3.session.Session) -> L
 
 
 @timeit
-def get_application_environments(boto3_session: boto3.session.Session, application_name: str) -> List[Dict]:
-    client = boto3.client('elasticbeanstalk')
+@aws_handle_regions
+def get_application_environments(boto3_session: boto3.session.Session, region: str, application_name: str) -> List[
+    Dict
+]:
+    client = boto3.client('elasticbeanstalk', region_name=region)
     paginator = client.get_paginator('describe_environments')
 
     enviroments = []
@@ -64,8 +74,9 @@ def get_application_environments(boto3_session: boto3.session.Session, applicati
 
 
 @timeit
-def get_application_versions(boto3_session: boto3.session.Session, application_name: str) -> List[Dict]:
-    client = boto3.client('elasticbeanstalk')
+@aws_handle_regions
+def get_application_versions(boto3_session: boto3.session.Session, region: str, application_name: str) -> List[Dict]:
+    client = boto3.client('elasticbeanstalk', region_name=region)
     paginator = client.get_paginator('describe_application_versions')
 
     enviroments = []
@@ -377,8 +388,9 @@ def sync_elastic_bean_stalk(
         boto3_session: boto3.session.Session,
         current_aws_account_id: str,
         aws_update_tag: int,
+        region: str,
 ) -> None:
-    applications_data = get_elasticbeanstalk_applications(boto3_session)
+    applications_data = get_elasticbeanstalk_applications(boto3_session, region)
     load_elasticbeanstalk_applications(
         neo4j_session, applications_data, current_aws_account_id,
         aws_update_tag,
@@ -399,8 +411,10 @@ def sync(
         update_tag: int,
         common_job_parameters: Dict,
 ) -> None:
-    logger.info(f"Syncing Elastic Bean Stalk in account '{current_aws_account_id}'.")
-    sync_elastic_bean_stalk(neo4j_session, boto3_session, current_aws_account_id, update_tag)
+    for region in regions:
+        logger.info("Syncing ElasticBeanStalk for region '%s' in account '%s'.", region, current_aws_account_id)
+        sync_elastic_bean_stalk(neo4j_session, boto3_session, current_aws_account_id, update_tag, region)
+
     cleanup_elasticbeanstalk(neo4j_session, common_job_parameters)
 
     merge_module_sync_metadata(
