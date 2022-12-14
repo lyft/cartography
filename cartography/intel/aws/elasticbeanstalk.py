@@ -93,6 +93,7 @@ def load_elasticbeanstalk_enviroments(
         neo4j_session: neo4j.Session,
         distribution_arn: str,
         environments: List[Dict],
+        region: str,
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
@@ -102,6 +103,7 @@ def load_elasticbeanstalk_enviroments(
          SET
             d.arn = $environment.EnvironmentArn,
             d.name = $environment.EnvironmentName,
+            d.region = $region,
             d.id = $environment.EnvironmentId,
             d.application_name = $environment.ApplicationName,
             d.version_label = $environment.VersionLabel,
@@ -218,6 +220,7 @@ def load_elasticbeanstalk_enviroments(
             ingest_definitions,
             distribution_arn=distribution_arn,
             environment=environment,
+            region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
@@ -263,6 +266,7 @@ def load_elasticbeanstalk_versions(
         neo4j_session: neo4j.Session,
         distribution_arn: str,
         versions: List[Dict],
+        region: str,
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
@@ -271,7 +275,8 @@ def load_elasticbeanstalk_versions(
          ON CREATE SET d.firstseen = timestamp()
          SET
             d.arn = $version.ApplicationVersionArn,
-             d.application_name = $version.ApplicationName,
+            d.region = $region,
+            d.application_name = $version.ApplicationName,
              d.description = $version.Description,
              d.version_label = $version.VersionLabel,
              d.build_arn = $version.BuildArn,
@@ -311,6 +316,7 @@ def load_elasticbeanstalk_versions(
             ingest_definitions,
             distribution_arn=distribution_arn,
             version=version,
+            region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
@@ -328,6 +334,7 @@ def load_elasticbeanstalk_versions(
 def load_elasticbeanstalk_applications(
         neo4j_session: neo4j.Session,
         data: List[Dict],
+        region: str,
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
@@ -336,6 +343,7 @@ def load_elasticbeanstalk_applications(
              ON CREATE SET d.firstseen = timestamp()
              SET d.arn = $distribution.ApplicationArn,
                  d.name = $distribution.ApplicationName,
+                 d.region = $region,
                  d.domain_name = $distribution.DomainName,
                  d.description = $distribution.Description,
                  d.date_created = $distribution.DateCreated,
@@ -363,6 +371,7 @@ def load_elasticbeanstalk_applications(
         neo4j_session.run(
             ingest_distribution,
             distribution=application,
+            region=region,
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
@@ -371,6 +380,7 @@ def load_elasticbeanstalk_applications(
             neo4j_session,
             application["ApplicationArn"],
             application['VersionsList'],
+            region,
             current_aws_account_id,
             aws_update_tag, )
 
@@ -378,6 +388,7 @@ def load_elasticbeanstalk_applications(
             neo4j_session,
             application["ApplicationArn"],
             application['EnvironmentsList'],
+            region,
             current_aws_account_id,
             aws_update_tag, )
 
@@ -392,7 +403,7 @@ def sync_elastic_bean_stalk(
 ) -> None:
     applications_data = get_elasticbeanstalk_applications(boto3_session, region)
     load_elasticbeanstalk_applications(
-        neo4j_session, applications_data, current_aws_account_id,
+        neo4j_session, applications_data, region, current_aws_account_id,
         aws_update_tag,
     )
 

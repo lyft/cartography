@@ -3218,6 +3218,7 @@ Representation of an AWS SSM [PatchComplianceData](https://docs.aws.amazon.com/s
 | lastupdated |  Timestamp of the last time the node was updated |
 | **id** | The ARN of the application. |
 |name|The name of the application.|
+|region|AWS region the Application is from|
 |arn|The ARN of the application.|
 |domain_name|The domain of the application.|
 |description|User-defined description of the application.|
@@ -3253,6 +3254,7 @@ Representation of an AWS SSM [PatchComplianceData](https://docs.aws.amazon.com/s
 | lastupdated |  Timestamp of the last time the node was updated |
 | **id** | The ARN of the elasticbeanstalk version |
 | application_name |The name of the application to which the application version belongs. |
+|region|AWS region the Version is from|
 | description | The description of the application version. |
 | version_label | A unique identifier for the application version. |
 | build_arn | Reference to the artifact from the AWS CodeBuild build. |
@@ -3290,6 +3292,7 @@ Representation of an AWS SSM [PatchComplianceData](https://docs.aws.amazon.com/s
 | **id** | The ID of the application environment |
 |name|The name of this environment.|
 |arn|The environment's Amazon Resource Name (ARN), which can be used in other API requests that require an ARN.|
+|region|AWS region the Environment is from|
 |application_name|The name of the application associated with this environment.|
 |version_label|The application version deployed in this environment.|
 |solution_stack_name|The name of the SolutionStack deployed with this environment.|

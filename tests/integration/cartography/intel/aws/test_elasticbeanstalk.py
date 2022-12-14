@@ -11,6 +11,7 @@ def test_load_repository_associations(neo4j_session):
     cartography.intel.aws.elasticbeanstalk.load_elasticbeanstalk_applications(
         neo4j_session,
         data,
+        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
