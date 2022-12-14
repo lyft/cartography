@@ -101,6 +101,8 @@ def _build_rel_properties_statement(rel_var: str, rel_property_map: Optional[Dic
 def _build_match_clause(matcher: TargetNodeMatcher) -> str:
     """
     Generate a Neo4j match statement on one or more keys and values for a given node.
+    :param matcher: A TargetNodeMatcher object
+    :return: a Neo4j match clause
     """
     match = Template("$Key: $PropRef")
     matcher_asdict = asdict(matcher)
@@ -263,10 +265,18 @@ def _filter_selected_relationships(
         node_schema: CartographyNodeSchema,
         selected_relationships: Set[CartographyRelSchema],
 ) -> Tuple[Optional[CartographyRelSchema], Optional[OtherRelationships]]:
-    # Empty set means no relationships are selected
+    """
+    Ensures that selected relationships specified to build_ingestion_query() are actually present on the node_schema.
+    :param node_schema: The node schema object to filter relationships against
+    :param selected_relationships: The set of relationships to check if they exist in the node schema. If empty set,
+    this means that no relationships have been selected. None is not an accepted value here.
+    :return: a tuple of the (sub resource relationship, OtherRelationships that have not been filtered out).
+    """
+    # The empty set means no relationships are selected
     if selected_relationships == set():
         return None, None
 
+    # Collect the node's sub resource rel and OtherRelationships together in one set for easy comparison
     all_rels_on_node = {node_schema.sub_resource_relationship}
     if node_schema.other_relationships:
         for rel in node_schema.other_relationships.rels:
@@ -300,7 +310,7 @@ def build_ingestion_query(
     cartography module authors don't need to handwrite their own queries.
     :param node_schema: The CartographyNodeSchema object to build a Neo4j query from.
     :param selected_relationships: If specified, generates a query that attaches only the relationships in this optional
-    set of CartographyRelSchema. The RelSchema specified here _must_ be preset in node_schema.sub_resource_relationship
+    set of CartographyRelSchema. The RelSchema specified here _must_ be present in node_schema.sub_resource_relationship
     or node_schema.other_relationships.
     If None (default), then we create a query using all RelSchema in node_schema.sub_resource_relationship +
     node_schema.other_relationships.

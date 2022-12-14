@@ -226,7 +226,7 @@ class CartographyNodeSchema(abc.ABC):
         """
         Optional.
         Allows subclasses to specify additional cartography relationships on the node.
-        :return: None if not overriden. Else return an OtherRelationships object.
+        :return: None if not overriden. Else return the node's OtherRelationships.
         """
         return None
 
@@ -235,15 +235,15 @@ class CartographyNodeSchema(abc.ABC):
         """
         Optional.
         Allows specifying extra labels on the node.
-        :return: None if not overriden. Else return a str list of the extra labels specified on the node.
+        :return: None if not overriden. Else return the ExtraNodeLabels specified on the node.
         """
         return None
 
 
 def make_target_node_matcher(key_ref_dict: Dict[str, PropertyRef]) -> TargetNodeMatcher:
+    """
+    :param key_ref_dict: A Dict mapping keys present on the node to PropertyRef objects.
+    :return: A TargetNodeMatcher used for CartographyRelSchema to match with other nodes.
+    """
     fields = [(key, PropertyRef, field(default=prop_ref)) for key, prop_ref in key_ref_dict.items()]
-    return make_dataclass(
-        TargetNodeMatcher.__name__,
-        fields,
-        frozen=True,
-    )()
+    return make_dataclass(TargetNodeMatcher.__name__, fields, frozen=True)()

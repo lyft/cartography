@@ -83,7 +83,8 @@ def test_load_graph_data_with_worldasset_rel_selected(neo4j_session):
 
     # Act
     query = build_ingestion_query(
-        InterestingAssetSchema(), selected_relationships={
+        InterestingAssetSchema(),
+        selected_relationships={
             InterestingAssetToWorldAssetRel(),
         },
     )
