@@ -1,6 +1,7 @@
 import abc
 from dataclasses import dataclass
 from dataclasses import field
+from dataclasses import make_dataclass
 from enum import auto
 from enum import Enum
 from typing import Dict
@@ -66,7 +67,7 @@ class PropertyRef:
         return f"item.{self.name}" if not self.set_in_kwargs else self._parameterize_name()
 
 
-@dataclass
+@dataclass(frozen=True)
 class CartographyNodeProperties(abc.ABC):
     """
     Abstract base dataclass that represents the properties on a CartographyNodeSchema. This is intended to enforce that
@@ -85,7 +86,7 @@ class CartographyNodeProperties(abc.ABC):
             raise TypeError("Cannot instantiate abstract class.")
 
 
-@dataclass
+@dataclass(frozen=True)
 class CartographyRelProperties(abc.ABC):
     """
     Abstract class that represents the properties on a CartographyRelSchema. This is intended to enforce that all
@@ -112,10 +113,11 @@ class TargetNodeMatcher:
     This is needed because we need to include this in the CartographyRelSchema dataclass but dicts are mutable, so we
     need to do this wrapping.
     """
-    key_refs: Dict[str, PropertyRef]
+    pass
+    # key_refs: Dict[str, PropertyRef]
 
 
-@dataclass
+@dataclass(frozen=True)
 class CartographyRelSchema(abc.ABC):
     """
     Abstract base dataclass that represents a cartography relationship.
@@ -182,7 +184,7 @@ class ExtraNodeLabels:
     labels: List[str]
 
 
-@dataclass
+@dataclass(frozen=True)
 class CartographyNodeSchema(abc.ABC):
     """
     Abstract base dataclass that represents a graph node in cartography. This is used to dynamically generate graph
@@ -236,3 +238,12 @@ class CartographyNodeSchema(abc.ABC):
         :return: None if not overriden. Else return a str list of the extra labels specified on the node.
         """
         return None
+
+
+def make_target_node_matcher(key_ref_dict: Dict[str, PropertyRef]) -> TargetNodeMatcher:
+    fields = [(key, PropertyRef, field(default=prop_ref)) for key, prop_ref in key_ref_dict.items()]
+    return make_dataclass(
+        TargetNodeMatcher.__name__,
+        fields,
+        frozen=True,
+    )()

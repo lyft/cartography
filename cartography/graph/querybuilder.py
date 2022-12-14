@@ -3,6 +3,8 @@ from dataclasses import asdict
 from string import Template
 from typing import Dict
 from typing import Optional
+from typing import Set
+from typing import Tuple
 
 from cartography.graph.model import CartographyNodeProperties
 from cartography.graph.model import CartographyNodeSchema
@@ -101,7 +103,8 @@ def _build_match_clause(matcher: TargetNodeMatcher) -> str:
     Generate a Neo4j match statement on one or more keys and values for a given node.
     """
     match = Template("$Key: $PropRef")
-    return ', '.join(match.safe_substitute(Key=key, PropRef=prop_ref) for key, prop_ref in matcher.key_refs.items())
+    matcher_asdict = asdict(matcher)
+    return ', '.join(match.safe_substitute(Key=key, PropRef=prop_ref) for key, prop_ref in matcher_asdict.items())
 
 
 def _build_attach_sub_resource_statement(sub_resource_link: Optional[CartographyRelSchema] = None) -> str:
@@ -232,6 +235,9 @@ def _build_attach_relationships_statement(
     queries allows us to build a query that will ignore the null relationships and build the ones that
     exist.
     """
+    if not sub_resource_relationship and not other_relationships:
+        return ""
+
     attach_sub_resource_statement = _build_attach_sub_resource_statement(sub_resource_relationship)
     attach_additional_links_statement = _build_attach_additional_links_statement(other_relationships)
 
@@ -253,11 +259,52 @@ def _build_attach_relationships_statement(
     return query_template.safe_substitute(attach_relationships_statement=attach_relationships_statement)
 
 
-def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
+def _filter_selected_relationships(
+        node_schema: CartographyNodeSchema,
+        selected_relationships: Set[CartographyRelSchema],
+) -> Tuple[Optional[CartographyRelSchema], Optional[OtherRelationships]]:
+    # Empty set means no relationships are selected
+    if selected_relationships == set():
+        return None, None
+
+    all_rels_on_node = {node_schema.sub_resource_relationship}
+    if node_schema.other_relationships:
+        for rel in node_schema.other_relationships.rels:
+            all_rels_on_node.add(rel)
+
+    # Ensure that the selected_relationships are actually present on the node_schema.
+    for selected_rel in selected_relationships:
+        if selected_rel not in all_rels_on_node:
+            raise ValueError(
+                f"build_ingestion_query() failed: CartographyRelSchema {selected_rel.__class__.__name__} is not "
+                f"defined on CartographyNodeSchema type {node_schema.__class__.__name__}. Please verify the "
+                f"value of `selected_relationships` passed to `build_ingestion_query()`.",
+            )
+
+    sub_resource_rel = node_schema.sub_resource_relationship
+    if sub_resource_rel not in selected_relationships:
+        sub_resource_rel = None
+
+    # By this point, everything in selected_relationships is validated to be present in node_schema
+    filtered_other_rels = OtherRelationships([rel for rel in selected_relationships if rel != sub_resource_rel])
+
+    return sub_resource_rel, filtered_other_rels
+
+
+def build_ingestion_query(
+        node_schema: CartographyNodeSchema,
+        selected_relationships: Optional[Set[CartographyRelSchema]] = None,
+) -> str:
     """
     Generates a Neo4j query from the given CartographyNodeSchema to ingest the specified nodes and relationships so that
     cartography module authors don't need to handwrite their own queries.
     :param node_schema: The CartographyNodeSchema object to build a Neo4j query from.
+    :param selected_relationships: If specified, generates a query that attaches only the relationships in this optional
+    set of CartographyRelSchema. The RelSchema specified here _must_ be preset in node_schema.sub_resource_relationship
+    or node_schema.other_relationships.
+    If None (default), then we create a query using all RelSchema in node_schema.sub_resource_relationship +
+    node_schema.other_relationships.
+    If equal to the empty set (set()), we create a query with no relationships at all.
     :return: An optimized Neo4j query that can be used to ingest nodes and relationships.
     Important notes:
     - The resulting query uses the UNWIND + MERGE pattern (see
@@ -280,6 +327,12 @@ def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
     node_props: CartographyNodeProperties = node_schema.properties
     node_props_as_dict: Dict[str, PropertyRef] = asdict(node_props)
 
+    # Handle selected relationships
+    sub_resource_rel: Optional[CartographyRelSchema] = node_schema.sub_resource_relationship
+    other_rels: Optional[OtherRelationships] = node_schema.other_relationships
+    if selected_relationships or selected_relationships == set():
+        sub_resource_rel, other_rels = _filter_selected_relationships(node_schema, selected_relationships)
+
     ingest_query = query_template.safe_substitute(
         node_label=node_schema.label,
         dict_id_field=node_props.id,
@@ -287,9 +340,6 @@ def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
             node_props_as_dict,
             node_schema.extra_node_labels,
         ),
-        attach_relationships_statement=_build_attach_relationships_statement(
-            node_schema.sub_resource_relationship,
-            node_schema.other_relationships,
-        ),
+        attach_relationships_statement=_build_attach_relationships_statement(sub_resource_rel, other_rels),
     )
     return ingest_query

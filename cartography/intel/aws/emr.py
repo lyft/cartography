@@ -14,6 +14,7 @@ from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
+from cartography.graph.model import make_target_node_matcher
 from cartography.graph.model import PropertyRef
 from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import build_ingestion_query
@@ -58,7 +59,7 @@ def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, 
     return cluster_details
 
 
-@dataclass
+@dataclass(frozen=True)
 class EMRClusterNodeProperties(CartographyNodeProperties):
     arn: PropertyRef = PropertyRef('ClusterArn')
     auto_terminate: PropertyRef = PropertyRef('AutoTerminate')
@@ -85,16 +86,21 @@ class EMRClusterNodeProperties(CartographyNodeProperties):
     visible_to_all_users: PropertyRef = PropertyRef('VisibleToAllUsers')
 
 
-@dataclass
+@dataclass(frozen=True)
 class EMRClusterToAwsAccountRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
-@dataclass
+@dataclass(frozen=True)
 # (:EMRCluster)<-[:RESOURCE]-(:AWSAccount)
 class EMRClusterToAWSAccount(CartographyRelSchema):
     target_node_label: str = 'AWSAccount'
-    target_node_matcher: TargetNodeMatcher = TargetNodeMatcher(
+    # target_node_matcher: TargetNodeMatcher = make_dataclass(
+    #     'TargetNodeMatcher',
+    #     fields=[('id', PropertyRef, field(default=PropertyRef('AccountId', set_in_kwargs=True)))],
+    #     frozen=True,
+    # )()
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'id': PropertyRef('AccountId', set_in_kwargs=True)},
     )
     direction: LinkDirection = LinkDirection.INWARD
@@ -102,7 +108,7 @@ class EMRClusterToAWSAccount(CartographyRelSchema):
     properties: EMRClusterToAwsAccountRelProperties = EMRClusterToAwsAccountRelProperties()
 
 
-@dataclass
+@dataclass(frozen=True)
 class EMRClusterSchema(CartographyNodeSchema):
     label: str = 'EMRCluster'
     properties: EMRClusterNodeProperties = EMRClusterNodeProperties()
