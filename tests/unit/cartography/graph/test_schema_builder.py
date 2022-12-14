@@ -1,6 +1,7 @@
 from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import LinkDirection
 from cartography.graph.model import PropertyRef
+from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import build_ingestion_query
 from cartography.graph.schema_builder import build_node_properties
 from cartography.graph.schema_builder import build_node_schema
@@ -30,7 +31,9 @@ def test_build_node_schema_simple():
         sub_resource_relationship=build_rel_schema(
             name='SimpleNodeToSubResourceRel',
             target_node_label='SubResource',
-            target_node_key_refs=dict(id=PropertyRef('sub_resource_id', set_in_kwargs=True)),
+            target_node_matcher=TargetNodeMatcher(
+                key_refs=dict(id=PropertyRef('sub_resource_id', set_in_kwargs=True)),
+            ),
             direction=LinkDirection.INWARD,
             rel_label='RELATIONSHIP_LABEL',
             properties=build_rel_properties(

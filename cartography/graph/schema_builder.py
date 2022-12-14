@@ -11,7 +11,7 @@ from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
 from cartography.graph.model import PropertyRef
-from cartography.graph.querybuilder import default_field
+from cartography.graph.model import TargetNodeMatcher
 
 
 def build_data_class(name: str, base: Type, **props: Any):
@@ -39,7 +39,7 @@ def build_rel_properties(name: str, **properties: PropertyRef):
 def build_rel_schema(
     name: str,
     target_node_label: str,
-    target_node_key_refs: Dict[str, PropertyRef],
+    target_node_matcher: TargetNodeMatcher,
     direction: LinkDirection,
     rel_label: str,
     properties: CartographyRelProperties,
@@ -51,7 +51,7 @@ def build_rel_schema(
         name,
         CartographyRelSchema,
         target_node_label=target_node_label,
-        target_node_key_refs=default_field(target_node_key_refs),
+        target_node_matcher=target_node_matcher,
         direction=direction,
         rel_label=rel_label,
         properties=properties,
