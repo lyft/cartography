@@ -7,6 +7,7 @@ from . import ecr
 from . import ecs
 from . import eks
 from . import elasticache
+from . import elasticbeanstalk
 from . import elasticsearch
 from . import emr
 from . import iam
@@ -86,4 +87,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'ssm': ssm.sync,
     'inspector': inspector.sync,
     'config': config.sync,
+    'elasticbeanstalk': elasticbeanstalk.sync,
 }
