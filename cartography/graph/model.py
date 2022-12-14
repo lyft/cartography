@@ -39,8 +39,8 @@ class PropertyRef:
 
     cartography takes lists of Python dicts and loads them to Neo4j. PropertyRefs allow our dynamically generated Neo4j
     ingestion queries to set values for a given node or relationship property from (A) a field on the dict being
-    processed (PropertyRef. set_in_kwargs =False, default), or (B) from a single variable provided by a keyword argument
-    (PropertyRef. set_in_kwargs =True).
+    processed (PropertyRef.set_in_kwargs=False, default), or (B) from a single variable provided by a keyword argument
+    (PropertyRef.set_in_kwargs=True).
     """
 
     def __init__(self, name: str, set_in_kwargs=False):
@@ -102,6 +102,19 @@ class CartographyRelProperties(abc.ABC):
             raise TypeError("Cannot instantiate abstract class.")
 
 
+@dataclass(frozen=True)
+class TargetNodeMatcher:
+    """
+    Dataclass used to encapsulate the following mapping:
+    Keys: one or more attribute names on the target_node_label used to uniquely identify what node to connect to.
+    Values: The value of the target_node_key used to uniquely identify what node to connect to. This is given as a
+    PropertyRef.
+    This is needed because we need to include this in the CartographyRelSchema dataclass but dicts are mutable, so we
+    need to do this wrapping.
+    """
+    key_refs: Dict[str, PropertyRef]
+
+
 @dataclass
 class CartographyRelSchema(abc.ABC):
     """
@@ -110,8 +123,6 @@ class CartographyRelSchema(abc.ABC):
     The CartographyRelSchema contains properties that make it possible to connect the CartographyNodeSchema to other
     existing nodes in the graph.
     """
-    _target_node_key_refs: Dict[str, PropertyRef] = field(init=False)
-
     @property
     @abc.abstractmethod
     def properties(self) -> CartographyRelProperties:
@@ -129,21 +140,12 @@ class CartographyRelSchema(abc.ABC):
         pass
 
     @property
-    def target_node_key_refs(self) -> Dict[str, PropertyRef]:
+    @abc.abstractmethod
+    def target_node_matcher(self) -> TargetNodeMatcher:
         """
-        :return: A dict mapping
-        From: one or more attribute names on the target_node_label used to uniquely identify what node to connect to.
-        To: The value of the target_node_key used to uniquely identify what node to connect to. This is given as a
-        PropertyRef.
+        :return: A TargetNodeMatcher object used to find what node(s) to attach the relationship to.
         """
-        return self._target_node_key_refs
-
-    @target_node_key_refs.setter
-    def target_node_key_refs(self, key_refs: Dict[str, PropertyRef]) -> None:
-        """
-        Boilerplate setter function used to keep typehints happy.
-        """
-        self._target_node_key_refs = key_refs
+        pass
 
     @property
     @abc.abstractmethod
@@ -162,23 +164,30 @@ class CartographyRelSchema(abc.ABC):
         pass
 
 
+@dataclass(frozen=True)
+class OtherRelationships:
+    """
+    Encapsulates a list of CartographyRelSchema. This is used to ensure dataclass immutability when composed as part of
+    a CartographyNodeSchema object.
+    """
+    rels: List[CartographyRelSchema]
+
+
+@dataclass(frozen=True)
+class ExtraNodeLabels:
+    """
+    Encapsulates a list of str representing additional labels for the CartographyNodeSchema that this is composed on.
+    This wrapping is used to ensure dataclass immutability for the CartographyNodeSchema.
+    """
+    labels: List[str]
+
+
 @dataclass
 class CartographyNodeSchema(abc.ABC):
     """
     Abstract base dataclass that represents a graph node in cartography. This is used to dynamically generate graph
     ingestion queries.
-
-    A CartographyNodeSchema is composed of:
-
-    - CartographyNodeProperties: contains the properties on the node and where to find their values with PropertyRef
-    objects.
-    - [Optional] A CartographyRelSchema pointing to the node's sub-resource (see the docstring on
-      `sub_resource_relationship` for details.
-    - [Optional] One or more other CartographyRelSchemas to other nodes.
     """
-    _extra_labels: Optional[List[str]] = field(init=False, default=None)
-    _other_relationships: Optional[List[CartographyRelSchema]] = field(init=False, default=None)
-
     @property
     @abc.abstractmethod
     def label(self) -> str:
@@ -211,33 +220,19 @@ class CartographyNodeSchema(abc.ABC):
         return None
 
     @property
-    def other_relationships(self) -> Optional[List[CartographyRelSchema]]:
+    def other_relationships(self) -> Optional[OtherRelationships]:
         """
         Optional.
         Allows subclasses to specify additional cartography relationships on the node.
-        :return: None of not overriden. Else return a list of CartographyRelSchema associated with the node.
+        :return: None if not overriden. Else return an OtherRelationships object.
         """
-        return self._other_relationships
-
-    @other_relationships.setter
-    def other_relationships(self, other_rels: List[CartographyRelSchema]) -> None:
-        """
-        Boilerplate setter function used to keep typehints happy.
-        """
-        self._other_relationships = other_rels
+        return None
 
     @property
-    def extra_labels(self) -> Optional[List[str]]:
+    def extra_node_labels(self) -> Optional[ExtraNodeLabels]:
         """
         Optional.
         Allows specifying extra labels on the node.
         :return: None if not overriden. Else return a str list of the extra labels specified on the node.
         """
-        return self._extra_labels
-
-    @extra_labels.setter
-    def extra_labels(self, labels: List[str]) -> None:
-        """
-        Boilerplate setter function used to keep typehints happy.
-        """
-        self._extra_labels = labels
+        return None

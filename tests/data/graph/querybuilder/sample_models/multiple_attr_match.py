@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict
-from typing import List
 from typing import Optional
 
 from cartography.graph.model import CartographyNodeProperties
@@ -8,8 +6,9 @@ from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
+from cartography.graph.model import OtherRelationships
 from cartography.graph.model import PropertyRef
-from cartography.graph.querybuilder import default_field
+from cartography.graph.model import TargetNodeMatcher
 
 
 @dataclass
@@ -23,7 +22,7 @@ class TestComputerToPersonRel(CartographyRelSchema):
     (:TestComputer)<-[:OWNS]-(:Person)
     """
     target_node_label: str = 'Person'
-    target_node_key_refs: Dict[str, PropertyRef] = default_field(
+    target_node_matcher: TargetNodeMatcher = TargetNodeMatcher(
         {
             'first_name': PropertyRef('FirstName'),
             'last_name': PropertyRef('LastName'),
@@ -48,4 +47,4 @@ class TestComputerProperties(CartographyNodeProperties):
 class TestComputer(CartographyNodeSchema):
     label: str = 'TestComputer'
     properties: TestComputerProperties = TestComputerProperties()
-    other_relationships: Optional[List[CartographyRelSchema]] = default_field([TestComputerToPersonRel()])
+    other_relationships: Optional[OtherRelationships] = OtherRelationships([TestComputerToPersonRel()])
