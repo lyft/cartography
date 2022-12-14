@@ -1,17 +1,15 @@
 import logging
-from copy import copy
 from dataclasses import asdict
-from dataclasses import field
 from string import Template
-from typing import Any
 from typing import Dict
-from typing import List
 from typing import Optional
 
 from cartography.graph.model import CartographyNodeProperties
 from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import CartographyRelSchema
+from cartography.graph.model import ExtraNodeLabels
 from cartography.graph.model import LinkDirection
+from cartography.graph.model import OtherRelationships
 from cartography.graph.model import PropertyRef
 from cartography.graph.model import TargetNodeMatcher
 
@@ -19,28 +17,9 @@ from cartography.graph.model import TargetNodeMatcher
 logger = logging.getLogger(__name__)
 
 
-def default_field(obj: Any):
-    """
-    Helper function from https://stackoverflow.com/questions/52063759/passing-default-list-argument-to-dataclasses.
-    We use this so that we can work around how dataclass field default values disallow mutable objects (like Lists) by
-    wrapping them in lambdas.
-
-    Put another way, writing `field(default_factory=lambda: ['Label1', 'Label2'])` is so much
-    more work than writing `default_field(['Label1', 'Label2']`.
-
-    Note that if the Field is decorated with @property (like everything in our object model), then the dataclass needs
-    to also use this technique to keep typehints happy:
-    https://florimond.dev/en/posts/2018/10/reconciling-dataclasses-and-properties-in-python/.
-
-    :param obj: The mutable default object (e.g. a List) that we want to set as a default for a dataclass field.
-    :return: A dataclass Field object.
-    """
-    return field(default_factory=lambda: copy(obj))
-
-
 def _build_node_properties_statement(
         node_property_map: Dict[str, PropertyRef],
-        node_extra_labels: Optional[List[str]] = None,
+        extra_node_labels: Optional[ExtraNodeLabels] = None,
 ) -> str:
     """
     Generate a Neo4j clause that sets node properties using the given mapping of attribute names to PropertyRefs.
@@ -62,7 +41,7 @@ def _build_node_properties_statement(
         ```
     where `i` is a reference to the Neo4j node.
     :param node_property_map: Mapping of node attribute names as str to PropertyRef objects
-    :param node_extra_labels: Optional list of extra labels to set on the node as str
+    :param extra_node_labels: Optional ExtraNodeLabels object to set on the node as string
     :return: The resulting Neo4j SET clause to set the given attributes on the node
     """
     ingest_fields_template = Template('i.$node_property = $property_ref')
@@ -74,8 +53,8 @@ def _build_node_properties_statement(
     ])
 
     # Set extra labels on the node if specified
-    if node_extra_labels:
-        extra_labels = ':'.join([label for label in node_extra_labels])
+    if extra_node_labels:
+        extra_labels = ':'.join([label for label in extra_node_labels.labels])
         set_clause += f",\n                i:{extra_labels}"
     return set_clause
 
@@ -121,12 +100,6 @@ def _build_match_clause(matcher: TargetNodeMatcher) -> str:
     """
     Generate a Neo4j match statement on one or more keys and values for a given node.
     """
-    if not matcher.key_refs:
-        raise ValueError(
-            "Failed to create match clause because key_refs is Falsy. Please make sure that the `target_node_matcher` "
-            "field on all subclasses of CartographyRelSchema are properly defined.",
-        )
-
     match = Template("$Key: $PropRef")
     return ', '.join(match.safe_substitute(Key=key, PropRef=prop_ref) for key, prop_ref in matcher.key_refs.items())
 
@@ -178,7 +151,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
 
 
 def _build_attach_additional_links_statement(
-        additional_relationships: Optional[List[CartographyRelSchema]] = None,
+        additional_relationships: Optional[OtherRelationships] = None,
 ) -> str:
     """
     Generates a Neo4j statement to attach one or more CartographyRelSchemas to node(s) previously mentioned in the
@@ -204,7 +177,7 @@ def _build_attach_additional_links_statement(
         """,
     )
     links = []
-    for num, link in enumerate(additional_relationships):
+    for num, link in enumerate(additional_relationships.rels):
         node_var = f"n{num}"
         rel_var = f"r{num}"
 
@@ -248,7 +221,7 @@ def _build_attach_additional_links_statement(
 
 def _build_attach_relationships_statement(
         sub_resource_relationship: Optional[CartographyRelSchema],
-        other_relationships: Optional[List[CartographyRelSchema]],
+        other_relationships: Optional[OtherRelationships],
 ) -> str:
     """
     Use Neo4j subqueries to attach sub resource and/or other relationships.
@@ -310,7 +283,10 @@ def build_ingestion_query(node_schema: CartographyNodeSchema) -> str:
     ingest_query = query_template.safe_substitute(
         node_label=node_schema.label,
         dict_id_field=node_props.id,
-        set_node_properties_statement=_build_node_properties_statement(node_props_as_dict, node_schema.extra_labels),
+        set_node_properties_statement=_build_node_properties_statement(
+            node_props_as_dict,
+            node_schema.extra_node_labels,
+        ),
         attach_relationships_statement=_build_attach_relationships_statement(
             node_schema.sub_resource_relationship,
             node_schema.other_relationships,

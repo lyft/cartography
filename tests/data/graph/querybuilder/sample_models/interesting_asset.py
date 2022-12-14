@@ -1,15 +1,15 @@
 from dataclasses import dataclass
-from typing import List
 from typing import Optional
 
 from cartography.graph.model import CartographyNodeProperties
 from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
+from cartography.graph.model import ExtraNodeLabels
 from cartography.graph.model import LinkDirection
+from cartography.graph.model import OtherRelationships
 from cartography.graph.model import PropertyRef
 from cartography.graph.model import TargetNodeMatcher
-from cartography.graph.querybuilder import default_field
 from tests.data.graph.querybuilder.sample_models.simple_node import SimpleNodeProperties
 
 
@@ -81,11 +81,11 @@ class InterestingAssetToWorldAssetRel(CartographyRelSchema):
 
 @dataclass
 class InterestingAssetSchema(CartographyNodeSchema):
-    extra_labels: Optional[List[str]] = default_field(['AnotherNodeLabel', 'YetAnotherNodeLabel'])
+    extra_node_labels: Optional[ExtraNodeLabels] = ExtraNodeLabels(['AnotherNodeLabel', 'YetAnotherNodeLabel'])
     label: str = 'InterestingAsset'
     properties: SimpleNodeProperties = SimpleNodeProperties()
     sub_resource_relationship: InterestingAssetToSubResourceRel = InterestingAssetToSubResourceRel()
-    other_relationships: Optional[List[CartographyRelSchema]] = default_field(
+    other_relationships: Optional[OtherRelationships] = OtherRelationships(
         [
             InterestingAssetToHelloAssetRel(),
             InterestingAssetToWorldAssetRel(),

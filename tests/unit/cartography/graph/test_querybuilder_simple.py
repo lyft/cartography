@@ -10,7 +10,7 @@ def test_simplenode_sanity_checks():
     """
     schema: SimpleNodeSchema = SimpleNodeSchema()
     # Assert that the unimplemented, non-abstract properties have None values.
-    assert schema.extra_labels is None
+    assert schema.extra_node_labels is None
     assert schema.sub_resource_relationship is None
     assert schema.other_relationships is None
 
@@ -21,7 +21,7 @@ def test_simplenode_with_subresource_sanity_checks():
     """
     schema: SimpleNodeWithSubResourceSchema = SimpleNodeWithSubResourceSchema()
     # Assert that the unimplemented, non-abstract properties have None values.
-    assert schema.extra_labels is None
+    assert schema.extra_node_labels is None
     assert schema.other_relationships is None
 
 

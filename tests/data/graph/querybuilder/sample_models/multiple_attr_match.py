@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List
 from typing import Optional
 
 from cartography.graph.model import CartographyNodeProperties
@@ -7,9 +6,9 @@ from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
+from cartography.graph.model import OtherRelationships
 from cartography.graph.model import PropertyRef
 from cartography.graph.model import TargetNodeMatcher
-from cartography.graph.querybuilder import default_field
 
 
 @dataclass
@@ -48,4 +47,4 @@ class TestComputerProperties(CartographyNodeProperties):
 class TestComputer(CartographyNodeSchema):
     label: str = 'TestComputer'
     properties: TestComputerProperties = TestComputerProperties()
-    other_relationships: Optional[List[CartographyRelSchema]] = default_field([TestComputerToPersonRel()])
+    other_relationships: Optional[OtherRelationships] = OtherRelationships([TestComputerToPersonRel()])

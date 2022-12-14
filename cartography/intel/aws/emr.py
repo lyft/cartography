@@ -17,7 +17,6 @@ from cartography.graph.model import LinkDirection
 from cartography.graph.model import PropertyRef
 from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import build_ingestion_query
-from cartography.graph.querybuilder import default_field
 from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
