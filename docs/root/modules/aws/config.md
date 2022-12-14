@@ -6,10 +6,23 @@ Follow these steps to analyze AWS assets with Cartography.
 
 ### Single AWS Account Setup
 
-1. Set up an AWS identity (user, group, or role) for Cartography to use.  Ensure that this identity has the built-in AWS [SecurityAudit policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor) (arn:aws:iam::aws:policy/SecurityAudit) attached.  This policy grants access to read security config metadata. The SecurityAudit policy does not yet containe permissions for `inspector2`, so you will also need the [AmazonInspector2ReadOnlyAccess policy](https://docs.aws.amazon.com/inspector/latest/user/security-iam-awsmanpol.html#security-iam-awsmanpol-AmazonInspector2ReadOnlyAccess).
-1. Set up AWS credentials to this identity on your server, using a `config` and `credential` file.  For details, see AWS' [official guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
-1. [Optional] Configure AWS Retry settings using `AWS_MAX_ATTEMPTS` and `AWS_RETRY_MODE` environment variables. This helps in API Rate Limit throttling and TooManyRequestException related errors. For details, see AWS' [official guide](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-environment-variables).
-
+1. Set up an AWS identity (user, group, or role) for Cartography to use.  Ensure that this identity has the built-in AWS [SecurityAudit policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor) (arn:aws:iam::aws:policy/SecurityAudit) attached.  This policy grants access to read security config metadata. The SecurityAudit policy does not yet contain permissions for `inspector2`, so you will also need the [AmazonInspector2ReadOnlyAccess policy](https://docs.aws.amazon.com/inspector/latest/user/security-iam-awsmanpol.html#security-iam-awsmanpol-AmazonInspector2ReadOnlyAccess).
+2. To make scanning for ElasticBeanStalk Applications, additional ListBucket permission is required (beyond the SecurityAudit Policy). You can add following resource specific policy to allow ElasticBeanStalk scanning.
+   ```
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+            "Sid": "<ElasticBeanStalkDescribeApplicationPermission>",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::elasticbeanstalk-*-<AccountId>"
+        }
+          ]
+        }
+    ```
+3. Set up AWS credentials to this identity on your server, using a `config` and `credential` file.  For details, see AWS' [official guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+4. [Optional] Configure AWS Retry settings using `AWS_MAX_ATTEMPTS` and `AWS_RETRY_MODE` environment variables. This helps in API Rate Limit throttling and TooManyRequestException related errors. For details, see AWS' [official guide](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-environment-variables).
 
 ### Multiple AWS Account Setup
 
