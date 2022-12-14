@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -9,6 +8,7 @@ from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
 from cartography.graph.model import PropertyRef
+from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import default_field
 from tests.data.graph.querybuilder.sample_models.simple_node import SimpleNodeProperties
 
@@ -35,7 +35,7 @@ class InterestingAssetToSubResourceRel(CartographyRelSchema):
     (:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource)
     """
     target_node_label: str = 'SubResource'
-    target_node_key_refs: Dict[str, PropertyRef] = default_field(
+    target_node_matcher: TargetNodeMatcher = TargetNodeMatcher(
         {'id': PropertyRef('sub_resource_id', set_in_kwargs=True)},
     )
     direction: LinkDirection = LinkDirection.INWARD
@@ -55,7 +55,7 @@ class InterestingAssetToHelloAssetRel(CartographyRelSchema):
     (:InterestingAsset)-[:ASSOCIATED_WITH]->(:HelloAsset)
     """
     target_node_label: str = 'HelloAsset'
-    target_node_key_refs: Dict[str, PropertyRef] = default_field({'id': PropertyRef('hello_asset_id')})
+    target_node_matcher: TargetNodeMatcher = TargetNodeMatcher({'id': PropertyRef('hello_asset_id')})
     direction: LinkDirection = LinkDirection.OUTWARD
     rel_label: str = "ASSOCIATED_WITH"
     properties: InterestingAssetToHelloAssetRelProps = InterestingAssetToHelloAssetRelProps()
@@ -73,7 +73,7 @@ class InterestingAssetToWorldAssetRel(CartographyRelSchema):
     (:InterestingAsset)<-[:CONNECTED]-(:WorldAsset)
     """
     target_node_label: str = 'WorldAsset'
-    target_node_key_refs: Dict[str, PropertyRef] = default_field({'id': PropertyRef('world_asset_id')})
+    target_node_matcher: TargetNodeMatcher = TargetNodeMatcher({'id': PropertyRef('world_asset_id')})
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "CONNECTED"
     properties: InterestingAssetToWorldAssetRelProps = InterestingAssetToWorldAssetRelProps()

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -9,6 +8,7 @@ from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
 from cartography.graph.model import PropertyRef
+from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import default_field
 
 
@@ -23,7 +23,7 @@ class TestComputerToPersonRel(CartographyRelSchema):
     (:TestComputer)<-[:OWNS]-(:Person)
     """
     target_node_label: str = 'Person'
-    target_node_key_refs: Dict[str, PropertyRef] = default_field(
+    target_node_matcher: TargetNodeMatcher = TargetNodeMatcher(
         {
             'first_name': PropertyRef('FirstName'),
             'last_name': PropertyRef('LastName'),

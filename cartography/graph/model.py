@@ -103,6 +103,11 @@ class CartographyRelProperties(abc.ABC):
 
 
 @dataclass
+class TargetNodeMatcher:
+    key_refs: Dict[str, PropertyRef]
+
+
+@dataclass
 class CartographyRelSchema(abc.ABC):
     """
     Abstract base dataclass that represents a cartography relationship.
@@ -110,8 +115,6 @@ class CartographyRelSchema(abc.ABC):
     The CartographyRelSchema contains properties that make it possible to connect the CartographyNodeSchema to other
     existing nodes in the graph.
     """
-    _target_node_key_refs: Dict[str, PropertyRef] = field(init=False)
-
     @property
     @abc.abstractmethod
     def properties(self) -> CartographyRelProperties:
@@ -129,21 +132,16 @@ class CartographyRelSchema(abc.ABC):
         pass
 
     @property
-    def target_node_key_refs(self) -> Dict[str, PropertyRef]:
+    @abc.abstractmethod
+    def target_node_matcher(self) -> TargetNodeMatcher:
         """
         :return: A dict mapping
+        TODO update this docstring
         From: one or more attribute names on the target_node_label used to uniquely identify what node to connect to.
         To: The value of the target_node_key used to uniquely identify what node to connect to. This is given as a
         PropertyRef.
         """
-        return self._target_node_key_refs
-
-    @target_node_key_refs.setter
-    def target_node_key_refs(self, key_refs: Dict[str, PropertyRef]) -> None:
-        """
-        Boilerplate setter function used to keep typehints happy.
-        """
-        self._target_node_key_refs = key_refs
+        pass
 
     @property
     @abc.abstractmethod

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict
 
 from cartography.graph.model import CartographyNodeProperties
 from cartography.graph.model import CartographyNodeSchema
@@ -7,7 +6,7 @@ from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
 from cartography.graph.model import PropertyRef
-from cartography.graph.querybuilder import default_field
+from cartography.graph.model import TargetNodeMatcher
 
 
 # Test defining a simple node with no relationships.
@@ -34,7 +33,7 @@ class SimpleNodeToSubResourceRelProps(CartographyRelProperties):
 @dataclass
 class SimpleNodeToSubResourceRel(CartographyRelSchema):
     target_node_label: str = 'SubResource'
-    target_node_key_refs: Dict[str, PropertyRef] = default_field(
+    target_node_matcher: TargetNodeMatcher = TargetNodeMatcher(
         {'id': PropertyRef('sub_resource_id', set_in_kwargs=True)},
     )
     direction: LinkDirection = LinkDirection.INWARD

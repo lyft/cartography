@@ -13,6 +13,7 @@ from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
 from cartography.graph.model import PropertyRef
+from cartography.graph.model import TargetNodeMatcher
 
 
 logger = logging.getLogger(__name__)
@@ -116,18 +117,18 @@ def _build_rel_properties_statement(rel_var: str, rel_property_map: Optional[Dic
     return set_clause
 
 
-def _build_match_clause(key_refs: Dict[str, PropertyRef]) -> str:
+def _build_match_clause(matcher: TargetNodeMatcher) -> str:
     """
     Generate a Neo4j match statement on one or more keys and values for a given node.
     """
-    if not key_refs:
+    if not matcher.key_refs:
         raise ValueError(
-            "Failed to create match clause because key_refs is Falsy. Please make sure that the `target_node_key_refs` "
+            "Failed to create match clause because key_refs is Falsy. Please make sure that the `target_node_matcher` "
             "field on all subclasses of CartographyRelSchema are properly defined.",
         )
 
     match = Template("$Key: $PropRef")
-    return ', '.join(match.safe_substitute(Key=key, PropRef=prop_ref) for key, prop_ref in key_refs.items())
+    return ', '.join(match.safe_substitute(Key=key, PropRef=prop_ref) for key, prop_ref in matcher.key_refs.items())
 
 
 def _build_attach_sub_resource_statement(sub_resource_link: Optional[CartographyRelSchema] = None) -> str:
@@ -168,7 +169,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
 
     attach_sub_resource_statement = sub_resource_attach_template.safe_substitute(
         SubResourceLabel=sub_resource_link.target_node_label,
-        MatchClause=_build_match_clause(sub_resource_link.target_node_key_refs),
+        MatchClause=_build_match_clause(sub_resource_link.target_node_matcher),
         RelMergeClause=rel_merge_clause,
         SubResourceRelLabel=sub_resource_link.rel_label,
         set_rel_properties_statement=_build_rel_properties_statement('r', rel_props_as_dict),
@@ -234,7 +235,7 @@ def _build_attach_additional_links_statement(
 
         additional_ref = additional_links_template.safe_substitute(
             AddlLabel=link.target_node_label,
-            MatchClause=_build_match_clause(link.target_node_key_refs),
+            MatchClause=_build_match_clause(link.target_node_matcher),
             node_var=node_var,
             rel_var=rel_var,
             RelMerge=rel_merge,
