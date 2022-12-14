@@ -1,10 +1,10 @@
 import json
 import logging
-from pprint import pprint
 from typing import Dict
 from typing import List
 
 import boto3
+import botocore.exceptions
 import neo4j
 
 from cartography.stats import get_stats_client
@@ -21,15 +21,27 @@ stat_handler = get_stats_client(__name__)
 def get_elasticbeanstalk_applications(boto3_session: boto3.session.Session) -> List[Dict]:
     client = boto3.client('elasticbeanstalk')
 
-    client_describe_applications = client.describe_applications()
+    applications = []
 
-    applications = client_describe_applications['Applications']
+    try:
 
-    for application in applications:
-        application['EnvironmentsList'] = get_application_environments(boto3_session, application['ApplicationName'])
-        application['VersionsList'] = get_application_versions(boto3_session, application['ApplicationName'])
+        client_describe_applications = client.describe_applications()
 
-    pprint(applications)
+        applications = client_describe_applications['Applications']
+
+        for application in applications:
+            application['EnvironmentsList'] = get_application_environments(
+                boto3_session,
+                application['ApplicationName'],
+            )
+            application['VersionsList'] = get_application_versions(boto3_session, application['ApplicationName'])
+
+    except botocore.exceptions.ClientError as e:
+        logger.warning(
+            "Could not run ElasticBeanStalk - Client Error due to boto3 error %s: %s. Skipping.",
+            e.response['Error']['Code'],
+            e.response['Error']['Message'],
+        )
 
     return applications
 
