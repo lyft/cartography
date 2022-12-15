@@ -95,11 +95,6 @@ class EMRClusterToAwsAccountRelProperties(CartographyRelProperties):
 # (:EMRCluster)<-[:RESOURCE]-(:AWSAccount)
 class EMRClusterToAWSAccount(CartographyRelSchema):
     target_node_label: str = 'AWSAccount'
-    # target_node_matcher: TargetNodeMatcher = make_dataclass(
-    #     'TargetNodeMatcher',
-    #     fields=[('id', PropertyRef, field(default=PropertyRef('AccountId', set_in_kwargs=True)))],
-    #     frozen=True,
-    # )()
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'id': PropertyRef('AccountId', set_in_kwargs=True)},
     )

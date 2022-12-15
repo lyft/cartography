@@ -8,7 +8,8 @@ from tests.data.graph.querybuilder.sample_models.interesting_asset import Intere
 
 def test_load_graph_data_subset_of_relationships(neo4j_session):
     """
-    Test load_graph_data() if a schema defines multiple relationships but only a subset of them are present in our data.
+    Test load_graph_data() if a schema defines multiple relationships but only a subset of them are possible to create
+    given our data.
 
     In this test case, the following relationships are possible:
         (:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource)
@@ -51,7 +52,7 @@ def test_load_graph_data_subset_of_relationships(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n1:InterestingAsset)
-        OPTIONAL MATCH (n1)<-[:ASSOCIATED_WITH]-(n2:HelloAsset)
+        OPTIONAL MATCH (n1)--(n2:HelloAsset)
         RETURN n1.id, n2.id;
         """,
     )
@@ -114,7 +115,7 @@ def test_load_graph_data_subset_of_relationships_only_sub_resource(neo4j_session
     result = neo4j_session.run(
         """
         MATCH (n1:InterestingAsset)
-        OPTIONAL MATCH (n1)<-[:ASSOCIATED_WITH]-(n2:HelloAsset)
+        OPTIONAL MATCH (n1)--(n2:HelloAsset)
         RETURN n1.id, n2.id;
         """,
     )

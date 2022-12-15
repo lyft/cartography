@@ -312,9 +312,9 @@ def build_ingestion_query(
     :param selected_relationships: If specified, generates a query that attaches only the relationships in this optional
     set of CartographyRelSchema. The RelSchema specified here _must_ be present in node_schema.sub_resource_relationship
     or node_schema.other_relationships.
-    If None (default), then we create a query using all RelSchema in node_schema.sub_resource_relationship +
-    node_schema.other_relationships.
-    If equal to the empty set (set()), we create a query with no relationships at all.
+    If selected_relationships is None (default), then we create a query using all RelSchema specified in
+    node_schema.sub_resource_relationship + node_schema.other_relationships.
+    If selected_relationships is the empty set, we create a query with no relationship attachments at all.
     :return: An optimized Neo4j query that can be used to ingest nodes and relationships.
     Important notes:
     - The resulting query uses the UNWIND + MERGE pattern (see
@@ -322,6 +322,7 @@ def build_ingestion_query(
       load the data for speed.
     - The query assumes that a list of dicts will be passed to it through parameter $DictList.
     - The query sets `firstseen` attributes on all the nodes and relationships that it creates.
+    - The query is intended to be supplied as input to cartography.core.client.tx.load_graph_data().
     """
     query_template = Template(
         """
