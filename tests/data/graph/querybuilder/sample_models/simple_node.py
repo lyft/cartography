@@ -46,4 +46,4 @@ class SimpleNodeToSubResourceRel(CartographyRelSchema):
 class SimpleNodeWithSubResourceSchema(CartographyNodeSchema):
     label: str = 'SimpleNode'
     properties: SimpleNodeProperties = SimpleNodeProperties()
-    sub_resource_relationship: CartographyRelSchema = SimpleNodeToSubResourceRel()
+    sub_resource_relationship: SimpleNodeToSubResourceRel = SimpleNodeToSubResourceRel()

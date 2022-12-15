@@ -109,6 +109,25 @@ def _build_match_clause(matcher: TargetNodeMatcher) -> str:
     return ', '.join(match.safe_substitute(Key=key, PropRef=prop_ref) for key, prop_ref in matcher_asdict.items())
 
 
+def _asdict_with_validate_relprops(link: CartographyRelSchema) -> Dict[str, PropertyRef]:
+    """
+    Give a helpful error message when forgetting to put `()` when instantiating a CartographyRelSchema, as this
+    isn't always caught by IDEs.
+    """
+    try:
+        rel_props_as_dict: Dict[str, PropertyRef] = asdict(link.properties)
+    except TypeError as e:
+        if e.args and e.args[0] and e.args == 'asdict() should be called on dataclass instances':
+            logger.error(
+                f'TypeError thrown when trying to draw relation "{link.rel_label}" to a "{link.target_node_label}" '
+                f'node. Please make sure that you did not forget to write `()` when specifying `properties` in the'
+                f'dataclass. '
+                f'For example, do `properties: RelProp = RelProp()`; NOT `properties: RelProp = RelProp`.',
+            )
+        raise
+    return rel_props_as_dict
+
+
 def _build_attach_sub_resource_statement(sub_resource_link: Optional[CartographyRelSchema] = None) -> str:
     """
     Generates a Neo4j statement to attach a sub resource to a node. A 'sub resource' is a term we made up to describe
@@ -143,7 +162,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
 
     rel_merge_clause = rel_merge_template.safe_substitute(SubResourceRelLabel=sub_resource_link.rel_label)
 
-    rel_props_as_dict: Dict[str, PropertyRef] = asdict(sub_resource_link.properties)
+    rel_props_as_dict: Dict[str, PropertyRef] = _asdict_with_validate_relprops(sub_resource_link)
 
     attach_sub_resource_statement = sub_resource_attach_template.safe_substitute(
         SubResourceLabel=sub_resource_link.target_node_label,
@@ -197,19 +216,7 @@ def _build_attach_additional_links_statement(
             node_var=node_var,
         )
 
-        # Give a helpful error message when forgetting to put `()` when instantiating a CartographyRelSchema, as this
-        # isn't always caught by IDEs like PyCharm.
-        try:
-            rel_props_as_dict: Dict[str, PropertyRef] = asdict(link.properties)
-        except TypeError as e:
-            if e.args and e.args[0] and e.args == 'asdict() should be called on dataclass instances':
-                logger.error(
-                    f'TypeError thrown when trying to draw relation "{link.rel_label}" to a "{link.target_node_label}" '
-                    f'node. Please make sure that you did not forget to write `()` when specifying `properties` in the'
-                    f'dataclass. '
-                    f'For example, do `properties: RelProp = RelProp()`; NOT `properties: RelProp = RelProp`.',
-                )
-            raise
+        rel_props_as_dict = _asdict_with_validate_relprops(link)
 
         additional_ref = additional_links_template.safe_substitute(
             AddlLabel=link.target_node_label,
@@ -230,12 +237,11 @@ def _build_attach_relationships_statement(
 ) -> str:
     """
     Use Neo4j subqueries to attach sub resource and/or other relationships.
-    Subqueries allow the query to continue to run even if we only have data for some but not all of the
-    relationships defined by a schema.
-    For example, if an EC2Instance has attachments to NetworkInterfaces and AWSAccounts but our data
-    only includes EC2Instance to AWSAccount information, structuring the ingestion query with sub-
-    queries allows us to build a query that will ignore the null relationships and build the ones that
-    exist.
+    Subqueries allow the query to continue to run even if we only have data for some but not all the relationships
+    defined by a schema.
+    For example, if an EC2Instance has attachments to NetworkInterfaces and AWSAccounts, but our data only includes
+    EC2Instance to AWSAccount information, structuring the ingestion query with subqueries allows us to build a query
+    that will ignore the null relationships and continue to MERGE the ones that exist.
     """
     if not sub_resource_relationship and not other_relationships:
         return ""
@@ -266,11 +272,13 @@ def _filter_selected_relationships(
         selected_relationships: Set[CartographyRelSchema],
 ) -> Tuple[Optional[CartographyRelSchema], Optional[OtherRelationships]]:
     """
-    Ensures that selected relationships specified to build_ingestion_query() are actually present on the node_schema.
+    Ensures that selected relationships specified to build_ingestion_query() are actually present on
+    node_schema.sub_resource_relationship and node_schema.other_relationships.
     :param node_schema: The node schema object to filter relationships against
     :param selected_relationships: The set of relationships to check if they exist in the node schema. If empty set,
     this means that no relationships have been selected. None is not an accepted value here.
-    :return: a tuple of the (sub resource relationship, OtherRelationships that have not been filtered out).
+    :return: a tuple of the (sub resource rel [if present in selected_relationships], an OtherRelationships object
+    containing all values of node_schema.other_relationships that are present in selected_relationships)
     """
     # The empty set means no relationships are selected
     if selected_relationships == set():
