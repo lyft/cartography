@@ -8,6 +8,15 @@ import boto3
 import botocore
 import neo4j
 
+from cartography.graph.model import LinkDirection
+from cartography.graph.model import make_target_node_matcher
+from cartography.graph.model import OtherRelationships
+from cartography.graph.model import PropertyRef
+from cartography.graph.querybuilder import build_ingestion_query
+from cartography.graph.schema_builder import build_node_properties
+from cartography.graph.schema_builder import build_node_schema
+from cartography.graph.schema_builder import build_rel_properties
+from cartography.graph.schema_builder import build_rel_schema
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -34,53 +43,77 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
 def load_lambda_functions(
         neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
-    ingest_lambda_functions = """
-    UNWIND $lambda_functions_list AS lf
-        MERGE (lambda:AWSLambda{id: lf.FunctionArn})
-        ON CREATE SET lambda.firstseen = timestamp()
-        SET lambda.name = lf.FunctionName,
-        lambda.modifieddate = lf.LastModified,
-        lambda.runtime = lf.Runtime,
-        lambda.description = lf.Description,
-        lambda.timeout = lf.Timeout,
-        lambda.memory = lf.MemorySize,
-        lambda.codesize = lf.CodeSize,
-        lambda.handler = lf.Handler,
-        lambda.version = lf.Version,
-        lambda.tracingconfigmode = lf.TracingConfig.Mode,
-        lambda.revisionid = lf.RevisionId,
-        lambda.state = lf.State,
-        lambda.statereason = lf.StateReason,
-        lambda.statereasoncode = lf.StateReasonCode,
-        lambda.lastupdatestatus = lf.LastUpdateStatus,
-        lambda.lastupdatestatusreason = lf.LastUpdateStatusReason,
-        lambda.lastupdatestatusreasoncode = lf.LastUpdateStatusReasonCode,
-        lambda.packagetype = lf.PackageType,
-        lambda.signingprofileversionarn = lf.SigningProfileVersionArn,
-        lambda.signingjobarn = lf.SigningJobArn,
-        lambda.codesha256 = lf.CodeSha256,
-        lambda.architectures = lf.Architectures,
-        lambda.masterarn = lf.MasterArn,
-        lambda.kmskeyarn = lf.KMSKeyArn,
-        lambda.lastupdated = $aws_update_tag
-        WITH lambda, lf
-        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
-        MERGE (owner)-[r:RESOURCE]->(lambda)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = $aws_update_tag
-        WITH lambda, lf
-        MATCH (role:AWSPrincipal{arn: lf.Role})
-        MERGE (lambda)-[r:STS_ASSUME_ROLE_ALLOW]->(role)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = $aws_update_tag
-    """
+    lambda_schema = build_node_schema(
+        cls_name='AWSLambdaSchema',
+        label='AWSLambda',
+        properties=build_node_properties(
+            cls_name='AWSLambdaProperties',
+            lastupdated=PropertyRef('lastupdated', set_in_kwargs=True),
+            id=PropertyRef('FunctionArn'),
+            name=PropertyRef('FunctionName'),
+            runtime=PropertyRef('Runtime'),
+            timeout=PropertyRef('Timeout'),
+            memory=PropertyRef('MemorySize'),
+            codesize=PropertyRef('CodeSize'),
+            handler=PropertyRef('Handler'),
+            version=PropertyRef('Version'),
+            tracingconfigmode=PropertyRef('TracingConfig.Mode'),
+            revisionid=PropertyRef('RevisionId'),
+            state=PropertyRef('State'),
+            statereason=PropertyRef('StateReason'),
+            lastupdatestatus=PropertyRef('StateReasonCode'),
+            lastupdatestatusreason=PropertyRef('LastUpdateStatusReason'),
+            lastupdatestatusreasoncode=PropertyRef('LastUpdateStatusReasonCode'),
+            packagetype=PropertyRef('PackageType'),
+            signingprofileversionarn=PropertyRef('SigningProfileVersionArn'),
+            signingjobarn=PropertyRef('SigningJobArn'),
+            codesha256=PropertyRef('CodeSha256'),
+            architectures=PropertyRef('Architectures'),
+            masterarn=PropertyRef('MasterArn'),
+            kmskeyarn=PropertyRef('KMSKeyArn'),
+        ),
+        sub_resource_relationship=build_rel_schema(
+            cls_name='AWSLambdaLayerToAwsAccountSchema',
+            target_node_label='AWSAccount',
+            target_node_matcher=make_target_node_matcher(
+                dict(
+                    id=PropertyRef('AccountId', set_in_kwargs=True),
+                ),
+            ),
+            direction=LinkDirection.INWARD,
+            rel_label='RESOURCE',
+            properties=build_rel_properties(
+                cls_name='AWSLambdaToAwsAccountProperties',
+                lastupdated=PropertyRef('lastupdated', set_in_kwargs=True),
+            ),
+        ),
+        other_relationships=OtherRelationships(
+            rels=[
+                build_rel_schema(
+                    cls_name='AWSLambdaToAwsPrincipalSchema',
+                    target_node_label='AWSPrincipal',
+                    target_node_matcher=make_target_node_matcher(
+                        dict(
+                            arn=PropertyRef('Role'),
+                        ),
+                    ),
+                    direction=LinkDirection.OUTWARD,
+                    rel_label='STS_ASSUME_ROLE_ALLOW',
+                    properties=build_rel_properties(
+                        cls_name='AWSLambdaLayerToAwsPrincipalProperties',
+                        lastupdated=PropertyRef('lastupdated', set_in_kwargs=True),
+                    ),
+                ),
+            ],
+        ),
+    )
+    ingest_lambda_functions = build_ingestion_query(lambda_schema)
 
     neo4j_session.run(
         ingest_lambda_functions,
-        lambda_functions_list=data,
-        Region=region,
-        AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
+        DictList=data,
+        AccountId=current_aws_account_id,
+        lastupdated=aws_update_tag,
     )
 
 

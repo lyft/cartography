@@ -9,6 +9,7 @@ from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
+from cartography.graph.model import OtherRelationships
 from cartography.graph.model import PropertyRef
 from cartography.graph.model import TargetNodeMatcher
 
@@ -70,7 +71,7 @@ def build_node_schema(
     label: str,
     properties: CartographyNodeProperties,
     sub_resource_relationship: Optional[CartographyRelSchema] = None,
-    other_relationships: Optional[List[CartographyRelSchema]] = None,
+    other_relationships: Optional[OtherRelationships] = None,
     extra_labels: Optional[List[str]] = None,
 ) -> CartographyNodeSchema:
     '''

@@ -52,6 +52,13 @@ def test_load_lambda_relationships(neo4j_session):
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
     )
+    # Create the Lambdas Roles
+    neo4j_session.run("MERGE (aws:AWSPrincipal{arn: 'arn:aws:iam::000000000000:role/sample-role'})")
+    neo4j_session.run("MERGE (aws:AWSPrincipal{arn: 'arn:aws:iam::000000000000:role/Lambda-Testing-Role'})")
+    neo4j_session.run("MERGE (aws:AWSPrincipal{arn: 'arn:aws:iam::000000000000:role/service-role/sample-role'})")
+    neo4j_session.run("MERGE (aws:AWSPrincipal{arn: 'arn:aws:iam::000000000000:role/sample-role-2'})")
+    neo4j_session.run("MERGE (aws:AWSPrincipal{arn: 'arn:aws:iam::000000000000:role/sample-role-3'})")
+    neo4j_session.run("MERGE (aws:AWSPrincipal{arn: 'arn:aws:iam::000000000000:role/sample-role-4'})")
 
     # Load Test Lambda Functions
     data = tests.data.aws.lambda_function.LIST_LAMBDA_FUNCTIONS
@@ -80,7 +87,7 @@ def test_load_lambda_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:AWSLambda) RETURN n1.id, n2.id;
+        MATCH (n1:AWSAccount)-[:RESOURCE]->(n2:AWSLambda)-[:STS_ASSUME_ROLE_ALLOW]->(:AWSPrincipal) RETURN n1.id, n2.id;
         """,
     )
     actual = {
