@@ -19,7 +19,7 @@ def test_build_node_schema_simple():
     original_schema: SimpleNodeWithSubResourceSchema = SimpleNodeWithSubResourceSchema()
 
     built_schema: CartographyNodeSchema = build_node_schema(
-        name='SimpleNodeWithSubResourceSchema',
+        cls_name='SimpleNodeWithSubResourceSchema',
         label='SimpleNode',
         properties=build_node_properties(
             'SimpleNodeProperties',
@@ -29,7 +29,7 @@ def test_build_node_schema_simple():
             property2=PropertyRef('property2'),
         ),
         sub_resource_relationship=build_rel_schema(
-            name='SimpleNodeToSubResourceRel',
+            cls_name='SimpleNodeToSubResourceRel',
             target_node_label='SubResource',
             target_node_matcher=make_target_node_matcher(
                 dict(id=PropertyRef('sub_resource_id', set_in_kwargs=True)),
@@ -37,7 +37,7 @@ def test_build_node_schema_simple():
             direction=LinkDirection.INWARD,
             rel_label='RELATIONSHIP_LABEL',
             properties=build_rel_properties(
-                name='SimpleNodeToSubResourceRelProps',
+                cls_name='SimpleNodeToSubResourceRelProps',
                 lastupdated=PropertyRef('lastupdated', set_in_kwargs=True),
             ),
         ),

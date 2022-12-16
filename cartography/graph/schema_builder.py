@@ -13,13 +13,13 @@ from cartography.graph.model import PropertyRef
 from cartography.graph.model import TargetNodeMatcher
 
 
-def build_data_class(name: str, base: Type, **props: Any):
+def build_data_class(cls_name: str, base_cls: Type, **props: Any):
     '''
     Helper to build any dataclass. class Returns an instance if the class.
     '''
     cls = make_dataclass(
-        cls_name=name,
-        bases=(base,),
+        cls_name=cls_name,
+        bases=(base_cls,),
         fields=[
             (prop_name, type(prop_value), prop_value)
             for prop_name, prop_value in props.items()
@@ -29,15 +29,15 @@ def build_data_class(name: str, base: Type, **props: Any):
     return cls()
 
 
-def build_rel_properties(name: str, **properties: PropertyRef):
+def build_rel_properties(cls_name: str, **properties: PropertyRef):
     '''
     Helper to build a CartographyRelProperties class.
     '''
-    return build_data_class(name, CartographyRelProperties, **properties)
+    return build_data_class(cls_name, CartographyRelProperties, **properties)
 
 
 def build_rel_schema(
-    name: str,
+    cls_name: str,
     target_node_label: str,
     target_node_matcher: TargetNodeMatcher,
     direction: LinkDirection,
@@ -48,7 +48,7 @@ def build_rel_schema(
     Helper to build a CartographyRelSchema class.
     '''
     return build_data_class(
-        name,
+        cls_name,
         CartographyRelSchema,
         target_node_label=target_node_label,
         target_node_matcher=target_node_matcher,
@@ -58,15 +58,15 @@ def build_rel_schema(
     )
 
 
-def build_node_properties(name: str, **properties: PropertyRef):
+def build_node_properties(cls_name: str, **properties: PropertyRef):
     '''
     Helper to build a CartographyNodeProperties.
     '''
-    return build_data_class(name, CartographyNodeProperties, **properties)
+    return build_data_class(cls_name, CartographyNodeProperties, **properties)
 
 
 def build_node_schema(
-    name: str,
+    cls_name: str,
     label: str,
     properties: CartographyNodeProperties,
     sub_resource_relationship: Optional[CartographyRelSchema] = None,
@@ -78,7 +78,7 @@ def build_node_schema(
      without explicitly defining a the new class.
     '''
     return build_data_class(
-        name,
+        cls_name,
         CartographyNodeSchema,
         label=label,
         properties=properties,
