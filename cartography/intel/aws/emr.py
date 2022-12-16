@@ -1,5 +1,6 @@
 import logging
 import time
+from dataclasses import dataclass
 from typing import Dict
 from typing import List
 
@@ -7,6 +8,16 @@ import boto3
 import botocore.exceptions
 import neo4j
 
+from cartography.client.core.tx import load_graph_data
+from cartography.graph.model import CartographyNodeProperties
+from cartography.graph.model import CartographyNodeSchema
+from cartography.graph.model import CartographyRelProperties
+from cartography.graph.model import CartographyRelSchema
+from cartography.graph.model import LinkDirection
+from cartography.graph.model import make_target_node_matcher
+from cartography.graph.model import PropertyRef
+from cartography.graph.model import TargetNodeMatcher
+from cartography.graph.querybuilder import build_ingestion_query
 from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -48,53 +59,77 @@ def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, 
     return cluster_details
 
 
+@dataclass(frozen=True)
+class EMRClusterNodeProperties(CartographyNodeProperties):
+    arn: PropertyRef = PropertyRef('ClusterArn')
+    auto_terminate: PropertyRef = PropertyRef('AutoTerminate')
+    autoscaling_role: PropertyRef = PropertyRef('AutoScalingRole')
+    custom_ami_id: PropertyRef = PropertyRef('CustomAmiId')
+    firstseen: PropertyRef = PropertyRef('firstseen')
+    id: PropertyRef = PropertyRef('Id')
+    instance_collection_type: PropertyRef = PropertyRef('InstanceCollectionType')
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    log_encryption_kms_key_id: PropertyRef = PropertyRef('LogEncryptionKmsKeyId')
+    log_uri: PropertyRef = PropertyRef('LogUri')
+    master_public_dns_name: PropertyRef = PropertyRef('MasterPublicDnsName')
+    name: PropertyRef = PropertyRef('Name')
+    outpost_arn: PropertyRef = PropertyRef('OutpostArn')
+    region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
+    release_label: PropertyRef = PropertyRef('ReleaseLabel')
+    repo_upgrade_on_boot: PropertyRef = PropertyRef('RepoUpgradeOnBoot')
+    requested_ami_version: PropertyRef = PropertyRef('RequestedAmiVersion')
+    running_ami_version: PropertyRef = PropertyRef('RunningAmiVersion')
+    scale_down_behavior: PropertyRef = PropertyRef('ScaleDownBehavior')
+    security_configuration: PropertyRef = PropertyRef('SecurityConfiguration')
+    servicerole: PropertyRef = PropertyRef('ServiceRole')
+    termination_protected: PropertyRef = PropertyRef('TerminationProtected')
+    visible_to_all_users: PropertyRef = PropertyRef('VisibleToAllUsers')
+
+
+@dataclass(frozen=True)
+class EMRClusterToAwsAccountRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+# (:EMRCluster)<-[:RESOURCE]-(:AWSAccount)
+class EMRClusterToAWSAccount(CartographyRelSchema):
+    target_node_label: str = 'AWSAccount'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'id': PropertyRef('AccountId', set_in_kwargs=True)},
+    )
+    direction: LinkDirection = LinkDirection.INWARD
+    rel_label: str = "RESOURCE"
+    properties: EMRClusterToAwsAccountRelProperties = EMRClusterToAwsAccountRelProperties()
+
+
+@dataclass(frozen=True)
+class EMRClusterSchema(CartographyNodeSchema):
+    label: str = 'EMRCluster'
+    properties: EMRClusterNodeProperties = EMRClusterNodeProperties()
+    sub_resource_relationship: EMRClusterToAWSAccount = EMRClusterToAWSAccount()
+
+
 @timeit
 def load_emr_clusters(
-    neo4j_session: neo4j.Session, cluster_data: List[Dict], region: str, current_aws_account_id: str,
-    aws_update_tag: int,
+        neo4j_session: neo4j.Session,
+        cluster_data: List[Dict],
+        region: str,
+        current_aws_account_id: str,
+        aws_update_tag: int,
 ) -> None:
-    query = """
-    UNWIND $Clusters as emr_cluster
-        MERGE (cluster:EMRCluster{id: emr_cluster.Name})
-        ON CREATE SET cluster.firstseen = timestamp(),
-            cluster.arn = emr_cluster.ClusterArn,
-            cluster.id = emr_cluster.Id,
-            cluster.region = $Region
-        SET cluster.name = emr_cluster.Name,
-            cluster.instance_collection_type = emr_cluster.InstanceCollectionType,
-            cluster.log_encryption_kms_key_id = emr_cluster.LogEncryptionKmsKeyId,
-            cluster.requested_ami_version = emr_cluster.RequestedAmiVersion,
-            cluster.running_ami_version = emr_cluster.RunningAmiVersion,
-            cluster.release_label = emr_cluster.ReleaseLabel,
-            cluster.auto_terminate = emr_cluster.AutoTerminate,
-            cluster.termination_protected = emr_cluster.TerminationProtected,
-            cluster.visible_to_all_users = emr_cluster.VisibleToAllUsers,
-            cluster.master_public_dns_name = emr_cluster.MasterPublicDnsName,
-            cluster.security_configuration = emr_cluster.SecurityConfiguration,
-            cluster.autoscaling_role = emr_cluster.AutoScalingRole,
-            cluster.scale_down_behavior = emr_cluster.ScaleDownBehavior,
-            cluster.custom_ami_id = emr_cluster.CustomAmiId,
-            cluster.repo_upgrade_on_boot = emr_cluster.RepoUpgradeOnBoot,
-            cluster.outpost_arn = emr_cluster.OutpostArn,
-            cluster.log_uri = emr_cluster.LogUri,
-            cluster.servicerole = emr_cluster.ServiceRole,
-            cluster.lastupdated = $aws_update_tag
-        WITH cluster
-
-        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
-        MERGE (owner)-[r:RESOURCE]->(cluster)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = $aws_update_tag
-    """
-
     logger.info("Loading EMR %d clusters for region '%s' into graph.", len(cluster_data), region)
-    neo4j_session.run(
-        query,
-        Clusters=cluster_data,
+
+    ingestion_query = build_ingestion_query(EMRClusterSchema())
+
+    load_graph_data(
+        neo4j_session,
+        ingestion_query,
+        cluster_data,
+        lastupdated=aws_update_tag,
         Region=region,
-        aws_update_tag=aws_update_tag,
-        AWS_ACCOUNT_ID=current_aws_account_id,
-    ).consume()
+        AccountId=current_aws_account_id,
+    )
 
 
 @timeit
