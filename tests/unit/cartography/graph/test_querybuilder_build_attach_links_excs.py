@@ -1,4 +1,3 @@
-# Test defining a simple node with a sub resource rel: (:SimpleNode)<-[:RESOURCE]-(:SubResource)
 from dataclasses import dataclass
 
 from pytest import raises
