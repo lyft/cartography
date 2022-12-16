@@ -1,6 +1,5 @@
 from dataclasses import make_dataclass
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -25,6 +24,7 @@ def build_data_class(name: str, base: Type, **props: Any):
             (prop_name, type(prop_value), prop_value)
             for prop_name, prop_value in props.items()
         ],
+        frozen=True,
     )
     return cls()
 
