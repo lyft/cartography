@@ -5,12 +5,13 @@ from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
+from cartography.graph.model import make_target_node_matcher
 from cartography.graph.model import PropertyRef
 from cartography.graph.model import TargetNodeMatcher
 
 
 # Test defining a simple node with no relationships.
-@dataclass
+@dataclass(frozen=True)
 class SimpleNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('Id')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
@@ -18,22 +19,22 @@ class SimpleNodeProperties(CartographyNodeProperties):
     property2: PropertyRef = PropertyRef('property2')
 
 
-@dataclass
+@dataclass(frozen=True)
 class SimpleNodeSchema(CartographyNodeSchema):
     label: str = 'SimpleNode'
     properties: SimpleNodeProperties = SimpleNodeProperties()
 
 
 # Test defining a simple node with a sub resource rel: (:SimpleNode)<-[:RESOURCE]-(:SubResource)
-@dataclass
+@dataclass(frozen=True)
 class SimpleNodeToSubResourceRelProps(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
-@dataclass
+@dataclass(frozen=True)
 class SimpleNodeToSubResourceRel(CartographyRelSchema):
     target_node_label: str = 'SubResource'
-    target_node_matcher: TargetNodeMatcher = TargetNodeMatcher(
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'id': PropertyRef('sub_resource_id', set_in_kwargs=True)},
     )
     direction: LinkDirection = LinkDirection.INWARD
@@ -41,8 +42,8 @@ class SimpleNodeToSubResourceRel(CartographyRelSchema):
     properties: SimpleNodeToSubResourceRelProps = SimpleNodeToSubResourceRelProps()
 
 
-@dataclass
+@dataclass(frozen=True)
 class SimpleNodeWithSubResourceSchema(CartographyNodeSchema):
     label: str = 'SimpleNode'
     properties: SimpleNodeProperties = SimpleNodeProperties()
-    sub_resource_relationship: CartographyRelSchema = SimpleNodeToSubResourceRel()
+    sub_resource_relationship: SimpleNodeToSubResourceRel = SimpleNodeToSubResourceRel()

@@ -1,14 +1,15 @@
 from cartography.client.core.tx import load_graph_data
 from cartography.graph.querybuilder import build_ingestion_query
-from tests.data.graph.querybuilder.sample_data.partial_relationships import INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS
-from tests.data.graph.querybuilder.sample_data.partial_relationships import MERGE_SUB_RESOURCE_QUERY
-from tests.data.graph.querybuilder.sample_data.partial_relationships import MERGE_WORLD_ASSET_QUERY
+from tests.data.graph.querybuilder.sample_data.helloworld_relationships import INTERESTING_NODE_WITH_PARTIAL_RELS
+from tests.data.graph.querybuilder.sample_data.helloworld_relationships import MERGE_SUB_RESOURCE_QUERY
+from tests.data.graph.querybuilder.sample_data.helloworld_relationships import MERGE_WORLD_ASSET_QUERY
 from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetSchema
 
 
 def test_load_graph_data_subset_of_relationships(neo4j_session):
     """
-    Test load_graph_data() if a schema defines multiple relationships but only a subset of them are present in our data.
+    Test load_graph_data() if a schema defines multiple relationships but only a subset of them are possible to create
+    given our data.
 
     In this test case, the following relationships are possible:
         (:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource)
@@ -25,7 +26,7 @@ def test_load_graph_data_subset_of_relationships(neo4j_session):
     load_graph_data(
         neo4j_session,
         query,
-        INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS,
+        INTERESTING_NODE_WITH_PARTIAL_RELS,
         lastupdated=1,
         sub_resource_id='sub-resource-id',
     )
@@ -51,7 +52,7 @@ def test_load_graph_data_subset_of_relationships(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n1:InterestingAsset)
-        OPTIONAL MATCH (n1)<-[:ASSOCIATED_WITH]-(n2:HelloAsset)
+        OPTIONAL MATCH (n1)--(n2:HelloAsset)
         RETURN n1.id, n2.id;
         """,
     )
@@ -88,7 +89,7 @@ def test_load_graph_data_subset_of_relationships_only_sub_resource(neo4j_session
     load_graph_data(
         neo4j_session,
         query,
-        INTERESTING_NODE_WITH_PARTIAL_RELATIONSHIPS,
+        INTERESTING_NODE_WITH_PARTIAL_RELS,
         lastupdated=1,
         sub_resource_id='sub-resource-id',
     )
@@ -114,7 +115,7 @@ def test_load_graph_data_subset_of_relationships_only_sub_resource(neo4j_session
     result = neo4j_session.run(
         """
         MATCH (n1:InterestingAsset)
-        OPTIONAL MATCH (n1)<-[:ASSOCIATED_WITH]-(n2:HelloAsset)
+        OPTIONAL MATCH (n1)--(n2:HelloAsset)
         RETURN n1.id, n2.id;
         """,
     )

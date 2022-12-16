@@ -6,23 +6,24 @@ from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
+from cartography.graph.model import make_target_node_matcher
 from cartography.graph.model import OtherRelationships
 from cartography.graph.model import PropertyRef
 from cartography.graph.model import TargetNodeMatcher
 
 
-@dataclass
+@dataclass(frozen=True)
 class TestComputerToPersonRelProps(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
-@dataclass
+@dataclass(frozen=True)
 class TestComputerToPersonRel(CartographyRelSchema):
     """
     (:TestComputer)<-[:OWNS]-(:Person)
     """
     target_node_label: str = 'Person'
-    target_node_matcher: TargetNodeMatcher = TargetNodeMatcher(
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {
             'first_name': PropertyRef('FirstName'),
             'last_name': PropertyRef('LastName'),
@@ -34,7 +35,7 @@ class TestComputerToPersonRel(CartographyRelSchema):
 
 
 # Test defining a simple node with no relationships.
-@dataclass
+@dataclass(frozen=True)
 class TestComputerProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('Id')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
@@ -43,7 +44,7 @@ class TestComputerProperties(CartographyNodeProperties):
     name: PropertyRef = PropertyRef('name')
 
 
-@dataclass
+@dataclass(frozen=True)
 class TestComputer(CartographyNodeSchema):
     label: str = 'TestComputer'
     properties: TestComputerProperties = TestComputerProperties()

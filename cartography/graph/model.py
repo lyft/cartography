@@ -1,6 +1,7 @@
 import abc
 from dataclasses import dataclass
 from dataclasses import field
+from dataclasses import make_dataclass
 from enum import auto
 from enum import Enum
 from typing import Dict
@@ -39,7 +40,7 @@ class PropertyRef:
 
     cartography takes lists of Python dicts and loads them to Neo4j. PropertyRefs allow our dynamically generated Neo4j
     ingestion queries to set values for a given node or relationship property from (A) a field on the dict being
-    processed (PropertyRef.set_in_kwargs=False, default), or (B) from a single variable provided by a keyword argument
+    processed (PropertyRef.set_in_kwargs=False; default), or (B) from a single variable provided by a keyword argument
     (PropertyRef.set_in_kwargs=True).
     """
 
@@ -59,33 +60,40 @@ class PropertyRef:
 
     def __repr__(self) -> str:
         """
-        By default, the querybuilder will render an UNWIND query so that
-        the value for this property will come from the dict being processed.
-        If set_in_kwargs is True, then the value will instead come from kwargs.
+        `querybuilder.build_ingestion_query()`, generates a Neo4j batched ingestion query of the form
+        `UNWIND $DictList AS item [...]`.
+
+        If set_in_kwargs is False (default), we instruct the querybuilder to get the value for this given property from
+        the dict being processed. To do this, this function returns "item.<key on the dict>". This is used for loading
+        in lists of nodes.
+
+        On the other hand if set_in_kwargs is True, then the value will instead come from kwargs passed to
+        querybuilder.build_ingestion_query(). This is used for things like applying the same update tag to all nodes of
+        a given run.
         """
         return f"item.{self.name}" if not self.set_in_kwargs else self._parameterize_name()
 
 
-@dataclass
+@dataclass(frozen=True)
 class CartographyNodeProperties(abc.ABC):
     """
-    Abstract base dataclass that represents the properties on a CartographyNodeSchema. This is intended to enforce that
-    all subclasses will have an id and a lastupdated field defined on their resulting nodes.
+    Abstract base dataclass that represents the properties on a CartographyNodeSchema. This class is abstract so that we
+    can enforce that all subclasses have an id and a lastupdated field.
     """
     id: PropertyRef = field(init=False)
     lastupdated: PropertyRef = field(init=False)
 
     def __post_init__(self):
         """
-        Designed to prevent direct instantiation. This workaround is needed since this is both an abstract class and a
-        dataclass.
+        Designed to prevent direct instantiation. This workaround is needed since this is a dataclass and an abstract
+        class without an abstract method defined.
         See https://stackoverflow.com/q/60590442.
         """
         if self.__class__ == CartographyNodeProperties:
             raise TypeError("Cannot instantiate abstract class.")
 
 
-@dataclass
+@dataclass(frozen=True)
 class CartographyRelProperties(abc.ABC):
     """
     Abstract class that represents the properties on a CartographyRelSchema. This is intended to enforce that all
@@ -95,8 +103,8 @@ class CartographyRelProperties(abc.ABC):
 
     def __post_init__(self):
         """
-        Designed to prevent direct instantiation. This workaround is needed since this is both an abstract class and a
-        dataclass.
+        Designed to prevent direct instantiation. This workaround is needed since this is a dataclass and an abstract
+        class without an abstract method defined.
         """
         if self.__class__ == CartographyRelProperties:
             raise TypeError("Cannot instantiate abstract class.")
@@ -109,13 +117,13 @@ class TargetNodeMatcher:
     Keys: one or more attribute names on the target_node_label used to uniquely identify what node to connect to.
     Values: The value of the target_node_key used to uniquely identify what node to connect to. This is given as a
     PropertyRef.
-    This is needed because we need to include this in the CartographyRelSchema dataclass but dicts are mutable, so we
-    need to do this wrapping.
+    This is used to ensure dataclass immutability when composed as part of a CartographyNodeSchema object.
+    See `make_target_node_matcher()`.
     """
-    key_refs: Dict[str, PropertyRef]
+    pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class CartographyRelSchema(abc.ABC):
     """
     Abstract base dataclass that represents a cartography relationship.
@@ -151,7 +159,7 @@ class CartographyRelSchema(abc.ABC):
     @abc.abstractmethod
     def rel_label(self) -> str:
         """
-        :return: The str label of the relationship.
+        :return: The string label of the relationship.
         """
         pass
 
@@ -182,7 +190,7 @@ class ExtraNodeLabels:
     labels: List[str]
 
 
-@dataclass
+@dataclass(frozen=True)
 class CartographyNodeSchema(abc.ABC):
     """
     Abstract base dataclass that represents a graph node in cartography. This is used to dynamically generate graph
@@ -224,7 +232,7 @@ class CartographyNodeSchema(abc.ABC):
         """
         Optional.
         Allows subclasses to specify additional cartography relationships on the node.
-        :return: None if not overriden. Else return an OtherRelationships object.
+        :return: None if not overriden. Else return the node's OtherRelationships.
         """
         return None
 
@@ -233,6 +241,15 @@ class CartographyNodeSchema(abc.ABC):
         """
         Optional.
         Allows specifying extra labels on the node.
-        :return: None if not overriden. Else return a str list of the extra labels specified on the node.
+        :return: None if not overriden. Else return the ExtraNodeLabels specified on the node.
         """
         return None
+
+
+def make_target_node_matcher(key_ref_dict: Dict[str, PropertyRef]) -> TargetNodeMatcher:
+    """
+    :param key_ref_dict: A Dict mapping keys present on the node to PropertyRef objects.
+    :return: A TargetNodeMatcher used for CartographyRelSchema to match with other nodes.
+    """
+    fields = [(key, PropertyRef, field(default=prop_ref)) for key, prop_ref in key_ref_dict.items()]
+    return make_dataclass(TargetNodeMatcher.__name__, fields, frozen=True)()
