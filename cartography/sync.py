@@ -30,6 +30,8 @@ from cartography.stats import set_stats_client
 from cartography.util import STATUS_FAILURE
 from cartography.util import STATUS_SUCCESS
 
+from . import neo4jSessionFactory
+
 logger = logging.getLogger(__name__)
 
 
@@ -78,6 +80,9 @@ class Sync:
         :param config: Configuration for the sync run.
         """
         logger.info("Starting sync with update tag '%d'", config.update_tag)
+
+        neo4jSessionFactory.factory.initialize(neo4j_driver=neo4j_driver, neo4j_database=config.neo4j_database)
+
         with neo4j_driver.session(database=config.neo4j_database) as neo4j_session:
             for stage_name, stage_func in self._stages.items():
                 logger.info("Starting sync stage '%s'", stage_name)

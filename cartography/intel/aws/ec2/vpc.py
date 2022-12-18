@@ -11,6 +11,9 @@ from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
+import threading
+from cartography.neo4jSessionFactory import factory as neo4jFactory
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,8 +61,8 @@ def _get_cidr_association_statement(block_type: str) -> str:
 
 @timeit
 def load_cidr_association_set(
-    neo4j_session: neo4j.Session, vpc_id: str, vpc_data: Dict, block_type: str,
-    update_tag: int,
+        neo4j_session: neo4j.Session, vpc_id: str, vpc_data: Dict, block_type: str,
+        update_tag: int,
 ) -> None:
     ingest_statement = _get_cidr_association_statement(block_type)
 
@@ -78,8 +81,8 @@ def load_cidr_association_set(
 
 @timeit
 def load_ec2_vpcs(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
-    update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+        update_tag: int,
 ) -> None:
     # https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-vpcs.html
     # {
@@ -164,13 +167,41 @@ def cleanup_ec2_vpcs(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
     run_cleanup_job('aws_import_vpc_cleanup.json', neo4j_session, common_job_parameters)
 
 
+def sync_vpc_per_region(
+        boto3_session: boto3.session.Session,
+        region: str,
+        current_aws_account_id: str,
+        update_tag: int, ) -> None:
+    logger.info("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
+    with neo4jFactory.get_new_session() as neo4j_thread_session:
+        data = get_ec2_vpcs(boto3_session, region)
+        load_ec2_vpcs(neo4j_thread_session, data, region, current_aws_account_id, update_tag)
+
+
 @timeit
 def sync_vpc(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+        neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
+        current_aws_account_id: str,
+        update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    # for region in regions:
+    #     logger.info("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
+    #     data = get_ec2_vpcs(boto3_session, region)
+    #     load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, update_tag)
+
+    ts = []
+
     for region in regions:
         logger.info("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_vpcs(boto3_session, region)
-        load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, update_tag)
+        t = threading.Thread(target=sync_vpc_per_region,
+                             args=(
+                                 boto3_session, region,
+                                 current_aws_account_id,
+                                 update_tag,))
+        t.start()
+        ts.append(t)
+
+    for t in ts:
+        t.join()
+
     cleanup_ec2_vpcs(neo4j_session, common_job_parameters)
