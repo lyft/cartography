@@ -1,5 +1,7 @@
 import logging
 from dataclasses import asdict
+from enum import auto
+from enum import Enum
 from string import Template
 from typing import Dict
 from typing import Optional
@@ -267,6 +269,23 @@ def _build_attach_relationships_statement(
     return query_template.safe_substitute(attach_relationships_statement=attach_relationships_statement)
 
 
+class WhereIsTheRel(Enum):
+    ON_SUBRESOURCE = auto()
+    ON_OTHER_RELATIONSHIPS = auto()
+
+
+def rel_present_on_node_schema(
+        node_schema: CartographyNodeSchema,
+        rel_schema: CartographyRelSchema,
+) -> Optional[WhereIsTheRel]:
+    sub_res_rel, other_rels = _filter_selected_relationships(node_schema, {rel_schema})
+    if sub_res_rel:
+        return WhereIsTheRel.ON_SUBRESOURCE
+    if other_rels:
+        return WhereIsTheRel.ON_OTHER_RELATIONSHIPS
+    return None
+
+
 def _filter_selected_relationships(
         node_schema: CartographyNodeSchema,
         selected_relationships: Set[CartographyRelSchema],
@@ -294,8 +313,8 @@ def _filter_selected_relationships(
     for selected_rel in selected_relationships:
         if selected_rel not in all_rels_on_node:
             raise ValueError(
-                f"build_ingestion_query() failed: CartographyRelSchema {selected_rel.__class__.__name__} is not "
-                f"defined on CartographyNodeSchema type {node_schema.__class__.__name__}. Please verify the "
+                f"_filter_selected_relationships() failed: CartographyRelSchema {selected_rel.__class__.__name__} is "
+                f"not defined on CartographyNodeSchema type {node_schema.__class__.__name__}. Please verify the "
                 f"value of `selected_relationships` passed to `build_ingestion_query()`.",
             )
 

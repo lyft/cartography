@@ -2,6 +2,7 @@ import cartography.intel.aws.emr
 import tests.data.aws.emr
 from tests.integration.util import check_nodes
 from tests.integration.util import check_rels
+from cartography.intel.aws.emr import cleanup
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
@@ -62,3 +63,7 @@ def test_load_emr_clusters_relationships(neo4j_session):
         'arn',
         'RESOURCE',
     ) == expected
+
+
+def test_cleanup_emr(neo4j_session):
+    cleanup(neo4j_session, {'UPDATE_TAG': 1111, 'AccountId': 12121212})

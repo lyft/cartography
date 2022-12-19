@@ -9,6 +9,7 @@ import botocore.exceptions
 import neo4j
 
 from cartography.client.core.tx import load_graph_data
+from cartography.graph.job import GraphJob
 from cartography.graph.model import CartographyNodeProperties
 from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import CartographyRelProperties
@@ -20,7 +21,6 @@ from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import build_ingestion_query
 from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
-from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -134,7 +134,8 @@ def load_emr_clusters(
 @timeit
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     logger.debug("Running EMR cleanup job.")
-    run_cleanup_job('aws_import_emr_cleanup.json', neo4j_session, common_job_parameters)
+    cleanup_job = GraphJob.from_node_schema(EMRClusterSchema(), common_job_parameters)
+    cleanup_job.run(neo4j_session)
 
 
 @timeit
