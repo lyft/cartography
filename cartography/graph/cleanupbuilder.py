@@ -49,7 +49,7 @@ def _build_cleanup_node_sub_resource_only(
         raise ValueError("TODO")  # TODO
     return query_template.safe_substitute(
         node_label=node_schema.label,
-        sub_resource_label=node_schema.sub_resource_relationship.rel_label,
+        sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
         sub_rel_link=sub_res_link,
         sub_rel_label=node_schema.sub_resource_relationship.rel_label,
         sub_res_match_clause=_build_match_clause(sub_res_node_matcher),
@@ -170,7 +170,7 @@ def build_cleanup_rel_query(
     query_template = Template(
         """
     MATCH (src:$node_label)$sub_rel_link(:$sub_resource_label{$match_sub_res_clause})
-    MATCH (src)$rel_to_delete(n:$node_to_delete)
+    MATCH (src)$rel_to_delete(:$node_to_delete)
     WHERE r.lastupdated <> $UPDATE_TAG
     WITH r LIMIT $LIMIT_SIZE
     DELETE r;

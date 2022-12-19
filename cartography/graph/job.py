@@ -23,6 +23,8 @@ def _get_identifiers(template: string.Template) -> List[str]:
     """
     Only python 3.11 has get_identifiers, so this is our hack for it.
     https://github.com/python/cpython/issues/90465#issuecomment-1093941790
+    TODO probably could use https://github.com/python/cpython/commit/dce642f24418c58e67fa31a686575c980c31dd37
+    TODO also get rid of this and use template.get_identifiers() once we are on python 3.11 or if that gets backported.
     """
     return list(
         set(
@@ -119,6 +121,10 @@ class GraphJob:
 
     @classmethod
     def from_node_schema(cls, node_schema: CartographyNodeSchema, parameters: dict[str, Any]) -> 'GraphJob':
+        """
+        For a given node, the fields used in the node_schema.sub_resource_relationship.target_node_node_matcher.keys()
+        must be provided as keys and values in the params dict.
+        """
         queries: list[str] = build_cleanup_queries(node_schema)
 
         # expected_param_keys: set[str] = get_parameters(queries)
