@@ -116,6 +116,12 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'sqs': {'label': 'SQSQueue', 'property': 'id'},
 }
 
+RESOURCE_TYPE_TAG_MAPPING = {
+    's3': ['s3'],
+    'rds': ['rds:db', 'rds:subgrp', 'rds:cluster'],
+    'dynamodb': ['dynamodb:table']
+}
+
 
 @timeit
 @aws_handle_regions
@@ -230,6 +236,11 @@ def sync(
     common_job_parameters: Dict,
     tag_resource_type_mappings: Dict = TAG_RESOURCE_TYPE_MAPPINGS,
 ) -> None:
+    tagsToSync = tag_resource_type_mappings.keys()
+    if common_job_parameters['aws_resource_type']:
+        if common_job_parameters['aws_resource_type'] in RESOURCE_TYPE_TAG_MAPPING:
+            tagsToSync = RESOURCE_TYPE_TAG_MAPPING[common_job_parameters['aws_resource_type']]
+            logger.info('Only syncing %s tags', tagsToSync)
     for region in regions:
         logger.info(f"Syncing AWS tags for account {current_aws_account_id} and region {region}")
         for resource_type in tag_resource_type_mappings.keys():

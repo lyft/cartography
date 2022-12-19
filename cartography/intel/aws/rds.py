@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 
 import boto3
 import neo4j
-
+from botocore.exceptions import ClientError
 import cartography.intel.aws.util.common as filterfn
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
@@ -32,6 +32,19 @@ def get_rds_cluster_data(boto3_session: boto3.session.Session, region: str) -> L
 
     return instances
 
+
+@timeit
+def describe_rds_cluster_data(boto3_session: boto3.session.Session, region: str, resourceName):
+    try:
+        client = boto3_session.client('rds', region_name=region)
+        return client.describe_db_clusters(DBClusterIdentifier=resourceName)['DBClusters']
+    except ClientError as e:
+        if "DBClusterNotFound" in e.args[0]:
+            logger.warning('Error while rds cluster')
+            logger.warning(e.args[0])
+            return
+        else:
+            raise
 
 @timeit
 def load_rds_clusters(
@@ -126,6 +139,19 @@ def get_rds_instance_data(boto3_session: boto3.session.Session, region: str) -> 
 
     return instances
 
+
+@timeit
+def describe_rds_instance_data(boto3_session: boto3.session.Session, region: str, resourceName):
+    try:
+        client = boto3_session.client('rds', region_name=region)
+        return client.describe_db_instances(DBInstanceIdentifier=resourceName)['DBInstances']
+    except ClientError as e:
+        if "DBInstanceNotFound" in e.args[0]:
+            logger.warning('Error while rds instance')
+            logger.warning(e.args[0])
+            return
+        else:
+            raise
 
 @timeit
 def load_rds_instances(
@@ -533,13 +559,17 @@ def sync_rds_clusters(
     resourceFound = False
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_rds_cluster_data(boto3_session, region)
+        data = []
         if common_job_parameters['aws_resource_name'] is not None:
-            logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
-            filtered = filterfn.filter_resources(data, common_job_parameters["aws_resource_name"], 'rds_cluster')
-            if (len(filtered) != 0):
-                data = filtered
-        resourceFound = True
+            data = describe_rds_cluster_data(
+                boto3_session, region, common_job_parameters['aws_resource_name'])
+            if data is None:
+                logger.warning('No rds cluster found %s', common_job_parameters['aws_resource_name'])
+                return
+            logger.info('Syncing rds cluster: %s', common_job_parameters['aws_resource_name'])
+            resourceFound = True
+        else:
+            data = get_rds_cluster_data(boto3_session, region)
         load_rds_clusters(neo4j_session, data, region, current_aws_account_id, update_tag)  # type: ignore
     if (not resourceFound):
         cleanup_rds_clusters(neo4j_session, common_job_parameters)
@@ -556,13 +586,17 @@ def sync_rds_instances(
     resourceFound = False
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_rds_instance_data(boto3_session, region)
+        data = []
         if common_job_parameters['aws_resource_name'] is not None:
-            logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
-            filtered = filterfn.filter_resources(data, common_job_parameters["aws_resource_name"], 'rds_instance')
-            if (len(filtered) != 0):
-                data = filtered
+            data = describe_rds_instance_data(
+                boto3_session, region, common_job_parameters['aws_resource_name'])
+            if data is None:
+                logger.warning('No rds instance found %s', common_job_parameters['aws_resource_name'])
+                return
+            logger.info('Syncing rds instance: %s', common_job_parameters['aws_resource_name'])
             resourceFound = True
+        else:
+            data = get_rds_instance_data(boto3_session, region)
         load_rds_instances(neo4j_session, data, region, current_aws_account_id, update_tag)  # type: ignore
     if (not resourceFound):
         cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)

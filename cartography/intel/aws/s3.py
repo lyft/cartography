@@ -50,6 +50,16 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
 
 
 @timeit
+def get_single_s3_bucket(boto3_session: boto3.session.Session, bucketName, bucketData, region):
+    bucket = {}
+    s3 = boto3_session.resource('s3')
+    bucketDetails = s3.Bucket(bucketName)
+    bucket['Name'] = bucketDetails.name
+    bucket['CreationDate'] = bucketDetails.creation_date
+    bucket['Region'] = region
+    bucketData['Buckets'].append(bucket)
+
+@timeit
 def get_s3_bucket_details(
         boto3_session: boto3.session.Session,
         bucket_data: Dict,
@@ -758,13 +768,18 @@ def sync(
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
     resourceFound = False
-    logger.info("Syncing S3 for account '%s'.", current_aws_account_id)
-    bucket_data = get_s3_bucket_list(boto3_session)
+    bucket_data = {
+        'Buckets': [],
+        'Owner': {}
+    }
     if common_job_parameters['aws_resource_name'] is not None:
-        logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
-        # bucket_data is updated in the function itself
-        filtered = filterfn.filter_resources(bucket_data, common_job_parameters['aws_resource_name'], 's3')
+        logger.info("Fetching '%s' bucket details", common_job_parameters['aws_resource_name'])
+        get_single_s3_bucket(
+            boto3_session, common_job_parameters['aws_resource_name'], bucket_data, common_job_parameters['aws_region'])
         resourceFound = True
+    else:
+        logger.info("Syncing S3 for account '%s'.", current_aws_account_id)
+        bucket_data = get_s3_bucket_list(boto3_session)
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
     if (not resourceFound):
         cleanup_s3_buckets(neo4j_session, common_job_parameters)

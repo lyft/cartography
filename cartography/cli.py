@@ -230,6 +230,14 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--aws-resource-type',
+            type=str,
+            default=None,
+            help=(
+                'AWS resource type for which the updation of resource needs to be performed'
+            ),
+        )
+        parser.add_argument(
             '--aws-region',
             type=str,
             default=None,

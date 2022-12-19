@@ -35,6 +35,11 @@ def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> Li
             dynamodb_tables.append(client.describe_table(TableName=table_name))
     return dynamodb_tables
 
+@timeit
+@aws_handle_regions
+def describe_dynamodb_table(boto3_session: boto3.session.Session, region: str, tableName: str) -> Dict:
+    client = boto3_session.client('dynamodb', region_name=region)
+    return client.describe_table(TableName=tableName)
 
 @timeit
 def transform_dynamodb_tables(dynamodb_tables: List, region: str) -> Any:
@@ -155,12 +160,13 @@ def sync_dynamodb_tables(
     resourceFound = False
     for region in regions:
         logger.info("Syncing DynamoDB for region in '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_dynamodb_tables(boto3_session, region)
+        data = []
         if common_job_parameters['aws_resource_name'] is not None:
-            logger.info('Filtering to run updation for: %s', common_job_parameters['aws_resource_name'])
-            # bucket_data is updated in the function itself
-            data = filterfn.filter_resources(data, common_job_parameters['aws_resource_name'], 'dynamodb')
+            data = [describe_dynamodb_table(boto3_session, region, common_job_parameters['aws_resource_name'])]
+            logger.info('Syncing dynamo tables: %s', common_job_parameters['aws_resource_name'])
             resourceFound = True
+        else:
+            data = get_dynamodb_tables(boto3_session, region)
         load_dynamodb_tables(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
     if(not resourceFound):
         cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
