@@ -238,10 +238,11 @@ def build_sync(selected_modules_as_str: str) -> Sync:
     )
     return sync
 
-def build_default_borneo_sync() -> Sync:
+def build_default_borneo_sync(skipIndex: bool) -> Sync:
     sync = Sync()
+    if skipIndex != True:
+        sync.add_stages([('create-indexes', cartography.intel.create_indexes.run)])
     sync.add_stages([
-        ('create-indexes', cartography.intel.create_indexes.run),
         ('aws', cartography.intel.aws.start_aws_ingestion),
         ('analysis', cartography.intel.analysis.run)
     ])
