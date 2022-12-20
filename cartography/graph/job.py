@@ -132,7 +132,7 @@ class GraphJob:
         #     raise ValueError(f"Expected {expected_param_keys} but got {set(parameters.keys())}")
 
         statements: list[GraphStatement] = [
-            GraphStatement(query, parameters=parameters, iterative=True) for query in queries
+            GraphStatement(query, parameters=parameters, iterative=True, iterationsize=100) for query in queries
         ]
 
         return cls(

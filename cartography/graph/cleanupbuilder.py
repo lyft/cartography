@@ -169,12 +169,12 @@ def build_cleanup_rel_query(
     # Ensure the node is attached to the sub resource and delete the relationship
     query_template = Template(
         """
-    MATCH (src:$node_label)$sub_rel_link(:$sub_resource_label{$match_sub_res_clause})
-    MATCH (src)$rel_to_delete(:$node_to_delete)
-    WHERE r.lastupdated <> $UPDATE_TAG
-    WITH r LIMIT $LIMIT_SIZE
-    DELETE r;
-    """,
+        MATCH (src:$node_label)$sub_rel_link(:$sub_resource_label{$match_sub_res_clause})
+        MATCH (src)$rel_to_delete(:$node_to_delete)
+        WHERE r.lastupdated <> $UPDATE_TAG
+        WITH r LIMIT $LIMIT_SIZE
+        DELETE r;
+        """,
     )
     return query_template.safe_substitute(
         node_label=node_schema.label,
