@@ -63,4 +63,4 @@ def get_drift_as_json(new_results, missing_results, state_name, state_properties
         'added': report_as_json(new_results, state_properties),
         'removed': report_as_json(missing_results, state_properties)
     }
-    return json.dumps(drift)
+    return drift
