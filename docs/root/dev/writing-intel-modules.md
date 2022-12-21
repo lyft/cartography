@@ -87,7 +87,7 @@ def load_emr_clusters(
 
 
 #### Defining a node
- 
+
 As an example of a `CartographyNodeSchema`, you can view our [EMRClusterSchema code](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/intel/aws/emr.py#L106-L110):
 
 ```python
@@ -95,7 +95,7 @@ As an example of a `CartographyNodeSchema`, you can view our [EMRClusterSchema c
 class EMRClusterSchema(CartographyNodeSchema):
     label: str = 'EMRCluster'  # The label of the node
     properties: EMRClusterNodeProperties = EMRClusterNodeProperties()  # An object representing all properties on the EMR Cluster node
-    sub_resource_relationship: EMRClusterToAWSAccount = EMRClusterToAWSAccount()  
+    sub_resource_relationship: EMRClusterToAWSAccount = EMRClusterToAWSAccount()
 ```
 
 An `EMRClusterSchema` object inherits from the `CartographyNodeSchema` class and contains a node label, properties, and connection to its [sub-resource](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/model.py#L216-L228): an `AWSAccount`.
@@ -169,11 +169,11 @@ UNWIND $DictList AS item
         i.lastupdated = $lastupdated,
         i.arn = item.ClusterArn
         // ...
-            
+
         WITH i, item
         CALL {
             WITH i, item
-            
+
             OPTIONAL MATCH (j:AWSAccount{id: $AccountId})
             WITH i, item, j WHERE j IS NOT NULL
             MERGE (i)<-[r:RESOURCE]-(j)
@@ -187,7 +187,7 @@ And that's basically all you need to know to understand how to define your own n
 
 ### Additional concepts
 
-This section explains cartography general patterns, conventions, and design decisions. 
+This section explains cartography general patterns, conventions, and design decisions.
 
 #### cartography's `update_tag`:
 
