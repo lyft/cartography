@@ -1,4 +1,5 @@
 import logging
+import threading
 from string import Template
 from typing import Dict
 from typing import List
@@ -7,12 +8,10 @@ import boto3
 import neo4j
 
 from .util import get_botocore_config
+from cartography.neo4jSessionFactory import factory as neo4jFactory
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-
-import threading
-from cartography.neo4jSessionFactory import factory as neo4jFactory
 
 logger = logging.getLogger(__name__)
 
@@ -184,20 +183,17 @@ def sync_vpc(
         current_aws_account_id: str,
         update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    # for region in regions:
-    #     logger.info("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
-    #     data = get_ec2_vpcs(boto3_session, region)
-    #     load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, update_tag)
-
     ts = []
 
     for region in regions:
-        logger.info("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
-        t = threading.Thread(target=sync_vpc_per_region,
-                             args=(
-                                 boto3_session, region,
-                                 current_aws_account_id,
-                                 update_tag,))
+        t = threading.Thread(
+            target=sync_vpc_per_region,
+            args=(
+                boto3_session, region,
+                current_aws_account_id,
+                update_tag,
+            ),
+        )
         t.start()
         ts.append(t)
 

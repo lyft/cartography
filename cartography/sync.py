@@ -25,12 +25,11 @@ import cartography.intel.gsuite
 import cartography.intel.kubernetes
 import cartography.intel.oci
 import cartography.intel.okta
+from . import neo4jSessionFactory
 from cartography.config import Config
 from cartography.stats import set_stats_client
 from cartography.util import STATUS_FAILURE
 from cartography.util import STATUS_SUCCESS
-
-from . import neo4jSessionFactory
 
 logger = logging.getLogger(__name__)
 
