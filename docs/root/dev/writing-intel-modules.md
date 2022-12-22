@@ -128,7 +128,7 @@ As another example, `region: PropertyRef = PropertyRef('Region', set_in_kwargs=T
 
 #### Defining relationships
 
-Relationships can be defined on `CartographyNodeSchema` on either their [`sub_resource_relationship`](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/model.py#L216-L228) field or their [`other_relationships`](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/model.py#L230-L237) field.
+Relationships can be defined on `CartographyNodeSchema` on either their [`sub_resource_relationship`](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/model.py#L216-L228) field or their [`other_relationships`](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/model.py#L230-L237) field (you can find an example of `other_relationships` [here in our test data](https://github.com/lyft/cartography/blob/4bfafe0e0c205909d119cc7f0bae84b9f6944bdd/tests/data/graph/querybuilder/sample_models/interesting_asset.py#L89-L94)).
 
 As seen above, an `EMRClusterSchema` only has a single relationship defined: an [`EMRClusterToAWSAccount`](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/intel/aws/emr.py#L94-L103):
 
