@@ -681,7 +681,7 @@ def attach_role_to_user(
         UserId=user['id'],
         UserEmail=user['email'],
         UserName=user['name'],
-        ConsoleLink=user['consolelink'],
+        ConsoleLink=user.get('consolelink'),
         createDate=datetime.utcnow(),
         Parent=user['parent'],
         ParentId=user['parent_id'],
