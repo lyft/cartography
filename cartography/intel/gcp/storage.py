@@ -146,7 +146,7 @@ def transform_gcp_buckets(bucket_res: Dict, project_id: str, regions: list) -> L
 
 
 @timeit
-def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_update_tag: int) -> None:
+def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], project_id:str, gcp_update_tag: int) -> None:
     '''
     Ingest GCP Storage Buckets to Neo4j
 
@@ -164,7 +164,7 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
     '''
 
     query = """
-    MERGE (p:GCPProject{id: $ProjectNumber})
+    MERGE (p:GCPProject{id: $ProjectId})
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = $gcp_update_tag
 
@@ -202,7 +202,7 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
     for bucket in buckets:
         neo4j_session.run(
             query,
-            ProjectNumber=bucket['project_number'],
+            ProjectId=project_id,
             BucketId=bucket['id'],
             SelfLink=bucket['self_link'],
             Kind=bucket['kind'],
@@ -212,6 +212,7 @@ def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], gcp_upda
             MetaGeneration=bucket['meta_generation'],
             StorageClass=bucket['storage_class'],
             TimeCreated=bucket['time_created'],
+            ProjectNumber=bucket['project_number'],
             Entity=bucket['entity'],
             DefaultEntity=bucket['defaultentity'],
             UniformBucketLevelAccess=bucket['uniform_bucket_level_access'],
@@ -279,7 +280,7 @@ def sync(
     logger.info("Syncing Storage objects for project %s.", project_id)
     storage_res = get_gcp_buckets(storage, project_id, common_job_parameters)
     bucket_list = transform_gcp_buckets(storage_res, project_id, regions)
-    load_gcp_buckets(neo4j_session, bucket_list, gcp_update_tag)
+    load_gcp_buckets(neo4j_session, bucket_list, project_id, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_buckets(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, bucket_list, gcp_update_tag, common_job_parameters, 'buckets', 'GCPBucket')
