@@ -64,6 +64,7 @@ def get_short_id_from_lb2_arn(alb_arn: str) -> str:
 # TODO - we should make EC2 and S3 assets query-able by their full ARN so that we don't need this workaround.
 TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'autoscaling:autoScalingGroup': {'label': 'AutoScalingGroup', 'property': 'arn'},
+    'cloudtrail:trail': {'label': 'CloudTrail', 'property': 'arn'},
     'dynamodb:table': {'label': 'DynamoDBTable', 'property': 'id'},
     'ec2:instance': {'label': 'EC2Instance', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:internet-gateway': {'label': 'AWSInternetGateway', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},

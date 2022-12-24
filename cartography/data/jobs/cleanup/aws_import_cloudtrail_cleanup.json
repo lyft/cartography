@@ -1,0 +1,23 @@
+{
+    "statements": [
+        {
+            "query": "MATCH (n:S3Bucket)<-[:DELIVERS_TO]-(:CloudTrail)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE NOT (n)<-[:RESOURCE]-(:AWSAccount) AND n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete stale S3 Buckets delivery points that are not a resource of an account in the graph. (The S3 cleanup job will be responsible for the bucket otherwise.)"
+        },
+        {
+            "query": "MATCH (:S3Bucket)<-[d:DELIVERS_TO]-(:CloudTrail)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE d.lastupdated <> $UPDATE_TAG WITH d LIMIT $LIMIT_SIZE DELETE (d)",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete stale DELIVERS_TO between CloudTrail and S3Bucket."
+          },
+        {
+            "query": "MATCH (n:CloudTrail)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete old CloudTrail nodes."
+        }
+    ],
+    "name": "cleanup CloudTrail"
+}

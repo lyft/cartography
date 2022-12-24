@@ -700,6 +700,45 @@ Representation of an AWS [Access Key](https://docs.aws.amazon.com/IAM/latest/API
         (AWSUser, AWSPrincipal)-[AWS_ACCESS_KEY]->(AccountAccessKey)
         ```
 
+### CloudTrail
+
+Representation of an AWS [CloudTrail trail](https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_Trail.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated
+| arn | ARN of the trail |
+| cloud_watch_logs_log_group_arn | ARN of the log group to which CloudTrail logs will be delivered |
+| cloud_watch_logs_role_arn | Role for the CloudWatch Logs endpoint to assume to write to a user's log group |
+| has_custom_event_selectors | If the trail has custom event selectors |
+| has_insight_selectors | Whether a trail has insight types specified |
+| home_region | region in which the trail was created |
+| id | unique identifier - corresponds to the arn field |
+| include_global_service_events | Where API calls from AWS global services such as IAM are included |
+| is_logging | Whether the CloudTrail trail is currently logging API calls |
+| is_multi_region_trail | Whether the trail exists only in one region or exists in all regions |
+| is_organization_trail | Whether the trail is an organization trail |
+| kms_key_id | KMS key ID that encrypts the logs delivered by CloudTrail |
+| log_file_validation_enabled | whether log file validation is enabled |
+| name | Name of the trail |
+| region | One region in which the trail was found |
+| s3_bucket_name | Name of the Amazon S3 bucket into which CloudTrail delivers your trail files |
+| s3_key_prefix | Amazon S3 key prefix that comes after the name of the bucket you have designated for log file delivery |
+| sns_topic_name | field is no longer in use. Use SnsTopicARN |
+| sns_topic_arn | the ARN of the Amazon SNS topic that CloudTrail uses to send notifications when log files are delivered |
+
+#### Relationships
+- CloudTrail is a resource of an AWSAccount.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(CloudTrail)
+        ```
+- CloudTrail delivers logs to an S3Bucket.
+
+        ```
+        (CloudTrail)-[DELIVERS_TO]->(S3Bucket)
+        ```
 
 ### DBSubnetGroup
 
