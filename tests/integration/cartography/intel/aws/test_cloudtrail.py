@@ -10,7 +10,6 @@ TEST_UPDATE_TAG = 123456789
 
 def test_load_cloudtrail_trails(neo4j_session):
     data = copy.deepcopy(tests.data.aws.cloudtrail.CLOUD_TRAILS)
-    print(data)
     trails, _ = cartography.intel.aws.cloudtrail.transform_trail_and_related_objects(data)
     cartography.intel.aws.cloudtrail.load_cloudtrail_trails(
         neo4j_session,
