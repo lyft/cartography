@@ -720,6 +720,7 @@ Representation of an AWS [CloudTrail trail](https://docs.aws.amazon.com/awscloud
 | is_multi_region_trail | Whether the trail exists only in one region or exists in all regions |
 | is_organization_trail | Whether the trail is an organization trail |
 | kms_key_id | KMS key ID that encrypts the logs delivered by CloudTrail |
+| latest_cloud_watch_logs_delivery_time | Unix timesteamp for when cloudwatch log were delivered last |
 | log_file_validation_enabled | whether log file validation is enabled |
 | name | Name of the trail |
 | region | One region in which the trail was found |
