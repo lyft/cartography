@@ -1,3 +1,6 @@
+import datetime
+from datetime import timezone as tz
+
 CLOUD_TRAILS = [
     {
         "Name": "Name",
@@ -16,7 +19,6 @@ CLOUD_TRAILS = [
         "HasCustomEventSelectors": True,
         "HasInsightSelectors": True,
         "IsOrganizationTrail": True,
-        "Id": "TrailARN1",
         "IsLogging": False,
     },
     {
@@ -31,12 +33,12 @@ CLOUD_TRAILS = [
         "TrailARN": "TrailARN2",
         "LogFileValidationEnabled": True,
         "CloudWatchLogsLogGroupArn": "CloudWatchLogsLogGroupArn",
+        "LatestCloudWatchLogsDeliveryTime": datetime.datetime(2021, 10, 12, 12, 19, 6, 294000, tzinfo=tz.utc),
         "CloudWatchLogsRoleArn": "CloudWatchLogsRoleArn",
         "KmsKeyId": "KmsKeyId",
         "HasCustomEventSelectors": True,
         "HasInsightSelectors": False,
         "IsOrganizationTrail": False,
-        "Id": "TrailARN2",
         "IsLogging": True,
-    }
+    },
 ]

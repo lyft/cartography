@@ -21,10 +21,12 @@ from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import build_ingestion_query
 from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
+from cartography.util import dict_date_to_epoch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+
 
 @timeit
 @aws_handle_regions
@@ -32,23 +34,31 @@ def get_cloudtrail_trails(boto3_session: boto3.session.Session, region: str) -> 
     client = boto3_session.client('cloudtrail', region_name=region, config=get_botocore_config())
     trails: List[Dict] = client.describe_trails()['trailList']
     for i in range(len(trails)):
-        arn = trails[i]['TrailARN']
-        trails[i]['Id'] = arn
-        trail_status = client.get_trail_status(Name=arn)
+        trail_status = client.get_trail_status(Name=trails[i]['TrailARN'])
         trails[i]['IsLogging'] = trail_status['IsLogging'] if 'IsLogging' in trail_status else None
+        trails[i]['LatestCloudWatchLogsDeliveryTime'] = (
+            trail_status['LatestCloudWatchLogsDeliveryTime']
+            if 'LatestCloudWatchLogsDeliveryTime' in trail_status
+            else None
+        )
     return trails
+
 
 @timeit
 def transform_trail_and_related_objects(trails: List[Dict]) -> Tuple[List, List]:
     s3_buckets: List[Dict] = []
-    for trail in trails:
-        if 'S3BucketName' in trail and len(trail['S3BucketName']) > 0:
+    for i in range(len(trails)):
+        trails[i]['Id'] = trails[i]['TrailARN']
+        trails[i]['LatestCloudWatchLogsDeliveryTime'] = dict_date_to_epoch(
+            trails[i], 'LatestCloudWatchLogsDeliveryTime',
+        )
+        if 'S3BucketName' in trails[i] and len(trails[i]['S3BucketName']) > 0:
             s3_buckets.append({
-                'Id': trail['S3BucketName'],
-                'Name': trail['S3BucketName']
+                'Id': trails[i]['S3BucketName'],
+                'Name': trails[i]['S3BucketName'],
             })
     return trails, s3_buckets
- 
+
 
 @dataclass(frozen=True)
 class CloudTrailNodeProperties(CartographyNodeProperties):
@@ -66,6 +76,7 @@ class CloudTrailNodeProperties(CartographyNodeProperties):
     is_organization_trail: PropertyRef = PropertyRef('IsOrganizationTrail')
     kms_key_id: PropertyRef = PropertyRef('KmsKeyId')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    latest_cloud_watch_logs_delivery_time: PropertyRef = PropertyRef('LatestCloudWatchLogsDeliveryTime')
     log_file_validation_enabled: PropertyRef = PropertyRef('LogFileValidationEnabled')
     name: PropertyRef = PropertyRef('Name')
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
@@ -74,9 +85,11 @@ class CloudTrailNodeProperties(CartographyNodeProperties):
     sns_topic_name: PropertyRef = PropertyRef('SnsTopicName')
     sns_topic_arn: PropertyRef = PropertyRef('SnsTopicARN')
 
+
 @dataclass(frozen=True)
 class CloudTrailToAWSAccountRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
 
 @dataclass(frozen=True)
 # (:CloudTrail)<-[:RESOURCE]-(:AWSAccount)
@@ -89,9 +102,11 @@ class CloudTrailToAWSAccount(CartographyRelSchema):
     rel_label: str = "RESOURCE"
     properties: CloudTrailToAWSAccountRelProperties = CloudTrailToAWSAccountRelProperties()
 
+
 @dataclass(frozen=True)
 class CloudTrailToS3BucketRelProps(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
 
 @dataclass(frozen=True)
 # (:CloudTrail)-[:DELIVERS_TO]->(:S3Bucket)
@@ -114,6 +129,7 @@ class CloudTrailSchema(CartographyNodeSchema):
         ],
     )
 
+
 @timeit
 def load_cloudtrail_trails(
         neo4j_session: neo4j.Session,
@@ -135,6 +151,7 @@ def load_cloudtrail_trails(
         AccountId=current_aws_account_id,
     )
 
+
 @dataclass(frozen=True)
 class S3BucketNodeProperties(CartographyNodeProperties):
     firstseen: PropertyRef = PropertyRef('firstseen')
@@ -147,6 +164,7 @@ class S3BucketNodeProperties(CartographyNodeProperties):
 class S3BucketSchema(CartographyNodeSchema):
     label: str = 'S3Bucket'
     properties: S3BucketNodeProperties = S3BucketNodeProperties()
+
 
 @timeit
 def load_cloudtrail_s3_buckets(
@@ -165,10 +183,12 @@ def load_cloudtrail_s3_buckets(
         lastupdated=aws_update_tag,
     )
 
+
 @timeit
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     logger.debug("Running CloudTrail cleanup job.")
     run_cleanup_job('aws_import_cloudtrail_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync(
