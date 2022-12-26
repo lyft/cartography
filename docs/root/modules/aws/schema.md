@@ -740,6 +740,11 @@ Representation of an AWS [CloudTrail trail](https://docs.aws.amazon.com/awscloud
         ```
         (CloudTrail)-[DELIVERS_TO]->(S3Bucket)
         ```
+- CloudTrail delivers logs to an S3Bucket.
+
+        ```
+        (CloudTrail)-[DELIVERS_TO]->(CloudWatchLogGroup)
+        ```
 
 ### CloudWatchLogGroup
 
@@ -765,6 +770,10 @@ Representation of an AWS CloudWatch [log group](https://docs.aws.amazon.com/AWSC
         ```
         (AWSAccount)-[RESOURCE]->(CloudWatchLogGroup)
         ```
+- CloudTrail delivers logs to an S3Bucket.
+
+        ```
+        (CloudTrail)-[DELIVERS_TO]->(CloudWatchLogGroup)
 
 ### DBSubnetGroup
 
