@@ -1,5 +1,4 @@
 import logging
-import time
 from dataclasses import dataclass
 from typing import Dict
 from typing import List
@@ -24,6 +23,7 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
+
 @timeit
 @aws_handle_regions
 def get_cloudwatch_log_groups(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
@@ -34,6 +34,7 @@ def get_cloudwatch_log_groups(boto3_session: boto3.session.Session, region: str)
         log_group = page['logGroups']
         log_groups.extend(log_group)
     return log_groups
+
 
 @timeit
 def transform_cloudwatch_log_groups(log_groups: List[Dict]) -> List[Dict]:
@@ -87,11 +88,10 @@ class CloudWatchLogGroupSchema(CartographyNodeSchema):
 def load_cloudwatch_log_groups(
         neo4j_session: neo4j.Session,
         log_groups: List[Dict],
-        region: str,
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
-    logger.info("Loading %d cloudwatch log groups for region '%s' into graph.", len(log_groups), region)
+    logger.info("Loading %d cloudwatch log groups into graph.", len(log_groups))
 
     ingestion_query = build_ingestion_query(CloudWatchLogGroupSchema())
 
@@ -100,7 +100,6 @@ def load_cloudwatch_log_groups(
         ingestion_query,
         log_groups,
         lastupdated=aws_update_tag,
-        Region=region,
         AccountId=current_aws_account_id,
     )
 
@@ -119,7 +118,7 @@ def sync(
     for region in regions:
         logger.info("Syncing cloudwatch log groups for region '%s' in account '%s'.", region, current_aws_account_id)
         log_groups = get_cloudwatch_log_groups(boto3_session, region)
-        log_groups  = transform_cloudwatch_log_groups(log_groups)
-        load_cloudwatch_log_groups(neo4j_session, log_groups, region, current_aws_account_id, update_tag)
+        log_groups = transform_cloudwatch_log_groups(log_groups)
+        load_cloudwatch_log_groups(neo4j_session, log_groups, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
