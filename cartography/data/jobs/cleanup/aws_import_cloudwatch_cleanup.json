@@ -1,0 +1,11 @@
+{
+    "statements": [
+        {
+            "query": "MATCH (n:CloudWatchLogGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete old CloudWatchLogGroup nodes."
+        }
+    ],
+    "name": "cleanup CloudWatch"
+}

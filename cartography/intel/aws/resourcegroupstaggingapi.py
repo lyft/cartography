@@ -65,6 +65,7 @@ def get_short_id_from_lb2_arn(alb_arn: str) -> str:
 TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'autoscaling:autoScalingGroup': {'label': 'AutoScalingGroup', 'property': 'arn'},
     'cloudtrail:trail': {'label': 'CloudTrail', 'property': 'arn'},
+    'cloudwatch:log-group': {'label': 'CloudWatchLogGroup', 'property': 'arn'},
     'dynamodb:table': {'label': 'DynamoDBTable', 'property': 'id'},
     'ec2:instance': {'label': 'EC2Instance', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},
     'ec2:internet-gateway': {'label': 'AWSInternetGateway', 'property': 'id', 'id_func': get_short_id_from_ec2_arn},

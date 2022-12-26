@@ -2,6 +2,7 @@ from typing import Dict
 
 from . import apigateway
 from . import cloudtrail
+from . import cloudwatch
 from . import config
 from . import dynamodb
 from . import ecr
@@ -88,4 +89,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'inspector': inspector.sync,
     'config': config.sync,
     'cloudtrail': cloudtrail.sync,
+    'cloudwatch': cloudwatch.sync,
 }

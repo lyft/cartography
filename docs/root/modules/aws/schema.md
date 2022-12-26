@@ -741,6 +741,31 @@ Representation of an AWS [CloudTrail trail](https://docs.aws.amazon.com/awscloud
         (CloudTrail)-[DELIVERS_TO]->(S3Bucket)
         ```
 
+### CloudWatchLogGroup
+
+Representation of an AWS CloudWatch [log group](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated
+| arn | ARN of the trail |
+| creation_time | Unix timesteamp for creation of the log group |
+| data_protection_status | whether this log group has a protection policy, or whether it had one in the past |
+| id: PropertyRef | unique id, matches the arn field |
+| kms_key_id | arn of the kms key used to encrypt log data|
+| log_group_name | name of the log group|
+| metric_filter_count | number of metric filters |
+| retention_in_days | number of days to retain the log events in the specified log group |
+| stored_bytes | number of bytes stored |
+
+#### Relationships
+- CloudWatchLogGroup is a resource of an AWSAccount.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(CloudWatchLogGroup)
+        ```
+
 ### DBSubnetGroup
 
 Representation of an RDS [DB Subnet Group](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DBSubnetGroup.html).  For more information on how RDS instances interact with these, please see [this article](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_VPC.WorkingWithRDSInstanceinaVPC.html).
