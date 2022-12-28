@@ -76,10 +76,10 @@ def get_group_managed_policy_data(boto3_session: boto3.session.Session, group_li
     policies = {}
     for group in group_list:
         name = group["GroupName"]
-        arn = group["Arn"]
+        group_arn = group["Arn"]
         resource_group = resource_client.Group(name)
-        policies[arn] = {
-            p.policy_name: p.default_version.document["Statement"]
+        policies[group_arn] = {
+            p.arn: p.default_version.document["Statement"]
             for p in resource_group.attached_policies.all()
         }
     return policies
@@ -108,11 +108,11 @@ def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list
     policies = {}
     for user in user_list:
         name = user["UserName"]
-        arn = user["Arn"]
+        user_arn = user["Arn"]
         resource_user = resource_client.User(name)
         try:
-            policies[arn] = {
-                p.policy_name: p.default_version.document["Statement"]
+            policies[user_arn] = {
+                p.arn: p.default_version.document["Statement"]
                 for p in resource_user.attached_policies.all()
             }
         except resource_client.meta.client.exceptions.NoSuchEntityException:
@@ -145,11 +145,11 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
     policies = {}
     for role in role_list:
         name = role["RoleName"]
-        arn = role["Arn"]
+        role_arn = role["Arn"]
         resource_role = resource_client.Role(name)
         try:
-            policies[arn] = {
-                p.policy_name: p.default_version.document["Statement"]
+            policies[role_arn] = {
+                p.arn: p.default_version.document["Statement"]
                 for p in resource_role.attached_policies.all()
             }
         except resource_client.meta.client.exceptions.NoSuchEntityException:
@@ -513,8 +513,9 @@ def _transform_policy_statements(statements: Any, policy_id: str) -> List[Dict]:
 def transform_policy_data(policy_map: Dict, policy_type: str) -> None:
     for principal_arn, policy_list in policy_map.items():
         logger.debug(f"Syncing IAM {policy_type} policies for principal {principal_arn}")
-        for policy_name, statements in policy_list.items():
-            policy_id = transform_policy_id(principal_arn, policy_type, policy_name)
+        for policy_key, statements in policy_list.items():
+            policy_id = transform_policy_id(principal_arn, policy_type, policy_key) \
+                if policy_type == PolicyType.inline.value else policy_key
             statements = _transform_policy_statements(
                 statements, policy_id,
             )
@@ -594,10 +595,11 @@ def load_policy_statements(
 def load_policy_data(neo4j_session: neo4j.Session, policy_map: Dict, policy_type: str, aws_update_tag: int) -> None:
     for principal_arn, policy_list in policy_map.items():
         logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
-        for policy_name, statements in policy_list.items():
-            policy_id = transform_policy_id(principal_arn, policy_type, policy_name)
-            load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_arn, aws_update_tag)
-            load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag)
+        for policy_key, statements in policy_list.items():
+            policy_id = transform_policy_id(principal_arn, policy_type, policy_key) \
+                if policy_type == PolicyType.inline.value else policy_key
+            load_policy(neo4j_session, policy_id, policy_key, policy_type, principal_arn, aws_update_tag)
+            load_policy_statements(neo4j_session, policy_id, policy_key, statements, aws_update_tag)
 
 
 @timeit
