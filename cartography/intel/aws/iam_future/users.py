@@ -6,13 +6,19 @@ import boto3
 import neo4j
 
 from cartography.client.core.tx import load_graph_data
-from cartography.graph.model import CartographyRelProperties, PropertyRef, CartographyRelSchema, TargetNodeMatcher, \
-    make_target_node_matcher, LinkDirection, CartographyNodeProperties, CartographyNodeSchema, ExtraNodeLabels
+from cartography.graph.model import CartographyNodeProperties
+from cartography.graph.model import CartographyNodeSchema
+from cartography.graph.model import CartographyRelProperties
+from cartography.graph.model import CartographyRelSchema
+from cartography.graph.model import ExtraNodeLabels
+from cartography.graph.model import LinkDirection
+from cartography.graph.model import make_target_node_matcher
+from cartography.graph.model import PropertyRef
+from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import build_ingestion_query
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-
 
 
 @dataclass(frozen=True)
@@ -36,29 +42,16 @@ class AWSUserNodeProperties(CartographyNodeProperties):
     arn: PropertyRef = PropertyRef('Arn')
     id: PropertyRef = PropertyRef('Arn')
     userid: PropertyRef = PropertyRef('UserId')
-    createdate: PropertyRef = PropertyRef('CreateDate'),
+    createdate: PropertyRef = PropertyRef('CreateDate')
     name: PropertyRef = PropertyRef('UserName')
     path: PropertyRef = PropertyRef('Path')
     passwordlastused: PropertyRef = PropertyRef('PasswordLastUsed')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
-
 @dataclass(frozen=True)
 class AWSUserToRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-
-
-@dataclass(frozen=True)
-class AWSUserToAWSAccount(CartographyRelSchema):
-    target_node_label: str = 'AWSAccount'
-    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('current_aws_account_id', set_in_kwargs=True)},
-    )
-    direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "RESOURCE"
-    properties: AWSUserToAWSAccountRelProperties = AWSUserToAWSAccountRelProperties()
-
 
 
 @dataclass(frozen=True)
@@ -80,7 +73,7 @@ def get_user_list_data(boto3_session: boto3.session.Session) -> dict:
     return {'Users': users}
 
 
-def transform_user_list_data(data: dict[str, Any]):
+def transform_user_list_data(data: dict[str, Any]) -> dict[str, Any]:
     for user in data['Users']:
         if 'CreateDate' in user:
             user['CreateDate'] = str(user['CreateDate'])

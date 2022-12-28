@@ -10,7 +10,8 @@ import neo4j
 
 from cartography.intel.aws.iam_future.policies import sync_user_inline_policies
 from cartography.intel.aws.iam_future.users import sync_iam_users
-from cartography.intel.aws.iam_future.util import create_policy_id, PolicyType
+from cartography.intel.aws.iam_future.util import create_policy_id
+from cartography.intel.aws.iam_future.util import PolicyType
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
 from cartography.stats import get_stats_client
@@ -137,8 +138,6 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
                 f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
             )
     return policies
-
-
 
 
 @timeit
@@ -571,7 +570,7 @@ def sync_users(
 ) -> None:
     user_data = sync_iam_users(boto3_session, neo4j_session, aws_update_tag, current_aws_account_id)
 
-    sync_user_inline_policies(boto3_session, user_data, neo4j_session, aws_update_tag)
+    sync_user_inline_policies(boto3_session, user_data, neo4j_session, aws_update_tag, current_aws_account_id)
 
     sync_user_managed_policies(boto3_session, user_data, neo4j_session, aws_update_tag)
 

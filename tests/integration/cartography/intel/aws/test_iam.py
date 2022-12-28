@@ -1,11 +1,11 @@
 from unittest import mock
 
 import cartography.intel.aws.iam
-from cartography.intel.aws.iam_future.users import load_users
 import cartography.intel.aws.permission_relationships
 import tests.data.aws.iam
 from cartography.cli import CLI
 from cartography.config import Config
+from cartography.intel.aws.iam_future.users import load_users
 from cartography.sync import build_default_sync
 
 TEST_ACCOUNT_ID = '000000000000'
