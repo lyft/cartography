@@ -1,4 +1,3 @@
-import enum
 import json
 import logging
 from typing import Any
@@ -9,6 +8,9 @@ from typing import Tuple
 import boto3
 import neo4j
 
+from cartography.intel.aws.iam_future.policies import sync_user_inline_policies
+from cartography.intel.aws.iam_future.users import sync_iam_users
+from cartography.intel.aws.iam_future.util import create_policy_id, PolicyType
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
 from cartography.stats import get_stats_client
@@ -21,11 +23,6 @@ stat_handler = get_stats_client(__name__)
 
 # Overview of IAM in AWS
 # https://aws.amazon.com/iam/
-
-
-class PolicyType(enum.Enum):
-    managed = 'managed'
-    inline = 'inline'
 
 
 @timeit
@@ -86,23 +83,6 @@ def get_group_managed_policy_data(boto3_session: boto3.session.Session, group_li
 
 
 @timeit
-def get_user_policy_data(boto3_session: boto3.session.Session, user_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
-    policies = {}
-    for user in user_list:
-        name = user["UserName"]
-        arn = user["Arn"]
-        resource_user = resource_client.User(name)
-        try:
-            policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_user.policies.all()}
-        except resource_client.meta.client.exceptions.NoSuchEntityException:
-            logger.warning(
-                f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
-            )
-    return policies
-
-
-@timeit
 def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list: List[Dict]) -> Dict:
     resource_client = boto3_session.resource('iam')
     policies = {}
@@ -159,15 +139,6 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
     return policies
 
 
-@timeit
-def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
-    client = boto3_session.client('iam')
-
-    paginator = client.get_paginator('list_users')
-    users: List[Dict] = []
-    for page in paginator.paginate():
-        users.extend(page['Users'])
-    return {'Users': users}
 
 
 @timeit
@@ -202,37 +173,6 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
             f"Could not get access key for user {username} due to NoSuchEntityException; skipping.",
         )
     return access_keys
-
-
-@timeit
-def load_users(
-    neo4j_session: neo4j.Session, users: List[Dict], current_aws_account_id: str, aws_update_tag: int,
-) -> None:
-    ingest_user = """
-    MERGE (unode:AWSUser{arn: $ARN})
-    ON CREATE SET unode:AWSPrincipal, unode.userid = $USERID, unode.firstseen = timestamp(),
-    unode.createdate = $CREATE_DATE
-    SET unode.name = $USERNAME, unode.path = $PATH, unode.passwordlastused = $PASSWORD_LASTUSED,
-    unode.lastupdated = $aws_update_tag
-    WITH unode
-    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
-    MERGE (aa)-[r:RESOURCE]->(unode)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    """
-    logger.info(f"Loading {len(users)} IAM users.")
-    for user in users:
-        neo4j_session.run(
-            ingest_user,
-            ARN=user["Arn"],
-            USERID=user["UserId"],
-            CREATE_DATE=str(user["CreateDate"]),
-            USERNAME=user["UserName"],
-            PATH=user["Path"],
-            PASSWORD_LASTUSED=str(user.get("PasswordLastUsed", "")),
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-        )
 
 
 @timeit
@@ -511,17 +451,40 @@ def _transform_policy_statements(statements: Any, policy_id: str) -> List[Dict]:
 
 
 def transform_policy_data(policy_map: Dict, policy_type: str) -> None:
+    """
+    Updates the given policy_map in place for data ingestion.
+    Specifically,
+     1. Updates each policy statement to have an invented "id" field of the shape
+        {principal_arn}/{policy_type}_policy/{name}/statement/{statement_number}
+     2. Sets each statement's "Resource", "Action", "NotAction", "NotResource" fields so that they
+        are lists.
+     3. Sets each statement's "Condition" field, if present, to be a string.
+
+    :param policy_map: A dict with the shape = {
+        <user ARN>: {
+            <policy_name (str)>: <policy_statement (Dict)>,
+            ...
+        },
+        ...
+    }
+    :param policy_type: The PolicyType enum value of the specified policy_map.
+    :return: None, but has a side effect where every policy_statement in the given policy_map is transformed to
+    this shape: {
+        'id': <A generated ID for the statement>,
+        'Resource': [ str, ... ], # if Resource is present
+        'NotResource': [ str, ... ], # if NotResource is present
+        'Action': [ str, ... ], # if Action is present
+        'NotAction': [ str, ... ], # if NotAction is present
+        'Condition': str, # if Condition is present
+    }
+    """
     for principal_arn, policy_list in policy_map.items():
-        logger.debug(f"Syncing IAM {policy_type} policies for principal {principal_arn}")
+        logger.debug(f"Transforming IAM {policy_type} policies for principal {principal_arn}")
         for policy_name, statements in policy_list.items():
-            policy_id = transform_policy_id(principal_arn, policy_type, policy_name)
+            policy_id = create_policy_id(principal_arn, policy_type, policy_name)
             statements = _transform_policy_statements(
                 statements, policy_id,
             )
-
-
-def transform_policy_id(principal_arn: str, policy_type: str, name: str) -> str:
-    return f"{principal_arn}/{policy_type}_policy/{name}"
 
 
 def _load_policy_tx(
@@ -592,10 +555,11 @@ def load_policy_statements(
 
 @timeit
 def load_policy_data(neo4j_session: neo4j.Session, policy_map: Dict, policy_type: str, aws_update_tag: int) -> None:
+
     for principal_arn, policy_list in policy_map.items():
         logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
         for policy_name, statements in policy_list.items():
-            policy_id = transform_policy_id(principal_arn, policy_type, policy_name)
+            policy_id = create_policy_id(principal_arn, policy_type, policy_name)
             load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_arn, aws_update_tag)
             load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag)
 
@@ -605,13 +569,11 @@ def sync_users(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
     aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing IAM users for account '%s'.", current_aws_account_id)
-    data = get_user_list_data(boto3_session)
-    load_users(neo4j_session, data['Users'], current_aws_account_id, aws_update_tag)
+    user_data = sync_iam_users(boto3_session, neo4j_session, aws_update_tag, current_aws_account_id)
 
-    sync_user_inline_policies(boto3_session, data, neo4j_session, aws_update_tag)
+    sync_user_inline_policies(boto3_session, user_data, neo4j_session, aws_update_tag)
 
-    sync_user_managed_policies(boto3_session, data, neo4j_session, aws_update_tag)
+    sync_user_managed_policies(boto3_session, user_data, neo4j_session, aws_update_tag)
 
     run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -624,16 +586,6 @@ def sync_user_managed_policies(
     managed_policy_data = get_user_managed_policy_data(boto3_session, data['Users'])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
     load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, aws_update_tag)
-
-
-@timeit
-def sync_user_inline_policies(
-    boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
-) -> None:
-    policy_data = get_user_policy_data(boto3_session, data['Users'])
-    transform_policy_data(policy_data, PolicyType.inline.value)
-    load_policy_data(neo4j_session, policy_data, PolicyType.inline.value, aws_update_tag)
 
 
 @timeit

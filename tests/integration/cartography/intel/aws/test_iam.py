@@ -1,6 +1,7 @@
 from unittest import mock
 
 import cartography.intel.aws.iam
+from cartography.intel.aws.iam_future.users import load_users
 import cartography.intel.aws.permission_relationships
 import tests.data.aws.iam
 from cartography.cli import CLI
@@ -45,7 +46,7 @@ def test_load_users(neo4j_session):
     _create_base_account(neo4j_session)
     data = tests.data.aws.iam.LIST_USERS['Users']
 
-    cartography.intel.aws.iam.load_users(
+    load_users(
         neo4j_session,
         data,
         TEST_ACCOUNT_ID,
