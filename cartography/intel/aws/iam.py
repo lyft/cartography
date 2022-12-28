@@ -28,6 +28,10 @@ class PolicyType(enum.Enum):
     inline = 'inline'
 
 
+def get_policy_name_from_arn(arn: str) -> str:
+    return arn.split("/")[-1]
+
+
 @timeit
 def get_group_policies(boto3_session: boto3.session.Session, group_name: str) -> Dict:
     client = boto3_session.client('iam')
@@ -592,14 +596,23 @@ def load_policy_statements(
 
 
 @timeit
-def load_policy_data(neo4j_session: neo4j.Session, policy_map: Dict, policy_type: str, aws_update_tag: int) -> None:
-    for principal_arn, policy_list in policy_map.items():
+def load_policy_data(
+        neo4j_session: neo4j.Session,
+        principal_policy_map: Dict[str, Dict[str, Any]],
+        policy_type: str,
+        aws_update_tag: int,
+) -> None:
+    for principal_arn, policy_statement_map in principal_policy_map.items():
         logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
-        for policy_key, statements in policy_list.items():
-            policy_id = transform_policy_id(principal_arn, policy_type, policy_key) \
-                if policy_type == PolicyType.inline.value else policy_key
-            load_policy(neo4j_session, policy_id, policy_key, policy_type, principal_arn, aws_update_tag)
-            load_policy_statements(neo4j_session, policy_id, policy_key, statements, aws_update_tag)
+        for policy_key, statements in policy_statement_map.items():
+            policy_name = policy_key if policy_type == PolicyType.inline.value else get_policy_name_from_arn(policy_key)
+            policy_id = transform_policy_id(
+                principal_arn,
+                policy_type,
+                policy_key,
+            ) if policy_type == PolicyType.inline.value else policy_key
+            load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_arn, aws_update_tag)
+            load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag)
 
 
 @timeit
