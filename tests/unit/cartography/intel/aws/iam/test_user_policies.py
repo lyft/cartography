@@ -1,11 +1,12 @@
 from unittest import mock
-from unittest.mock import MagicMock, call
+from unittest.mock import call
+from unittest.mock import MagicMock
 
 import cartography.intel.aws.iam
-
 from cartography.intel.aws.iam import PolicyType
 from cartography.intel.aws.iam import sync_user_managed_policies
-from tests.data.aws.iam.user_policies import GET_USER_LIST_DATA, GET_USER_MANAGED_POLS_SAMPLE
+from tests.data.aws.iam.user_policies import GET_USER_LIST_DATA
+from tests.data.aws.iam.user_policies import GET_USER_MANAGED_POLS_SAMPLE
 
 AWS_UPDATE_TAG = 111111
 
@@ -38,5 +39,5 @@ def test_sync_user_managed_policies(mock_get_user_pols: MagicMock, mock_load_pol
             #     'arn:aws:iam::1234:user/user3',
             #     AWS_UPDATE_TAG,
             # ),
-        ]
+        ],
     )
