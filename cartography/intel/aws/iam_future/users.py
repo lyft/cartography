@@ -69,7 +69,7 @@ def get_user_list_data(boto3_session: boto3.session.Session) -> Dict[str, Any]:
     client = boto3_session.client('iam')
 
     paginator = client.get_paginator('list_users')
-    users: list[dict[str, Any]] = []
+    users: List[Dict[str, Any]] = []
     for page in paginator.paginate():
         users.extend(page['Users'])
     return {'Users': users}
