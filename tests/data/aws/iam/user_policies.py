@@ -106,3 +106,103 @@ GET_USER_MANAGED_POLS_SAMPLE = {
         }],
     },
 }
+
+
+GET_ROLE_LIST_DATA = {
+    'Roles': [
+        {
+            'Path': '/',
+            'RoleName': 'ServiceRole',
+            'RoleId': 'AROAJJUSH7VXXX',
+            'Arn': 'arn:aws:iam::1234:role/ServiceRole',
+            'CreateDate': datetime(2018, 8, 2, 23, 4, 13, tzinfo=tzutc()),
+            'AssumeRolePolicyDocument': {
+                'Version': '2012-10-17',
+                'Statement': [{
+                    'Effect': 'Allow',
+                    'Principal': {'AWS': 'arn:aws:iam::54321:root'},
+                    'Action': 'sts:AssumeRole',
+                    'Condition': {},
+                }],
+            },
+            'MaxSessionDuration': 360,
+        },
+        {
+            'Path': '/',
+            'RoleName': 'cartography-read-only',
+            'RoleId': 'AROAJGFIQ7EXXY',
+            'Arn': 'arn:aws:iam::1234:role/cartography-read-only',
+            'CreateDate': datetime(2018, 6, 19, 0, 42, 12, tzinfo=tzutc()),
+            'AssumeRolePolicyDocument': {
+                'Version': '2012-10-17',
+                'Statement': [{
+                    'Effect': 'Allow',
+                    'Principal': {'AWS': 'arn:aws:iam::54321:root'},
+                    'Action': 'sts:AssumeRole',
+                }],
+            },
+            'MaxSessionDuration': 360,
+        },
+        {
+            'Path': '/',
+            'RoleName': 'admin',
+            'RoleId': 'AROAJPGNHE3XYY',
+            'Arn': 'arn:aws:iam::1234:role/admin',
+            'CreateDate': datetime(2016, 4, 25, 22, 5, 43, tzinfo=tzutc()),
+            'AssumeRolePolicyDocument': {
+                'Version': '2012-10-17',
+                'Statement': [
+                    {
+                        'Effect': 'Allow',
+                        'Principal': {'AWS': 'arn:aws:iam::54321:root'},
+                        'Action': 'sts:AssumeRole',
+                        'Condition': {'Bool': {'aws:MultiFactorAuthPresent': 'true'}},
+                    },
+                    {
+                        'Effect': 'Allow',
+                        'Principal': {'AWS': 'arn:aws:iam::98765:root'},
+                        'Action': 'sts:AssumeRole',
+                        'Condition': {'Bool': {'aws:MultiFactorAuthPresent': 'true'}},
+                    },
+                    {
+                        'Effect': 'Allow',
+                        'Principal': {'Federated': 'arn:aws:iam::1234:saml-provider/Okta'},
+                        'Action': 'sts:AssumeRoleWithSAML',
+                        'Condition': {'StringEquals': {'SAML:aud': 'https://signin.aws.amazon.com/saml'}},
+                    },
+                ],
+            },
+            'MaxSessionDuration': 144,
+        },
+    ],
+}
+
+
+GET_ROLE_INLINE_POLS_SAMPLE = {
+    'arn:aws:iam::1234:role/ServiceRole': {
+        'ServiceRole': [{
+            'Sid': 'VisualEditor0',
+            'Effect': 'Allow',
+            'Action': [
+                'iam:ListPolicies',
+                'iam:GetAccountSummary',
+                'iam:ListAccountAliases',
+                'iam:GenerateServiceLastAccessedDetails',
+                'iam:ListRoles',
+                'iam:ListUsers',
+                'iam:ListGroups',
+                'iam:GetServiceLastAccessedDetails',
+                'iam:ListRolePolicies',
+            ],
+            'Resource': '*',
+        }],
+    },
+    'arn:aws:iam::1234:role/cartography-read-only': {},
+    'arn:aws:iam::1234:role/admin': {
+        'AdministratorAccess': [{
+            'Effect': 'Allow',
+            'Action': '*',
+            'Resource': '*',
+        }],
+    },
+}
