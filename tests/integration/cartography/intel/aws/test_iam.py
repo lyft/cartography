@@ -117,6 +117,7 @@ def test_load_inline_policy(neo4j_session):
         "arn:aws:iam::000000000000:group/example-group-0",
         TEST_UPDATE_TAG,
     )
+    # TODO Actually have assertions :rolleyes:
 
 
 def test_load_inline_policy_data(neo4j_session):

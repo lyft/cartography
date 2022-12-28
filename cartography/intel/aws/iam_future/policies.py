@@ -1,6 +1,8 @@
 import logging
 from dataclasses import dataclass
 from typing import Any
+from typing import Dict
+from typing import List
 
 import boto3
 import neo4j
@@ -73,7 +75,10 @@ class AWSPolicySchema(CartographyNodeSchema):
 
 
 @timeit
-def get_user_inline_policy_data(boto3_session: boto3.session.Session, user_list: list[dict]) -> dict[str, Any]:
+def get_user_policy_data(
+        boto3_session: boto3.session.Session,
+        user_list: List[Dict[str, Any]],
+) -> Dict[str, Any]:
     """
     Retrieve user policy data for each user in user_list.
     :return: Datashape = {
@@ -99,7 +104,7 @@ def get_user_inline_policy_data(boto3_session: boto3.session.Session, user_list:
     return user_policy_map
 
 
-def transform_user_inline_policies(user_policy_map: dict[str, Any], policy_type: str) -> list[dict[str, str]]:
+def transform_user_policies(user_policy_map: Dict[str, Any], policy_type: str) -> List[Dict[str, str]]:
     result = []
     for principal_arn, p_contents in user_policy_map.items():
         for policy_name, _ in p_contents.items():
@@ -114,9 +119,9 @@ def transform_user_inline_policies(user_policy_map: dict[str, Any], policy_type:
     return result
 
 
-def load_user_inline_policies(
+def load_user_policies(
         neo4j_session: neo4j.Session,
-        dict_list: list[dict[str, str]],
+        dict_list: List[Dict[str, str]],
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
@@ -134,13 +139,13 @@ def load_user_inline_policies(
 
 
 @timeit
-def sync_user_inline_policies(
+def sync_user_policies(
         boto3_session: boto3.session.Session,
-        user_data: dict,
+        user_data: Dict[str, Any],
         neo4j_session: neo4j.Session,
         aws_update_tag: int,
         current_aws_account_id: str,
 ) -> None:
-    policy_data = get_user_inline_policy_data(boto3_session, user_data['Users'])
-    transformed_policy_data = transform_user_inline_policies(policy_data, PolicyType.inline.value)
-    load_user_inline_policies(neo4j_session, transformed_policy_data, current_aws_account_id, aws_update_tag)
+    policy_data = get_user_policy_data(boto3_session, user_data['Users'])
+    transformed_policy_data = transform_user_policies(policy_data, PolicyType.inline.value)
+    load_user_policies(neo4j_session, transformed_policy_data, current_aws_account_id, aws_update_tag)

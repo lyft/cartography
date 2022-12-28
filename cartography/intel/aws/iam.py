@@ -8,7 +8,7 @@ from typing import Tuple
 import boto3
 import neo4j
 
-from cartography.intel.aws.iam_future.policies import sync_user_inline_policies
+from cartography.intel.aws.iam_future.policies import sync_user_policies
 from cartography.intel.aws.iam_future.users import sync_iam_users
 from cartography.intel.aws.iam_future.util import create_policy_id
 from cartography.intel.aws.iam_future.util import PolicyType
@@ -570,7 +570,7 @@ def sync_users(
 ) -> None:
     user_data = sync_iam_users(boto3_session, neo4j_session, aws_update_tag, current_aws_account_id)
 
-    sync_user_inline_policies(boto3_session, user_data, neo4j_session, aws_update_tag, current_aws_account_id)
+    sync_user_policies(boto3_session, user_data, neo4j_session, aws_update_tag, current_aws_account_id)
 
     sync_user_managed_policies(boto3_session, user_data, neo4j_session, aws_update_tag)
 

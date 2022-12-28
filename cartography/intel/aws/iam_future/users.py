@@ -1,6 +1,8 @@
 import logging
 from dataclasses import dataclass
 from typing import Any
+from typing import Dict
+from typing import List
 
 import boto3
 import neo4j
@@ -63,7 +65,7 @@ class AWSUserSchema(CartographyNodeSchema):
 
 
 @timeit
-def get_user_list_data(boto3_session: boto3.session.Session) -> dict:
+def get_user_list_data(boto3_session: boto3.session.Session) -> Dict[str, Any]:
     client = boto3_session.client('iam')
 
     paginator = client.get_paginator('list_users')
@@ -73,22 +75,25 @@ def get_user_list_data(boto3_session: boto3.session.Session) -> dict:
     return {'Users': users}
 
 
-def transform_user_list_data(data: dict[str, Any]) -> dict[str, Any]:
+def transform_user_list_data(data: Dict[str, Any]) -> Dict[str, Any]:
     for user in data['Users']:
         if 'CreateDate' in user:
             user['CreateDate'] = str(user['CreateDate'])
-    return data
+    return data['Users']
 
 
 @timeit
 def load_users(
-    neo4j_session: neo4j.Session, users: dict[str, Any], current_aws_account_id: str, aws_update_tag: int,
+        neo4j_session: neo4j.Session,
+        users: List[Dict[str, Any]],
+        current_aws_account_id: str,
+        aws_update_tag: int,
 ) -> None:
     ingestion_query = build_ingestion_query(AWSUserSchema())
     load_graph_data(
         neo4j_session,
         ingestion_query,
-        users['Users'],
+        users,
         lastupdated=aws_update_tag,
         current_aws_account_id=current_aws_account_id,
     )
@@ -100,7 +105,7 @@ def sync_iam_users(
         neo4j_session: neo4j.Session,
         aws_update_tag: int,
         current_aws_account_id: str,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     logger.info("Syncing IAM users for account '%s'.", current_aws_account_id)
     user_data = get_user_list_data(boto3_session)
     user_data = transform_user_list_data(user_data)
