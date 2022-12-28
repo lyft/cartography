@@ -1,4 +1,4 @@
-from cartography.intel.aws import iam_future
+from cartography.intel.aws import iam
 
 SINGLE_STATEMENT = {
     "Resource": "*",
@@ -15,7 +15,7 @@ SINGLE_PRINCIPAL = {
 
 
 def test__generate_policy_statements():
-    statements = iam_future._transform_policy_statements(SINGLE_STATEMENT, "test_policy_id")
+    statements = iam._transform_policy_statements(SINGLE_STATEMENT, "test_policy_id")
     assert isinstance(statements, list)
     assert isinstance(statements[0]["Action"], list)
     assert isinstance(statements[0]["Resource"], list)
@@ -23,7 +23,7 @@ def test__generate_policy_statements():
 
 
 def test__parse_principal_entries():
-    principal_entries = iam_future._parse_principal_entries(SINGLE_PRINCIPAL)
+    principal_entries = iam._parse_principal_entries(SINGLE_PRINCIPAL)
     assert isinstance(principal_entries, list)
     assert len(principal_entries) == 4
     assert principal_entries[0] == ("AWS", "test-role-1")
@@ -33,5 +33,5 @@ def test__parse_principal_entries():
 
 
 def test_get_account_from_arn():
-    result = iam_future.get_account_from_arn("arn:aws:iam::081157660428:role/TestRole")
+    result = iam.get_account_from_arn("arn:aws:iam::081157660428:role/TestRole")
     assert result == "081157660428"
