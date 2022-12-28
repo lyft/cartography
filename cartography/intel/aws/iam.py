@@ -11,6 +11,8 @@ import neo4j
 from cartography.intel.aws.iam_future.policies import sync_user_policies
 from cartography.intel.aws.iam_future.users import sync_iam_users
 from cartography.intel.aws.iam_future.util import create_policy_id
+from cartography.intel.aws.iam_future.util import create_policy_statement_id
+from cartography.intel.aws.iam_future.util import ensure_list
 from cartography.intel.aws.iam_future.util import PolicyType
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
@@ -419,23 +421,17 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
                 )
 
 
-def ensure_list(obj: Any) -> List[Any]:
-    if not isinstance(obj, list):
-        obj = [obj]
-    return obj
-
-
 def _transform_policy_statements(statements: Any, policy_id: str) -> List[Dict]:
     count = 1
     if not isinstance(statements, list):
         statements = [statements]
     for stmt in statements:
         if "Sid" not in stmt:
-            statement_id = count
+            statement_id = str(count)
             count += 1
         else:
             statement_id = stmt["Sid"]
-        stmt["id"] = f"{policy_id}/statement/{statement_id}"
+        stmt["id"] = create_policy_statement_id(policy_id, statement_id)
         if "Resource" in stmt:
             stmt["Resource"] = ensure_list(stmt["Resource"])
         if "Action" in stmt:
@@ -469,7 +465,7 @@ def transform_policy_data(policy_map: Dict, policy_type: str) -> None:
     :param policy_type: The PolicyType enum value of the specified policy_map.
     :return: None, but has a side effect where every policy_statement in the given policy_map is transformed to
     this shape: {
-        'id': <A generated ID for the statement>,
+        'id': <A generated ID for the statement, see create_policy_statement_id()>,
         'Resource': [ str, ... ], # if Resource is present
         'NotResource': [ str, ... ], # if NotResource is present
         'Action': [ str, ... ], # if Action is present

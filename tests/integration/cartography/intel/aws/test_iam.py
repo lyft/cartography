@@ -53,6 +53,8 @@ def test_load_users(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
+    # TODO - where is the actual assertion!
+
 
 def test_load_groups(neo4j_session):
     data = tests.data.aws.iam.LIST_GROUPS['Groups']
