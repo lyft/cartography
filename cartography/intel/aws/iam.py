@@ -516,7 +516,7 @@ def _transform_policy_statements(statements: Any, policy_id: str) -> List[Dict]:
 
 def transform_policy_data(policy_map: Dict, policy_type: str) -> None:
     for principal_arn, policy_statement_map in policy_map.items():
-        logger.debug(f"Syncing IAM {policy_type} policies for principal {principal_arn}")
+        logger.debug(f"Transforming IAM {policy_type} policies for principal {principal_arn}")
         for policy_key, statements in policy_statement_map.items():
             policy_id = transform_policy_id(principal_arn, policy_type, policy_key) \
                 if policy_type == PolicyType.inline.value else policy_key
