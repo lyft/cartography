@@ -7,6 +7,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Union
 
 import neo4j
@@ -39,7 +40,7 @@ def _get_identifiers(template: string.Template) -> List[str]:
     )
 
 
-def get_parameters(queries: list[str]) -> set[str]:
+def get_parameters(queries: List[str]) -> Set[str]:
     """
     :param queries: A list of Neo4j queries with parameters indicated by leading '$' like $this.
     :return: The set of all parameters across all given Neo4j queries.
@@ -124,17 +125,17 @@ class GraphJob:
         return cls(name, statements, short_name)
 
     @classmethod
-    def from_node_schema(cls, node_schema: CartographyNodeSchema, parameters: dict[str, Any]) -> 'GraphJob':
+    def from_node_schema(cls, node_schema: CartographyNodeSchema, parameters: Dict[str, Any]) -> 'GraphJob':
         """
         Create a cleanup job from a CartographyNodeSchema object.
         For a given node, the fields used in the node_schema.sub_resource_relationship.target_node_node_matcher.keys()
         must be provided as keys and values in the params dict.
         """
-        queries: list[str] = build_cleanup_queries(node_schema)
+        queries: List[str] = build_cleanup_queries(node_schema)
 
         # Validate params
-        expected_param_keys: set[str] = get_parameters(queries)
-        actual_param_keys: set[str] = set(parameters.keys())
+        expected_param_keys: Set[str] = get_parameters(queries)
+        actual_param_keys: Set[str] = set(parameters.keys())
         # Hacky, but LIMIT_SIZE is specified by default in cartography.graph.statement, so we exclude it from validation
         actual_param_keys.add('LIMIT_SIZE')
         if actual_param_keys != expected_param_keys:
@@ -143,7 +144,7 @@ class GraphJob:
                 f'passed to `parameters`.',
             )
 
-        statements: list[GraphStatement] = [
+        statements: List[GraphStatement] = [
             GraphStatement(query, parameters=parameters, iterative=True, iterationsize=100) for query in queries
         ]
 

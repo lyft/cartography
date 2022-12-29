@@ -1,4 +1,5 @@
 from string import Template
+from typing import List
 from typing import Optional
 
 from cartography.graph.model import CartographyNodeSchema
@@ -9,7 +10,7 @@ from cartography.graph.querybuilder import _build_match_clause
 from cartography.graph.querybuilder import rel_present_on_node_schema
 
 
-def build_cleanup_queries(node_schema: CartographyNodeSchema) -> list[str]:
+def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
     """
     Generates queries to clean up stale nodes and relationships from the given CartographyNodeSchema.
     :param node_schema: The given CartographyNodeSchema to generate cleanup queries for.
