@@ -269,20 +269,26 @@ def _build_attach_relationships_statement(
     return query_template.safe_substitute(attach_relationships_statement=attach_relationships_statement)
 
 
-class WhereIsTheRel(Enum):
-    ON_SUBRESOURCE = auto()
+class WhereIsTheRelationship(Enum):
+    """
+    Enum to represent where a relationship is located on a CartographyNodeSchema object.
+    """
+    ON_SUB_RESOURCE = auto()
     ON_OTHER_RELATIONSHIPS = auto()
 
 
 def rel_present_on_node_schema(
         node_schema: CartographyNodeSchema,
         rel_schema: CartographyRelSchema,
-) -> Optional[WhereIsTheRel]:
+) -> Optional[WhereIsTheRelationship]:
+    """
+    Answers the question: is the given rel_schema is present on the given node_schema, and if so, where?
+    """
     sub_res_rel, other_rels = _filter_selected_relationships(node_schema, {rel_schema})
     if sub_res_rel:
-        return WhereIsTheRel.ON_SUBRESOURCE
+        return WhereIsTheRelationship.ON_SUB_RESOURCE
     if other_rels:
-        return WhereIsTheRel.ON_OTHER_RELATIONSHIPS
+        return WhereIsTheRelationship.ON_OTHER_RELATIONSHIPS
     return None
 
 

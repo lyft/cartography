@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 
 def _get_identifiers(template: string.Template) -> List[str]:
     """
-    Only python 3.11 has get_identifiers, so this is our hack for it.
-    https://github.com/python/cpython/issues/90465#issuecomment-1093941790
-    TODO probably could use https://github.com/python/cpython/commit/dce642f24418c58e67fa31a686575c980c31dd37
-    TODO also get rid of this and use template.get_identifiers() once we are on python 3.11 or if that gets backported.
+    :param template: A string Template
+    :return: the variable names that start with a '$' like $this in the given Template.
+    Stolen from https://github.com/python/cpython/issues/90465#issuecomment-1093941790.
+    TODO we can get rid of this and use template.get_identifiers() once we are on python 3.11
     """
     return list(
         set(
@@ -40,6 +40,10 @@ def _get_identifiers(template: string.Template) -> List[str]:
 
 
 def get_parameters(queries: list[str]) -> set[str]:
+    """
+    :param queries: A list of Neo4j queries with parameters indicated by leading '$' like $this.
+    :return: The set of all parameters across all given Neo4j queries.
+    """
     parameter_set = set()
     for query in queries:
         as_template = Template(query)
@@ -122,14 +126,22 @@ class GraphJob:
     @classmethod
     def from_node_schema(cls, node_schema: CartographyNodeSchema, parameters: dict[str, Any]) -> 'GraphJob':
         """
+        Create a cleanup job from a CartographyNodeSchema object.
         For a given node, the fields used in the node_schema.sub_resource_relationship.target_node_node_matcher.keys()
         must be provided as keys and values in the params dict.
         """
         queries: list[str] = build_cleanup_queries(node_schema)
 
-        # expected_param_keys: set[str] = get_parameters(queries)
-        # if set(parameters.keys()) != set(expected_param_keys):
-        #     raise ValueError(f"Expected {expected_param_keys} but got {set(parameters.keys())}")
+        # Validate params
+        expected_param_keys: set[str] = get_parameters(queries)
+        actual_param_keys: set[str] = set(parameters.keys())
+        # Hacky, but LIMIT_SIZE is specified by default in cartography.graph.statement, so we exclude it from validation
+        actual_param_keys.add('LIMIT_SIZE')
+        if actual_param_keys != expected_param_keys:
+            raise ValueError(
+                f'Expected query params "{expected_param_keys}" but got "{actual_param_keys}". Please check the value '
+                f'passed to `parameters`.',
+            )
 
         statements: list[GraphStatement] = [
             GraphStatement(query, parameters=parameters, iterative=True, iterationsize=100) for query in queries
