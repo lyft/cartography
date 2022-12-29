@@ -172,19 +172,19 @@ def build_default_sync() -> Sync:
     """
     sync = Sync()
     sync.add_stages([
-        ('create-indexes', cartography.intel.create_indexes.run),
-        ('aws', cartography.intel.aws.start_aws_ingestion),
-        ('azure', cartography.intel.azure.start_azure_ingestion),
-        ('crowdstrike', cartography.intel.crowdstrike.start_crowdstrike_ingestion),
-        ('gcp', cartography.intel.gcp.start_gcp_ingestion),
-        ('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
-        ('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
-        ('cve', cartography.intel.cve.start_cve_ingestion),
+        #('create-indexes', cartography.intel.create_indexes.run),
+        #('aws', cartography.intel.aws.start_aws_ingestion),
+        #('azure', cartography.intel.azure.start_azure_ingestion),
+        #('crowdstrike', cartography.intel.crowdstrike.start_crowdstrike_ingestion),
+        #('gcp', cartography.intel.gcp.start_gcp_ingestion),
+        #('gsuite', cartography.intel.gsuite.start_gsuite_ingestion),
+        #('crxcavator', cartography.intel.crxcavator.start_extension_ingestion),
+        #('cve', cartography.intel.cve.start_cve_ingestion),
         ('oci', cartography.intel.oci.start_oci_ingestion),
-        ('okta', cartography.intel.okta.start_okta_ingestion),
-        ('github', cartography.intel.github.start_github_ingestion),
-        ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
-        ('kubernetes', cartography.intel.kubernetes.start_k8s_ingestion),
-        ('analysis', cartography.intel.analysis.run),
+        #('okta', cartography.intel.okta.start_okta_ingestion),
+        #('github', cartography.intel.github.start_github_ingestion),
+        #('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
+        #('kubernetes', cartography.intel.kubernetes.start_k8s_ingestion),
+        #('analysis', cartography.intel.analysis.run),
     ])
     return sync

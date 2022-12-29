@@ -457,5 +457,5 @@ def sync(
     sync_group_memberships(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
     sync_compartments(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
     sync_policies(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
-    sync_oci_policy_references(neo4j_session, tenancy_id, oci_update_tag, common_job_parameters)
+    #sync_oci_policy_references(neo4j_session, tenancy_id, oci_update_tag, common_job_parameters)
     sync_region_subscriptions(neo4j_session, iam, tenancy_id, oci_update_tag, common_job_parameters)
