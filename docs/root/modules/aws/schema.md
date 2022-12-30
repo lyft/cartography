@@ -45,6 +45,7 @@ Representation of an AWS Account.
                               LoadBalancer,
                               RDSCluster,
                               RDSInstance,
+                              RDSSnapshot,
                               SecretsManagerSecret,
                               SecurityHub,
                               SQSQueue
@@ -2025,6 +2026,71 @@ Representation of an AWS Relational Database Service [DBInstance](https://docs.a
 
         ```
         (RDSInstance)-[TAGGED]->(AWSTag)
+        ```
+
+### RDSSnapshot
+
+Representation of an AWS Relational Database Service [DBSnapshot](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DBSnapshot.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | Same as ARN |
+| **arn** | The Amazon Resource Name (ARN) for the DB snapshot. |
+| **db\_snapshot\_identifier** | Specifies the identifier for the DB snapshot. |
+| db\_instance\_identifier | Specifies the DB instance identifier of the DB instance this DB snapshot was created from. |
+| snapshot\_create\_time | Specifies when the snapshot was taken in Coordinated Universal Time (UTC). Changes for the copy when the snapshot is copied. |
+| engine | Specifies the name of the database engine. |
+| allocated\_storage | Specifies the allocated storage size in gibibytes (GiB). |
+| status | Specifies the status of this DB snapshot. |
+| port | Specifies the port that the database engine was listening on at the time of the snapshot. |
+| availability\_zone | Specifies the name of the Availability Zone the DB instance was located in at the time of the DB snapshot. |
+| vpc\_id | Provides the VPC ID associated with the DB snapshot. |
+| instance\_create\_time | Specifies the time in Coordinated Universal Time (UTC) when the DB instance, from which the snapshot was taken, was created. |
+| master\_username | Provides the master username for the DB snapshot. |
+| engine\_version | Specifies the version of the database engine. |
+| license\_model | License model information for the restored DB instance. |
+| snapshot\_type | Provides the type of the DB snapshot. |
+| iops | Specifies the Provisioned IOPS (I/O operations per second) value of the DB instance at the time of the snapshot. |
+| option\_group\_name | Provides the option group name for the DB snapshot. |
+| percent\_progress | The percentage of the estimated data that has been transferred. |
+| source\_region | The AWS Region that the DB snapshot was created in or copied from. |
+| source\_db\_snapshot\_identifier | The DB snapshot Amazon Resource Name (ARN) that the DB snapshot was copied from. It only has a value in the case of a cross-account or cross-Region copy. |
+| storage\_type | Specifies the storage type associated with DB snapshot. |
+| tde\_credential\_arn | The ARN from the key store with which to associate the instance for TDE encryption. |
+| encrypted | Specifies whether the DB snapshot is encrypted. |
+| kms\_key\_id | If Encrypted is true, the AWS KMS key identifier for the encrypted DB snapshot. The AWS KMS key identifier is the key ARN, key ID, alias ARN, or alias name for the KMS key. |
+| timezone | The time zone of the DB snapshot. In most cases, the Timezone element is empty. Timezone content appears only for snapshots taken from Microsoft SQL Server DB instances that were created with a time zone specified. |
+| iam\_database\_authentication\_enabled | True if mapping of AWS Identity and Access Management (IAM) accounts to database accounts is enabled, and otherwise false. |
+| processor\_features | The number of CPU cores and the number of threads per core for the DB instance class of the DB instance when the DB snapshot was created. |
+| dbi\_resource\_id | The identifier for the source DB instance, which can't be changed and which is unique to an AWS Region. |
+| original\_snapshot\_create\_time | Specifies the time of the CreateDBSnapshot operation in Coordinated Universal Time (UTC). Doesn't change when the snapshot is copied. |
+| snapshot\_database\_time | The timestamp of the most recent transaction applied to the database that you're backing up. Thus, if you restore a snapshot, SnapshotDatabaseTime is the most recent transaction in the restored DB instance. In contrast, originalSnapshotCreateTime specifies the system time that the snapshot completed. If you back up a read replica, you can determine the replica lag by comparing SnapshotDatabaseTime with originalSnapshotCreateTime. For example, if originalSnapshotCreateTime is two hours later than SnapshotDatabaseTime, then the replica lag is two hours. |
+| snapshot\_target | Specifies where manual snapshots are stored: AWS Outposts or the AWS Region. |
+| storage\_throughput |  |
+| region | The AWS region of the snapshot |
+
+
+
+#### Relationships
+
+- RDS Snapshots are part of AWS Accounts.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(RDSSnapshot)
+        ```
+
+- RDS Snapshots are connected to DB Instances.
+
+    ```
+    (RDSSnapshot)-[:IS_SNAPSHOT_SOURCE]->(RDSInstance)
+    ```
+
+-  RDS Snapshots can be tagged with AWSTags.
+
+        ```
+        (RDSSnapshot)-[TAGGED]->(AWSTag)
         ```
 
 ### S3Acl
