@@ -1,5 +1,4 @@
 import logging
-import time
 from typing import Dict
 from typing import List
 
@@ -82,9 +81,9 @@ def load_launch_templates(
             SET r.lastupdated = $update_tag
     """
     for lt in data:
-        lt['CreateTime'] = str(time.mktime(lt['CreateTime'].timetuple()))
+        lt['CreateTime'] = str(int(lt['CreateTime'].timestamp()))
         for tv in lt["_template_versions"]:
-            tv['CreateTime'] = str(time.mktime(tv['CreateTime'].timetuple()))
+            tv['CreateTime'] = str(int(tv['CreateTime'].timestamp()))
 
     neo4j_session.run(
         ingest_lt,
