@@ -16,19 +16,21 @@ def test_load_emr_clusters_nodes(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    expected_nodes = {
+    expected_arns = {
         "arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-awesome",
         "arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-meh",
     }
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:EMRCluster) RETURN r.arn;
+        MATCH (r:EMRCluster) RETURN r.arn, r.firstseen;
         """,
     )
-    actual_nodes = {n['r.arn'] for n in nodes}
+    actual_data = {(n['r.arn'], n['r.firstseen']) for n in nodes}
 
-    assert actual_nodes == expected_nodes
+    for arn, firstseen in actual_data:
+        assert arn in expected_arns
+        assert firstseen is not None  # Issue #1064
 
 
 def test_load_emr_clusters_relationships(neo4j_session):

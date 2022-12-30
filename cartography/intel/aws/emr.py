@@ -65,7 +65,6 @@ class EMRClusterNodeProperties(CartographyNodeProperties):
     auto_terminate: PropertyRef = PropertyRef('AutoTerminate')
     autoscaling_role: PropertyRef = PropertyRef('AutoScalingRole')
     custom_ami_id: PropertyRef = PropertyRef('CustomAmiId')
-    firstseen: PropertyRef = PropertyRef('firstseen')
     id: PropertyRef = PropertyRef('Id')
     instance_collection_type: PropertyRef = PropertyRef('InstanceCollectionType')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
