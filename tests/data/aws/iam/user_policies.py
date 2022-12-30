@@ -1,7 +1,5 @@
 from datetime import datetime
 
-from dateutil.tz import tzutc
-
 
 GET_USER_LIST_DATA = {
     'Users': [
@@ -10,21 +8,21 @@ GET_USER_LIST_DATA = {
             'UserName': 'user1',
             'UserId': 'AIDAXJNIGTSXXX',
             'Arn': 'arn:aws:iam::1234:user/user1',
-            'CreateDate': datetime(2022, 7, 27, 20, 24, 23, tzinfo=tzutc()),
+            'CreateDate': datetime(2022, 7, 27, 20, 24, 23),
         },
         {
             'Path': '/',
             'UserName': 'user2',
             'UserId': 'AIDAXJNIGTSXXY',
             'Arn': 'arn:aws:iam::1234:user/user2',
-            'CreateDate': datetime(2021, 1, 25, 18, 8, 53, tzinfo=tzutc()),
+            'CreateDate': datetime(2021, 1, 25, 18, 8, 53),
         },
         {
             'Path': '/',
             'UserName': 'user3',
             'UserId': 'AIDAXJNIGTSQXYY',
             'Arn': 'arn:aws:iam::1234:user/user3',
-            'CreateDate': datetime(2020, 3, 23, 20, 26, 23, tzinfo=tzutc()),
+            'CreateDate': datetime(2020, 3, 23, 20, 26, 23),
         },
     ],
 }
@@ -115,7 +113,7 @@ GET_ROLE_LIST_DATA = {
             'RoleName': 'ServiceRole',
             'RoleId': 'AROAJJUSH7VXXX',
             'Arn': 'arn:aws:iam::1234:role/ServiceRole',
-            'CreateDate': datetime(2018, 8, 2, 23, 4, 13, tzinfo=tzutc()),
+            'CreateDate': datetime(2018, 8, 2, 23, 4, 13),
             'AssumeRolePolicyDocument': {
                 'Version': '2012-10-17',
                 'Statement': [{
@@ -132,7 +130,7 @@ GET_ROLE_LIST_DATA = {
             'RoleName': 'cartography-read-only',
             'RoleId': 'AROAJGFIQ7EXXY',
             'Arn': 'arn:aws:iam::1234:role/cartography-read-only',
-            'CreateDate': datetime(2018, 6, 19, 0, 42, 12, tzinfo=tzutc()),
+            'CreateDate': datetime(2018, 6, 19, 0, 42, 12),
             'AssumeRolePolicyDocument': {
                 'Version': '2012-10-17',
                 'Statement': [{
@@ -148,7 +146,7 @@ GET_ROLE_LIST_DATA = {
             'RoleName': 'admin',
             'RoleId': 'AROAJPGNHE3XYY',
             'Arn': 'arn:aws:iam::1234:role/admin',
-            'CreateDate': datetime(2016, 4, 25, 22, 5, 43, tzinfo=tzutc()),
+            'CreateDate': datetime(2016, 4, 25, 22, 5, 43),
             'AssumeRolePolicyDocument': {
                 'Version': '2012-10-17',
                 'Statement': [
