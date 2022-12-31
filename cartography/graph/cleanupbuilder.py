@@ -26,19 +26,19 @@ def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
     if node_schema.other_relationships:
         for rel in node_schema.other_relationships.rels:
             result.append(
-                build_cleanup_node_query(node_schema, rel.target_node_matcher, rel),
+                build_cleanup_node_query(node_schema, rel),
             )
             result.append(
-                build_cleanup_rel_query(node_schema, rel.target_node_matcher, rel),
+                build_cleanup_rel_query(node_schema, rel),
             )
 
     if node_schema.sub_resource_relationship:
         # Make sure that the sub resource one is last in the list; order matters.
         result.append(
-            build_cleanup_node_query(node_schema, node_schema.sub_resource_relationship.target_node_matcher),
+            build_cleanup_node_query(node_schema),
         )
         result.append(
-            build_cleanup_rel_query(node_schema, node_schema.sub_resource_relationship.target_node_matcher),
+            build_cleanup_rel_query(node_schema),
         )
     # Cleanup does not happen for a node with no relationships
     return result
@@ -46,12 +46,10 @@ def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
 
 def build_cleanup_node_query(
         node_schema: CartographyNodeSchema,
-        sub_resource_node_matcher: TargetNodeMatcher,
         selected_relationship: Optional[CartographyRelSchema] = None,
 ) -> str:
     """
     :param node_schema: The node_schema to generate a query from.
-    :param sub_resource_node_matcher: The TargetNodeMatcher used to help connect the node_schema to its sub resource
     :param selected_relationship: If specified, generate a cleanup query for the node_schema and the given
     selected_relationship. selected_relationship must be in the set {node_schema.sub_resource_relationship} +
     node_schema.other_relationships. If not specified, this defaults to the sub resource relationship.
@@ -72,7 +70,11 @@ def build_cleanup_node_query(
 
     # Make query to consider just the sub resource and nothing else
     if not selected_relationship or selected_relationship == node_schema.sub_resource_relationship:
-        return _build_cleanup_node_sub_resource_only(node_schema, sub_rel_link, sub_resource_node_matcher)
+        return _build_cleanup_node_sub_resource_only(
+            node_schema,
+            sub_rel_link,
+            node_schema.sub_resource_relationship.target_node_matcher,
+        )
 
     if not rel_present_on_node_schema(node_schema, selected_relationship):
         raise ValueError(
@@ -103,7 +105,7 @@ def build_cleanup_node_query(
         node_label=node_schema.label,
         sub_rel_link=sub_rel_link,
         sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
-        match_sub_res_clause=_build_match_clause(sub_resource_node_matcher),
+        match_sub_res_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
         rel_to_delete=rel_to_delete,
         node_to_delete=selected_relationship.target_node_label,
     )
@@ -145,12 +147,10 @@ def _build_cleanup_node_sub_resource_only(
 
 def build_cleanup_rel_query(
         node_schema: CartographyNodeSchema,
-        sub_resource_node_matcher: TargetNodeMatcher,
         selected_relationship: Optional[CartographyRelSchema] = None,
 ) -> str:
     """
     :param node_schema: The node_schema to generate a query from.
-    :param sub_resource_node_matcher: The TargetNodeMatcher used to help connect the node_schema to its sub resource
     :param selected_relationship: If specified, generate a cleanup query for the node_schema and the given
     selected_relationship. selected_relationship must be in the set {node_schema.sub_resource_relationship} +
     node_schema.other_relationships. If not specified, this defaults to the sub resource relationship.
@@ -165,7 +165,7 @@ def build_cleanup_rel_query(
         )
     # Make query to consider just the sub resource and nothing else
     if not selected_relationship:
-        return _build_cleanup_rel_sub_resource_only(node_schema, sub_resource_node_matcher)
+        return _build_cleanup_rel_sub_resource_only(node_schema)
 
     if not rel_present_on_node_schema(node_schema, selected_relationship):
         raise ValueError(
@@ -202,21 +202,16 @@ def build_cleanup_rel_query(
         node_label=node_schema.label,
         sub_rel_link=sub_rel_link,
         sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
-        match_sub_res_clause=_build_match_clause(sub_resource_node_matcher),
+        match_sub_res_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
         rel_to_delete=rel_to_delete,
         node_to_delete=selected_relationship.target_node_label,
     )
 
 
-def _build_cleanup_rel_sub_resource_only(
-        node_schema: CartographyNodeSchema,
-        sub_res_node_matcher: TargetNodeMatcher,
-) -> str:
+def _build_cleanup_rel_sub_resource_only(node_schema: CartographyNodeSchema) -> str:
     """
     Generate a query to clean up stale relationships between nodes and their sub resource.
     :param node_schema: The CartographyNodeSchema object
-    :param sub_res_node_matcher: The TargetNodeMatcher object used to determine which sub resource to query for when
-    cleaning up.
     """
     if not node_schema.sub_resource_relationship:
         raise ValueError(
@@ -244,5 +239,5 @@ def _build_cleanup_rel_sub_resource_only(
         node_label=node_schema.label,
         sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
         sub_rel_link=sub_rel_link,
-        sub_res_match_clause=_build_match_clause(sub_res_node_matcher),
+        sub_res_match_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
     )

@@ -38,5 +38,6 @@ INTERESTING_NODE_WITH_ALL_RELS = [
         'YetAnotherRelField': 'e',
         'world_asset_id': 'the-worldasset-id-1',
         'hello_asset_id': 'the-helloasset_id-1',
+        'sub_resource_id': 'sub-resource-id',
     },
 ]
