@@ -2,19 +2,13 @@ from cartography.graph.cleanupbuilder import build_cleanup_node_query
 from cartography.graph.cleanupbuilder import build_cleanup_queries
 from cartography.graph.cleanupbuilder import build_cleanup_rel_query
 from cartography.graph.job import get_parameters
-from cartography.models.core.common import PropertyRef
-from cartography.models.core.relationships import make_target_node_matcher
 from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetSchema
 from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetToHelloAssetRel
 from tests.unit.cartography.graph.helpers import remove_leading_whitespace_and_empty_lines
 
 
 def test_cleanup_node():
-    actual_query: str = build_cleanup_node_query(
-        InterestingAssetSchema(),
-        make_target_node_matcher({'id': PropertyRef('sub_resource_id', set_in_kwargs=True)}),
-        InterestingAssetToHelloAssetRel(),
-    )
+    actual_query: str = build_cleanup_node_query(InterestingAssetSchema(), InterestingAssetToHelloAssetRel())
     expected = """
         MATCH (src:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
         MATCH (src)-[:ASSOCIATED_WITH]->(n:HelloAsset)
@@ -27,10 +21,7 @@ def test_cleanup_node():
 
 
 def test_cleanup_node_sub_rel_only():
-    actual_query: str = build_cleanup_node_query(
-        InterestingAssetSchema(),
-        make_target_node_matcher({'id': PropertyRef('sub_resource_id', set_in_kwargs=True)}),
-    )
+    actual_query: str = build_cleanup_node_query(InterestingAssetSchema())
     expected_query = """
         MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
         WHERE n.lastupdated <> $UPDATE_TAG
@@ -44,7 +35,6 @@ def test_cleanup_node_sub_rel_only():
 def test_cleanup_rel():
     actual_query: str = build_cleanup_rel_query(
         InterestingAssetSchema(),
-        make_target_node_matcher({'id': PropertyRef('sub_resource_id', set_in_kwargs=True)}),
         InterestingAssetToHelloAssetRel(),
     )
     expected_query = """
@@ -59,10 +49,7 @@ def test_cleanup_rel():
 
 
 def test_cleanup_rel_sub_rel_only():
-    actual_query: str = build_cleanup_rel_query(
-        InterestingAssetSchema(),
-        make_target_node_matcher({'id': PropertyRef('sub_resource_id', set_in_kwargs=True)}),
-    )
+    actual_query: str = build_cleanup_rel_query(InterestingAssetSchema())
     expected_query = """
         MATCH (:InterestingAsset)<-[r:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
         WHERE r.lastupdated <> $UPDATE_TAG
