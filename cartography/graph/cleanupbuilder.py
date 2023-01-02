@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from string import Template
 from typing import List
 from typing import Optional
@@ -208,6 +209,17 @@ def build_cleanup_rel_query(
     )
 
 
+def _validate_target_node_matcher_for_cleanup_job(tgm: TargetNodeMatcher):
+    tgm_asdict = asdict(tgm)
+
+    for key, prop_ref in tgm_asdict.items():
+        if not prop_ref.set_in_kwargs:
+            raise ValueError(
+                f"TargetNodeMatcher PropertyRefs in the sub_resource_relationship must have set_in_kwargs=True. "
+                f"{key} has set_in_kwargs=False, please check.",
+            )
+
+
 def _build_cleanup_rel_sub_resource_only(node_schema: CartographyNodeSchema) -> str:
     """
     Generate a query to clean up stale relationships between nodes and their sub resource.
@@ -219,6 +231,7 @@ def _build_cleanup_rel_sub_resource_only(node_schema: CartographyNodeSchema) -> 
             "sub_resource_relationship defined, so we cannot generate a query to clean it up. Please verify that the "
             "class definition is what you expect.",
         )
+    _validate_target_node_matcher_for_cleanup_job(node_schema.sub_resource_relationship.target_node_matcher)
 
     # Draw sub resource rel with correct direction
     if node_schema.sub_resource_relationship.direction == LinkDirection.INWARD:
