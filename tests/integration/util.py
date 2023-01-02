@@ -1,5 +1,8 @@
 from string import Template
-from typing import Set, Optional, List, Any
+from typing import Any
+from typing import List
+from typing import Optional
+from typing import Set
 from typing import Tuple
 
 import neo4j
@@ -16,7 +19,7 @@ def check_nodes(neo4j_session: neo4j.Session, node_label: str, attrs: List[str])
     attrs = ", ".join(f"n.{attr}" for attr in attrs)
     query_template = Template("MATCH (n:$NodeLabel) RETURN $Attrs")
     result = neo4j_session.run(
-        query_template.safe_substitute(NodeLabel=node_label, Attrs=attrs)
+        query_template.safe_substitute(NodeLabel=node_label, Attrs=attrs),
     )
     return {tuple(row.values()) for row in result}
 

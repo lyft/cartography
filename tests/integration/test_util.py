@@ -1,4 +1,5 @@
-from tests.integration.util import check_rels, check_nodes
+from tests.integration.util import check_nodes
+from tests.integration.util import check_rels
 
 
 def test_check_rels(neo4j_session):
@@ -12,7 +13,7 @@ def test_check_rels(neo4j_session):
 
         MERGE (lisa:Human{id: "Lisa"})
         MERGE (homer)<-[:PARENT]-(lisa)
-        """
+        """,
     )
 
     # Act and assert
@@ -30,7 +31,7 @@ def test_check_nodes(neo4j_session):
         ON CREATE SET w.lastupdated = 1
         MERGE (w2:WorldAsset{id: "the-worldasset-id-2"})
         ON CREATE SET w2.lastupdated = 1
-        """
+        """,
     )
 
     expected = {
