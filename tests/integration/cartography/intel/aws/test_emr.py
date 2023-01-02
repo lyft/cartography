@@ -1,8 +1,8 @@
 import cartography.intel.aws.emr
 import tests.data.aws.emr
+from cartography.intel.aws.emr import cleanup
 from tests.integration.util import check_nodes
 from tests.integration.util import check_rels
-from cartography.intel.aws.emr import cleanup
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
@@ -82,16 +82,10 @@ def test_cleanup_emr(neo4j_session):
     )
     # Setup: assert that data is in the graph
     expected_nodes = {
-        "arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-awesome",
-        "arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-meh",
+        ("arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-awesome",),
+        ("arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-meh",),
     }
-    nodes = neo4j_session.run(
-        """
-        MATCH (r:EMRCluster) RETURN r.arn;
-        """,
-    )
-    actual_nodes = {n['r.arn'] for n in nodes}
-    assert actual_nodes == expected_nodes
+    assert check_nodes(neo4j_session, 'EMRCluster', ['arn']) == expected_nodes
 
     # Act: run the cleanup job
     cleanup(
@@ -103,11 +97,4 @@ def test_cleanup_emr(neo4j_session):
     )
 
     # Assert: Expect no EMR clusters in the graph now
-    nodes = neo4j_session.run(
-        """
-        MATCH (r:EMRCluster) RETURN r.arn;
-        """,
-    )
-    actual_nodes = {n['r.arn'] for n in nodes}
-    expected_nodes = set()
-    assert actual_nodes == expected_nodes
+    assert check_nodes(neo4j_session, 'EMRCluster', ['arn']) == set()
