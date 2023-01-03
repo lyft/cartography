@@ -284,7 +284,7 @@ def rel_present_on_node_schema(
     """
     Answers the question: is the given rel_schema is present on the given node_schema, and if so, where?
     """
-    sub_res_rel, other_rels = _filter_selected_relationships(node_schema, {rel_schema})
+    sub_res_rel, other_rels = filter_selected_relationships(node_schema, {rel_schema})
     if sub_res_rel:
         return WhereIsTheRelationship.ON_SUB_RESOURCE
     if other_rels:
@@ -292,7 +292,7 @@ def rel_present_on_node_schema(
     return None
 
 
-def _filter_selected_relationships(
+def filter_selected_relationships(
         node_schema: CartographyNodeSchema,
         selected_relationships: Set[CartographyRelSchema],
 ) -> Tuple[Optional[CartographyRelSchema], Optional[OtherRelationships]]:
@@ -319,7 +319,7 @@ def _filter_selected_relationships(
     for selected_rel in selected_relationships:
         if selected_rel not in all_rels_on_node:
             raise ValueError(
-                f"_filter_selected_relationships() failed: CartographyRelSchema {selected_rel.__class__.__name__} is "
+                f"filter_selected_relationships() failed: CartographyRelSchema {selected_rel.__class__.__name__} is "
                 f"not defined on CartographyNodeSchema type {node_schema.__class__.__name__}. Please verify the "
                 f"value of `selected_relationships` passed to `build_ingestion_query()`.",
             )
@@ -375,7 +375,7 @@ def build_ingestion_query(
     sub_resource_rel: Optional[CartographyRelSchema] = node_schema.sub_resource_relationship
     other_rels: Optional[OtherRelationships] = node_schema.other_relationships
     if selected_relationships or selected_relationships == set():
-        sub_resource_rel, other_rels = _filter_selected_relationships(node_schema, selected_relationships)
+        sub_resource_rel, other_rels = filter_selected_relationships(node_schema, selected_relationships)
 
     ingest_query = query_template.safe_substitute(
         node_label=node_schema.label,

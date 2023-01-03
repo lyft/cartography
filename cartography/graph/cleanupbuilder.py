@@ -2,19 +2,26 @@ from dataclasses import asdict
 from string import Template
 from typing import List
 from typing import Optional
+from typing import Set
 
 from cartography.graph.model import CartographyNodeSchema
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
 from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import _build_match_clause
+from cartography.graph.querybuilder import filter_selected_relationships
 from cartography.graph.querybuilder import rel_present_on_node_schema
 
 
-def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
+def build_cleanup_queries(
+        node_schema: CartographyNodeSchema,
+        selected_rels: Optional[Set[CartographyRelSchema]] = None,
+) -> List[str]:
     """
     Generates queries to clean up stale nodes and relationships from the given CartographyNodeSchema.
     :param node_schema: The given CartographyNodeSchema to generate cleanup queries for.
+    :param selected_rels: Optional. If specified, only generate cleanup queries bound to the given set of selected
+    relationships. If not specified, generated cleanup queries against all relationships on the node_schema.
     :return: A list of Neo4j queries to clean up nodes and relationships. Order matters: we always clean up the sub
     resource relationship last because we only clean up stale nodes and rels that are associated with a given sub
     resource, so if we delete the sub resource first then we will not be able to reach the stale nodes and rels, thus
@@ -23,9 +30,24 @@ def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
     relationships can be resource expensive for a large graph, and you might risk deleting unintended objects. Please
     write a manual cleanup job if you wish to do this.
     """
+    other_rels = node_schema.other_relationships
+    sub_resource_rel = node_schema.sub_resource_relationship
+
+    if selected_rels:
+        # Ensure that the selected rels actually exist on the node_schema
+        sub_resource_rel, other_rels = filter_selected_relationships(node_schema, selected_rels)
+
+    if not sub_resource_rel:
+        raise ValueError(
+            "Auto-creating a cleanup job for a node_schema without a sub resource relationship is not supported. "
+            f'Please check the class definition of "{node_schema.__class__.__name__}". If the optional `selected_rels` '
+            'param was specified to build_cleanup_queries(), then ensure that the sub resource relationship is '
+            'present.',
+        )
+
     result = []
-    if node_schema.other_relationships:
-        for rel in node_schema.other_relationships.rels:
+    if other_rels:
+        for rel in other_rels.rels:
             result.append(
                 _build_cleanup_node_query(node_schema, rel),
             )
@@ -33,7 +55,7 @@ def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
                 _build_cleanup_rel_query(node_schema, rel),
             )
 
-    if node_schema.sub_resource_relationship:
+    if sub_resource_rel:
         # Make sure that the sub resource one is last in the list; order matters.
         result.append(
             _build_cleanup_node_query(node_schema),

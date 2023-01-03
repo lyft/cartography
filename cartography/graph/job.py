@@ -14,6 +14,7 @@ import neo4j
 
 from cartography.graph.cleanupbuilder import build_cleanup_queries
 from cartography.graph.model import CartographyNodeSchema
+from cartography.graph.model import CartographyRelSchema
 from cartography.graph.statement import get_job_shortname
 from cartography.graph.statement import GraphStatement
 
@@ -125,13 +126,18 @@ class GraphJob:
         return cls(name, statements, short_name)
 
     @classmethod
-    def from_node_schema(cls, node_schema: CartographyNodeSchema, parameters: Dict[str, Any]) -> 'GraphJob':
+    def from_node_schema(
+            cls,
+            node_schema: CartographyNodeSchema,
+            parameters: Dict[str, Any],
+            selected_rels: Optional[Set[CartographyRelSchema]] = None,
+    ) -> 'GraphJob':
         """
         Create a cleanup job from a CartographyNodeSchema object.
         For a given node, the fields used in the node_schema.sub_resource_relationship.target_node_node_matcher.keys()
         must be provided as keys and values in the params dict.
         """
-        queries: List[str] = build_cleanup_queries(node_schema)
+        queries: List[str] = build_cleanup_queries(node_schema, selected_rels)
 
         # Validate params
         expected_param_keys: Set[str] = get_parameters(queries)
