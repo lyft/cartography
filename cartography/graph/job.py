@@ -169,7 +169,7 @@ class GraphJob:
 
     @classmethod
     def run_from_json(
-            cls, neo4j_session: neo4j.Session, blob: str, parameters: Dict, short_name: Optional[str] = None,
+        cls, neo4j_session: neo4j.Session, blob: str, parameters: Dict, short_name: Optional[str] = None,
     ) -> None:
         """
         Run a job from a JSON blob. This will deserialize the job and execute all statements sequentially.

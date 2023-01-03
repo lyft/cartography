@@ -95,8 +95,8 @@ def build_cleanup_node_query(
     # Delete the node
     query_template = Template(
         """
-        MATCH (src:$node_label)$sub_rel_link(:$sub_resource_label{$match_sub_res_clause})
-        MATCH (src)$rel_to_delete(n:$node_to_delete)
+        MATCH (n:$node_label)$sub_rel_link(:$sub_resource_label{$match_sub_res_clause})
+        MATCH (n)$rel_to_delete(:$other_node_label)
         WHERE n.lastupdated <> $UPDATE_TAG
         WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
@@ -108,7 +108,7 @@ def build_cleanup_node_query(
         sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
         match_sub_res_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
         rel_to_delete=rel_to_delete,
-        node_to_delete=selected_relationship.target_node_label,
+        other_node_label=selected_relationship.target_node_label,
     )
 
 
