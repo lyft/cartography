@@ -58,5 +58,4 @@ def test_load_emr_clusters_relationships(neo4j_session):
         'EMRCluster',
         'arn',
         'RESOURCE',
-        rel_direction_left=False,
     ) == expected

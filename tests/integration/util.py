@@ -31,7 +31,7 @@ def check_rels(
         node_2_label: str,
         node_2_attr: str,
         rel_label: str,
-        rel_direction_left: Optional[bool] = True,
+        rel_direction_right: Optional[bool] = True,
 ) -> Set[Tuple]:
     """
     Helper function to test a given relationship between node 1 and node 2.
@@ -43,10 +43,10 @@ def check_rels(
     :param node_2_label: The label of the second node to check
     :param node_2_attr: The attribute of the second node to check
     :param rel_label: The str label of the relationship between node 1 and node 2.
-    :param rel_direction_left: The direction of the node is to the left (default=True). Else it is to the right.
+    :param rel_direction_right: The direction of the node is to the right (default=True). Else it is to the left.
     :return: A set of tuples with the shape {(n1.node_1_attr, n2.node_2_attr), ...}
     """
-    relationship = f"<-[r:{rel_label}]-" if rel_direction_left else f"-[r:{rel_label}]->"
+    relationship = f"-[r:{rel_label}]->" if rel_direction_right else f"<-[r:{rel_label}]-"
 
     query_template = Template('MATCH (n1:$Node1Label)$Rel(n2:$Node2Label) RETURN n1.$Node1Attr, n2.$Node2Attr;')
     query = query_template.safe_substitute(

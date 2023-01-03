@@ -21,7 +21,7 @@ def test_check_rels(neo4j_session):
         ('Homer', 'Lisa'),
         ('Homer', 'Bart'),
     }
-    assert check_rels(neo4j_session, 'Human', 'id', 'Human', 'id', 'PARENT') == expected
+    assert check_rels(neo4j_session, 'Human', 'id', 'Human', 'id', 'PARENT', False) == expected
 
 
 def test_check_nodes(neo4j_session):
