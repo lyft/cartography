@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import uuid
-import traceback
 
 import azure.functions as func
 
@@ -114,7 +113,7 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
         }
 
         if message.get('services', None):
-            if 'requestTopic' in message.get('params'):
+            if 'requestTopic' in message:
                 # Result should be pushed to "requestTopic" passed in the request
 
                 # Push message to Cartography Queue, if refresh is needed
@@ -124,7 +123,7 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
                 lib = EventGridLibrary(topic, access_key)
                 resp = lib.publish_event(message)
 
-        elif 'resultTopic' in message.get('params'):
+        elif 'resultTopic' in message:
             # topic = message['resultTopic']
             # access_key = msg['resultTopicAccessKey']
 
@@ -149,6 +148,4 @@ def main(event: func.EventGridEvent, outputEvent: func.Out[func.EventGridOutputE
         logging.info(f'worker processed successfully: {msg["eventId"]}')
 
     except Exception as ex:
-        logging.error(f"failed to process request from event grid: {str(ex)}")
-
-        traceback.print_exception(type(ex), ex, ex.__traceback__)
+        logging.error(f"failed to process request from event grid: {ex}", exc_info=True, stack_info=True)

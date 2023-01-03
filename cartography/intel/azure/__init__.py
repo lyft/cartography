@@ -187,13 +187,7 @@ def start_azure_ingestion(
         )
 
     except Exception as e:
-        logger.error(
-            (
-                "Unable to authenticate with Azure Service Principal, an error occurred: %s."
-                "Make sure your Azure Service Principal details are provided correctly."
-            ),
-            e,
-        )
+        logger.error(f"Unable to authenticate with Azure Service Principal, an error occurred: {e}. Make sure your Azure Service Principal details are provided correctly.", exc_info=True, stack_info=True)
         return
 
     requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())

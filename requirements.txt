@@ -34,4 +34,5 @@ azure-mgmt-web>=0.47.0
 kubernetes>=18.20.0
 pdpyras>=4.3.0
 
-cloudconsolelink>=1.0.0
+cloudconsolelink~=1.0.21
+azure-storage-blob~=12.14.1

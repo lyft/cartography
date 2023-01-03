@@ -26,6 +26,10 @@ class GraphRequestError(ServerError):
     """Raised when Graph Requests fail"""
 
 
+class TimeLimitError(ServerError):
+    """Raised when Processing Time reaches limit"""
+
+
 def classify_error(logger, err, msg, extra=None):
     """Classify the error to Permission or Request Processing Error"""
     message = f'{msg}: {err}'

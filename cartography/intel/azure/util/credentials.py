@@ -196,14 +196,14 @@ class Authenticator:
         """
         Implements Impersonation authentication for the Azure provider
         """
-        
+
         # Set logging level to error for libraries as otherwise generates a lot of warnings
         logging.getLogger('adal-python').setLevel(logging.ERROR)
         logging.getLogger('msrest').setLevel(logging.ERROR)
         logging.getLogger('msrestazure.azure_active_directory').setLevel(logging.ERROR)
         logging.getLogger('urllib3').setLevel(logging.ERROR)
         logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.ERROR)
-        
+
         try:
             graph_creds = self.refresh_graph_token(client_id, client_secret, redirect_uri, refresh_token, graph_scope)
 
@@ -213,7 +213,7 @@ class Authenticator:
             return Credentials(azure_creds, graph_creds, subscription_id=subscription_id, tenant_id=tenant_id, current_user=user)
 
         except Exception as e:
-            logging.info(f'failed to impersonate user: {str(e)}')
+            logging.error(f"failed to impersonate user: {e}", exc_info=True, stack_info=True)
 
             raise Exception(e)
 

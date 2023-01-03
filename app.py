@@ -57,7 +57,7 @@ def load_cartography(event, ctx):
         params = json.loads(message)
 
     except Exception as e:
-        context.logger.error(f'error while parsing inventory sync aws request json: {e}')
+        context.logger.error(f'error while parsing inventory sync aws request json: {e}', exc_info=True, stack_info=True)
 
         return {
             "status": 'failure',
@@ -118,7 +118,7 @@ def publish_response(context, req, resp):
                 json.dump(resp, outfile, indent=2)
 
         except Exception as e:
-            context.logger.error(f'Failed to write to file: {e}')
+            context.logger.error(f'Failed to write to file: {e}', exc_info=True, stack_info=True)
 
     else:
         body = {
