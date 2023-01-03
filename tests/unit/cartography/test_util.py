@@ -1,4 +1,3 @@
-from unittest.mock import MagicMock
 from unittest.mock import Mock
 from unittest.mock import patch
 
@@ -8,7 +7,6 @@ import pytest
 from cartography import util
 from cartography.util import aws_handle_regions
 from cartography.util import batch
-from tests.integration.util import check_nodes
 
 
 def test_run_analysis_job_default_package(mocker):
@@ -94,9 +92,3 @@ def test_batch(mocker):
     assert actual == expected
     # Also check for empty input
     assert batch([], 3) == []
-
-
-def test_check_nodes_empty_list_raises_exc():
-    neo4j_session = MagicMock()
-    with pytest.raises(ValueError):
-        check_nodes(neo4j_session, 'NodeLabel', [])
