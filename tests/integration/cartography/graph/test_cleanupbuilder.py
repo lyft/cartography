@@ -36,7 +36,7 @@ def test_cleanup_interesting_asset_end_to_end(neo4j_session):
         'WorldAsset',
         'id',
         'CONNECTED',
-        rel_direction_left=True,
+        rel_direction_right=False,
     ) == {('interesting-node-id', 'the-worldasset-id-1')}
 
     assert check_rels(
@@ -46,7 +46,7 @@ def test_cleanup_interesting_asset_end_to_end(neo4j_session):
         'HelloAsset',
         'id',
         'ASSOCIATED_WITH',
-        rel_direction_left=False,
+        rel_direction_right=True,
     ) == {('interesting-node-id', 'the-helloasset-id-1')}
 
     assert check_rels(
@@ -56,7 +56,7 @@ def test_cleanup_interesting_asset_end_to_end(neo4j_session):
         'SubResource',
         'id',
         'RELATIONSHIP_LABEL',
-        rel_direction_left=True,
+        rel_direction_right=False,
     ) == {('interesting-node-id', 'sub-resource-id')}
 
     # Arrange: Suppose only InterestingAsset and its SubResource connection exist now at timestamp lastupdated=2.
@@ -84,7 +84,7 @@ def test_cleanup_interesting_asset_end_to_end(neo4j_session):
         'WorldAsset',
         'id',
         'CONNECTED',
-        rel_direction_left=True,
+        rel_direction_right=True,
     ) == set()
     # but we don't delete the WorldAsset itself, as that cleanup should be handled by the WorldAsset's own intel module:
     assert check_nodes(neo4j_session, 'WorldAsset', ['id']) == {('the-worldasset-id-1',)}
@@ -97,7 +97,7 @@ def test_cleanup_interesting_asset_end_to_end(neo4j_session):
         'HelloAsset',
         'id',
         'ASSOCIATED_WITH',
-        rel_direction_left=False,
+        rel_direction_right=False,
     ) == set()
     # but we don't delete the HelloAsset itself, as that cleanup should be handled by the HelloAsset's own intel module:
     assert check_nodes(neo4j_session, 'HelloAsset', ['id']) == {('the-helloasset-id-1',)}
@@ -110,7 +110,7 @@ def test_cleanup_interesting_asset_end_to_end(neo4j_session):
         'SubResource',
         'id',
         'RELATIONSHIP_LABEL',
-        rel_direction_left=True,
+        rel_direction_right=False,
     ) == {('interesting-node-id', 'sub-resource-id')}
     # And we expect to be able to retrieve fields from the InterestingAsset,
     assert check_nodes(neo4j_session, 'InterestingAsset', ['id', 'property1', 'property2', 'lastupdated']) == {
