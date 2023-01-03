@@ -13,6 +13,7 @@ from typing import Union
 import neo4j
 
 from cartography.graph.cleanupbuilder import build_cleanup_queries
+from cartography.models.core.relationships import CartographyRelSchema
 from cartography.graph.statement import get_job_shortname
 from cartography.graph.statement import GraphStatement
 from cartography.models.core.nodes import CartographyNodeSchema
