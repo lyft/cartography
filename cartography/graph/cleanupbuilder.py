@@ -56,12 +56,20 @@ def build_cleanup_node_query(
     node_schema.other_relationships. If not specified, this defaults to the sub resource relationship.
     :return: A Neo4j query to clean up stale nodes of the given type.
     """
+    # Validation
     if not node_schema.sub_resource_relationship:
         raise ValueError(
             f"build_cleanup_node_query() failed: '{node_schema.label}' does not have a sub_resource_relationship "
             "defined, so we cannot generate a query to clean it up. Please verify that the class definition is what "
             "you expect.",
         )
+    if selected_relationship and not rel_present_on_node_schema(node_schema, selected_relationship):
+        raise ValueError(
+            f"build_cleanup_node_query(): Attempted to build cleanup query for node '{node_schema.label}' and "
+            f"relationship {selected_relationship.rel_label} but that relationship is not present on the node. Please "
+            "verify the node class definition for the relationships that it has.",
+        )
+
     # Draw sub resource rel with correct direction
     if node_schema.sub_resource_relationship.direction == LinkDirection.INWARD:
         sub_rel_link_template = Template("<-[:$SubRelLabel]-")
@@ -77,13 +85,7 @@ def build_cleanup_node_query(
             node_schema.sub_resource_relationship.target_node_matcher,
         )
 
-    if not rel_present_on_node_schema(node_schema, selected_relationship):
-        raise ValueError(
-            f"build_cleanup_node_query(): Attempted to build cleanup query for node '{node_schema.label}' and "
-            f"relationship {selected_relationship.rel_label} but that relationship is not present on the node. Please "
-            "verify the node class definition for the relationships that it has.",
-        )
-
+    # TODO rename the var names
     # Draw selected relationship with correct direction
     if selected_relationship.direction == LinkDirection.INWARD:
         rel_to_delete_template = Template("<-[:$RelToDeleteLabel]-")
@@ -91,8 +93,7 @@ def build_cleanup_node_query(
         rel_to_delete_template = Template("-[:$RelToDeleteLabel]->")
     rel_to_delete = rel_to_delete_template.safe_substitute(RelToDeleteLabel=selected_relationship.rel_label)
 
-    # Ensure the node is attached to the sub resource
-    # Delete the node
+    # Ensure the node is attached to the sub resource and delete the node
     query_template = Template(
         """
         MATCH (n:$node_label)$sub_rel_link(:$sub_resource_label{$match_sub_res_clause})
