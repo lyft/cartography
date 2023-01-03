@@ -504,6 +504,7 @@ def get_roles_list(client: AuthorizationManagementClient, common_job_parameters:
 
         for role in roles_list:
             result = client.role_definitions.get_by_id(role["role_definition_id"], raw=True)
+            role['type'] = result.get('properties', {}).get('type')
             result = result.response.json()
             role['roleName'] = result.get('properties', {}).get('roleName', '')
             role['consolelink'] = azure_console_link.get_console_link(
