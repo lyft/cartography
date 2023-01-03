@@ -27,25 +27,25 @@ def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
     if node_schema.other_relationships:
         for rel in node_schema.other_relationships.rels:
             result.append(
-                build_cleanup_node_query(node_schema, rel),
+                _build_cleanup_node_query(node_schema, rel),
             )
             result.append(
-                build_cleanup_rel_query(node_schema, rel),
+                _build_cleanup_rel_query(node_schema, rel),
             )
 
     if node_schema.sub_resource_relationship:
         # Make sure that the sub resource one is last in the list; order matters.
         result.append(
-            build_cleanup_node_query(node_schema),
+            _build_cleanup_node_query(node_schema),
         )
         result.append(
-            build_cleanup_rel_query(node_schema),
+            _build_cleanup_rel_query(node_schema),
         )
     # Cleanup does not happen for a node with no relationships
     return result
 
 
-def build_cleanup_node_query(
+def _build_cleanup_node_query(
         node_schema: CartographyNodeSchema,
         selected_relationship: Optional[CartographyRelSchema] = None,
 ) -> str:
@@ -59,13 +59,13 @@ def build_cleanup_node_query(
     # Validation
     if not node_schema.sub_resource_relationship:
         raise ValueError(
-            f"build_cleanup_node_query() failed: '{node_schema.label}' does not have a sub_resource_relationship "
+            f"_build_cleanup_node_query() failed: '{node_schema.label}' does not have a sub_resource_relationship "
             "defined, so we cannot generate a query to clean it up. Please verify that the class definition is what "
             "you expect.",
         )
     if selected_relationship and not rel_present_on_node_schema(node_schema, selected_relationship):
         raise ValueError(
-            f"build_cleanup_node_query(): Attempted to build cleanup query for node '{node_schema.label}' and "
+            f"_build_cleanup_node_query(): Attempted to build cleanup query for node '{node_schema.label}' and "
             f"relationship {selected_relationship.rel_label} but that relationship is not present on the node. Please "
             "verify the node class definition for the relationships that it has.",
         )
@@ -147,7 +147,7 @@ def _build_cleanup_node_sub_resource_only(
     )
 
 
-def build_cleanup_rel_query(
+def _build_cleanup_rel_query(
         node_schema: CartographyNodeSchema,
         selected_relationship: Optional[CartographyRelSchema] = None,
 ) -> str:
@@ -160,7 +160,7 @@ def build_cleanup_rel_query(
     """
     if not node_schema.sub_resource_relationship:
         raise ValueError(
-            f"build_cleanup_rel_query() failed: '{node_schema.label}' does not have a sub_resource_relationship "
+            f"_build_cleanup_rel_query() failed: '{node_schema.label}' does not have a sub_resource_relationship "
             "defined, so we cannot generate a query to clean up rels. Please verify that the class definition is what "
             "you expect. If this is intended, then please write a manual cleanup job in json as auto cleanup jobs "
             "without sub resource rels is currently not supported.",
@@ -171,7 +171,7 @@ def build_cleanup_rel_query(
 
     if not rel_present_on_node_schema(node_schema, selected_relationship):
         raise ValueError(
-            f"build_cleanup_rel_query(): Attempted to build cleanup query for node '{node_schema.label}' and "
+            f"_build_cleanup_rel_query(): Attempted to build cleanup query for node '{node_schema.label}' and "
             f"relationship {selected_relationship.rel_label} but that relationship is not present on the node. Please "
             f"verify the node class definition for the relationships that it has.",
         )
