@@ -15,7 +15,8 @@ def check_nodes(neo4j_session: neo4j.Session, node_label: str, attrs: List[str])
     tuples.
     """
     if not attrs:
-        return None
+        raise ValueError("`attrs` passed to check_nodes() must have at least one element.")
+
     attrs = ", ".join(f"n.{attr}" for attr in attrs)
     query_template = Template("MATCH (n:$NodeLabel) RETURN $Attrs")
     result = neo4j_session.run(
