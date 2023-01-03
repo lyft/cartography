@@ -63,7 +63,7 @@ def build_cleanup_queries(
         result.append(
             _build_cleanup_rel_query(node_schema),
         )
-    # Cleanup does not happen for a node with no relationships
+    # Note that auto-cleanups for a node with no relationships does not happen at all - we don't support it.
     return result
 
 
@@ -72,6 +72,9 @@ def _build_cleanup_node_query(
         selected_relationship: Optional[CartographyRelSchema] = None,
 ) -> str:
     """
+    Generates an optimized and tuned node deletion query for the given node schema. Ensures that the node type to be
+    cleaned up is connected to a sub resource, and (optionally) to another relationship -- this way it is much less
+    likely to delete nodes that you weren't expecting.
     :param node_schema: The node_schema to generate a query from.
     :param selected_relationship: If specified, generate a cleanup query for the node_schema and the given
     selected_relationship. selected_relationship must be in the set {node_schema.sub_resource_relationship} +
@@ -94,32 +97,33 @@ def _build_cleanup_node_query(
 
     # Draw sub resource rel with correct direction
     if node_schema.sub_resource_relationship.direction == LinkDirection.INWARD:
-        sub_rel_link_template = Template("<-[:$SubRelLabel]-")
+        sub_resource_link_template = Template("<-[:$SubResourceRelLabel]-")
     else:
-        sub_rel_link_template = Template("-[:$SubRelLabel]->")
-    sub_rel_link = sub_rel_link_template.safe_substitute(SubRelLabel=node_schema.sub_resource_relationship.rel_label)
+        sub_resource_link_template = Template("-[:$SubResourceRelLabel]->")
+    sub_resource_link = sub_resource_link_template.safe_substitute(
+        SubResourceRelLabel=node_schema.sub_resource_relationship.rel_label,
+    )
 
     # Make query to consider just the sub resource and nothing else
     if not selected_relationship or selected_relationship == node_schema.sub_resource_relationship:
         return _build_cleanup_node_sub_resource_only(
             node_schema,
-            sub_rel_link,
+            sub_resource_link,
             node_schema.sub_resource_relationship.target_node_matcher,
         )
 
-    # TODO rename the var names
     # Draw selected relationship with correct direction
     if selected_relationship.direction == LinkDirection.INWARD:
-        rel_to_delete_template = Template("<-[:$RelToDeleteLabel]-")
+        selected_rel_template = Template("<-[:$SelectedRelLabel]-")
     else:
-        rel_to_delete_template = Template("-[:$RelToDeleteLabel]->")
-    rel_to_delete = rel_to_delete_template.safe_substitute(RelToDeleteLabel=selected_relationship.rel_label)
+        selected_rel_template = Template("-[:$SelectedRelLabel]->")
+    selected_rel = selected_rel_template.safe_substitute(SelectedRelLabel=selected_relationship.rel_label)
 
     # Ensure the node is attached to the sub resource and delete the node
     query_template = Template(
         """
-        MATCH (n:$node_label)$sub_rel_link(:$sub_resource_label{$match_sub_res_clause})
-        MATCH (n)$rel_to_delete(:$other_node_label)
+        MATCH (n:$node_label)$sub_resource_link(:$sub_resource_label{$match_sub_res_clause})
+        MATCH (n)$selected_rel(:$other_node_label)
         WHERE n.lastupdated <> $UPDATE_TAG
         WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
@@ -127,10 +131,10 @@ def _build_cleanup_node_query(
     )
     return query_template.safe_substitute(
         node_label=node_schema.label,
-        sub_rel_link=sub_rel_link,
+        sub_resource_link=sub_resource_link,
         sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
         match_sub_res_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
-        rel_to_delete=rel_to_delete,
+        selected_rel=selected_rel,
         other_node_label=selected_relationship.target_node_label,
     )
 
@@ -174,6 +178,9 @@ def _build_cleanup_rel_query(
         selected_relationship: Optional[CartographyRelSchema] = None,
 ) -> str:
     """
+    Generates an optimized and tuned relationship deletion query for the given node schema.
+    Ensures that the node-relationship to be cleaned up is connected to a given sub resource, and (optionally) to
+    another relationship -- this way it is much less likely to delete relationships that you weren't expecting.
     :param node_schema: The node_schema to generate a query from.
     :param selected_relationship: If specified, generate a cleanup query for the node_schema and the given
     selected_relationship. selected_relationship must be in the set {node_schema.sub_resource_relationship} +
@@ -200,10 +207,12 @@ def _build_cleanup_rel_query(
 
     # Draw sub resource rel with correct direction
     if node_schema.sub_resource_relationship.direction == LinkDirection.INWARD:
-        sub_rel_link_template = Template("<-[:$SubRelLabel]-")
+        sub_resource_link_template = Template("<-[:$SubRelLabel]-")
     else:
-        sub_rel_link_template = Template("-[:$SubRelLabel]->")
-    sub_rel_link = sub_rel_link_template.safe_substitute(SubRelLabel=node_schema.sub_resource_relationship.rel_label)
+        sub_resource_link_template = Template("-[:$SubRelLabel]->")
+    sub_resource_link = sub_resource_link_template.safe_substitute(
+        SubRelLabel=node_schema.sub_resource_relationship.rel_label,
+    )
 
     # Draw selected relationship with correct direction
     if selected_relationship.direction == LinkDirection.INWARD:
@@ -215,8 +224,8 @@ def _build_cleanup_rel_query(
     # Ensure the node is attached to the sub resource and delete the relationship
     query_template = Template(
         """
-        MATCH (src:$node_label)$sub_rel_link(:$sub_resource_label{$match_sub_res_clause})
-        MATCH (src)$rel_to_delete(:$node_to_delete)
+        MATCH (src:$node_label)$sub_resource_link(:$sub_resource_label{$match_sub_res_clause})
+        MATCH (src)$rel_to_delete(:$other_node)
         WHERE r.lastupdated <> $UPDATE_TAG
         WITH r LIMIT $LIMIT_SIZE
         DELETE r;
@@ -224,11 +233,11 @@ def _build_cleanup_rel_query(
     )
     return query_template.safe_substitute(
         node_label=node_schema.label,
-        sub_rel_link=sub_rel_link,
+        sub_resource_link=sub_resource_link,
         sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
         match_sub_res_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
         rel_to_delete=rel_to_delete,
-        node_to_delete=selected_relationship.target_node_label,
+        other_node=selected_relationship.target_node_label,
     )
 
 
@@ -258,14 +267,16 @@ def _build_cleanup_rel_sub_resource_only(node_schema: CartographyNodeSchema) -> 
 
     # Draw sub resource rel with correct direction
     if node_schema.sub_resource_relationship.direction == LinkDirection.INWARD:
-        sub_rel_link_template = Template("<-[r:$SubRelLabel]-")
+        sub_resource_link_template = Template("<-[r:$SubRelLabel]-")
     else:
-        sub_rel_link_template = Template("-[r:$SubRelLabel]->")
-    sub_rel_link = sub_rel_link_template.safe_substitute(SubRelLabel=node_schema.sub_resource_relationship.rel_label)
+        sub_resource_link_template = Template("-[r:$SubRelLabel]->")
+    sub_resource_link = sub_resource_link_template.safe_substitute(
+        SubRelLabel=node_schema.sub_resource_relationship.rel_label,
+    )
 
     query_template = Template(
         """
-        MATCH (:$node_label)$sub_rel_link(:$sub_resource_label{$sub_res_match_clause})
+        MATCH (:$node_label)$sub_resource_link(:$sub_resource_label{$sub_res_match_clause})
         WHERE r.lastupdated <> $UPDATE_TAG
         WITH r LIMIT $LIMIT_SIZE
         DELETE r;
@@ -274,6 +285,6 @@ def _build_cleanup_rel_sub_resource_only(node_schema: CartographyNodeSchema) -> 
     return query_template.safe_substitute(
         node_label=node_schema.label,
         sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
-        sub_rel_link=sub_rel_link,
+        sub_resource_link=sub_resource_link,
         sub_res_match_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
     )
