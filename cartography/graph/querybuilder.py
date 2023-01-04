@@ -2,6 +2,7 @@ import logging
 from dataclasses import asdict
 from string import Template
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Set
 from typing import Tuple
@@ -374,3 +375,38 @@ def build_ingestion_query(
         attach_relationships_statement=_build_attach_relationships_statement(sub_resource_rel, other_rels),
     )
     return ingest_query
+
+
+def build_create_index_queries(node_schema: CartographyNodeSchema) -> List[str]:
+    index_template = Template('CREATE INDEX IF NOT EXISTS FOR (n:$TargetNodeLabel) ON (n.$TargetAttribute);')
+
+    # First create index for the node_schema and all extra labels
+    result = [
+        index_template.safe_substitute(
+            TargetNodeLabel=node_schema.label,
+            TargetAttribute='id',
+        ),
+    ]
+
+    if node_schema.extra_node_labels:
+        result.extend([
+            index_template.safe_substitute(
+                TargetNodeLabel=label,
+                TargetAttribute='id',  # Precondition: 'id' is defined on all cartography node_schema objects.
+            ) for label in node_schema.extra_node_labels.labels
+        ])
+
+    rel_schemas = []
+    if node_schema.sub_resource_relationship:
+        rel_schemas.extend([node_schema.sub_resource_relationship])
+
+    if node_schema.other_relationships:
+        rel_schemas.extend(node_schema.other_relationships.rels)
+
+    result.extend([
+        index_template.safe_substitute(
+            TargetNodeLabel=rs.target_node_label,
+            TargetAttribute=target_key,
+        ) for rs in rel_schemas for target_key in asdict(rs.target_node_matcher).keys()
+    ])
+    return result

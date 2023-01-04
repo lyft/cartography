@@ -7,6 +7,8 @@ from typing import Union
 
 import neo4j
 
+from cartography.graph.model import CartographyNodeSchema
+from cartography.graph.querybuilder import build_create_index_queries
 from cartography.util import batch
 
 
@@ -210,3 +212,15 @@ def load_graph_data(
             DictList=data_batch,
             **kwargs,
         )
+
+
+def _ensure_indexes(neo4j_session: neo4j.Session, index_queries: List[str]) -> None:
+    for query in index_queries:
+        if not query.startswith('CREATE INDEX IF NOT EXISTS'):
+            raise ValueError('Query provided to `ensure_indexes()` does not start with "CREATE INDEX IF NOT EXISTS".')
+        neo4j_session.run(query)
+
+
+def ensure_indexes(neo4j_session: neo4j.Session, node_schema: CartographyNodeSchema) -> None:
+    queries = build_create_index_queries(node_schema)
+    _ensure_indexes(neo4j_session, queries)

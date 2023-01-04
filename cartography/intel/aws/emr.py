@@ -7,6 +7,7 @@ import boto3
 import botocore.exceptions
 import neo4j
 
+from cartography.client.core.tx import ensure_indexes
 from cartography.client.core.tx import load_graph_data
 from cartography.graph.job import GraphJob
 from cartography.graph.querybuilder import build_ingestion_query
@@ -60,6 +61,8 @@ def load_emr_clusters(
         aws_update_tag: int,
 ) -> None:
     logger.info("Loading EMR %d clusters for region '%s' into graph.", len(cluster_data), region)
+
+    ensure_indexes(neo4j_session, EMRClusterSchema())
 
     ingestion_query = build_ingestion_query(EMRClusterSchema())
 
