@@ -403,6 +403,14 @@ class CLI:
                 'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
             ),
         )
+        parser.add_argument(
+            '--hibob-api-key-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the HiBob API key for authentication.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -531,6 +539,14 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
+
+        # HiBob config
+        if config.hibob_api_key_env_var:
+            logger.debug(f"Reading API key for HiBob from environment variable {config.hibob_api_key_env_var}")
+            config.hibob_api_key = os.environ.get(config.hibob_api_key_env_var)
+        else:
+            config.hibob_api_key = None
+
 
         # Run cartography
         try:

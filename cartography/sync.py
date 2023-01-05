@@ -22,6 +22,7 @@ import cartography.intel.digitalocean
 import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
+import cartography.intel.hibob
 import cartography.intel.kubernetes
 import cartography.intel.oci
 import cartography.intel.okta
@@ -185,6 +186,7 @@ def build_default_sync() -> Sync:
         ('github', cartography.intel.github.start_github_ingestion),
         ('digitalocean', cartography.intel.digitalocean.start_digitalocean_ingestion),
         ('kubernetes', cartography.intel.kubernetes.start_k8s_ingestion),
+        ('hibob', cartography.intel.hibob.start_hibob_ingestion),
         ('analysis', cartography.intel.analysis.run),
     ])
     return sync
