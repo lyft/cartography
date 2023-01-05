@@ -9,6 +9,7 @@ TEST_UPDATE_TAG = 123456789
 
 
 def test_load_emr_clusters_nodes(neo4j_session):
+    # Act
     data = tests.data.aws.emr.DESCRIBE_CLUSTERS
     cartography.intel.aws.emr.load_emr_clusters(
         neo4j_session,
@@ -18,6 +19,7 @@ def test_load_emr_clusters_nodes(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
+    # Assert
     expected_nodes = {
         ("arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-awesome",),
         ("arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-meh",),
@@ -26,7 +28,7 @@ def test_load_emr_clusters_nodes(neo4j_session):
 
 
 def test_load_emr_clusters_relationships(neo4j_session):
-    # Create Test AWSAccount
+    # Arrange: Create Test AWSAccount
     neo4j_session.run(
         """
         MERGE (aws:AWSAccount{id: $aws_account_id})
@@ -37,7 +39,7 @@ def test_load_emr_clusters_relationships(neo4j_session):
         aws_update_tag=TEST_UPDATE_TAG,
     )
 
-    # Load Test EMR Clusters
+    # Act: Load Test EMR Clusters
     data = tests.data.aws.emr.DESCRIBE_CLUSTERS
     cartography.intel.aws.emr.load_emr_clusters(
         neo4j_session,
@@ -47,6 +49,7 @@ def test_load_emr_clusters_relationships(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
+    # Assert
     expected = {
         (TEST_ACCOUNT_ID, 'arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-awesome'),
         (TEST_ACCOUNT_ID, 'arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-meh'),
