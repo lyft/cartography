@@ -403,6 +403,23 @@ class CLI:
                 'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
             ),
         )
+        parser.add_argument(
+            '--gsuite-auth-method',
+            type=str,
+            default='delegated',
+            choices=['delegated', 'oauth'],
+            help=(
+                'The method used by GSuite to authenticate. delegated is the legacy one.'
+            ),
+        )
+        parser.add_argument(
+            '--gsuite-tokens-env-var',
+            type=str,
+            default='GSUITE_GOOGLE_APPLICATION_CREDENTIALS',
+            help=(
+                'The method used by GSuite to authenticate. delegated is the legacy one.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
