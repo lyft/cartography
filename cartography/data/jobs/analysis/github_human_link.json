@@ -1,0 +1,14 @@
+{
+  "statements": [
+    {
+      "__comment": "Try to connect GitHub account to Human using email.",
+      "query": "MATCH (human:Human), (guser:GitHubUser) WHERE human.email = guser.email MERGE (human)-[r:IDENTITY_GITHUB]->(guser) ON CREATE SET r.firstseen = $UPDATE_TAG SET r.lastupdated = $UPDATE_TAG",
+      "iterative": false
+    },
+    {
+      "__comment": "Try to connect GitHub account to Human using FullName.",
+      "query": "MATCH (human:Human), (guser:GitHubUser) WHERE human.name = guser.fullname MERGE (human)-[r:IDENTITY_GITHUB]->(guser) ON CREATE SET r.firstseen = $UPDATE_TAG SET r.lastupdated = $UPDATE_TAG",
+      "iterative": false
+    }],
+  "name": "GitHub user map to Human"
+}
