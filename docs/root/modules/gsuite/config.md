@@ -5,7 +5,7 @@
 This module allows authentication from a service account or via oauth tokens.
 
 1. Using service account (legacy)
-    
+
     Ingesting GSuite Users and Groups utilizes the [Google Admin SDK](https://developers.google.com/admin-sdk/).
 
     1. [Enable Google API access](https://support.google.com/a/answer/60757?hl=en)

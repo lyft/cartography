@@ -1,11 +1,11 @@
+import base64
+import json
 import logging
 import os
 from collections import namedtuple
-import json
-import base64
-import httplib2
 
 import googleapiclient.discovery
+import httplib2
 import neo4j
 from googleapiclient.discovery import Resource
 from oauth2client.client import ApplicationDefaultCredentialsError
@@ -61,10 +61,9 @@ def start_gsuite_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
         "UPDATE_TAG": config.update_tag,
     }
 
-    # Legacy delegated method
-    if config.gsuite_auth_method == 'delegated':
+    if config.gsuite_auth_method == 'delegated':  #  Legacy delegated method
         try:
-            credentials = GoogleCredentials.from_stream(os.environ.get(config.gsuite_tokens_env_var))
+            credentials = GoogleCredentials.from_stream(config.gsuite_config)
             credentials = credentials.create_scoped(OAUTH_SCOPE)
             credentials = credentials.create_delegated(os.environ.get('GSUITE_DELEGATED_ADMIN'))
 
@@ -74,17 +73,25 @@ def start_gsuite_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
                 (
                     "Unable to initialize GSuite creds. If you don't have GSuite data or don't want to load "
                     'Gsuite data then you can ignore this message. Otherwise, the error code is: %s '
-                    'Make sure your GSuite credentials are configured correctly, your credentials file (if any) is valid. '
+                    'Make sure your GSuite credentials file (if any) is valid. '
                     'For more details see README'
                 ),
                 e,
             )
             return
     elif config.gsuite_auth_method == 'oauth':
-        auth_tokens = json.loads(base64.b64decode(os.environ.get(config.gsuite_tokens_env_var)).decode())
+        auth_tokens = json.loads(str(base64.b64decode(config.gsuite_config).decode()))
         logger.info('SO GOOD SO FAR')
         try:
-            credentials = GoogleCredentials(None, auth_tokens['client_id'], auth_tokens['client_secret'], auth_tokens['refresh_token'], None, auth_tokens['token_uri'], 'Cartography')
+            credentials = GoogleCredentials(
+                None,
+                auth_tokens['client_id'],
+                auth_tokens['client_secret'],
+                auth_tokens['refresh_token'],
+                None,
+                auth_tokens['token_uri'],
+                'Cartography',
+            )
             credentials.refresh(httplib2.Http())
             credentials = credentials.create_scoped(OAUTH_SCOPE)
         except ApplicationDefaultCredentialsError as e:

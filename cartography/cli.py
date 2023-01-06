@@ -549,6 +549,13 @@ class CLI:
         else:
             config.crowdstrike_client_secret = None
 
+        # GSuite config
+        if config.gsuite_tokens_env_var:
+            logger.debug(f"Reading config string for GSuite from environment variable {config.gsuite_tokens_env_var}")
+            config.gsuite_config = os.environ.get(config.gsuite_tokens_env_var)
+        else:
+            config.github_config = None
+
         # Run cartography
         try:
             return cartography.sync.run_with_config(self.sync, config)
