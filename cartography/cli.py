@@ -547,7 +547,6 @@ class CLI:
         else:
             config.hibob_api_key = None
 
-
         # Run cartography
         try:
             return cartography.sync.run_with_config(self.sync, config)

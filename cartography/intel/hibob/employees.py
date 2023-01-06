@@ -4,8 +4,8 @@ from typing import Dict
 from typing import List
 
 import neo4j
-from requests import Session
 from dateutil import parser as dt_parse
+from requests import Session
 
 from cartography.util import timeit
 
@@ -13,37 +13,37 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def sync_employees(
+def sync(
     neo4j_session: neo4j.Session,
     update_tag: int,
     api_session: Session,
 ) -> None:
-    employees = get_employees(api_session)
-    employees = transform_employees(employees)
-    load_employees_data(neo4j_session, employees, update_tag)
+    employees = get(api_session)
+    transformed_employees = transform(employees)
+    load(neo4j_session, transformed_employees, update_tag)
 
 
 @timeit
-def get_employees(api_session: Session) -> List[Dict[str, Any]]:
+def get(api_session: Session) -> Dict[str, Any]:
     req = api_session.get('https://api.hibob.com/v1/people', timeout=10)
     req.raise_for_status()
     return req.json()
 
+
 @timeit
-def transform_employees(response_objects: Dict[str, List]) -> List[Dict]:
+def transform(response_objects: Dict[str, List]) -> List[Dict]:
     """  Strips list of API response objects to return list of group objects only
     :param response_objects:
     :return: list of dictionary objects as defined in /docs/schema/hibob.md
     """
     users: List[Dict] = []
     for user in response_objects['employees']:
-        flattened_user = _dict_to_path(user)
-        flattened_user['work.startDate'] = dt_parse.parse(flattened_user['work.startDate'])
+        user['work']['startDate'] = dt_parse.parse(user['work']['startDate'])
         users.append(user)
     return users
 
 
-def load_employees_data(
+def load(
     neo4j_session: neo4j.Session, data: List[Dict], update_tag: int,
 ) -> None:
     """
@@ -60,7 +60,7 @@ def load_employees_data(
     MERGE (h:Human{email: user.email})
     ON CREATE SET h.firstseen = timestamp()
     SET h.lastupdated = $UpdateTag,
-    h.name = user.fullName,
+    h.name = user.displayName,
     h.family_name = user.surname,
     h.given_name = user.firstName,
     h.gender = user.home.localGender
@@ -68,7 +68,7 @@ def load_employees_data(
     MERGE (u:HiBobEmployee{id: user.id})
     ON CREATE set u.firstseen = timestamp()
     SET u.user_id = user.is,
-    u.name = user.fullName,
+    u.name = user.displayName,
     u.family_name = user.surname,
     u.given_name = user.firstName,
     u.gender = user.home.localGender,
@@ -87,7 +87,7 @@ def load_employees_data(
     SET m.email = user.work.reportsTo.email,
     m.lastupdated = $UpdateTag
 
-    MERGE (h)-[rh:EMPLOYEE]->(u)
+    MERGE (h)-[rh:IS_EMPLOYEE]->(u)
     ON CREATE SET rh.firstseen = timestamp()
     SET rh.lastupdated = $UpdateTag
 
@@ -104,27 +104,3 @@ def load_employees_data(
         UserData=data,
         UpdateTag=update_tag,
     )
-
-def _dict_to_path(dict_: dict) -> dict:
-    """ Transforms a multi level dict to a single level one:
-
-    Method used to transform a dict to a flat dict.
-    ex:
-        {"foo": {"bar": "test"}
-        becomes
-        {"foo.bar": "test"}
-
-    Args:
-        dict_: dict to transform
-
-    Returns:
-        dict: a flat dict
-    """
-    result = {}
-    for k, values in dict_.items():
-        if isinstance(values, dict):
-            for sub_k, sub_values in _dict_to_path(values).items():
-                result[f"{k}.{sub_k}"] = sub_values
-        else:
-            result[k] = values
-    return result
