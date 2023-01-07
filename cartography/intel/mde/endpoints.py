@@ -8,7 +8,7 @@ from typing import List
 
 import neo4j
 
-from .util import mde_hosts
+from .util import get_mde_hosts
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def sync_hosts(
     update_tag: int,
     authorization: str,
 ) -> None:
-    mde_hosts_list = mde_hosts(authorization)
+    mde_hosts_list = get_mde_hosts(authorization)
     for host_data in mde_hosts_list:
         load_host_data(neo4j_session, host_data, update_tag)
 

@@ -54,7 +54,7 @@ def get_authorization(
     return aad_token
 
 
-def mde_hosts(
+def get_mde_hosts(
     authorization: str,
 ) -> array:
     """
