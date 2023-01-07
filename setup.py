@@ -59,6 +59,7 @@ setup(
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
         "python-dateutil",
+        "azure-monitor-query>=1.0.3",
     ],
     extras_require={
         ':python_version<"3.7"': [
