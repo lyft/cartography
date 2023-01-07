@@ -61,6 +61,10 @@ def load_host_data(
             h.tool_last_seen = host.tool_last_seen,
             h.r7_type = host.type,
             h.r7_sites = host.sites,
+            h.r7_custom_tags = toString(host.custom_tags),
+            h.r7_location_tags = toString(host.location_tags),
+            h.r7_owner_tags = toString(host.owner_tags),
+            h.r7_criticality_tags = toString(host.criticality_tags),
             h.cloud_provider = host.cloud_provider,
             h.instance_id = host.instance_id,
             h.subscription_id = host.subscription_id,
@@ -70,6 +74,11 @@ def load_host_data(
             h.lastupdated = $update_tag
         WITH h
         MATCH (s:AzureVirtualMachine{id: h.resource_id})
+        MERGE (s)-[r:PRESENT_IN]->(h)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $update_tag
+        WITH h
+        MATCH (s:AzureVirtualMachine{short_hostname: h.short_hostname})
         MERGE (s)-[r:PRESENT_IN]->(h)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $update_tag

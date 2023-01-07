@@ -13,13 +13,50 @@
 Placeholder representation of a single [Rapid7 Host or asset](https://help.rapid7.com/insightvm/en-us/api/index.html#operation/getAssets). This node is the minimal data necessary to map an asset.
 
 For report, you can use [SQL Query Export](https://docs.rapid7.com/insightvm/creating-reports-based-on-sql-queries/) like
+
 ```
-select da.asset_id,da.mac_address,da.ip_address,da.host_name,da.operating_system_id,da.sites,da.last_assessed_for_vulnerabilities,fa.scan_started,fa.scan_finished,fa.vulnerabilities,fa.critical_vulnerabilities,fa.moderate_vulnerabilities,fa.vulnerability_instances,fa.riskscore,fa.pci_status,dos.asset_type,dos.description,dos.vendor,dos.family,dos.name,dos.version,dos.architecture,dos.system,dos.cpe,daui.source,daui.unique_id
+WITH
+custom_tags AS (
+SELECT dta.asset_id, string_agg(dt.tag_name, ', ') as custom_tags
+FROM dim_tag dt
+JOIN dim_tag_asset dta ON dt.tag_id=dta.tag_id
+WHERE dt.tag_type = 'CUSTOM'
+GROUP BY dta.asset_id
+),
+location_tags AS (
+SELECT dta.asset_id, string_agg(dt.tag_name, ', ') as location_tags
+FROM dim_tag dt
+JOIN dim_tag_asset dta ON dt.tag_id=dta.tag_id
+WHERE dt.tag_type = 'LOCATION'
+GROUP BY dta.asset_id
+),
+owner_tags AS (
+SELECT dta.asset_id, string_agg(dt.tag_name, ', ') as owner_tags
+FROM dim_tag dt
+JOIN dim_tag_asset dta ON dt.tag_id=dta.tag_id
+WHERE dt.tag_type = 'OWNER'
+GROUP BY dta.asset_id
+),
+criticality_tags AS (
+SELECT dta.asset_id, string_agg(dt.tag_name, ', ') as criticality_tags
+FROM dim_tag dt
+JOIN dim_tag_asset dta ON dt.tag_id=dta.tag_id
+WHERE dt.tag_type = 'CRITICALITY'
+GROUP BY dta.asset_id
+)
+
+select da.asset_id,da.mac_address,da.ip_address,da.host_name,da.operating_system_id,da.sites,da.last_assessed_for_vulnerabilities,fa.scan_started,fa.scan_finished,fa.vulnerabilities,fa.critical_vulnerabilities,fa.moderate_vulnerabilities,fa.vulnerability_instances,fa.riskscore,fa.pci_status,dos.asset_type,dos.description,dos.vendor,dos.family,dos.name,dos.version,dos.architecture,dos.system,dos.cpe,daui.source,daui.unique_id, ct.custom_tags, lt.location_tags, ot.owner_tags, crit.criticality_tags
 FROM dim_asset da
 JOIN fact_asset fa USING (asset_id)
 JOIN dim_operating_system dos USING (operating_system_id)
 JOIN dim_asset_unique_id daui USING (asset_id)
+LEFT JOIN custom_tags ct USING (asset_id)
+LEFT JOIN location_tags lt USING (asset_id)
+LEFT JOIN owner_tags ot USING (asset_id)
+LEFT JOIN criticality_tags crit USING (asset_id)
 ```
+See also https://github.com/rapid7/insightvm-sql-queries/blob/master/sql-query-export/Assets-With-All-Tags.sql
+
 
 | Field | Description |
 |-------|--------------|
@@ -60,6 +97,10 @@ JOIN dim_asset_unique_id daui USING (asset_id)
 | r7_vulnerabilities_total | vulnerabilities_total |
 | r7_type | type |
 | r7_sites | sites |
+| r7_custom_tags | custom_tags (aka user tags from web portal) |
+| r7_location_tags | location tags |
+| r7_owner_tags | owner tags |
+| r7_criticality_tags | criticality tags |
 | cloud_provider | cloud_provider |
 | instance_id | instance_id |
 | subscription_id | subscription_id |
@@ -68,7 +109,7 @@ JOIN dim_asset_unique_id daui USING (asset_id)
 
 ### Relationships
 
-* Azure Virtual Machine is one single Rapid7 Host, based on resource_id if available.
+* Azure Virtual Machine is one single Rapid7 Host, based on resource_id or short hostname if available.
 ```
 (AzureVirtualMachine-[PRESENT_IN]->(Rapid7Host)
 ```
