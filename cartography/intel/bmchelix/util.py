@@ -12,7 +12,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 
-def bmchelix_hosts(
+def get_bmchelix_hosts(
     authorization: Tuple[str, str, bool],
     limit: int = 1000,
     bmchelix_timeout: int = 60,
@@ -202,7 +202,7 @@ def bmchelix_hosts(
     return flatten_data
 
 
-def bmchelix_virtualmachines(
+def get_bmchelix_virtualmachines(
     authorization: Tuple[str, str, bool],
     limit: int = 1000,
     bmchelix_timeout: int = 60,

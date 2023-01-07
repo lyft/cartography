@@ -9,8 +9,8 @@ from typing import Tuple
 
 import neo4j
 
-from .util import bmchelix_hosts
-from .util import bmchelix_virtualmachines
+from .util import get_bmchelix_hosts
+from .util import get_bmchelix_virtualmachines
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -22,11 +22,11 @@ def sync_hosts(
     update_tag: int,
     authorization: Tuple[str, str, bool],
 ) -> None:
-    bmchelix_hosts_list = bmchelix_hosts(authorization)
+    bmchelix_hosts_list = get_bmchelix_hosts(authorization)
     for host_data in bmchelix_hosts_list:
         load_host_data(neo4j_session, host_data, update_tag)
 
-    bmchelix_vm_list = bmchelix_virtualmachines(authorization)
+    bmchelix_vm_list = get_bmchelix_virtualmachines(authorization)
     for host_data in bmchelix_vm_list:
         load_vm_data(neo4j_session, host_data, update_tag)
 
