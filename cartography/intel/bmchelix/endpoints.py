@@ -1,5 +1,5 @@
 """
-cartography/intel/mde/endpoints
+cartography/intel/bmchelix/endpoints
 """
 # pylint: disable=missing-function-docstring,too-many-arguments
 import logging
