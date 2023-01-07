@@ -146,7 +146,7 @@ def transform_gcp_buckets(bucket_res: Dict, project_id: str, regions: list) -> L
 
 
 @timeit
-def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], project_id:str, gcp_update_tag: int) -> None:
+def load_gcp_buckets(neo4j_session: neo4j.Session, buckets: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     '''
     Ingest GCP Storage Buckets to Neo4j
 
