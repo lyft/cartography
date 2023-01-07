@@ -32,7 +32,10 @@ def get_authorization(
     https://learn.microsoft.com/en-us/python/api/overview/azure/identity-readme?view=azure-python
     """
     logger.warning(
-        "get_authorization inputs: client_id %s, tenant_id %s, logging_enabled %s, managedidentity_enable %s",
+        (
+            "get_authorization inputs: client_id %s, tenant_id %s, "
+            "logging_enabled %s, managedidentity_enable %s"
+        ),
         client_id,
         tenant_id,
         logging_enable,
@@ -93,9 +96,9 @@ def get_short_hostname(row: Dict) -> str:
     return short[:64]
 
 
+# pylint: disable=too-many-locals
 def get_azureresourcegraph_hosts(
     authorization: str,
-    timeout_max: int = 300,
 ) -> array:
     """
     Get Azure Resource Graph coverage inventory
