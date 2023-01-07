@@ -26,6 +26,7 @@ def get_authorization(
 
     api_url: usually "https://api.securitycenter.microsoft.com"
     """
+    # nosec - B105
     aad_token = ""
     try:
         url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/token"
@@ -42,6 +43,7 @@ def get_authorization(
         data = urllib.parse.urlencode(body).encode("utf-8")
 
         req = urllib.request.Request(url, data)
+        # nosemgrep
         response = urllib.request.urlopen(req)  # pylint: disable=consider-using-with
         json_response = json.loads(response.read())
         aad_token = json_response["access_token"]

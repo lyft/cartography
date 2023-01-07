@@ -35,7 +35,7 @@ def load_host_data(
 
     Note: part of fields copies from crowdstrike. MDE taxonomy may be different.
       add tenant id/name field? normalized hostname?
-      passing some fiels as string, else error:
+      passing some fields as string, else error:
       'message: Property values can only be of primitive types or arrays thereof.'
 
     FIXME! Processing per batch of 28 hosts? mde api per 10k hosts?
