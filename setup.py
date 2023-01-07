@@ -59,6 +59,7 @@ setup(
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
         "python-dateutil",
+        "msticpy>=2.2.0",
     ],
     extras_require={
         ':python_version<"3.7"': [
