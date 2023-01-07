@@ -1,10 +1,10 @@
-import datetime
 import logging
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
+from dateutil import parser
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -25,7 +25,7 @@ def get_hub(boto3_session: boto3.session.Session) -> Dict:
 
 def transform_hub(hub_data: Dict) -> None:
     if 'SubscribedAt' in hub_data and hub_data['SubscribedAt']:
-        subbed_at = datetime.datetime.strptime(hub_data['SubscribedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        subbed_at = parser.parse(hub_data['SubscribedAt'])
         hub_data['SubscribedAt'] = int(subbed_at.timestamp())
     else:
         hub_data['SubscribedAt'] = None
