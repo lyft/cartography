@@ -649,7 +649,7 @@ def transfrom_ssl_policies(ssl_policies: List, project_id: str):
         policy['region'] = 'global'
         policy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
                                                                   ssl_policy_name=policy['name'], resource_name='ssl_policy')
-        ssl_policies.append(policy)
+        list_ssl_policies.append(policy)
 
     return list_ssl_policies
 
