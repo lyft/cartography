@@ -12,10 +12,8 @@ def test_load_host_data(neo4j_session, *args):
     cartography.intel.rapid7.endpoints.load_host_data(neo4j_session, GET_HOSTS, TEST_UPDATE_TAG)
 
     expected_nodes = {
-        (
-            282,
-            285,
-        ),
+        282,
+        285,
     }
 
     nodes = neo4j_session.run(
