@@ -11,7 +11,7 @@ def test_load_host_data(neo4j_session, *args):
 
     expected_nodes = {
         (
-            "282"
+            282
         ),
     }
 
