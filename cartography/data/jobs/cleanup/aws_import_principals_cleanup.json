@@ -21,7 +21,7 @@
       "iterationsize": 100
     },
     {
-    "query": "MATCH (AWSAccount{foreign:true})-[:RESOURCE]->(n:AWSPrincipal) WHERE n.lastupdated <> {UPDATE_TAG} WITH n LIMIT {LIMIT_SIZE} DETACH DELETE (n)",
+    "query": "MATCH (AWSAccount{foreign:true})-[:RESOURCE]->(n:AWSPrincipal) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
     "iterative": true,
     "iterationsize": 100
     }

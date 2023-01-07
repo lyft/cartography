@@ -8,7 +8,7 @@ _If you'd like to test using Docker and Docker Compose, see [here](testing-with-
 
 1. **Install**
 
-    Follow steps 1 and 2 in [Installation](../install.html#cartography-installation). Ensure that you have JVM 11 installed and Neo4j Community Edition 3.5 is running on your local machine.
+    Follow steps 1 and 2 in [Installation](../install.html#cartography-installation). Ensure that you have JVM 11 installed and Neo4j Community Edition 4.4 is running on your local machine.
 
 2. **Clone the source code**
 

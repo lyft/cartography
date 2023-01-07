@@ -7,6 +7,8 @@ from typing import Union
 
 import neo4j
 
+from cartography.util import batch
+
 
 def read_list_of_values_tx(tx: neo4j.Transaction, query: str, **kwargs) -> List[Union[str, int]]:
     """
@@ -146,3 +148,65 @@ def read_single_dict_tx(tx: neo4j.Transaction, query: str, **kwargs) -> Dict[str
 
     result.consume()
     return value
+
+
+def write_list_of_dicts_tx(
+        tx: neo4j.Transaction,
+        query: str,
+        **kwargs,
+) -> None:
+    """
+    Writes a list of dicts to Neo4j.
+
+    Example usage:
+        import neo4j
+        dict_list: List[Dict[Any, Any]] = [{...}, ...]
+
+        neo4j_driver = neo4j.driver(... args ...)
+        neo4j_session = neo4j_driver.Session(... args ...)
+
+        neo4j_session.write_transaction(
+            write_list_of_dicts_tx,
+            '''
+            UNWIND $DictList as data
+                MERGE (a:SomeNode{id: data.id})
+                SET
+                    a.other_field = $other_field,
+                    a.yet_another_kwarg_field = $yet_another_kwarg_field
+                ...
+            ''',
+            DictList=dict_list,
+            other_field='some extra value',
+            yet_another_kwarg_field=1234
+        )
+
+    :param tx: The neo4j write transaction.
+    :param query: The Neo4j write query to run.
+    :param kwargs: Keyword args to be supplied to the Neo4j query.
+    :return: None
+    """
+    tx.run(query, kwargs)
+
+
+def load_graph_data(
+        neo4j_session: neo4j.Session,
+        query: str,
+        dict_list: List[Dict[str, Any]],
+        **kwargs,
+) -> None:
+    """
+    Writes data to the graph.
+    :param neo4j_session: The Neo4j session
+    :param query: The Neo4j write query to run. This query is not meant to be handwritten, rather it should be generated
+    with cartography.graph.querybuilder.build_ingestion_query().
+    :param dict_list: The data to load to the graph represented as a list of dicts.
+    :param kwargs: Allows additional keyword args to be supplied to the Neo4j query.
+    :return: None
+    """
+    for data_batch in batch(dict_list, size=10000):
+        neo4j_session.write_transaction(
+            write_list_of_dicts_tx,
+            query,
+            DictList=data_batch,
+            **kwargs,
+        )
