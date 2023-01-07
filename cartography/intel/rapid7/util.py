@@ -331,7 +331,8 @@ def rapid7_hosts_from_downloadreport(
         df_rapid7_tmp["short_hostname"] = df_rapid7_tmp["hostName"].str.lower()
         df_rapid7_tmp["short_hostname"].replace(r"\..*$", "", regex=True, inplace=True)
         df_rapid7_tmp["tool_last_seen"] = pandas.to_datetime(
-            df_rapid7_tmp["tool_last_seen"], format="%Y-%m-%d %H:%M:%S.%f",
+            df_rapid7_tmp["tool_last_seen"],
+            format="%Y-%m-%d %H:%M:%S.%f",
         ).dt.strftime("%Y-%m-%dT%H:%M:%S")
 
         logger.info("downloadReport final count %s", df_rapid7_tmp.shape[0])
@@ -394,7 +395,8 @@ def rapid7_hosts_from_reportfile(
     df_rapid7_tmp["short_hostname"] = df_rapid7_tmp["hostName"].str.lower()
     df_rapid7_tmp["short_hostname"].replace(r"\..*$", "", regex=True, inplace=True)
     df_rapid7_tmp["tool_last_seen"] = pandas.to_datetime(
-        df_rapid7_tmp["tool_last_seen"], format="%Y-%m-%d %H:%M:%S.%f",
+        df_rapid7_tmp["tool_last_seen"],
+        format="%Y-%m-%d %H:%M:%S.%f",
     ).dt.strftime("%Y-%m-%dT%H:%M:%S")
 
     logger.info("Rapid7Hosts count final: %s", df_rapid7_tmp.shape[0])
@@ -441,5 +443,9 @@ def rapid7_hosts(
         return rapid7_hosts_from_downloadreport(authorization)
 
     return rapid7_hosts_from_getassets(
-        authorization, limit, page, sort, nexpose_timeout,
+        authorization,
+        limit,
+        page,
+        sort,
+        nexpose_timeout,
     )
