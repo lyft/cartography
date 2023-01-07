@@ -65,16 +65,15 @@ def get_sumologic_hosts(
 
     df_vm_assets.columns = df_vm_assets.columns.str.lstrip("map.")
     df_vm_assets["instance"] = sumologic_server_url.replace(
-        ".sumologic.com/api", "",
+        ".sumologic.com/api",
+        "",
     ).replace("https://api.", "")
 
     logger.info("SumologicHosts count final: %s", df_vm_assets.shape[0])
-    logger.warning("SumologicHosts count final: %s", df_vm_assets.shape[0])
 
     if df_vm_assets.shape[0]:
         flatten_data = json.loads(df_vm_assets.to_json(orient="records"))
         logger.debug("Example: %s", flatten_data[0])
-        logger.warning("Example: %s", flatten_data[0])
         return flatten_data
 
     logger.warning("No data returned")
