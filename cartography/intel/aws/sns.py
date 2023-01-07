@@ -34,7 +34,7 @@ def list_subscriptions(boto3_session: boto3.session.Session, region):
     return subscriptions
 
 @timeit
-def transfrom_subscriptions(subs: List[Dict], region: str) -> List[Dict]:
+def transform_subscriptions(subs: List[Dict], region: str) -> List[Dict]:
     subscriptions = []
     for subscription in subs:
         # subscription arn - arn:aws:sns:<region>:<account_id>:<topic_name>:<subscription_id>
@@ -71,7 +71,7 @@ def transform_topics(boto3_session: boto3.session.Session, tps: List[Dict], regi
     try:
         client = boto3_session.client('sns', region_name=region)
         subs = list_subscriptions(boto3_session, region)
-        subscriptions = transfrom_subscriptions(subs, region)
+        subscriptions = transform_subscriptions(subs, region)
         for topic in tps:
             topic['region'] = region
             topic['name'] = topic['TopicArn'].split(':')[-1]

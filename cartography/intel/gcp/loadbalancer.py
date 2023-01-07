@@ -143,7 +143,7 @@ def get_regional_health_checks(compute: Resource, project_id: str, region: str, 
 
 
 @timeit
-def transfrom_regional_health_checks(health_checks: List, project_id: str, region: str):
+def transform_regional_health_checks(health_checks: List, project_id: str, region: str):
     list_health_checks = []
 
     for health_check in health_checks:
@@ -221,7 +221,7 @@ def sync_regional_health_checks(
     if regions:
         for region in regions:
             health_checks = get_regional_health_checks(compute, project_id, region, common_job_parameters)
-            regional_health_checks = transfrom_regional_health_checks(health_checks, project_id, region)
+            regional_health_checks = transform_regional_health_checks(health_checks, project_id, region)
 
             load_health_checks(neo4j_session, regional_health_checks, project_id, gcp_update_tag)
             cleanup_health_checks(neo4j_session, common_job_parameters)
@@ -459,7 +459,7 @@ def get_global_url_maps(compute: Resource, project_id: str, common_job_parameter
             raise
 
 @timeit
-def transfrom_global_url_maps(url_maps: List, project_id: str):
+def transform_global_url_maps(url_maps: List, project_id: str):
     list_url_maps = []
 
     for url_map in url_maps:
@@ -576,7 +576,7 @@ def sync_global_url_maps(
 ) -> None:
 
     maps = get_global_url_maps(compute, project_id, common_job_parameters)
-    global_maps = transfrom_global_url_maps(maps, project_id)
+    global_maps = transform_global_url_maps(maps, project_id)
     load_url_maps(neo4j_session, global_maps, project_id, gcp_update_tag)
     cleanup_url_maps(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, global_maps, gcp_update_tag, common_job_parameters, 'url_map', 'GCPUrlMap')
@@ -598,7 +598,7 @@ def sync_regional_url_maps(
 
 
 @timeit
-def get_ssl_plocies(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
+def get_ssl_policies(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
     ssl_policies = []
     try:
         req = compute.sslPolicies().list(project=project_id)
@@ -641,7 +641,7 @@ def get_ssl_plocies(compute: Resource, project_id: str, common_job_parameters) -
             raise
 
 @timeit
-def transfrom_ssl_policies(ssl_policies: List, project_id: str):
+def transform_ssl_policies(ssl_policies: List, project_id: str):
     list_ssl_policies = []
 
     for policy in ssl_policies:
@@ -701,8 +701,8 @@ def sync_ssl_policies(
     gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
 
-    policies = get_ssl_plocies(compute, project_id, common_job_parameters)
-    ssl_policies = transfrom_ssl_policies(policies, project_id)
+    policies = get_ssl_policies(compute, project_id, common_job_parameters)
+    ssl_policies = transform_ssl_policies(policies, project_id)
     load_ssl_policies(neo4j_session, ssl_policies, project_id, gcp_update_tag)
     cleanup_ssl_policies(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, ssl_policies, gcp_update_tag, common_job_parameters, 'ssl_policy', 'GCPSSLPolicy')

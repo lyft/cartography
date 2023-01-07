@@ -394,7 +394,7 @@ def get_cloudwatch_flowlogs(boto3_session: boto3.session.Session, region: str) -
         return flowlogs
 
 @timeit
-def transfrom_flow_logs(logs: List[Dict], current_aws_account_id: str, region: str) -> List[Dict]:
+def transform_flow_logs(logs: List[Dict], current_aws_account_id: str, region: str) -> List[Dict]:
     flowlogs = []
     for flowlog in logs:
         flowlog['arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:vcp-flow-log/{flowlog['FlowLogId']}"
@@ -465,7 +465,7 @@ def sync(
         alms = get_cloudwatch_alarm(boto3_session, region)
         alarms = transform_alarms(alms, region)
         flgs = get_cloudwatch_flowlogs(boto3_session, region)
-        flowlogs = transfrom_flow_logs(flgs, current_aws_account_id, region)
+        flowlogs = transform_flow_logs(flgs, current_aws_account_id, region)
         ebs = get_event_buses(boto3_session, region)
         event_buses = transform_event_buses(ebs, region)
         log_g = get_log_groups(boto3_session, region)

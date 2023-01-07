@@ -29,7 +29,7 @@ def get_bigquery_dataset(bigquery: Resource, project_id: str, common_job_paramet
     :param project_id: Current Google Project Id
 
     :rtype: list
-    :return: List of Bigquey Datasets
+    :return: List of Bigquery Datasets
     """
     try:
         datasets = []
@@ -52,7 +52,7 @@ def get_bigquery_dataset(bigquery: Resource, project_id: str, common_job_paramet
                 common_job_parameters.get('pagination', {}).get('bigquery', None)[
                     'pageNo'
                 ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('bigquey', None)['pageSize']
+            ) * common_job_parameters.get('pagination', {}).get('bigquery', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('bigquery', None)['pageSize']
             if page_end > len(datasets) or page_end == len(datasets):
                 datasets = datasets[page_start:]
@@ -76,7 +76,7 @@ def get_bigquery_dataset(bigquery: Resource, project_id: str, common_job_paramet
 
 
 @timeit
-def transform_bigquey_dataset(bigquery: Resource, datasets: List[Dict], project_id: str) -> List[Resource]:
+def transform_bigquery_dataset(bigquery: Resource, datasets: List[Dict], project_id: str) -> List[Resource]:
     list_dataset = []
     for dataset in datasets:
         dataset['id'] = dataset.get('datasetReference', {}).get('datasetId', '')
@@ -121,7 +121,7 @@ def get_bigquery_tables(bigquery: Resource, dataset: Dict, project_id: str, comm
     :param project_id: Current Google Project Id
 
     :rtype: list
-    :return: List of Bigquey Dataset tables
+    :return: List of Bigquery Dataset tables
     """
     try:
         tables = []
@@ -310,7 +310,7 @@ def sync(
 
     # BIGQUERY DATASETS
     datasets = get_bigquery_dataset(bigquery, project_id, common_job_parameters)
-    bigquery_datasets = transform_bigquey_dataset(bigquery, datasets, project_id)
+    bigquery_datasets = transform_bigquery_dataset(bigquery, datasets, project_id)
     load_bigquery_datasets(neo4j_session, bigquery_datasets, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, bigquery_datasets, gcp_update_tag, common_job_parameters, 'bigquerydataset', 'GCPBigqueryDataset')
     # BIGQUERY TABLES

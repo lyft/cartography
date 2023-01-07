@@ -31,15 +31,15 @@ def set_assume_role_keys(context):
 def init_lambda(ctx):
     global lambda_init, context
 
-    logging.getLogger('cartography').setLevel(os.environ.get('CDX_DEFAULT_LOG_LEVEL'))
-    # logging.getLogger('cartography.intel').setLevel(os.environ.get('CDX_DEFAULT_LOG_LEVEL'))
-    logging.getLogger('cartography.sync').setLevel(os.environ.get('CDX_DEFAULT_LOG_LEVEL'))
-    logging.getLogger('cartography.graph').setLevel(os.environ.get('CDX_DEFAULT_LOG_LEVEL'))
-    logging.getLogger('cartography.cartography').setLevel(os.environ.get('CDX_DEFAULT_LOG_LEVEL'))
+    logging.getLogger('cartography').setLevel(os.environ.get('LOG_LEVEL'))
+    # logging.getLogger('cartography.intel').setLevel(os.environ.get('LOG_LEVEL'))
+    logging.getLogger('cartography.sync').setLevel(os.environ.get('LOG_LEVEL'))
+    logging.getLogger('cartography.graph').setLevel(os.environ.get('LOG_LEVEL'))
+    logging.getLogger('cartography.cartography').setLevel(os.environ.get('LOG_LEVEL'))
 
     context = AppContext(
         region=os.environ['CDX_DEFAULT_REGION'],
-        log_level=os.environ['CDX_DEFAULT_LOG_LEVEL'],
+        log_level=os.environ['LOG_LEVEL'],
         app_env=os.environ['CDX_APP_ENV'],
     )
     context.logger = get_logger(context.log_level)

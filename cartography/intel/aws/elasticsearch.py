@@ -71,7 +71,7 @@ def _get_es_domains(client: botocore.client.BaseClient) -> List[Dict]:
 
 
 @timeit
-def transfrom_es_domains(dms: List[Dict], region: str, account_id: str) -> List[Dict]:
+def transform_es_domains(dms: List[Dict], region: str, account_id: str) -> List[Dict]:
     domains = []
     for domain in dms:
         domain['arn'] = f"arn:aws:es:{region if region else ''}:{account_id if account_id else ''}:domain/{domain['DomainName']}"
@@ -331,7 +331,7 @@ def sync(
     for region in es_regions:
         client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
         domains = _get_es_domains(client)
-        data = transfrom_es_domains(domains, region, current_aws_account_id)
+        data = transform_es_domains(domains, region, current_aws_account_id)
         reserved_instances.extend(get_elasticsearch_reserved_instances(client, region, current_aws_account_id))
 
     logger.info(f"Total ElasticSearch Domains: {len(data)}")

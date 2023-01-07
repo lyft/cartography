@@ -238,7 +238,7 @@ def sync_global_backend_services(
 
     load_backend_services(neo4j_session, global_services, project_id, gcp_update_tag)
     cleanup_backend_services(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, global_services, gcp_update_tag, common_job_parameters, 'backend_serivice', 'GCPBackendService')
+    label.sync_labels(neo4j_session, global_services, gcp_update_tag, common_job_parameters, 'backend_service', 'GCPBackendService')
 
 
 @timeit
@@ -311,7 +311,7 @@ def sync_regional_backend_services(
 
     load_backend_services(neo4j_session, regional_services, project_id, gcp_update_tag)
     cleanup_backend_services(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, regional_services, gcp_update_tag, common_job_parameters, 'backend_serivice', 'GCPBackendService')
+    label.sync_labels(neo4j_session, regional_services, gcp_update_tag, common_job_parameters, 'backend_service', 'GCPBackendService')
 
 
 @timeit

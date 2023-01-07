@@ -139,7 +139,7 @@ def get_rds_security_groups(boto3_session: boto3.session.Session, region: str) -
 
 
 @timeit
-def transfrom_rds_sgs(secgs: List[Dict], region: str, account_id: str) -> List[Dict]:
+def transform_rds_sgs(secgs: List[Dict], region: str, account_id: str) -> List[Dict]:
     secgroups = []
     for secgroup in secgs:
         secgroup['GroupId'] = secgroup.get('DBSecurityGroupName', '')
@@ -220,7 +220,7 @@ def sync_rds_security_groups(
     for region in regions:
         logger.info("Syncing RDS security groups for region '%s' in account '%s'.", region, current_aws_account_id)
         sgs = get_rds_security_groups(boto3_session, region)
-        data = transfrom_rds_sgs(sgs, region, current_aws_account_id)
+        data = transform_rds_sgs(sgs, region, current_aws_account_id)
 
     logger.info(f"Total RDS Security Groups: {len(data)}")
 
