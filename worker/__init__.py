@@ -37,7 +37,7 @@ def process_request(msg: Dict):
             "uri": os.environ.get('neo4juri'),
             "user": os.environ.get('neo4juser'),
             "pwd": os.environ.get('neo4jpwd'),
-            "connection_lifetime": 3600,
+            "connection_lifetime": 200,
         },
         "logging": {
             "mode": "verbose",
