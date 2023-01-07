@@ -13,7 +13,7 @@ import pandas
 logger = logging.getLogger(__name__)
 
 
-def activedirectory_hosts(
+def get_activedirectory_hosts(
     authorization: Tuple[str, str],
 ) -> List:
     """

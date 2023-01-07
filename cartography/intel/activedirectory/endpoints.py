@@ -9,7 +9,7 @@ from typing import Tuple
 
 import neo4j
 
-from .util import activedirectory_hosts
+from .util import get_activedirectory_hosts
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ def sync_hosts(
     update_tag: int,
     authorization: Tuple[str, str],
 ) -> None:
-    activedirectory_hosts_list = activedirectory_hosts(authorization)
+    activedirectory_hosts_list = get_activedirectory_hosts(authorization)
     for host_data in activedirectory_hosts_list:
         load_host_data(neo4j_session, host_data, update_tag)
 
