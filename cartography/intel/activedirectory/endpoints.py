@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 def sync_hosts(
     neo4j_session: neo4j.Session,
     update_tag: int,
-    authorization: Tuple[str, str],
+    authorization: Tuple[str],
 ) -> None:
     activedirectory_hosts_list = get_activedirectory_hosts(authorization)
     for host_data in activedirectory_hosts_list:
