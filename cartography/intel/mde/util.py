@@ -131,7 +131,9 @@ def extract_rg_from_resourceid(resourceid: str) -> str:
     if type(resourceid) is str:
         try:
             match = re.search(
-                "/resourceGroups/(.*?)/providers/", resourceid, flags=re.IGNORECASE,
+                "/resourceGroups/(.*?)/providers/",
+                resourceid,
+                flags=re.IGNORECASE,
             )
             if match:
                 rg = match.group(1)
