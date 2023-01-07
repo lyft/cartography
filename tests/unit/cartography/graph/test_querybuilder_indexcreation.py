@@ -8,6 +8,6 @@ def test_build_create_index_queries():
     assert result
 
 
-def test_build_create_index_queries():
+def test_build_create_index_queries_2():
     result = build_create_index_queries(EMRClusterSchema())
     assert result
