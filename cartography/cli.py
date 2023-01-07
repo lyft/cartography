@@ -100,6 +100,16 @@ class CLI:
                 '.'
             ),
         )
+        parser.add_argument(
+            '--neo4j-database',
+            type=str,
+            default=None,
+            help=(
+                'The name of the database in Neo4j to connect to. If not specified, uses the config settings of your '
+                'Neo4j database itself to infer which database is set to default. '
+                'See https://neo4j.com/docs/api/python-driver/4.4/api.html#database.'
+            ),
+        )
         # TODO add the below parameters to a 'sync' subparser
         parser.add_argument(
             '--update-tag',
@@ -578,12 +588,6 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
-
-        if config.experimental_neo4j_4x_support:
-            logger.warning(
-                'EXPERIMENTAL_NEO4J_4X_SUPPORT is now enabled by default,'
-                ' and this option will be removed when code hard-coded syntax upgrades are completed',
-            )
 
         if config.rapid7_password_env_var:
             logger.debug(
