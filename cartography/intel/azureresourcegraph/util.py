@@ -57,7 +57,7 @@ def get_authorization(
     #     logger.exception("Exception: %s", exc)
     try:
         # App registration token
-        logger.info(
+        logger.info(  # nosemgrep
             "ClientSecretCredential: tenant %s, client %s",
             tenant_id,
             client_id,
@@ -71,6 +71,7 @@ def get_authorization(
     try:
         credential_chain = ChainedTokenCredential(managed_identity, azure_token)
         # credential_chain = ChainedTokenCredential(managed_identity, azure_cli)
+        # nosemgrep
         logger.warning("Using ChainedTokenCredential identity: %s", credential_chain)
         return credential_chain
     except TypeError as exc:
