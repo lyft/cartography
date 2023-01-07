@@ -1,9 +1,12 @@
 import datetime
 import uuid
+import logging
 
 from azure.core.credentials import AzureKeyCredential
 from azure.eventgrid import EventGridEvent
 from azure.eventgrid import EventGridPublisherClient
+
+logger = logging.getLogger(__name__)
 
 
 class EventGridLibrary():
@@ -34,7 +37,7 @@ class EventGridLibrary():
             }
 
         except Exception as e:
-            print(f'error while publishing message to queue: {e}')
+            logging.error(f"failed to publish message to queue: {e}", exc_info=True, stack_info=True)
 
             return {
                 "status": "failure",

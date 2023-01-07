@@ -215,7 +215,7 @@ class Authenticator:
             return Credentials(azure_creds, graph_creds, vault_creds, subscription_id=subscription_id, tenant_id=tenant_id, current_user=user)
 
         except Exception as e:
-            logging.info(f'failed to impersonate user: {str(e)}')
+            logging.error(f"failed to impersonate user: {e}", exc_info=True, stack_info=True)
 
             raise Exception(e)
 

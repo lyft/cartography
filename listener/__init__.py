@@ -14,7 +14,7 @@ def main(req: func.HttpRequest, outputEvent: func.Out[func.EventGridOutputEvent]
         message = req.get_json()
 
     except Exception as e:
-        logging.info(f'failed to parse request body: {str(e)}')
+        logging.error(f"failed to parse request body: {e}", exc_info=True, stack_info=True)
 
         response = {
             "status": "failure",
@@ -47,7 +47,7 @@ def main(req: func.HttpRequest, outputEvent: func.Out[func.EventGridOutputEvent]
         }
 
     except Exception as e:
-        logging.info(f'error while generating event grid message: {str(e)}')
+        logging.error(f"failed to generate event grid message: {e}", exc_info=True, stack_info=True)
 
         response = {
             "status": "failure",

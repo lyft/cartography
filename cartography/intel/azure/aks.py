@@ -704,6 +704,18 @@ def sync(
 ) -> None:
     logger.info("Syncing AKS for subscription '%s'.", subscription_id)
 
+    # paginator = common_job_parameters.get('paginator', None)
+
+    # if not paginator.is_paginated():
+    #     paginator.config = {
+    #         "iteration": 0,
+    #         "buckets": {
+    #             "status": "PAGINATION_UNATTENDED",
+    #             "totalItems": 0,
+    #             "lastProcessedItem": 0
+    #         }
+    #     }
+
     sync_aks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
     sync_container_registries(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
     sync_container_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)

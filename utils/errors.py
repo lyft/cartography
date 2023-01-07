@@ -29,6 +29,9 @@ class GraphRequestError(ServerError):
 class PubSubPublishError(ServerError):
     """ Raised when publishing message to Google PubSub fails"""
 
+class TimeLimitError(ServerError):
+    """Raised when Processing Time reaches limit"""
+
 
 def classify_error(logger, err, msg, extra=None):
     """Classify the error to Permission or Request Processing Error"""

@@ -210,7 +210,7 @@ def load_cartography(event, ctx):
         params = json.loads(message)
 
     except Exception as e:
-        context.logger.error(f'error while parsing inventory sync aws request json: {e}')
+        context.logger.error(f'error while parsing inventory sync aws request json: {e}', exc_info=True, stack_info=True)
 
         return {
             "status": 'failure',
@@ -225,3 +225,89 @@ def load_cartography(event, ctx):
             "status": 'success',
         }),
     }
+
+
+def process_request_duplicate(context, args):
+    context.logger.info(f'{args["templateType"]} request received - {args["eventId"]}')
+    context.logger.info(f'workspace - {args["workspace"]}')
+
+    creds = get_auth_creds(context, args)
+
+    body = {
+        "credentials": creds,
+        "neo4j": {
+            "uri": context.neo4j_uri,
+            "user": context.neo4j_user,
+            "pwd": context.neo4j_pwd,
+        },
+        "logging": {
+            "mode": "verbose",
+        },
+        "params": {
+            "sessionString": args['sessionString'],
+            "eventId": args['eventId'],
+            "templateType": args['templateType'],
+            "workspace": args['workspace'],
+        },
+    }
+
+    resp = cartography.cli.run_aws(body)
+
+    if 'status' in resp and resp['status'] == 'success':
+        context.logger.info(f'successfully processed cartography: {resp}')
+
+    else:
+        context.logger.info(f'failed to process cartography: {resp["message"]}')
+
+    publish_response(context, body, resp)
+
+    context.logger.info(f'inventory sync aws response - {args["eventId"]}: {json.dumps(resp)}')
+
+
+def publish_response(context, req, resp):
+    if context.app_env != 'production':
+        try:
+            with open('response.json', 'w') as outfile:
+                json.dump(resp, outfile, indent=2)
+
+        except Exception as e:
+            context.logger.error(f'Failed to write to file: {e}', exc_info=True, stack_info=True)
+
+    else:
+        body = {
+            "status": resp['status'],
+            "params": req['params'],
+            "response": resp,
+        }
+
+        # context.logger.info(f'response from cartography: {body}')
+
+        sns_helper = SNSLibrary(context)
+        status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
+
+        context.logger.info(f'result published to SNS with status: {status}')
+
+
+def get_auth_creds(context, args):
+    auth_helper = AuthLibrary(context)
+
+    if context.app_env == 'production' or context.app_env == 'debug':
+        auth_params = {
+            'aws_access_key_id': auth_helper.get_assume_role_access_key(),
+            'aws_secret_access_key': auth_helper.get_assume_role_access_secret(),
+            'role_session_name': args['sessionString'],
+            'role_arn': args['externalRoleArn'],
+            'external_id': args['externalId'],
+        }
+
+        auth_creds = auth_helper.assume_role(auth_params)
+        auth_creds['type'] = 'assumerole'
+
+    else:
+        auth_creds = {
+            'type': 'self',
+            'aws_access_key_id': args['credentials']['awsAccessKeyID'] if 'credentials' in args else None,
+            'aws_secret_access_key': args['credentials']['awsSecretAccessKey'] if 'credentials' in args else None,
+        }
+
+    return auth_creds
