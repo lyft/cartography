@@ -9,7 +9,7 @@ from typing import Tuple
 
 import neo4j
 
-from .util import azuremonitor_hosts
+from .util import get_azuremonitor_hosts
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ def sync_hosts(
     update_tag: int,
     authorization: Tuple[str, str],
 ) -> None:
-    azuremonitor_hosts_list = azuremonitor_hosts(authorization)
+    azuremonitor_hosts_list = get_azuremonitor_hosts(authorization)
     for host_data in azuremonitor_hosts_list:
         load_host_data(neo4j_session, host_data, update_tag)
 

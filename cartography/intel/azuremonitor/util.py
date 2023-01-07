@@ -52,7 +52,7 @@ def monitor_query(
     return pandas.DataFrame()
 
 
-def azuremonitor_hosts(
+def get_azuremonitor_hosts(
     authorization: Tuple[str, str],
 ) -> List:
     """
