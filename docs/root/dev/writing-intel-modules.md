@@ -1,13 +1,15 @@
 # How to write a new intel module
 
-This doc contains guidelines on creating a Cartography intel module. If you want to add a new data type to Cartography,
-this is the guide for you!  It is fairly straightforward to copy the structure of an existing intel module and test it,
-but we'll share some best practices in this doc to save you some time. We look forward to receiving your PR!
+If you want to add a new data type to Cartography, this is the guide for you. We look forward to receiving your PR!
 
 ## Before getting started...
 
 Read through and follow the setup steps in [the Cartography developer guide](developer-guide.html). Learn the basics of
 running, testing, and linting your code there.
+
+## The fast way
+
+To get started coding without reading this doc, just copy the structure of our [AWS EMR module](https://github.com/lyft/cartography/blob/master/cartography/intel/aws/emr.py) and use it as an example. For a longer written explanation of the "how" and "why", read on.
 
 ## Configuration and credential management
 
@@ -25,7 +27,7 @@ A cartography intel module consists of one `sync` function. `sync` should call `
 
 ### Get
 
-The `get` function [retrieves necessary data](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L98)
+The `get` function [returns data as a list of dicts](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L98)
 from a resource provider API, which is GCP in this particular example.
 
 `get` should be "dumb" in the sense that it should not handle retry logic or data
@@ -33,8 +35,10 @@ manipulation. It should also raise an exception if it's not able to complete suc
 
 ### Transform
 
-The `transform` function [manipulates data](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L193)
-to make it easier to ingest to the graph. We have some best practices on handling transforms:
+The `transform` function [manipulates the list of dicts](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L193)
+to make it easier to ingest to the graph. `transform` functions are sometimes omitted when a module author decides that the output from the `get` is already in the shape that they need.
+
+We have some best practices on handling transforms:
 
 #### Handling required versus optional fields
 
@@ -54,19 +58,144 @@ For the sake of consistency, if a field does not exist, set it to `None` and not
 
 ### Load
 
-The `load` function ingests the processed data to Neo4j, [as seen in this GCP VPC example](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L442).
-There are many best practices to consider here.
+[As seen in our AWS EMR example](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/intel/aws/emr.py#L113-L132), the `load` function ingests a list of dicts to Neo4j by calling [cartography.client.core.tx.load_graph_data()](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/client/core/tx.py#L191-L212):
+```python
+def load_emr_clusters(
+        neo4j_session: neo4j.Session,
+        cluster_data: List[Dict[str, Any]],
+        region: str,
+        current_aws_account_id: str,
+        aws_update_tag: int,
+) -> None:
+    logger.info(f"Loading EMR {len(cluster_data)} clusters for region '{region}' into graph.")
 
-#### Handling cartography's `update_tag`:
+    ingestion_query = build_ingestion_query(EMRClusterSchema())
+
+    load_graph_data(
+        neo4j_session,
+        ingestion_query,
+        cluster_data,
+        lastupdated=aws_update_tag,
+        Region=region,
+        AccountId=current_aws_account_id,
+    )
+
+```
+
+
+`load_graph_data()` requires an `ingestion_query` to be generated from `CartographyNodeSchema` and `CartographyRelSchema` objects. [cartography.graph.querybuilder.build_ingestion_query()](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/querybuilder.py#L312) does just that: it accepts those schema objects as input and returns a well-formed and optimized cypher query.
+
+
+#### Defining a node
+
+As an example of a `CartographyNodeSchema`, you can view our [EMRClusterSchema code](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/intel/aws/emr.py#L106-L110):
+
+```python
+@dataclass(frozen=True)
+class EMRClusterSchema(CartographyNodeSchema):
+    label: str = 'EMRCluster'  # The label of the node
+    properties: EMRClusterNodeProperties = EMRClusterNodeProperties()  # An object representing all properties on the EMR Cluster node
+    sub_resource_relationship: EMRClusterToAWSAccount = EMRClusterToAWSAccount()
+```
+
+An `EMRClusterSchema` object inherits from the `CartographyNodeSchema` class and contains a node label, properties, and connection to its [sub-resource](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/model.py#L216-L228): an `AWSAccount`.
+
+Note that the typehints are necessary for Python dataclasses to work properly.
+
+
+#### Defining node properties
+
+Here's our [EMRClusterNodeProperties code](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/intel/aws/emr.py#L106-L110):
+
+```python
+@dataclass(frozen=True)
+class EMRClusterNodeProperties(CartographyNodeProperties):
+    arn: PropertyRef = PropertyRef('ClusterArn')
+    firstseen: PropertyRef = PropertyRef('firstseen')
+    id: PropertyRef = PropertyRef('Id')
+    # ...
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
+    security_configuration: PropertyRef = PropertyRef('SecurityConfiguration')
+```
+
+A `CartographyNodeProperties` object consists of [`PropertyRef`](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/model.py#L37) objects. `PropertyRefs` tell `querybuilder.build_ingestion_query()` where to find appropriate values for each field from the list of dicts.
+
+For example, `id: PropertyRef = PropertyRef('Id')` above tells the querybuilder to set a field called `id` on the `EMRCluster` node using the value located at key `'id'` on each dict in the list.
+
+As another example, `region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)` tells the querybuilder to set a field called `region` on the `EMRCluster` node using a keyword argument called `Region` supplied to `cartography.client.core.tx.load_graph_data()`. `set_in_kwargs=True` is useful in cases where we want every object loaded by a single call to `load_graph_data()` to have the same value for a given attribute.
+
+
+#### Defining relationships
+
+Relationships can be defined on `CartographyNodeSchema` on either their [`sub_resource_relationship`](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/model.py#L216-L228) field or their [`other_relationships`](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/model.py#L230-L237) field (you can find an example of `other_relationships` [here in our test data](https://github.com/lyft/cartography/blob/4bfafe0e0c205909d119cc7f0bae84b9f6944bdd/tests/data/graph/querybuilder/sample_models/interesting_asset.py#L89-L94)).
+
+As seen above, an `EMRClusterSchema` only has a single relationship defined: an [`EMRClusterToAWSAccount`](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/intel/aws/emr.py#L94-L103):
+
+```python
+@dataclass(frozen=True)
+# (:EMRCluster)<-[:RESOURCE]-(:AWSAccount)
+class EMRClusterToAWSAccount(CartographyRelSchema):
+    target_node_label: str = 'AWSAccount'  # (1)
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(  # (2)
+        {'id': PropertyRef('AccountId', set_in_kwargs=True)},
+    )
+    direction: LinkDirection = LinkDirection.INWARD  # (3)
+    rel_label: str = "RESOURCE"  # (4)
+    properties: EMRClusterToAwsAccountRelProperties = EMRClusterToAwsAccountRelProperties()  #  (5)
+```
+
+This class is best described by explaining how it is processed: `build_ingestion_query()` will traverse the `EMRClusterSchema` to its `sub_resource_relationship` field and find the above `EMRClusterToAWSAccount` object. With this information, we know to
+- draw a relationship to an `AWSAccount` node (1) using the label "`RESOURCE`" (4)
+- by matching on the AWSAccount's "`id`" field" (2)
+- where the relationship [directionality](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/model.py#L12-L34) is pointed _inward_ toward the EMRCluster (3)
+- making sure to define a set of properties for the relationship (5). The [full example RelProperties](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/intel/aws/emr.py#L89-L91) is very short:
+
+```python
+@dataclass(frozen=True)
+class EMRClusterToAwsAccountRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+```
+
+#### The result
+
+And those are all the objects necessary for this example! The resulting query will look something like this:
+
+```cypher
+UNWIND $DictList AS item
+    MERGE (i:EMRCluster{id: item.Id})
+    ON CREATE SET i.firstseen = timestamp()
+    SET
+        i.lastupdated = $lastupdated,
+        i.arn = item.ClusterArn
+        // ...
+
+        WITH i, item
+        CALL {
+            WITH i, item
+
+            OPTIONAL MATCH (j:AWSAccount{id: $AccountId})
+            WITH i, item, j WHERE j IS NOT NULL
+            MERGE (i)<-[r:RESOURCE]-(j)
+            ON CREATE SET r.firstseen = timestamp()
+            SET
+                r.lastupdated = $lastupdated
+        }
+```
+
+And that's basically all you need to know to understand how to define your own nodes and relationships using cartography's data objects. For more information, you can view the [object model API documentation](https://github.com/lyft/cartography/blob/master/cartography/graph/model.py) as a reference.
+
+### Additional concepts
+
+This section explains cartography general patterns, conventions, and design decisions.
+
+#### cartography's `update_tag`:
 
 `cartography`'s global [config object carries around an `update_tag` property](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/cli.py#L91-L98)
 which is a tag/label associated with the current sync.
 Cartography's CLI code [sets this to a Unix timestamp of when the CLI was run](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/sync.py#L131-L134).
 
-All `cartography` intel modules need to set the `lastupdated` property on all nodes and all relationships to this
-`update_tag`. You can see a couple examples of this in our
-[AWS ingestion code](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/aws/__init__.py#L106) and our
-    [GCP ingestion code](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/__init__.py#L134).
+All `cartography` intel modules set the `lastupdated` property on all nodes and all relationships to this `update_tag`.
 
 
 #### All nodes need these fields
@@ -80,21 +209,21 @@ All `cartography` intel modules need to set the `lastupdated` property on all no
 
     When setting an `id`, ensure that you also include the field name that it came from. For example, since we've
     decided to use `partial_uri`s as an id for a GCPVpc,  we should include both `partial_uri` _and_ `id` on the node.
-    This way, a user can tell what fields were used to derive the `id`. This is accomplished [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L455-L457).
+    This way, a user can tell what fields were used to derive the `id`. This is accomplished [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L455-L457)
 
-- `lastupdated` - See [below](#lastupdated-and-firstseen) on how to set this.
-- `firstseen` - See [below](#lastupdated-and-firstseen) on how to set this.
+- `lastupdated` - See [below](#lastupdated-and-firstseen) on how this gets set automatically.
+- `firstseen` - See [below](#lastupdated-and-firstseen) on how this gets set automatically.
 
 #### All relationships need these fields
 
-Cartography currently does not create indexes on relationships, so we should keep relationships lightweight with only these two fields:
+Cartography currently does not create indexes on relationships, so in most cases we should keep relationships lightweight with only these two fields:
 
-- `lastupdated` - See [below](#lastupdated-and-firstseen) on how to set this.
-- `firstseen` - See [below](#lastupdated-and-firstseen) on how to set this.
+- `lastupdated` - See [below](#lastupdated-and-firstseen) on how this gets set automatically.
+- `firstseen` - See [below](#lastupdated-and-firstseen) on how this gets set automatically.
 
 #### Run queries only on indexed fields for best performance
 
-In this example of ingesting GCP VPCs, we connect VPCs with GCPProjects
+In this older example of ingesting GCP VPCs, we connect VPCs with GCPProjects
 [based on GCPProject `id`s and GCPVpc `id`s](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L451).
 `id`s are indexed, as seen [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher#L45)
 and [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher#L42).
@@ -103,52 +232,12 @@ All of these queries use indexes for faster lookup.
 #### Create an index for new nodes
 
 Be sure to [update the indexes.cypher file](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher)
-with your new node type. Indexing on ID is required, and indexing on anything else that will be frequently queried is
+with your new node type. Indexing on "`id`" is required, and indexing on anything else that will be frequently queried is
 encouraged.
 
 #### lastupdated and firstseen
 
-Set the `lastupdated` and `firstseen` fields on both nodes and relationships. Suppose we are creating
-the following chain:
-
-```cypher
-MERGE (n:NodeType)-[r:RELATIONSHIP]->(n2:NodeType2)
-```
-
-- To handle nodes in this case,
-
-    - Every `MERGE` query that creates a new node should look like this
-
-        ```cypher
-        ON CREATE SET n.firstseen = $UpdateTag
-        SET
-        n.lastupdated = $UpdateTag,
-        node.field1 = $value1,
-        node.field2 = $value2,
-        ...
-        node.fieldN = $valueN
-        ```
-
-- To handle relationships in this case,
-
-    - Every `MERGE` query that creates a new relationship should look like this
-
-        ```cypher
-        ON CREATE SET r.firstseen = $UpdateTag
-        SET
-        r.lastupdated = $UpdateTag
-        ```
-
-#### Connecting different node types with the `_attach` pattern
-
-Node connections can be complex. In many cases we need to connect many different node types together, so we use an
-`_attach` function to manage this.
-
-The best way to explain `_attach` is through an example, like when [we connect GCP instances to their VPCs](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L439).
-In this case, we create a [helper `_attach` function](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/gcp/compute.py#L660)
-that accepts the instance's `id` and connects the instance to the VPC using a `MERGE` query.
-
-This pattern can also be seen when [attaching AWS RDS instances to EC2 security groups](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/intel/aws/rds.py#L108).
+On every cartography node and relationship, we set the `lastupdated` field to the `UPDATE_TAG` and `firstseen` field to `timestamp()` (a built-in Neo4j function equivalent to epoch time in milliseconds). This is automatically handled by the cartography object model.
 
 ### Cleanup
 

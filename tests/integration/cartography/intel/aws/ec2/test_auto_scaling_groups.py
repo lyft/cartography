@@ -20,7 +20,7 @@ def test_load_launch_configurations(neo4j_session, *args):
         (
             "example",
             "arn:aws:autoscaling:us-east-1:000000000000:launchConfiguration:00000000-0000-0000-0000-000000000000:launchConfigurationName/example",  # noqa:E501
-            "1632221734.0",
+            "1632221734",
         ),
     }
 
