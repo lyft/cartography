@@ -31,7 +31,6 @@ def start_bmchelix_ingestion(
         "UPDATE_TAG": config.update_tag,
     }
     if not config.bmchelix_token:
-        logger.warning("config %s", config)
         logger.error("bmchelix config not found")
         return
 
