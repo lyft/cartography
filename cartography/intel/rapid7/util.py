@@ -219,7 +219,7 @@ def get_rapid7_hosts_from_getassets(
         if "resources" not in data:
             logger.warning("data without resources: %s", data)
 
-        result_array = result_array + data["resources"]
+        result_array.extend(data["resources"])
         page += 1
 
     logger.debug("GetAssets final count %s", len(result_array))
@@ -318,7 +318,6 @@ def get_rapid7_hosts_from_downloadreport(
                 "vulnerabilities": "vulnerabilities_total",
                 "critical_vulnerabilities": "vulnerabilities_critical",
                 "moderate_vulnerabilities": "vulnerabilities_moderate",
-                # "vulnerability_instances": ?
                 "riskscore": "riskScore",
                 "vendor": "osFingerprint_product",
                 "version": "osFingerprint_version",
@@ -381,7 +380,6 @@ def get_rapid7_hosts_from_reportfile(
             "vulnerabilities": "vulnerabilities_total",
             "critical_vulnerabilities": "vulnerabilities_critical",
             "moderate_vulnerabilities": "vulnerabilities_moderate",
-            # "vulnerability_instances": ?
             "riskscore": "riskScore",
             "vendor": "osFingerprint_product",
             "version": "osFingerprint_version",
