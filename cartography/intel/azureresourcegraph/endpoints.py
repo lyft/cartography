@@ -60,6 +60,10 @@ def load_host_data(
             h.tags_engcontact = host.tags_engcontact,
             h.tags_businesscontact = host.tags_businesscontact,
             h.vm_status = host.vmStatus,
+            h.image_publisher = host.image_publisher,
+            h.image_offer = host.image_offer,
+            h.image_sku = host.image_sku,
+            h.image_galleryid = host.image_galleryid,
             h.public_ip_name = host.publicIpName,
             h.public_ip_allocation_method = host.publicIPAllocationMethod,
             h.public_ip = host.ipAddress,
@@ -77,7 +81,7 @@ def load_host_data(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $update_tag
     """
-    logger.info("Loading %s azureresourcegraph hosts.", len(data))
+    logger.debug("Loading %s azureresourcegraph hosts.", len(data))
     neo4j_session.run(
         ingestion_cypher_query,
         Hosts=data,

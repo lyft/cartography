@@ -31,10 +31,13 @@ def start_azureresourcegraph_ingestion(
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
     }
-    if (
-        not config.azureresourcegraph_client_id or
-        not config.azureresourcegraph_client_secret
-    ) and not config.azureresourcegraph_use_managedidentity:
+    if not (
+        (
+            config.azureresourcegraph_client_id and
+            config.azureresourcegraph_client_secret
+        ) or
+        (config.azureresourcegraph_use_managedidentity.lower() == "true")
+    ):
         logger.error(
             "azureresourcegraph config not found and not requested managed identity.",
         )
@@ -44,6 +47,8 @@ def start_azureresourcegraph_ingestion(
         config.azureresourcegraph_client_id,
         config.azureresourcegraph_client_secret,
         config.azureresourcegraph_tenant_id,
+        True,
+        config.azureresourcegraph_use_managedidentity,
     )
     sync_hosts(
         neo4j_session,

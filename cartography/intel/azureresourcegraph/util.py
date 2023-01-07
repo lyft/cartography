@@ -10,7 +10,6 @@ from typing import Dict
 
 import azure.mgmt.resourcegraph as arg
 import pandas
-from azure.identity import AzureCliCredential
 from azure.identity import ChainedTokenCredential
 from azure.identity import ClientSecretCredential
 from azure.identity import ManagedIdentityCredential
@@ -25,28 +24,37 @@ def get_authorization(
     client_secret: str,
     tenant_id: str,
     logging_enable: bool = True,
+    managedidentity_enable: str = "False",
 ) -> str:
     """
     Get Authentication token
 
     https://learn.microsoft.com/en-us/python/api/overview/azure/identity-readme?view=azure-python
     """
+    logger.warning(
+        "get_authorization inputs: client_id %s, tenant_id %s, logging_enabled %s, managedidentity_enable %s",
+        client_id,
+        tenant_id,
+        logging_enable,
+        managedidentity_enable,
+    )
     azure_token = None
-    try:
-        # Azure Resource Managed Identity
-        managed_identity = ManagedIdentityCredential(logging_enable=logging_enable)
-        logger.warning("Using Managed identity: %s", managed_identity)
-        return managed_identity
-    except TypeError as exc:
-        logger.exception("Exception: %s", exc)
-    try:
-        # Get your credentials from Azure CLI (development only!) and get your subscription list
-        # `az login` first
-        azure_cli = AzureCliCredential()
-        logger.warning("Using Azure CLI identity: %s", azure_cli)
-        return azure_cli
-    except TypeError as exc:
-        logger.exception("Exception: %s", exc)
+    if managedidentity_enable.lower() == "true":
+        try:
+            # Azure Resource Managed Identity
+            managed_identity = ManagedIdentityCredential(logging_enable=logging_enable)
+            logger.warning("Using Managed identity: %s", managed_identity)
+            return managed_identity
+        except TypeError as exc:
+            logger.exception("Exception: %s", exc)
+    # try:
+    #     # Get your credentials from Azure CLI (development only!) and get your subscription list
+    #     # `az login` first
+    #     azure_cli = AzureCliCredential()
+    #     logger.warning("Using Azure CLI identity: %s", azure_cli)
+    #     return azure_cli
+    # except TypeError as exc:
+    #     logger.exception("Exception: %s", exc)
     try:
         # App registration token
         logger.info(
@@ -61,11 +69,7 @@ def get_authorization(
         logger.exception("Exception: %s", exc)
 
     try:
-        credential_chain = ChainedTokenCredential(
-            managed_identity,
-            azure_token,
-            azure_cli,
-        )
+        credential_chain = ChainedTokenCredential(managed_identity, azure_token)
         # credential_chain = ChainedTokenCredential(managed_identity, azure_cli)
         logger.warning("Using ChainedTokenCredential identity: %s", credential_chain)
         return credential_chain
@@ -110,6 +114,10 @@ def azureresourcegraph_hosts(
 | extend vmStatus = properties.extended.instanceView.powerState.displayStatus
 | extend osname = properties.osProfile.computerName
 | extend ostype = properties.storageProfile.osDisk.osType
+| extend image_publisher = properties.storageProfile.imageReference.publisher
+| extend image_offer = properties.storageProfile.imageReference.offer
+| extend image_sku = properties.storageProfile.imageReference.sku
+| extend image_galleryid = properties.storageProfile.imageReference.id
 | join kind=leftouter (
     Resources
     | where type =~ "Microsoft.Network/networkInterfaces"
@@ -131,7 +139,8 @@ def azureresourcegraph_hosts(
         "osname, ostype, vmStatus, tags.environment, tags.costcenter, tags.contact, "
         "tags.businessproduct, tags.businesscontact, tags.engproduct, tags.engcontact, "
         "tags.lob, tags.compliance, tags.ticket, subproperties,publicIpName,"
-        "publicIPAllocationMethod,ipAddress,nsgId"
+        "publicIPAllocationMethod,ipAddress,nsgId,"
+        "image_publisher,image_offer,image_sku,image_galleryid"
     )
 
     subsClient = SubscriptionClient(authorization)
@@ -210,6 +219,6 @@ def azureresourcegraph_hosts(
     logger.warning("Example: %s", flatten_data[0])
 
     # save to local csv for debugging?
-    df_resourcegraph.to_csv("/tmp/cartography-resourcegraph.csv")
+    # df_resourcegraph.to_csv("/tmp/cartography-resourcegraph.csv")
 
     return flatten_data
