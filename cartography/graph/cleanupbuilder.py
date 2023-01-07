@@ -75,6 +75,35 @@ def _build_cleanup_node_query(
     Generates an optimized and tuned node deletion query for the given node schema. Ensures that the node type to be
     cleaned up is connected to a sub resource, and (optionally) to another relationship -- this way it is much less
     likely to delete nodes that you weren't expecting.
+    Example 1: no selected_relationship
+    ```
+    class InterestingAssetSchema(CartographyNodeSchema):
+        label: str = 'InterestingAsset'
+        sub_resource_relationship: InterestingAssetToSubResourceRel = InterestingAssetToSubResourceRel()
+        other_relationships: Optional[OtherRelationships] = OtherRelationships(
+            [
+                InterestingAssetToHelloAssetRel(),
+                InterestingAssetToWorldAssetRel(),
+            ],
+        )
+        # ... other attrs ...
+
+        _build_cleanup_node_query(InterestingAssetSchema())
+        -->
+            MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+            WHERE n.lastupdated <> $UPDATE_TAG
+            WITH n LIMIT $LIMIT_SIZE
+            DETACH DELETE n;
+    ```
+    Example 2: specifying a selected rel: in this case we anchor the InterestingAsset to the HelloAsset.
+    _build_cleanup_node_query(InterestingAssetSchema(), InterestingAssetToHelloAssetRel())
+    -->
+        MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)-[:ASSOCIATED_WITH]->(:HelloAsset)
+        WHERE n.lastupdated <> $UPDATE_TAG
+        WITH n LIMIT $LIMIT_SIZE
+        DETACH DELETE n;
+
     :param node_schema: The node_schema to generate a query from.
     :param selected_relationship: If specified, generate a cleanup query for the node_schema and the given
     selected_relationship. selected_relationship must be in the set {node_schema.sub_resource_relationship} +
@@ -109,7 +138,6 @@ def _build_cleanup_node_query(
         return _build_cleanup_node_sub_resource_only(
             node_schema,
             sub_resource_link,
-            node_schema.sub_resource_relationship.target_node_matcher,
         )
 
     # Draw selected relationship with correct direction
@@ -142,14 +170,11 @@ def _build_cleanup_node_query(
 def _build_cleanup_node_sub_resource_only(
         node_schema: CartographyNodeSchema,
         sub_res_link: str,
-        sub_res_node_matcher: TargetNodeMatcher,
 ) -> str:
     """
     Generate a query to clean up a node attached to a sub resource.
     :param node_schema: The CartographyNodeSchema object
     :param sub_res_link: A string that looks like "<-[:RELATIONSHIP]-" or "-[:RELATIONSHIP]->"
-    :param sub_res_node_matcher: The TargetNodeMatcher object used to determine which sub resource to query for when
-    cleaning up.
     """
     query_template = Template(
         """
@@ -169,7 +194,7 @@ def _build_cleanup_node_sub_resource_only(
         node_label=node_schema.label,
         sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
         sub_res_link=sub_res_link,
-        sub_res_match_clause=_build_match_clause(sub_res_node_matcher),
+        sub_res_match_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
     )
 
 
