@@ -55,6 +55,7 @@ setup(
         "azure-mgmt-storage>=16.0.0",
         "azure-mgmt-sql<=1.0.0",
         "azure-identity>=1.5.0",
+        "azure-mgmt-resourcegraph>=8.0.0"
         "kubernetes>=22.6.0",
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
