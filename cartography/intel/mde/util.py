@@ -26,8 +26,7 @@ def get_authorization(
 
     api_url: usually "https://api.securitycenter.microsoft.com"
     """
-    # nosec - B105
-    aad_token = ""
+    aad_token = ""  # nosec
     try:
         url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/token"
 
@@ -44,7 +43,7 @@ def get_authorization(
 
         req = urllib.request.Request(url, data)
         # nosemgrep
-        response = urllib.request.urlopen(req)  # pylint: disable=consider-using-with
+        response = urllib.request.urlopen(req)  # nosec pylint: disable=consider-using-with
         json_response = json.loads(response.read())
         aad_token = json_response["access_token"]
         # logger.debug("aad_token: %s", json_response["access_token"])
@@ -54,6 +53,7 @@ def get_authorization(
     return aad_token
 
 
+# pylint: disable=too-many-locals
 def get_mde_hosts(
     authorization: str,
 ) -> array:
@@ -101,7 +101,7 @@ def get_mde_hosts(
     while "@odata.nextLink" in data:
         logger.debug("@odata.nextLink present (%s): %s", j, data["@odata.nextLink"])
         try:
-            resp2 = requests.get(data["@odata.nextLink"], headers=headers)
+            resp2 = requests.get(data["@odata.nextLink"], headers=headers, timeout=15)
             resp2.raise_for_status()
             data = resp2.json()
             full_data += data["value"]
@@ -128,7 +128,7 @@ def extract_rg_from_resourceid(resourceid: str) -> str:
     """
     Get Azure resource group from Azure resource id
     """
-    if type(resourceid) is str:
+    if isinstance(resourceid, str):
         try:
             match = re.search(
                 "/resourceGroups/(.*?)/providers/",
