@@ -81,7 +81,7 @@ def transform_bigquery_dataset(bigquery: Resource, datasets: List[Dict], project
     for dataset in datasets:
         dataset['id'] = dataset.get('datasetReference', {}).get('datasetId', '')
         dataset['uniqueId'] = f"projects/{project_id}/datasets/{dataset['id']}"
-        dataset['details'] = get_dataset_info(bigquery, dataset['id'])
+        dataset['details'] = get_dataset_info(bigquery, dataset['id'], project_id)
         dataset['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='bigquery_home')
         list_dataset.append(dataset)
 
@@ -317,7 +317,7 @@ def sync(
     for dataset in bigquery_datasets:
         tables = get_bigquery_tables(bigquery, dataset, project_id, common_job_parameters)
         bigquery_tables = transform_bigquery_tables(bigquery, dataset, tables, project_id)
-        load_bigquery_tables(neo4j_session, bigquery_tables, gcp_update_tag)
+        load_bigquery_tables(neo4j_session, bigquery_tables, project_id, gcp_update_tag)
         label.sync_labels(neo4j_session, bigquery_tables, gcp_update_tag, common_job_parameters, 'bigquerytables', 'GCPBigqueryTables')
     cleanup_gcp_bigquery(neo4j_session, common_job_parameters)
 

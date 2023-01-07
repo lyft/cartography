@@ -590,7 +590,7 @@ def sync_regional_url_maps(
 
     if regions:
         for region in regions:
-            maps = get_regional_url_maps(compute, project_id, region)
+            maps = get_regional_url_maps(compute, project_id, region, common_job_parameters)
             regional_maps = transform_regional_url_maps(maps, region, project_id)
             load_url_maps(neo4j_session, regional_maps, project_id, gcp_update_tag)
             cleanup_url_maps(neo4j_session, common_job_parameters)
@@ -721,7 +721,7 @@ def sync(
     sync_global_instance_groups(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
     sync_regional_instance_groups(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
     sync_global_url_maps(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
-    sync_global_url_maps(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
+    sync_regional_url_maps(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
     sync_ssl_policies(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
 
     toc = time.perf_counter()
