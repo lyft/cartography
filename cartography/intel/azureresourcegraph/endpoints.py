@@ -8,7 +8,7 @@ from typing import List
 
 import neo4j
 
-from .util import azureresourcegraph_hosts
+from .util import get_azureresourcegraph_hosts
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def sync_hosts(
     update_tag: int,
     authorization: str,
 ) -> None:
-    arg_hosts_list = azureresourcegraph_hosts(authorization)
+    arg_hosts_list = get_azureresourcegraph_hosts(authorization)
     for host_data in arg_hosts_list:
         load_host_data(neo4j_session, host_data, update_tag)
 

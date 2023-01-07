@@ -93,7 +93,7 @@ def get_short_hostname(row: Dict) -> str:
     return short[:64]
 
 
-def azureresourcegraph_hosts(
+def get_azureresourcegraph_hosts(
     authorization: str,
     timeout_max: int = 300,
 ) -> array:
