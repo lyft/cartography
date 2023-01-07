@@ -49,7 +49,7 @@ def load_host_data(
             h.modified_timestamp = host.modified_timestamp,
             h.lastupdated = $update_tag
     """
-    logger.info("Loading %s activedirectory hosts.", len(data))
+    logger.debug("Loading %s activedirectory hosts.", len(data))
     neo4j_session.run(
         ingestion_cypher_query,
         Hosts=data,
