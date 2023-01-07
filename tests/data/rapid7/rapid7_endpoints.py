@@ -14,7 +14,7 @@ GET_HOSTS = [
                 "name": "azure",
                 "value": {
                     "instanceId": "c56b2c59-4e9b-4b89-85e2-13f8146eb071",
-                    "resourceId": "/subscriptions/SUB/resourceGroups/RG/providers/Microsoft.Compute/virtualMachines/HOST",  # noqa: E501
+                    "resourceId": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM",  # noqa: E501
                 },
             },
         ],
@@ -150,6 +150,118 @@ GET_HOSTS = [
             "moderate": 3,
             "severe": 76,
             "total": 95,
+        },
+    },
+    {
+        "addresses": [{"ip": "123.245.34.246", "mac": "12:34:56:78:90:CD"}],
+        "assessedForPolicies": False,
+        "assessedForVulnerabilities": True,
+        "configurations": [
+
+            {
+                "name": "azure",
+                "value": {
+                    "instanceId": "c56b2c59-4e9b-4b89-85e2-13f8146eb071",
+                    "resourceId": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",  # noqa: E501
+                },
+            },
+        ],
+        "files": [],
+        "history": [
+            {
+                "date": "2018-04-09T06:23:49Z",
+                "description": "",
+                "scanId": 12,
+                "type": "SCAN",
+                "user": "",
+                "version": 8,
+                "vulnerabilityExceptionId": "",
+            },
+        ],
+        "hostName": "corporate-workstation-1106DC.acme.com",
+        "hostNames": [
+            {"name": "corporate-workstation-1106DC.acme.com", "source": "DNS"},
+        ],
+        "id": 285,
+        "ids": [{"id": "c56b2c12-4e9b-4b89-85e2-45f8146eb071", "source": "WQL"}],
+        "ip": "182.34.74.202",
+        "links": [{"href": "https://hostname:3780/api/3/...", "rel": "self"}],
+        "mac": "AB:12:CD:34:EF:56",
+        "os": "Microsoft Windows Server 2008 Enterprise Edition SP2",
+        "osFingerprint": {
+            "architecture": "x86",
+            "configurations": [{"name": "<name>", "value": "<value>"}],
+            "cpe": {
+                "edition": "enterprise",
+                "language": "",
+                "other": "",
+                "part": "o",
+                "product": "windows_server_2008",
+                "swEdition": "",
+                "targetHW": "",
+                "targetSW": "",
+                "update": "sp1",
+                "v2.2": "cpe:/o:microsoft:windows_server_2008:-:sp1:enterprise",
+                "v2.3": "cpe:2.3:o:microsoft:windows_server_2008:-:sp1:enterprise:*:*:*:*:*",
+                "vendor": "microsoft",
+                "version": "-",
+            },
+            "description": "Microsoft Windows Server 2008 Enterprise Edition SP1",
+            "family": "Windows",
+            "id": 35,
+            "product": "Windows Server 2008 Enterprise Edition",
+            "systemName": "Microsoft Windows",
+            "type": "Workstation",
+            "vendor": "Microsoft",
+            "version": "SP1",
+        },
+        "rawRiskScore": 3214.3,
+        "riskScore": 3457.16,
+        "services": [
+            {
+                "configurations": [{"name": "<name>", "value": "<value>"}],
+                "databases": [
+                    {"description": "Microsoft SQL Server", "id": 13, "name": "MSSQL"},
+                ],
+                "family": "",
+                "links": [{"href": "https://hostname:3780/api/3/...", "rel": "self"}],
+                "name": "CIFS Name Service",
+                "port": 139,
+                "product": "Samba",
+                "protocol": "tcp",
+                "userGroups": [{"id": 972, "name": "Administrators"}],
+                "users": [
+                    {"fullName": "Smith, Jane", "id": 8952, "name": "jane_smith"},
+                ],
+                "vendor": "",
+                "version": "3.5.11",
+                "webApplications": [
+                    {
+                        "id": 30712,
+                        "pages": [
+                            {
+                                "linkType": "html-ref",
+                                "path": "/docs/config/index.html",
+                                "response": 200,
+                            },
+                        ],
+                        "root": "/",
+                        "virtualHost": "102.89.22.253",
+                    },
+                ],
+            },
+        ],
+        "software": [],
+        "type": "",
+        "userGroups": [{"id": 972, "name": "Administrators"}],
+        "users": [{"fullName": "Smith, John", "id": 8952, "name": "jane_smith"}],
+        "vulnerabilities": {
+            "critical": 5,
+            "exploits": 6,
+            "malwareKits": 0,
+            "moderate": 3,
+            "severe": 7,
+            "total": 20,
         },
     },
 ]
