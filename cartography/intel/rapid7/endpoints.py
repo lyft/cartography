@@ -9,7 +9,7 @@ from typing import Tuple
 
 import neo4j
 
-from .util import rapid7_hosts
+from .util import get_rapid7_hosts
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ def sync_hosts(
     update_tag: int,
     authorization: Tuple[str, str, str, str, str, int],
 ) -> None:
-    r7_hosts = rapid7_hosts(authorization)
+    r7_hosts = get_rapid7_hosts(authorization)
     for host_data in r7_hosts:
         load_host_data(neo4j_session, host_data, update_tag)
 

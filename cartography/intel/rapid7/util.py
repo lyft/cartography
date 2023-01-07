@@ -149,7 +149,7 @@ def extract_rapid7_configurations_instanceid(configurations) -> str:
     return instance_id
 
 
-def rapid7_hosts_from_getassets(
+def get_rapid7_hosts_from_getassets(
     authorization: Tuple[str, str, str, str, str, int],
     limit: int = 6000,
     page: int = 0,
@@ -251,7 +251,7 @@ def rapid7_hosts_from_getassets(
     return flatten_data
 
 
-def rapid7_hosts_from_downloadreport(
+def get_rapid7_hosts_from_downloadreport(
     authorization: Tuple[str, str, str, str, str, int],
     nexpose_timeout: int = 60,
 ) -> List:
@@ -345,7 +345,7 @@ def rapid7_hosts_from_downloadreport(
     return []
 
 
-def rapid7_hosts_from_reportfile(
+def get_rapid7_hosts_from_reportfile(
     authorization: Tuple[str, str, str, str, str, int],
 ) -> List:
     """
@@ -417,7 +417,7 @@ def rapid7_hosts_from_reportfile(
 
 
 # pylint: disable=too-many-arguments,too-many-locals
-def rapid7_hosts(
+def get_rapid7_hosts(
     authorization: Tuple[str, str, str, str, str, int],
     limit: int = 6000,
     page: int = 0,
@@ -439,11 +439,11 @@ def rapid7_hosts(
     """
 
     if authorization[2] and authorization[4]:
-        return rapid7_hosts_from_reportfile(authorization)
+        return get_rapid7_hosts_from_reportfile(authorization)
     if authorization[2] and authorization[5]:
-        return rapid7_hosts_from_downloadreport(authorization)
+        return get_rapid7_hosts_from_downloadreport(authorization)
 
-    return rapid7_hosts_from_getassets(
+    return get_rapid7_hosts_from_getassets(
         authorization,
         limit,
         page,
