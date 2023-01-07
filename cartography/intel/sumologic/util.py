@@ -13,7 +13,7 @@ from msticpy.data.data_providers import QueryProvider
 logger = logging.getLogger(__name__)
 
 
-def sumologic_hosts(
+def get_sumologic_hosts(
     authorization: Tuple[str, str, str],
     timeout_max: int = 600,
 ) -> List:
