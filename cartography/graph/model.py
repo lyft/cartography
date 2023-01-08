@@ -78,36 +78,55 @@ class PropertyRef:
 class CartographyNodeProperties(abc.ABC):
     """
     Abstract base dataclass that represents the properties on a CartographyNodeSchema. This class is abstract so that we
-    can enforce that all subclasses have an id and a lastupdated field.
+    can enforce that all subclasses have an id and a lastupdated field. These fields are assigned to the node in the
+    `SET` clause.
     """
     id: PropertyRef = field(init=False)
     lastupdated: PropertyRef = field(init=False)
 
     def __post_init__(self):
         """
-        Designed to prevent direct instantiation. This workaround is needed since this is a dataclass and an abstract
-        class without an abstract method defined.
-        See https://stackoverflow.com/q/60590442.
+        Data validation.
+        1. Prevents direct instantiation. This workaround is needed since this is a dataclass and an abstract
+        class without an abstract method defined. See https://stackoverflow.com/q/60590442.
+        2. Stops reserved words from being used as attribute names. See https://github.com/lyft/cartography/issues/1064.
         """
         if self.__class__ == CartographyNodeProperties:
             raise TypeError("Cannot instantiate abstract class.")
+
+        if hasattr(self, 'firstseen'):
+            raise TypeError(
+                "`firstseen` is a reserved word and is automatically set by the querybuilder on cartography nodes, so "
+                f'it cannot be used on class "{type(self).__name__}(CartographyNodeProperties)". Please either choose '
+                "a different name for `firstseen` or omit altogether.",
+            )
 
 
 @dataclass(frozen=True)
 class CartographyRelProperties(abc.ABC):
     """
     Abstract class that represents the properties on a CartographyRelSchema. This is intended to enforce that all
-    subclasses will have a lastupdated field defined on their resulting relationships.
+    subclasses will have a lastupdated field defined on their resulting relationships. These fields are assigned to the
+    relationship in the `SET` clause.
     """
     lastupdated: PropertyRef = field(init=False)
 
     def __post_init__(self):
         """
-        Designed to prevent direct instantiation. This workaround is needed since this is a dataclass and an abstract
-        class without an abstract method defined.
+        Data validation.
+        1. Prevents direct instantiation. This workaround is needed since this is a dataclass and an abstract
+        class without an abstract method defined. See https://stackoverflow.com/q/60590442.
+        2. Stops reserved words from being used as attribute names. See https://github.com/lyft/cartography/issues/1064.
         """
         if self.__class__ == CartographyRelProperties:
             raise TypeError("Cannot instantiate abstract class.")
+
+        if hasattr(self, 'firstseen'):
+            raise TypeError(
+                "`firstseen` is a reserved word and is automatically set by the querybuilder on cartography rels, so "
+                f'it cannot be used on class "{type(self).__name__}(CartographyRelProperties)". Please either choose '
+                "a different name for `firstseen` or omit altogether.",
+            )
 
 
 @dataclass(frozen=True)
