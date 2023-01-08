@@ -16,6 +16,7 @@ from neo4j import GraphDatabase
 from . import ec2
 from . import organizations
 from .resources import RESOURCE_FUNCTIONS
+from .ec2.util import get_botocore_config
 from cartography.config import Config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 from cartography.stats import get_stats_client
@@ -186,6 +187,18 @@ def _autodiscover_accounts(
         logger.warning(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
 
 
+def list_all_regions(boto3_session, logger):
+    try:
+        client = boto3_session.client('ec2', region_name="us-east-2", config=get_botocore_config())
+        regions = client.describe_regions()
+
+    except Exception as e:
+        logger.error(f"Failed retrieve enabled regions. Error - {e}")
+        return []
+
+    return list(map(lambda region: region['RegionName'], regions['Regions']))
+
+
 def _sync_multiple_accounts(
     neo4j_session: neo4j.Session,
     accounts: Dict[str, str],
@@ -222,7 +235,11 @@ def _sync_multiple_accounts(
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, config.update_tag, common_job_parameters)
 
-        regions = config.params.get('regions', [])
+        # INFO: fetching active regions for customers instead of reading from parameters
+        regions = list_all_regions(boto3_session, logger)
+        if len(regions) == 0:
+            logger.info("regions could not be fetched. reading regions from input parameters")
+            regions = config.params.get('regions', [])
 
         _sync_one_account(
             neo4j_session,
