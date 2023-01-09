@@ -16,7 +16,7 @@ This module allows authentication from a service account or via oauth tokens.
         1. `GSUITE_GOOGLE_APPLICATION_CREDENTIALS` - location of the credentials file.
         1. `GSUITE_DELEGATED_ADMIN` - email address that you created in step 2
 
-1. Using Oauth
+## Method 2: Using OAuth
 
     1. Create an App on [Google Cloud Console](https://console.cloud.google.com/)
     1. Refer to follow documentation if needed:
