@@ -39,7 +39,7 @@ This module allows authentication from a service account or via oauth tokens.
 
 
 Google Oauth Helper :
-```json
+```python
 from __future__ import print_function
 import json
 
