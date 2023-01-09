@@ -2,7 +2,7 @@
 
 .. _gsuite_config:
 
-This module allows authentication from a service account or via oauth tokens.
+This module allows authentication from a service account or via OAuth tokens.
 
 1. Using service account (legacy)
 
