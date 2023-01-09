@@ -4,7 +4,7 @@
 
 This module allows authentication from a service account or via OAuth tokens.
 
-1. Using service account (legacy)
+Method 1: Using service account (legacy)
 
     Ingesting GSuite Users and Groups utilizes the [Google Admin SDK](https://developers.google.com/admin-sdk/).
 
@@ -24,9 +24,9 @@ This module allows authentication from a service account or via OAuth tokens.
         1. https://developers.google.com/workspace/guides/get-started
         1. https://support.google.com/a/answer/7281227?hl=fr
     1. Download credentials file
-    1. Use helper script for OAuth flow to obtain refresh_token
+    1. Use helper script below for OAuth flow to obtain refresh_token
     1. Serialize needed secret
-        ```
+        ```python
         import json
         import base64
         auth_json = json.dumps({"client_id":"xxxxx.apps.googleusercontent.com","client_secret":"ChangeMe", "refresh_token":"ChangeMe", "token_uri": "https://oauth2.googleapis.com/token"})
@@ -51,8 +51,8 @@ scopes = ["https://www.googleapis.com/auth/admin.directory.userreadonly", "https
 
 print('Go to https://console.cloud.google.com/ > API & Services > Credentials and download secrets')
 project_id = input('Provide your project ID:')
-client_id = input('Provide you Client ID:')
-client_secret = input('Provide you Client Secret:')
+client_id = input('Provide your client ID:')
+client_secret = input('Provide your client secret:')
 with open('credentials.json', 'w', encoding='utf-8') as fc:
     data = {
         "installed": {

@@ -61,14 +61,14 @@ def start_gsuite_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
         "UPDATE_TAG": config.update_tag,
     }
 
-    if config.gsuite_auth_method == 'delegated':  #  Legacy delegated method
+    if config.gsuite_auth_method == 'delegated':  # Legacy delegated method
+        logger.info('Attempting to authenticate to GSuite using legacy delegated method')
         try:
             credentials = GoogleCredentials.from_stream(config.gsuite_config)
             credentials = credentials.create_scoped(OAUTH_SCOPE)
             credentials = credentials.create_delegated(os.environ.get('GSUITE_DELEGATED_ADMIN'))
 
         except ApplicationDefaultCredentialsError as e:
-            logger.debug('Error occurred calling GoogleCredentials.get_application_default().', exc_info=True)
             logger.error(
                 (
                     "Unable to initialize GSuite creds. If you don't have GSuite data or don't want to load "
@@ -81,7 +81,7 @@ def start_gsuite_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
             return
     elif config.gsuite_auth_method == 'oauth':
         auth_tokens = json.loads(str(base64.b64decode(config.gsuite_config).decode()))
-        logger.info('SO GOOD SO FAR')
+        logger.info('Attempting to authenticate to GSuite using OAuth')
         try:
             credentials = GoogleCredentials(
                 None,
@@ -95,7 +95,6 @@ def start_gsuite_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
             credentials.refresh(httplib2.Http())
             credentials = credentials.create_scoped(OAUTH_SCOPE)
         except ApplicationDefaultCredentialsError as e:
-            logger.debug('Error occurred calling GoogleCredentials.get_application_default().', exc_info=True)
             logger.error(
                 (
                     "Unable to initialize GSuite creds. If you don't have GSuite data or don't want to load "
@@ -105,6 +104,7 @@ def start_gsuite_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
                 ),
                 e,
             )
+            return
 
     resources = _initialize_resources(credentials)
     api.sync_gsuite_users(neo4j_session, resources.admin, config.update_tag, common_job_parameters)
