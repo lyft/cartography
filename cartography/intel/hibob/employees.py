@@ -67,7 +67,7 @@ def load(
 
     MERGE (u:HiBobEmployee{id: user.id})
     ON CREATE set u.firstseen = timestamp()
-    SET u.user_id = user.is,
+    SET u.user_id = user.id,
     u.name = user.displayName,
     u.family_name = user.surname,
     u.given_name = user.firstName,
