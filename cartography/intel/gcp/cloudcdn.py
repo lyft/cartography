@@ -105,7 +105,7 @@ def sync_backend_buckets(
             logger.info(f'pages process for backend buckets {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (
             common_job_parameters.get('pagination', {}).get('compute', None)[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -129,7 +129,7 @@ def get_global_backend_services(compute: Resource, project_id: str) -> List[Dict
         while req is not None:
             res = req.execute()
             if res.get('items'):
-                for backend_service in res('items'):
+                for backend_service in res.get('items'):
                     backend_service['region'] = 'global'
                     backend_service['type'] = 'global'
                     backend_service['id'] = f"projects/{project_id}/global/backendServices/{backend_service['name']}"
@@ -217,7 +217,7 @@ def sync_global_backend_services(
             logger.info(f'pages process for global backend services {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (
             common_job_parameters.get('pagination', {}).get('compute', None)[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -230,7 +230,7 @@ def sync_global_backend_services(
 
     load_backend_services(neo4j_session, global_services, project_id, gcp_update_tag)
     cleanup_backend_services(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, global_services, gcp_update_tag, common_job_parameters, 'backend_serivice', 'GCPBackendService')
+    label.sync_labels(neo4j_session, global_services, gcp_update_tag, common_job_parameters, 'backend_service', 'GCPBackendService')
 
 
 @timeit
@@ -243,7 +243,7 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
                 while req is not None:
                     res = req.execute()
                     if req.get('items'):
-                        for region_service in req['items']:
+                        for region_service in res.get('items'):
                             region_service['region'] = region
                             region_service['type'] = 'regional'
                             region_service['id'] = f"projects/{project_id}/regions/{region}/backendServices/{region_service['name']}"
@@ -265,7 +265,6 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
 
 
 @timeit
-
 def load_backend_services(session: neo4j.Session, region_services: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_backend_services_tx, region_services, project_id, update_tag)
 
@@ -289,7 +288,7 @@ def sync_regional_backend_services(
             logger.info(f'pages process for regional backend services {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (
             common_job_parameters.get('pagination', {}).get('compute', None)[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -302,7 +301,7 @@ def sync_regional_backend_services(
 
     load_backend_services(neo4j_session, regional_services, project_id, gcp_update_tag)
     cleanup_backend_services(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, regional_services, gcp_update_tag, common_job_parameters, 'backend_serivice', 'GCPBackendService')
+    label.sync_labels(neo4j_session, regional_services, gcp_update_tag, common_job_parameters, 'backend_service', 'GCPBackendService')
 
 
 @timeit
@@ -397,7 +396,7 @@ def sync_global_url_maps(
             logger.info(f'pages process for global url maps {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (
             common_job_parameters.get('pagination', {}).get('compute', None)[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
@@ -468,7 +467,7 @@ def sync_regional_url_maps(
             logger.info(f'pages process for global url maps {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (
             common_job_parameters.get('pagination', {}).get('compute', None)[
-            'pageNo'
+                'pageNo'
             ] - 1
         ) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
