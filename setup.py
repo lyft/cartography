@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.69.0'
+__version__ = '0.70.0'
 
 
 setup(
@@ -58,6 +58,7 @@ setup(
         "kubernetes>=22.6.0",
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
+        "python-dateutil",
     ],
     extras_require={
         ':python_version<"3.7"': [
