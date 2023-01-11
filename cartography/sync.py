@@ -2,8 +2,9 @@ import argparse
 import logging
 import time
 from collections import OrderedDict
-from typing import Callable, Optional
+from typing import Callable
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -40,7 +41,7 @@ class SessionWrapper:
 
     _session: Optional[neo4j.Session] = None
     _driver: Optional[neo4j.Driver] = None
-    _config: Union[Config, argparse.Namespace] = None
+    _config: Union[Config, argparse.Namespace]
 
     def __init__(self, config: Union[Config, argparse.Namespace]):
         self._config = config
@@ -59,8 +60,8 @@ class SessionWrapper:
             logger.debug("Error occurred during Neo4j connect.", exc_info=True)
             logger.error(
                 (
-                    "Unable to connect to Neo4j using the provided URI '%s', an error occurred: '%s'. Make sure the Neo4j "
-                    "server is running and accessible from your network."
+                    "Unable to connect to Neo4j using the provided URI '%s', an error occurred: '%s'."
+                    "Make sure the Neo4j server is running and accessible from your network."
                 ),
                 self._config.neo4j_uri,
                 e,
@@ -80,9 +81,10 @@ class SessionWrapper:
             else:
                 logger.error(
                     (
-                        "Unable to auth to Neo4j, an error occurred: '%s'. cartography attempted to connect to Neo4j with "
-                        "a username and password. Check your Neo4j server settings to see if the username and password "
-                        "provided to cartography are valid credentials."
+                        "Unable to auth to Neo4j, an error occurred: '%s'. "
+                        "cartography attempted to connect to Neo4j with a username and password. Check your Neo4j "
+                        "server settings to see if the username and password provided to cartography are valid "
+                        "credentials."
                     ),
                     e,
                 )
@@ -101,7 +103,7 @@ class SessionWrapper:
             try:
                 sess = self.get_session()
                 return sess.__getattribute__(func)(*args, **kwargs)
-            except neo4j.exceptions.SessionExpired as e:
+            except neo4j.exceptions.SessionExpired:
                 logger.debug("Error occurred during Neo4j session run.", exc_info=True)
                 self._session = None
                 self._driver = None
