@@ -1,6 +1,3 @@
-from unittest.mock import Mock
-from unittest.mock import patch
-
 from cartography.intel.aws import iam
 
 SINGLE_STATEMENT = {
