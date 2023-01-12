@@ -43,7 +43,7 @@ def test_load_hexnode_policies(neo4j_session):
     }
     assert actual_nodes == expected_nodes
 
-    # Ensure link policy - device group
+    # Ensure link policy - device group
     nodes = neo4j_session.run(
         """
         MATCH(g:HexnodeDeviceGroup)-[:APPLIES_POLICY]->(p:HexnodePolicy)

@@ -41,7 +41,7 @@ def test_load_hexnode_devices(neo4j_session):
     }
     assert actual_nodes == expected_nodes
 
-    # Ensure device - user link
+    # Ensure device - user link
     nodes = neo4j_session.run(
         """
         MATCH(u:HexnodeUser)-[:OWNS_DEVICE]->(d:HexnodeDevice)
@@ -100,7 +100,7 @@ def test_load_hexnode_devicegroup(neo4j_session):
     }
     assert actual_nodes == expected_nodes
 
-    # Ensure link device - device group
+    # Ensure link device - device group
     nodes = neo4j_session.run(
         """
         MATCH(d:HexnodeDevice)-[:MEMBER_OF]->(g:HexnodeDeviceGroup)
