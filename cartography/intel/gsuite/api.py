@@ -131,7 +131,7 @@ def load_gsuite_groups(neo4j_session: neo4j.Session, groups: List[Dict], gsuite_
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
         g.firstseen = $UpdateTag
-        ON MATCH SET 
+        ON MATCH SET
         g.group_id = group.id,
         g.admin_created = group.adminCreated,
         g.description = group.description,
