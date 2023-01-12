@@ -1,9 +1,9 @@
-import cartography.intel.hexnode.users
-import tests.data.hexnode.users
-import cartography.intel.hexnode.devices
-import tests.data.hexnode.devices
 import cartography.intel.hexnode.device_groups
+import cartography.intel.hexnode.devices
+import cartography.intel.hexnode.users
 import tests.data.hexnode.device_groups
+import tests.data.hexnode.devices
+import tests.data.hexnode.users
 
 TEST_UPDATE_TAG = 123456789
 
@@ -36,7 +36,7 @@ def test_load_hexnode_devices(neo4j_session):
     actual_nodes = {
         (
             n['e.id'],
-            n['e.os_name']
+            n['e.os_name'],
         ) for n in nodes
     }
     assert actual_nodes == expected_nodes
@@ -57,8 +57,8 @@ def test_load_hexnode_devices(neo4j_session):
     expected_nodes = {
         (
             2,
-            18
-        )
+            18,
+        ),
     }
     assert actual_nodes == expected_nodes
 
@@ -95,7 +95,7 @@ def test_load_hexnode_devicegroup(neo4j_session):
     actual_nodes = {
         (
             n['e.id'],
-            n['e.name']
+            n['e.name'],
         ) for n in nodes
     }
     assert actual_nodes == expected_nodes
@@ -116,7 +116,7 @@ def test_load_hexnode_devicegroup(neo4j_session):
     expected_nodes = {
         (
             18,
-            1
-        )
+            1,
+        ),
     }
     assert actual_nodes == expected_nodes

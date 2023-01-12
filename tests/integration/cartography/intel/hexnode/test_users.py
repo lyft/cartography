@@ -27,7 +27,7 @@ def test_load_hexnode_users(neo4j_session):
         (
             n['e.id'],
             n['e.email'],
-            n['e.domain']
+            n['e.domain'],
         ) for n in nodes
     }
     assert actual_nodes == expected_nodes

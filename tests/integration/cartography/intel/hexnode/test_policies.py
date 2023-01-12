@@ -1,7 +1,7 @@
-import cartography.intel.hexnode.policies
-import tests.data.hexnode.policies
 import cartography.intel.hexnode.device_groups
+import cartography.intel.hexnode.policies
 import tests.data.hexnode.device_groups
+import tests.data.hexnode.policies
 
 TEST_UPDATE_TAG = 123456789
 
@@ -38,7 +38,7 @@ def test_load_hexnode_policies(neo4j_session):
     actual_nodes = {
         (
             n['e.id'],
-            n['e.name']
+            n['e.name'],
         ) for n in nodes
     }
     assert actual_nodes == expected_nodes
@@ -59,7 +59,7 @@ def test_load_hexnode_policies(neo4j_session):
     expected_nodes = {
         (
             1,
-            1
-        )
+            1,
+        ),
     }
     assert actual_nodes == expected_nodes

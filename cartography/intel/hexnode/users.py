@@ -56,12 +56,6 @@ def load(
     u.email = user.email,
     u.phone = user.phoneno,
     u.domain = user.domain
-
-    MERGE (h:Human {email: coalesce(user.email, "None")})
-    ON CREATE set h.firstseen = timestamp()
-    SET h.lastupdated = $UpdateTag
-
-    MERGE (h)-[r:IDENTITY_HEXNODE]->(u)
     """
 
     neo4j_session.run(
