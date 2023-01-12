@@ -11,6 +11,8 @@ import neo4j
 
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
+from cartography.intel.aws.resourcegroupstaggingapi import load_tags
+from cartography.intel.aws.resourcegroupstaggingapi import transform_tags
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
@@ -162,6 +164,30 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
             )
     return policies
 
+@timeit
+def get_role_tag_data(boto3_session: boto3.session.Session, role_list: List[Dict]) -> List[Dict]:
+    """_summary_
+        >>> import boto3
+        >>> resource_client = boto3.resource('iam')
+        >>> resource_client.Role('acl-staging-iad')
+        iam.Role(name='acl-staging-iad')
+        >>> test = resource_client.Role('acl-staging-iad')
+        >>> test.tags
+        [{'Key': 'iam_role_version', 'Value': 'lyft.com/v1.8'}, {'Key': 'env', 'Value': 'lyft.com/staging'}, {'Key': 'project', 'Value': 'lyft.com/acl'}]
+    """
+    resource_client = boto3_session.resource('iam')
+    all_tags: List[Dict] = []
+    for role in role_list:
+        name = role["RoleName"]
+        role_arn = role["Arn"]
+        resource_role = resource_client.Role(name)
+        role_tags = {
+            'ResourceARN': role_arn,
+            'Tags': resource_role.tags
+        }
+        all_tags.append(role_tags)
+        
+    return all_tags
 
 @timeit
 def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
@@ -697,6 +723,8 @@ def sync_roles(
     sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
 
     sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
+    
+    sync_role_tags(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
 
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -720,6 +748,24 @@ def sync_role_inline_policies(
     transform_policy_data(inline_policy_data, PolicyType.inline.value)
     load_policy_data(neo4j_session, inline_policy_data, PolicyType.inline.value, aws_update_tag)
 
+
+def sync_role_tags(
+    current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
+    neo4j_session: neo4j.Session, aws_update_tag: int,
+) -> None:
+    resource_type = 'iam:role'
+    logger.info("Syncing IAM role tags for account '%s'.", current_aws_account_id)
+    tag_data = get_role_tag_data(boto3_session, data["Roles"])
+    transform_tags(tag_data, resource_type)
+    logger.info(f"Loading {len(tag_data)} tags for rsource type {resource_type}")
+    load_tags(
+        neo4j_session=neo4j_session,
+        tag_data=tag_data,
+        resource_type=resource_type,
+        region='', #TODO: fix region, iam is global, this can be optional?
+        current_aws_account_id=current_aws_account_id,
+        aws_update_tag=aws_update_tag
+    )
 
 @timeit
 def sync_group_memberships(
