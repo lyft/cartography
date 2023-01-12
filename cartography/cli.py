@@ -403,6 +403,22 @@ class CLI:
                 'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
             ),
         )
+        parser.add_argument(
+            '--hexnode-api-key-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Hexnode API key for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--hexnode-tenant',
+            type=str,
+            default=None,
+            help=(
+                'Hexnode Tenant ID.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -531,6 +547,13 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
+
+        # Hexnode config
+        if config.hexnode_api_key_env_var:
+            logger.debug(f"Reading API key for Hexnode from environment variable {config.hexnode_api_key_env_var}")
+            config.hexnode_api_key = os.environ.get(config.hexnode_api_key_env_var)
+        else:
+            config.hexnode_api_key = None
 
         # Run cartography
         try:

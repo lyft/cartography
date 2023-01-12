@@ -1,0 +1,50 @@
+{
+    "statements": [
+    {
+      "query": "MATCH (n:HexnodeUser) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+        "query": "MATCH (n:HexnodeDevice) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+        "iterative": true,
+        "iterationsize": 100
+    },
+    {
+        "query": "MATCH (n:HexnodeDeviceGroup) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+        "iterative": true,
+        "iterationsize": 100
+    },
+    {
+        "query": "MATCH (n:HexnodePolicy) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+        "iterative": true,
+        "iterationsize": 100
+    },
+    {
+        "query": "MATCH (n:Human) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+        "iterative": true,
+        "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:HexnodeUser)-[r:OWNS_DEVICE]->(:HexnodeDevice) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+        "query": "MATCH (:HexnodeDevice)-[r:MEMBER_OF]->(:HexnodeDeviceGroup) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+        "iterative": true,
+        "iterationsize": 100
+    },
+    {
+        "query": "MATCH (:HexnodeDeviceGroup)-[r:APPLIES_POLICY]->(:HexnodePolicy) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+        "iterative": true,
+        "iterationsize": 100
+    },
+    {
+        "query": "MATCH (:Human)-[r:IDENTITY_HEXNODE]->(:HiBobDepartment) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+        "iterative": true,
+        "iterationsize": 100
+    }
+    ],
+    "name": "cleanup Hexnode data"
+}
