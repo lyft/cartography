@@ -166,28 +166,23 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
 
 @timeit
 def get_role_tag_data(boto3_session: boto3.session.Session, role_list: List[Dict]) -> List[Dict]:
-    """_summary_
-        >>> import boto3
-        >>> resource_client = boto3.resource('iam')
-        >>> resource_client.Role('acl-staging-iad')
-        iam.Role(name='acl-staging-iad')
-        >>> test = resource_client.Role('acl-staging-iad')
-        >>> test.tags
-        [{'Key': 'iam_role_version', 'Value': 'lyft.com/v1.8'}, {'Key': 'env', 'Value': 'lyft.com/staging'}, {'Key': 'project', 'Value': 'lyft.com/acl'}]
-    """
     resource_client = boto3_session.resource('iam')
-    all_tags: List[Dict] = []
+    role_tag_data: List[Dict] = []
     for role in role_list:
         name = role["RoleName"]
         role_arn = role["Arn"]
         resource_role = resource_client.Role(name)
-        role_tags = {
+        role_tags = resource_role.tags
+        if not role_tags:
+            continue
+        
+        tag_data = {
             'ResourceARN': role_arn,
             'Tags': resource_role.tags
         }
-        all_tags.append(role_tags)
+        role_tag_data.append(tag_data)
         
-    return all_tags
+    return role_tag_data
 
 @timeit
 def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
@@ -724,6 +719,10 @@ def sync_roles(
 
     sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
     
+    # this is a temporary workaround to populate AWS tags for IAM roles.
+    # resourcegroupstaggingapi does not support IAM roles and no ETA is provided
+    # TODO: when AWS supports iam:role in resourcegroupstaggingapi, remove the following line
+    #  and add 'iam:role' to TAG_RESOURCE_TYPE_MAPPINGS in resourcegroupstaggingapi.py
     sync_role_tags(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
 
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
