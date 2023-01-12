@@ -1,8 +1,6 @@
 import logging
-from typing import Any
 from typing import Dict
 from typing import List
-from typing import Tuple
 
 import neo4j
 from dateutil import parser as dt_parse
@@ -48,9 +46,10 @@ def get(api_session: Session, api_url: str, page: int = 1) -> List[Dict]:
 def transform(devices: List[Dict]) -> List[Dict]:
     result = []
     for device in devices:
-        device['enrolled_time'] = dt_parse.parse(device['enrolled_time'])
-        device['last_reported'] = dt_parse.parse(device['last_reported'])
-        result.append(device)
+        n_device = device.copy()
+        n_device['enrolled_time'] = dt_parse.parse(device['enrolled_time'])
+        n_device['last_reported'] = dt_parse.parse(device['last_reported'])
+        result.append(n_device)
     return result
 
 

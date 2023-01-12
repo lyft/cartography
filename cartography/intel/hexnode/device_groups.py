@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -36,7 +35,6 @@ def get(api_session: Session, api_url: str, page: int = 1) -> List[Dict]:
     req.raise_for_status()
 
     for r in req.json()['results']:
-        # Sub request for details
         sub_req = api_session.get(f"{api_url}/devicegroups/{r['id']}/", params=params, timeout=10)
         sub_req.raise_for_status()
         for k, v in sub_req.json().items():
@@ -55,12 +53,13 @@ def transform(groups: List[Dict]) -> Tuple[List[Dict], List[Dict[str, int]], Lis
     group_membership = []
     group_policies = []
     for group in groups:
-        group['modified_date'] = dt_parse.parse(group['modified_date'])
+        n_group = group.copy()
+        n_group['modified_date'] = dt_parse.parse(group['modified_date'])
+        formated_groups.append(n_group)
         for d in group['devices']:
             group_membership.append({'group': group['id'], 'device': d['id']})
         for p in group['policy']:
             group_policies.append({'group': group['id'], 'policy': p['id']})
-        formated_groups.append(group)
     return formated_groups, group_membership, group_policies
 
 

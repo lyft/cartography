@@ -1,8 +1,6 @@
 import logging
-from typing import Any
 from typing import Dict
 from typing import List
-from typing import Tuple
 
 import neo4j
 from dateutil import parser as dt_parse
@@ -48,9 +46,10 @@ def get(api_session: Session, api_url: str, page: int = 1) -> List[Dict]:
 def transform(policies: List[Dict]) -> List[Dict]:
     result = []
     for policy in policies:
-        policy['created_time'] = dt_parse.parse(policy['created_time'])
-        policy['modified_time'] = dt_parse.parse(policy['modified_time'])
-        result.append(policy)
+        n_policy = policy.copy()
+        n_policy['created_time'] = dt_parse.parse(policy['created_time'])
+        n_policy['modified_time'] = dt_parse.parse(policy['modified_time'])
+        result.append(n_policy)
     return result
 
 

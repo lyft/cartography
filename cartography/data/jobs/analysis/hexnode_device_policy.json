@@ -1,0 +1,10 @@
+{
+    "statements": [
+      {
+        "query": "MATCH (d:HexnodeDevice)-[:MEMBER_OF]->(:HexnodeDeviceGroup)-[:APPLIES_POLICY]-(p:HexnodePolicy) MERGE (d)-[r:APPLIES_POLICY]->(p) ON CREATE SET r.firstseen = $UPDATE_TAG SET r.lastupdated = $UPDATE_TAG",
+        "iterative": false
+      }
+    ],
+    "name": "Create a link for device who apply inherited policy from group"
+  }
+  

@@ -23,11 +23,13 @@ def start_hexnode_ingestion(neo4j_session: neo4j.Session, config: Config) -> Non
     :return: None
     """
 
-    # TODO: Add doc
-    # TODO: Add integration tests
+    # WIP: Add doc
 
     if not config.hexnode_tenant:
-        logger.info('Hexnode import is not configured - skipping this module. See docs to configure.')
+        logger.info(
+            'Hexnode import is not configured - skipping this module. '
+            'See docs to configure.',
+        )
         return
 
     api_url = f"https://{config.hexnode_tenant}.hexnodemdm.com/api/v1"

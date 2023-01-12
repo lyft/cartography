@@ -1,11 +1,8 @@
 import logging
-from typing import Any
 from typing import Dict
 from typing import List
-from typing import Tuple
 
 import neo4j
-from dateutil import parser as dt_parse
 from requests import Session
 
 from cartography.util import timeit
