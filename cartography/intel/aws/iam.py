@@ -164,6 +164,7 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
             )
     return policies
 
+
 @timeit
 def get_role_tag_data(boto3_session: boto3.session.Session, role_list: List[Dict]) -> List[Dict]:
     resource_client = boto3_session.resource('iam')
@@ -175,14 +176,15 @@ def get_role_tag_data(boto3_session: boto3.session.Session, role_list: List[Dict
         role_tags = resource_role.tags
         if not role_tags:
             continue
-        
+
         tag_data = {
             'ResourceARN': role_arn,
-            'Tags': resource_role.tags
+            'Tags': resource_role.tags,
         }
         role_tag_data.append(tag_data)
-        
+
     return role_tag_data
+
 
 @timeit
 def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
@@ -718,7 +720,7 @@ def sync_roles(
     sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
 
     sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
-    
+
     # this is a temporary workaround to populate AWS tags for IAM roles.
     # resourcegroupstaggingapi does not support IAM roles and no ETA is provided
     # TODO: when AWS supports iam:role in resourcegroupstaggingapi, remove the following line
@@ -755,16 +757,17 @@ def sync_role_tags(
     resource_type = 'iam:role'
     logger.info("Syncing IAM role tags for account '%s'.", current_aws_account_id)
     tag_data = get_role_tag_data(boto3_session, data["Roles"])
-    transform_tags(tag_data, resource_type)
+    transform_tags(tag_data, resource_type)  # type: ignore
     logger.info(f"Loading {len(tag_data)} tags for rsource type {resource_type}")
     load_tags(
         neo4j_session=neo4j_session,
-        tag_data=tag_data,
+        tag_data=tag_data,  # type: ignore
         resource_type=resource_type,
-        region='', #TODO: fix region, iam is global, this can be optional?
+        region='',  # TODO: fix region, iam is global, this can be optional?
         current_aws_account_id=current_aws_account_id,
-        aws_update_tag=aws_update_tag
+        aws_update_tag=aws_update_tag,
     )
+
 
 @timeit
 def sync_group_memberships(
