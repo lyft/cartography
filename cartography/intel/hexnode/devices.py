@@ -1,5 +1,8 @@
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 import neo4j
 from dateutil import parser as dt_parse
@@ -15,7 +18,7 @@ def sync(
     neo4j_session: neo4j.Session,
     update_tag: int,
     api_session: Session,
-    api_url: str
+    api_url: str,
 ) -> None:
     devices = get(api_session, api_url)
     formated_devices = transform(devices)
@@ -36,7 +39,7 @@ def get(api_session: Session, api_url: str, page: int = 1) -> List[Dict]:
         devices.append(r)
 
     if req.json().get('next') is not None:
-        devices += get(api_session, api_url, page = page + 1)
+        devices += get(api_session, api_url, page=page + 1)
 
     return devices
 

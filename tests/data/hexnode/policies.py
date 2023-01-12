@@ -10,6 +10,6 @@ HEXNODE_POLICIES = [
         "windows_configured": False,
         "created_time": "2022-10-25T13:40:04.981059Z",
         "modified_time": "2022-11-08T13:05:18.033111Z",
-        "device_count": 0
-    }
+        "device_count": 0,
+    },
 ]

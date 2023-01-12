@@ -3,10 +3,10 @@ import logging
 import neo4j
 import requests
 
-import cartography.intel.hexnode.users
-import cartography.intel.hexnode.policies
-import cartography.intel.hexnode.devices
 import cartography.intel.hexnode.device_groups
+import cartography.intel.hexnode.devices
+import cartography.intel.hexnode.policies
+import cartography.intel.hexnode.users
 from cartography.config import Config
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

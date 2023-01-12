@@ -13,8 +13,8 @@ HEXNODE_ALL_DEVICES = [
         'enrollment_status': 'enrolled',
         'user': {
             'id': 2,
-            'name': 'John Doe'
+            'name': 'John Doe',
         },
-        'imei': None
-    }
+        'imei': None,
+    },
 ]

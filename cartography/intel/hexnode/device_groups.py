@@ -1,5 +1,8 @@
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 import neo4j
 from dateutil import parser as dt_parse
@@ -15,7 +18,7 @@ def sync(
     neo4j_session: neo4j.Session,
     update_tag: int,
     api_session: Session,
-    api_url: str
+    api_url: str,
 ) -> None:
     groups = get(api_session, api_url)
     formated_groups, group_membership, group_policies = transform(groups)
@@ -41,13 +44,13 @@ def get(api_session: Session, api_url: str, page: int = 1) -> List[Dict]:
         groups.append(r)
 
     if req.json().get('next') is not None:
-        groups += get(api_session, api_url, page = page + 1)
+        groups += get(api_session, api_url, page=page + 1)
 
     return groups
 
 
 @timeit
-def transform(groups: List[Dict]) -> Tuple[List[Dict],List[Dict[str, int]],List[Dict[str, int]]]:
+def transform(groups: List[Dict]) -> Tuple[List[Dict], List[Dict[str, int]], List[Dict[str, int]]]:
     formated_groups = []
     group_membership = []
     group_policies = []

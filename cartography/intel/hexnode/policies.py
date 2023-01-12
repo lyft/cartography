@@ -1,5 +1,8 @@
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
 
 import neo4j
 from dateutil import parser as dt_parse
@@ -15,7 +18,7 @@ def sync(
     neo4j_session: neo4j.Session,
     update_tag: int,
     api_session: Session,
-    api_url: str
+    api_url: str,
 ) -> None:
     policies = get(api_session, api_url)
     formatted_policies = transform(policies)
@@ -36,9 +39,10 @@ def get(api_session: Session, api_url: str, page: int = 1) -> List[Dict]:
         policies.append(p)
 
     if req.json().get('next') is not None:
-        policies += get(api_session, api_url, page = page + 1)
+        policies += get(api_session, api_url, page=page + 1)
 
     return policies
+
 
 @timeit
 def transform(policies: List[Dict]) -> List[Dict]:
@@ -48,6 +52,7 @@ def transform(policies: List[Dict]) -> List[Dict]:
         policy['modified_time'] = dt_parse.parse(policy['modified_time'])
         result.append(policy)
     return result
+
 
 def load(
     neo4j_session: neo4j.Session,

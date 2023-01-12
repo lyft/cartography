@@ -125,7 +125,7 @@ class Config:
         crowdstrike_client_secret=None,
         crowdstrike_api_url=None,
         hexnode_api_key=None,
-        hexnode_tenant=None
+        hexnode_tenant=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
