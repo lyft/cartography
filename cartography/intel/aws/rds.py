@@ -186,7 +186,7 @@ def load_rds_instances(
             rds.monitoring_role_arn = rds_instance.MonitoringRoleArn,
             rds.performance_insights_enabled = rds_instance.PerformanceInsightsEnabled,
             rds.performance_insights_kms_key_id = rds_instance.PerformanceInsightsKMSKeyId,
-            rds.region = rds_instance.Region,
+            rds.region = {Region},
             rds.deletion_protection = rds_instance.DeletionProtection,
             rds.preferred_backup_window = rds_instance.PreferredBackupWindow,
             rds.latest_restorable_time = rds_instance.LatestRestorableTime,

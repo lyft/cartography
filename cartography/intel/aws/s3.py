@@ -39,6 +39,8 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
     for bucket in buckets['Buckets']:
         try:
             bucket['Region'] = client.get_bucket_location(Bucket=bucket['Name'])['LocationConstraint']
+            if not bucket['Region']:
+                bucket['Region'] = 'us-east-1'
         except ClientError as e:
             if _is_common_exception(e, bucket):
                 bucket['Region'] = 'us-east-1'
