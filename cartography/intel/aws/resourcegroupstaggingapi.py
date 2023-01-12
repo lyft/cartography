@@ -6,7 +6,7 @@ from typing import List
 import boto3
 import neo4j
 
-from cartography.intel.aws.iam import get_iam_role_tags
+from cartography.intel.aws.iam import get_role_tags
 from cartography.util import aws_handle_regions
 from cartography.util import batch
 from cartography.util import run_cleanup_job
@@ -124,11 +124,10 @@ def get_tags(boto3_session: boto3.session.Session, resource_type: str, region: s
     """
     # this is a temporary workaround to populate AWS tags for IAM roles.
     # resourcegroupstaggingapi does not support IAM roles and no ETA is provided
-    # TODO: when AWS supports iam:role in resourcegroupstaggingapi, remove the following line
-    #  and add 'iam:role' to TAG_RESOURCE_TYPE_MAPPINGS in resourcegroupstaggingapi.py
+    # TODO: when resourcegroupstaggingapi supports iam:role, remove this condition block
     if resource_type == 'iam:role':
-        return get_iam_role_tags(boto3_session)
-    
+        return get_role_tags(boto3_session)
+
     client = boto3_session.client('resourcegroupstaggingapi', region_name=region)
     paginator = client.get_paginator('get_resources')
     resources: List[Dict] = []

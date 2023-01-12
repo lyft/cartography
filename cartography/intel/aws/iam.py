@@ -162,8 +162,9 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
             )
     return policies
 
+
 @timeit
-def get_role_tag_data(boto3_session: boto3.session.Session) -> List[Dict]:
+def get_role_tags(boto3_session: boto3.session.Session) -> List[Dict]:
     role_list = get_role_list_data(boto3_session)
     resource_client = boto3_session.resource('iam')
     role_tag_data: List[Dict] = []
@@ -182,6 +183,7 @@ def get_role_tag_data(boto3_session: boto3.session.Session) -> List[Dict]:
         role_tag_data.append(tag_data)
 
     return role_tag_data
+
 
 @timeit
 def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
