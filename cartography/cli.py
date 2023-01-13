@@ -417,7 +417,7 @@ class CLI:
             type=str,
             default='GSUITE_GOOGLE_APPLICATION_CREDENTIALS',
             help=(
-                'The method used by GSuite to authenticate. delegated is the legacy one.'
+                'The name of environment variable containing secrets for GSuite authentication.'
             ),
         )
         return parser
