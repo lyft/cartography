@@ -1,10 +1,28 @@
 {
     "statements": [
         {
+            "query": "MATCH (:CloudWatchMetricFilter)<-[h:HAS_METRIC_FILTER]-(:CloudWatchLogGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE h.lastupdated <> $UPDATE_TAG WITH h LIMIT $LIMIT_SIZE DELETE (h)",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete stale HAS_METRIC_FILTER between CloudWatchMetricFilter and CloudWatchLogGroup."
+        },
+        {
             "query": "MATCH (n:CloudWatchLogGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
             "iterative": true,
             "iterationsize": 100,
             "__comment__": "Delete old CloudWatchLogGroup nodes."
+        },
+        {
+            "query": "MATCH (n:CloudWatchMetricFilter)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete old CloudWatchMetricFilter nodes."
+        },
+        {
+            "query": "MATCH (n:CloudWatchAlarm)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete old CloudWatchAlarm nodes."
         }
     ],
     "name": "cleanup CloudWatch"

@@ -746,6 +746,26 @@ Representation of an AWS [CloudTrail trail](https://docs.aws.amazon.com/awscloud
         (CloudTrail)-[DELIVERS_TO]->(CloudWatchLogGroup)
         ```
 
+### CloudWatchAlarm
+
+Representation of an AWS CloudWatch [alarm](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cloudwatch-alarm.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated
+| arn | ARN of the alarm |
+| id | Matches the arn property |
+| metric_name | The name of the metric associated with the alarm, if this is an alarm based on a single metric |
+| name | Name of the alarm |
+
+#### Relationships
+- CloudWatchAlarm is a resource of an AWSAccount.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(CloudWatchAlarm)
+        ```
+
 ### CloudWatchLogGroup
 
 Representation of an AWS CloudWatch [log group](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-logs-loggroup.html).
@@ -774,6 +794,38 @@ Representation of an AWS CloudWatch [log group](https://docs.aws.amazon.com/AWSC
 
         ```
         (CloudTrail)-[DELIVERS_TO]->(CloudWatchLogGroup)
+- CloudWatchLogGroup has CloudWatchMetricFilter.
+
+        ```
+        (CloudWatchMetricFilter)<-[HAS_METRIC_FILTER]-(CloudWatchLogGroup)
+
+### CloudWatchMetricFilter
+
+Representation of an AWS CloudWatch [metric filter](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_MetricFilter.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated
+| arn: | Synthetically produced arn to identify metric filter (from filterName) |
+| creation_time | Unix timesteamp for creation of the metric filter |
+| filter_name | Name of the metric filter |
+| filter_pattern | Symbolic description of how CloudWatch Logs should interpret the data in each log event |
+| id | Matches arn field |
+| log_group_arn | Associated CloudWatch log group (derived from log_group_name) |
+| log_group_name | Name of the log group |
+| metric_transformation_name | Name of the CloudWatch metric associated with the metric filter |
+
+#### Relationships
+- CloudWatchMetricFilter is a resource of an AWSAccount.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(CloudWatchMetricFilter)
+        ```
+- CloudWatchMetricFilter is attached to a CloudWatchLogGroup.
+
+        ```
+        (CloudWatchLogGroup)-[HAS_METRIC_FILTER]->(CloudWatchMetricFilter)
 
 ### DBSubnetGroup
 
