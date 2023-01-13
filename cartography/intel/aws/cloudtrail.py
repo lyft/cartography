@@ -45,19 +45,22 @@ def get_cloudtrail_trails(boto3_session: boto3.session.Session, region: str) -> 
 
 
 @timeit
-def transform_trail_and_related_objects(trails: List[Dict]) -> Tuple[List, List]:
+def transform_trail_and_related_objects(trails: List[Dict]) -> Tuple[List, List, List]:
     s3_buckets: List[Dict] = []
+    log_groups: List[Dict] = []
     for i in range(len(trails)):
-        trails[i]['Id'] = trails[i]['TrailARN']
         trails[i]['LatestCloudWatchLogsDeliveryTime'] = dict_date_to_epoch(
             trails[i], 'LatestCloudWatchLogsDeliveryTime',
         )
         if 'S3BucketName' in trails[i] and len(trails[i]['S3BucketName']) > 0:
             s3_buckets.append({
-                'Id': trails[i]['S3BucketName'],
-                'Name': trails[i]['S3BucketName'],
+                'S3BucketName': trails[i]['S3BucketName'],
             })
-    return trails, s3_buckets
+        if 'CloudWatchLogsLogGroupArn' in trails[i] and len(trails[i]['CloudWatchLogsLogGroupArn']) > 0:
+            log_groups.append({
+                'CloudWatchLogsLogGroupArn': trails[i]['CloudWatchLogsLogGroupArn'],
+            })
+    return trails, s3_buckets, log_groups
 
 
 @dataclass(frozen=True)
@@ -69,7 +72,7 @@ class CloudTrailNodeProperties(CartographyNodeProperties):
     has_custom_event_selectors: PropertyRef = PropertyRef('HasCustomEventSelectors')
     has_insight_selectors: PropertyRef = PropertyRef('HasInsightSelectors')
     home_region: PropertyRef = PropertyRef('HomeRegion')
-    id: PropertyRef = PropertyRef('Id')
+    id: PropertyRef = PropertyRef('TrailARN')
     include_global_service_events: PropertyRef = PropertyRef('IncludeGlobalServiceEvents')
     is_logging: PropertyRef = PropertyRef('IsLogging')
     is_multi_region_trail: PropertyRef = PropertyRef('IsMultiRegionTrail')
@@ -119,6 +122,21 @@ class CloudTrailToS3Bucket(CartographyRelSchema):
 
 
 @dataclass(frozen=True)
+class CloudTrailToCloudWatchLogGroupRelProps(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+# (:CloudTrail)-[:DELIVERS_TO]->(:CloudWatchLogGroup)
+class CloudTrailToCloudWatchLogGroup(CartographyRelSchema):
+    target_node_label: str = 'CloudWatchLogGroup'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher({'id': PropertyRef('CloudWatchLogsLogGroupArn')})
+    direction: LinkDirection = LinkDirection.OUTWARD
+    rel_label: str = "DELIVERS_TO"
+    properties: CloudTrailToCloudWatchLogGroupRelProps = CloudTrailToCloudWatchLogGroupRelProps()
+
+
+@dataclass(frozen=True)
 class CloudTrailSchema(CartographyNodeSchema):
     label: str = 'CloudTrail'
     properties: CloudTrailNodeProperties = CloudTrailNodeProperties()
@@ -126,6 +144,7 @@ class CloudTrailSchema(CartographyNodeSchema):
     other_relationships: Optional[OtherRelationships] = OtherRelationships(
         [
             CloudTrailToS3Bucket(),
+            CloudTrailToCloudWatchLogGroup(),
         ],
     )
 
@@ -155,8 +174,8 @@ def load_cloudtrail_trails(
 @dataclass(frozen=True)
 class S3BucketNodeProperties(CartographyNodeProperties):
     firstseen: PropertyRef = PropertyRef('firstseen')
-    id: PropertyRef = PropertyRef('Id')
-    name: PropertyRef = PropertyRef('Name')
+    id: PropertyRef = PropertyRef('S3BucketName')
+    name: PropertyRef = PropertyRef('S3BucketName')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
@@ -184,6 +203,38 @@ def load_cloudtrail_s3_buckets(
     )
 
 
+@dataclass(frozen=True)
+class CloudWatchLogGroupNodeProperties(CartographyNodeProperties):
+    firstseen: PropertyRef = PropertyRef('firstseen')
+    id: PropertyRef = PropertyRef('CloudWatchLogsLogGroupArn')
+    arn: PropertyRef = PropertyRef('CloudWatchLogsLogGroupArn')
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+class CloudWatchLogGroupSchema(CartographyNodeSchema):
+    label: str = 'CloudWatchLogGroup'
+    properties: CloudWatchLogGroupNodeProperties = CloudWatchLogGroupNodeProperties()
+
+
+@timeit
+def load_cloudtrail_log_groups(
+        neo4j_session: neo4j.Session,
+        log_groups: List[Dict],
+        aws_update_tag: int,
+) -> None:
+    logger.info("Loading %d cloudwatch log groups into graph.", len(log_groups))
+
+    ingestion_query = build_ingestion_query(CloudWatchLogGroupSchema())
+
+    load_graph_data(
+        neo4j_session,
+        ingestion_query,
+        log_groups,
+        lastupdated=aws_update_tag,
+    )
+
+
 @timeit
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     logger.debug("Running CloudTrail cleanup job.")
@@ -199,8 +250,9 @@ def sync(
         logger.info("Syncing cloudtrail trails for region '%s' in account '%s'.", region, current_aws_account_id)
 
         trails = get_cloudtrail_trails(boto3_session, region)
-        trails, s3_buckets = transform_trail_and_related_objects(trails)
+        trails, s3_buckets, log_groups = transform_trail_and_related_objects(trails)
         load_cloudtrail_s3_buckets(neo4j_session, s3_buckets, update_tag)
+        load_cloudtrail_log_groups(neo4j_session, log_groups, update_tag)
         load_cloudtrail_trails(neo4j_session, trails, region, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
