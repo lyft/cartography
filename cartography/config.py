@@ -81,6 +81,10 @@ class Config:
     :param pagerduty_request_timeout: Seconds to timeout for pagerduty session requests. Optional
     :type: nist_cve_url: str
     :param nist_cve_url: NIST CVE data provider base URI, e.g. https://nvd.nist.gov/feeds/json/cve/1.1. Optional.
+    :type lastpass_cid: str
+    :param lastpass_cid: Lastpass account ID. Optional.
+    :type lastpass_provhash: str
+    :param lastpass_provhash: Lastpass API KEY. Optional.
     """
 
     def __init__(
@@ -124,6 +128,8 @@ class Config:
         crowdstrike_client_id=None,
         crowdstrike_client_secret=None,
         crowdstrike_api_url=None,
+        lastpass_cid=None,
+        lastpass_provhash=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -164,3 +170,5 @@ class Config:
         self.crowdstrike_client_id = crowdstrike_client_id
         self.crowdstrike_client_secret = crowdstrike_client_secret
         self.crowdstrike_api_url = crowdstrike_api_url
+        self.lastpass_cid = lastpass_cid
+        self.lastpass_provhash = lastpass_provhash

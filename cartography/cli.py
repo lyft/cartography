@@ -403,6 +403,22 @@ class CLI:
                 'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
             ),
         )
+        parser.add_argument(
+            '--lastpass-cid-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Lastpass CID for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--lastpass-provhash-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Lastpass provhash for authentication.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -531,6 +547,18 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
+
+        # Lastpass config
+        if config.lastpass_cid_env_var:
+            logger.debug(f"Reading CID for Lastpass from environment variable {config.lastpass_cid_env_var}")
+            config.lastpass_cid = os.environ.get(config.lastpass_cid_env_var)
+        else:
+            config.lastpass_cid = None
+        if config.lastpass_provhash_env_var:
+            logger.debug(f"Reading provhash for Lastpass from environment variable {config.lastpass_provhash_env_var}")
+            config.lastpass_provhash = os.environ.get(config.lastpass_provhash_env_var)
+        else:
+            config.lastpass_provhash = None
 
         # Run cartography
         try:
