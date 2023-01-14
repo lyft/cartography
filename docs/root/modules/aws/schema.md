@@ -2268,6 +2268,7 @@ Representation of an AWS S3 [Bucket](https://docs.aws.amazon.com/AmazonS3/latest
 | ignore\_public\_acls | Specifies whether Amazon S3 should ignore public ACLs for this bucket and objects in this bucket. |
 | block\_public\_acls | Specifies whether Amazon S3 should block public bucket policies for this bucket. |
 | restrict\_public\_buckets | Specifies whether Amazon S3 should restrict public bucket policies for this bucket. |
+| logging\_target\_bucket | The bucket name, if any, to which access logs are delivered. |
 
 #### Relationships
 

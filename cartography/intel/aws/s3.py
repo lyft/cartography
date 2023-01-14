@@ -47,7 +47,7 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
 def get_s3_bucket_details(
         boto3_session: boto3.session.Session,
         bucket_data: Dict,
-) -> Generator[Tuple[str, Dict, Dict, Dict, Dict, Dict], None, None]:
+) -> Generator[Tuple[str, Dict, Dict, Dict, Dict, Dict, Dict], None, None]:
     """
     Iterates over all S3 buckets. Yields bucket name (string), S3 bucket policies (JSON), ACLs (JSON),
     default encryption policy (JSON), Versioning (JSON), and Public Access Block (JSON)
@@ -68,7 +68,8 @@ def get_s3_bucket_details(
         encryption = get_encryption(bucket, client)
         versioning = get_versioning(bucket, client)
         public_access_block = get_public_access_block(bucket, client)
-        yield bucket['Name'], acl, policy, encryption, versioning, public_access_block
+        bucket_logging = get_bucket_logging(bucket, client)
+        yield bucket['Name'], acl, policy, encryption, versioning, public_access_block, bucket_logging
 
 
 @timeit
@@ -170,6 +171,27 @@ def get_public_access_block(bucket: Dict, client: botocore.client.BaseClient) ->
             " - Could not connect to the endpoint URL",
         )
     return public_access_block
+
+
+@timeit
+def get_bucket_logging(bucket: Dict, client: botocore.client.BaseClient) -> Optional[Dict]:
+    """
+    Gets the S3 bucket logging.
+    """
+    bucket_logging = None
+    try:
+        bucket_logging = client.get_bucket_logging(Bucket=bucket['Name'])
+    except ClientError as e:
+        if _is_common_exception(e, bucket):
+            pass
+        else:
+            raise
+    except EndpointConnectionError:
+        logger.warning(
+            f"Failed to retrieve S3 bucket logging for {bucket['Name']}"
+            " - Could not connect to the endpoint URL",
+        )
+    return bucket_logging
 
 
 @timeit
@@ -357,6 +379,25 @@ def _load_s3_public_access_block(
     )
 
 
+@timeit
+def _load_s3_bucket_logging(neo4j_session: neo4j.Session, bucket_logging_configs: List[Dict], update_tag: int) -> None:
+    """
+    Ingest S3 bucket logging results into neo4j.
+    """
+    ingest_bucket_logging = """
+    UNWIND $bucket_logging_configs AS bucket_logging
+    MATCH (s:S3Bucket) where s.name = bucket_logging.bucket
+    SET s.logging_target_bucket = bucket_logging.logging_target_bucket,
+        s.lastupdated = $UpdateTag
+    """
+
+    neo4j_session.run(
+        ingest_bucket_logging,
+        bucket_logging_configs=bucket_logging_configs,
+        UpdateTag=update_tag,
+    )
+
+
 def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
     MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(s:S3Bucket) where NOT EXISTS(s.anonymous_actions)
@@ -391,7 +432,8 @@ def load_s3_details(
     encryption_configs: List[Dict] = []
     versioning_configs: List[Dict] = []
     public_access_block_configs: List[Dict] = []
-    for bucket, acl, policy, encryption, versioning, public_access_block in s3_details_iter:
+    bucket_logging_configs: List[Dict] = []
+    for bucket, acl, policy, encryption, versioning, public_access_block, bucket_logging in s3_details_iter:
         parsed_acls = parse_acl(acl, bucket, aws_account_id)
         if parsed_acls is not None:
             acls.extend(parsed_acls)
@@ -410,6 +452,9 @@ def load_s3_details(
         parsed_public_access_block = parse_public_access_block(bucket, public_access_block)
         if parsed_public_access_block is not None:
             public_access_block_configs.append(parsed_public_access_block)
+        parsed_bucket_logging = parse_bucket_logging(bucket, bucket_logging)
+        if parsed_bucket_logging is not None:
+            bucket_logging_configs.append(parsed_bucket_logging)
 
     # cleanup existing policy properties set on S3 Buckets
     run_cleanup_job(
@@ -425,6 +470,7 @@ def load_s3_details(
     _load_s3_encryption(neo4j_session, encryption_configs, update_tag)
     _load_s3_versioning(neo4j_session, versioning_configs, update_tag)
     _load_s3_public_access_block(neo4j_session, public_access_block_configs, update_tag)
+    _load_s3_bucket_logging(neo4j_session, bucket_logging_configs, update_tag)
     _set_default_values(neo4j_session, aws_account_id)
 
 
@@ -670,6 +716,36 @@ def parse_public_access_block(bucket: str, public_access_block: Optional[Dict]) 
         "ignore_public_acls": pab.get("IgnorePublicAcls"),
         "block_public_policy": pab.get("BlockPublicPolicy"),
         "restrict_public_buckets": pab.get("RestrictPublicBuckets"),
+    }
+
+
+@timeit
+def parse_bucket_logging(bucket: str, bucket_logging: Optional[Dict]) -> Optional[Dict]:
+    """ Parses the S3 bucket logging and returns a dict of the relevant data """
+    # Bucket Logging JSON looks like:
+    # {
+    #     'LoggingEnabled': {
+    #         'TargetBucket': 'string',
+    #         'TargetGrants': [
+    #             {
+    #                 'Grantee': {
+    #                     'DisplayName': 'string',
+    #                     'EmailAddress': 'string',
+    #                     'ID': 'string',
+    #                     'Type': 'CanonicalUser'|'AmazonCustomerByEmail'|'Group',
+    #                     'URI': 'string'
+    #                 },
+    #                 'Permission': 'FULL_CONTROL'|'READ'|'WRITE'
+    #             },
+    #         ],
+    #         'TargetPrefix': 'string'
+    #     }
+    # }
+    if bucket_logging is None:
+        return None
+    return {
+        "bucket": bucket,
+        "logging_target_bucket": bucket_logging.get("LoggingEnabled", {}).get("TargetBucket"),
     }
 
 
