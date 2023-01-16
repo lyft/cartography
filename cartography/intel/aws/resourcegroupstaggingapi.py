@@ -256,7 +256,7 @@ def sync(
         for region in regions:
             logger.info("Syncing AWS tags for region '%s'.", region)
             for resource_type in tag_resource_type_mappings.keys():
-                futures.append(executor.submit(concurrent_execution, config, region, resource_type, update_tag))
+                futures.append(executor.submit(concurrent_execution, config, region, resource_type, current_aws_account_id, update_tag))
 
         for future in as_completed(futures):
             logger.info(f'Result from Future - Tags Processing: {future.result()}')
@@ -271,6 +271,7 @@ def concurrent_execution(
     config: Config,
     region: str,
     resource_type: str,
+    current_aws_account_id,
     update_tag: int,
 ):
     logger.info(f"BEGIN processing tags for {region} & {resource_type}")
@@ -298,6 +299,6 @@ def concurrent_execution(
     tag_data = get_tags(boto3_session, [resource_type], region)
 
     transform_tags(tag_data, resource_type)
-    load_tags(neo4j_driver.session(), tag_data, resource_type, region, update_tag)
+    load_tags(neo4j_session=neo4j_driver.session(), tag_data=tag_data, resource_type=resource_type, region=region, current_aws_account_id=current_aws_account_id, aws_update_tag=update_tag)
 
     logger.info(f"END processing tags for {region} & {resource_type}")
