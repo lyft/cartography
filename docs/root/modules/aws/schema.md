@@ -745,6 +745,32 @@ Representation of an AWS [CloudTrail trail](https://docs.aws.amazon.com/awscloud
         ```
         (CloudTrail)-[DELIVERS_TO]->(CloudWatchLogGroup)
         ```
+- CloudTrailEventSelector are applied to CloudTrail.
+
+        ```
+        (CloudTrailEventSelector)-[APPLIES_TO]->(CloudTrail)
+        ```
+
+### CloudTrailEventSelector
+
+Representation of an AWS [CloudTrail EventSelector](https://docs.aws.amazon.com/awscloudtrail/latest/APIReference/API_EventSelector.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated
+| data_resources | The Amazon S3 buckets, Lambda functions, or Amazon DynamoDB tables that you specify in your event selectors for your trail to log data events. |
+| exclude_management_event_sources | An optional list of service event sources from which you do not want management events to be logged on your trail. |
+| id | Synthetic ID made from hash of contents of fields in EventSelector |
+| include_management_events | Specify if you want your event selector to include management events for your trail. |
+| read_write_type| Specify if you want your trail to log read-only events, write-only events, or all. |
+
+#### Relationships
+- CloudTrailEventSelector are applied to CloudTrail.
+
+        ```
+        (CloudTrailEventSelector)-[APPLIES_TO]->(CloudTrail)
+        ```
 
 ### CloudWatchAlarm
 

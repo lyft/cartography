@@ -1,3 +1,5 @@
+import hashlib
+import json
 import logging
 from dataclasses import dataclass
 from typing import Dict
@@ -61,6 +63,34 @@ def transform_trail_and_related_objects(trails: List[Dict]) -> Tuple[List, List,
                 'CloudWatchLogsLogGroupArn': trails[i]['CloudWatchLogsLogGroupArn'],
             })
     return trails, s3_buckets, log_groups
+
+
+@timeit
+@aws_handle_regions
+def get_cloudtrail_event_selectors(boto3_session: boto3.session.Session, region: str, trail: Dict) -> List[Dict]:
+    client = boto3_session.client('cloudtrail', region_name=region, config=get_botocore_config())
+    return client.get_event_selectors(TrailName=trail['TrailARN']).get('EventSelectors', [])
+
+
+@timeit
+def transform_event_selectors(event_selectors: List[Dict], trail: Dict) -> List[Dict]:
+    for i in range(len(event_selectors)):
+        event_selectors[i]['TrailARN'] = trail['TrailARN']
+        if 'DataResources' in event_selectors[i]:
+            event_selectors[i]['DataResources'] = json.dumps(event_selectors[i]['DataResources'])
+        if 'ExcludeManagementEventSources' in event_selectors[i]:
+            event_selectors[i]['ExcludeManagementEventSources'] = json.dumps(
+                event_selectors[i]['ExcludeManagementEventSources'],
+            )
+        id_data = "{}:{}:{}:{}:{}".format(
+            event_selectors[i].get('TrailARN'),
+            event_selectors[i].get('ReadWriteType'),
+            event_selectors[i].get('IncludeManagementEvents'),
+            event_selectors[i].get('DataResources'),
+            event_selectors[i].get('ExcludeManagementEventSources'),
+        )
+        event_selectors[i]['id'] = hashlib.sha256(id_data.encode("utf8")).hexdigest()
+    return event_selectors
 
 
 @dataclass(frozen=True)
@@ -235,6 +265,59 @@ def load_cloudtrail_log_groups(
     )
 
 
+@dataclass(frozen=True)
+class CloudTrailEventSelectorNodeProperties(CartographyNodeProperties):
+    data_resources: PropertyRef = PropertyRef('DataResources')
+    exclude_management_event_sources: PropertyRef = PropertyRef('ExcludeManagementEventSources')
+    firstseen: PropertyRef = PropertyRef('firstseen')
+    id: PropertyRef = PropertyRef('id')
+    include_management_events: PropertyRef = PropertyRef('IncludeManagementEvents')
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    read_write_type: PropertyRef = PropertyRef('ReadWriteType')
+
+
+@dataclass(frozen=True)
+class CloudTrailEventSelectorToCloudTrailRelProps(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+# (:CloudTrailEventSelector)-[:APPLIES_TO]->(:CloudTrail)
+class CloudTrailEventSelectorToCloudTrail(CartographyRelSchema):
+    target_node_label: str = 'CloudTrail'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher({'id': PropertyRef('TrailARN')})
+    direction: LinkDirection = LinkDirection.OUTWARD
+    rel_label: str = "APPLIES_TO"
+    properties: CloudTrailEventSelectorToCloudTrailRelProps = CloudTrailEventSelectorToCloudTrailRelProps()
+
+
+@dataclass(frozen=True)
+class CloudTrailEventSelectorSchema(CartographyNodeSchema):
+    label: str = 'CloudTrailEventSelector'
+    properties: CloudTrailEventSelectorNodeProperties = CloudTrailEventSelectorNodeProperties()
+    other_relationships: Optional[OtherRelationships] = OtherRelationships([
+        CloudTrailEventSelectorToCloudTrail(),
+    ])
+
+
+@timeit
+def load_cloudtrail_event_selectors(
+        neo4j_session: neo4j.Session,
+        event_selectors: List[Dict],
+        aws_update_tag: int,
+) -> None:
+    logger.info("Loading %d cloudwatch event selectors into graph.", len(event_selectors))
+
+    ingestion_query = build_ingestion_query(CloudTrailEventSelectorSchema())
+
+    load_graph_data(
+        neo4j_session,
+        ingestion_query,
+        event_selectors,
+        lastupdated=aws_update_tag,
+    )
+
+
 @timeit
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     logger.debug("Running CloudTrail cleanup job.")
@@ -251,8 +334,16 @@ def sync(
 
         trails = get_cloudtrail_trails(boto3_session, region)
         trails, s3_buckets, log_groups = transform_trail_and_related_objects(trails)
+
+        transformed_event_selectors: List[Dict] = []
+        for trail in trails:
+            event_selectors = get_cloudtrail_event_selectors(boto3_session, region, trail)
+            event_selectors = transform_event_selectors(event_selectors, trail)
+            transformed_event_selectors.extend(event_selectors)
+
         load_cloudtrail_s3_buckets(neo4j_session, s3_buckets, update_tag)
         load_cloudtrail_log_groups(neo4j_session, log_groups, update_tag)
         load_cloudtrail_trails(neo4j_session, trails, region, current_aws_account_id, update_tag)
+        load_cloudtrail_event_selectors(neo4j_session, transformed_event_selectors, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)

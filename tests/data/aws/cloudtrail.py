@@ -1,7 +1,7 @@
 import datetime
 from datetime import timezone as tz
 
-CLOUD_TRAILS = [
+CLOUDTRAIL_TRAILS = [
     {
         "Name": "Name",
         "S3BucketName": "S3BucketName",
@@ -42,3 +42,39 @@ CLOUD_TRAILS = [
         "IsLogging": True,
     },
 ]
+
+TRAIL_ARN_TO_CLOUDTRAIL_EVENT_SELECTORS = {
+    "TrailARN1": [
+        {
+            'ReadWriteType': 'All',
+            'IncludeManagementEvents': True,
+        },
+        {
+            'ReadWriteType': 'WriteOnly',
+            'IncludeManagementEvents': False,
+            'DataResources': [
+                {
+                    'Type': 'AWS::S3::Object',
+                    'Values': [
+                        'arn:aws:s3:::bucket-1/',
+                    ],
+                },
+                {
+                    'Type': 'AWS::S3::Object',
+                    'Values': [
+                        'arn:aws:s3:::bucket-2/',
+                    ],
+                },
+            ],
+            'ExcludeManagementEventSources': [],
+        },
+    ],
+    "TrailARN2": [
+        {
+            'ReadWriteType': 'All',
+            'IncludeManagementEvents': True,
+            'DataResources': [],
+            'ExcludeManagementEventSources': ["kms.amazonaws.com"],
+        },
+    ],
+}
