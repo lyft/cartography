@@ -13,6 +13,12 @@
             "__comment__": "Delete stale CloudWatchLogGroup delivery points that are not a resource of an account in the graph. (The Cloudwatch cleanup job will be responsible for the log group otherwise.)"
         },
         {
+            "query": "MATCH (n:CloudTrailEventSelector)-[:APPLIES_TO]->(:CloudTrail)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete old CloudTrailEventSelector nodes."
+        },
+        {
             "query": "MATCH (:S3Bucket)<-[d:DELIVERS_TO]-(:CloudTrail)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE d.lastupdated <> $UPDATE_TAG WITH d LIMIT $LIMIT_SIZE DELETE (d)",
             "iterative": true,
             "iterationsize": 100,
@@ -23,6 +29,12 @@
             "iterative": true,
             "iterationsize": 100,
             "__comment__": "Delete stale DELIVERS_TO between CloudTrail and CloudWatchLogGroup."
+        },
+        {
+            "query": "MATCH (:CloudTrailEventSelector)-[a:APPLIES_TO]->(:CloudTrail)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE a.lastupdated <> $UPDATE_TAG WITH a LIMIT $LIMIT_SIZE DELETE (a)",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete stale APPLIES_TO between CloudTrail and CloudTrailEventSelector."
         },
         {
             "query": "MATCH (n:CloudTrail)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",

@@ -74,6 +74,8 @@ CREATE INDEX IF NOT EXISTS FOR (n:ChromeExtension) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:CloudTrail) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:CloudTrail) ON (n.arn);
 CREATE INDEX IF NOT EXISTS FOR (n:CloudTrail) ON (n.lastupdated);
+CREATE INDEX IF NOT EXISTS FOR (n:CloudTrailEventSelector) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:CloudTrailEventSelector) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:CloudWatchAlarm) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:CloudWatchAlarm) ON (n.arn);
 CREATE INDEX IF NOT EXISTS FOR (n:CloudWatchAlarm) ON (n.lastupdated);
