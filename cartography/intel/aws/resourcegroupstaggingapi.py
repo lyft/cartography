@@ -104,6 +104,7 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'iam:group': {'label': 'AWSGroup', 'property': 'arn'},
     'iam:role': {'label': 'AWSRole', 'property': 'arn'},
     'iam:user': {'label': 'AWSUser', 'property': 'arn'},
+    'iam:server-certificate': {'label': 'ServerCertificate', 'property': 'arn'},
     'lambda:function': {'label': 'AWSLambda', 'property': 'id'},
     'logs:log-group': {'label': 'CloudWatchLogGroup', 'property': 'arn'},
     'redshift:cluster': {'label': 'RedshiftCluster', 'property': 'id'},
