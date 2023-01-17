@@ -55,7 +55,8 @@ def get_kms_key_details(
         policy = get_policy(key, client)
         aliases = get_aliases(key, client)
         grants = get_grants(key, client)
-        yield key['KeyId'], policy, aliases, grants
+        rotation_status = get_rotation_status(key, client)
+        yield key['KeyId'], policy, aliases, grants, rotation_status
 
 
 @timeit
@@ -110,6 +111,27 @@ def get_grants(key: Dict, client: botocore.client.BaseClient) -> List[Any]:
         else:
             raise
     return grants
+
+
+@timeit
+def get_rotation_status(key: Dict, client: botocore.client.BaseClient) -> List[Any]:
+    """
+    Gets the KMS Key Rotation Status.
+    """
+    try:
+        rotation_status = client.get_key_rotation_status(KeyId=key["KeyId"])
+    except ClientError as e:
+        rotation_status = None
+        if e.response['Error']['Code'] == 'AccessDeniedException':
+            logger.warning(
+                f"kms:get_key_rotation_status on key id {key['KeyId']} failed with AccessDeniedException; "
+                f"continuing sync.",
+                exc_info=True,
+            )
+        else:
+            raise
+
+    return rotation_status
 
 
 @timeit
@@ -174,7 +196,7 @@ def _load_kms_key_policies(neo4j_session: neo4j.Session, policies: List[Dict], u
     # NOTE we use the coalesce function so appending works when the value is null initially
     ingest_policies = """
     UNWIND $policies AS policy
-    MATCH (k:KMSKey) where k.name = policy.kms_key
+    MATCH (k:KMSKey) where k.id = policy.kms_key
     SET k.anonymous_access = (coalesce(k.anonymous_access, false) OR policy.internet_accessible),
     k.anonymous_actions = coalesce(k.anonymous_actions, []) + policy.accessible_actions,
     k.lastupdated = $UpdateTag
@@ -183,6 +205,29 @@ def _load_kms_key_policies(neo4j_session: neo4j.Session, policies: List[Dict], u
     neo4j_session.run(
         ingest_policies,
         policies=policies,
+        UpdateTag=update_tag,
+    )
+
+
+@timeit
+def _load_kms_key_rotation_statuses(
+    neo4j_session: neo4j.Session,
+    rotation_statuses: List[Dict],
+    update_tag: int,
+) -> None:
+    """
+    Ingest KMS Key rotation statuses into neo4j.
+    """
+    ingest_rotation_statuses = """
+    UNWIND $rotation_statuses AS rotation_status
+    MATCH (k:KMSKey) where k.id = rotation_status.kms_key
+    SET k.key_rotation_enabled = rotation_status.key_rotation_enabled,
+    k.lastupdated = $UpdateTag
+    """
+
+    neo4j_session.run(
+        ingest_rotation_statuses,
+        rotation_statuses=rotation_statuses,
         UpdateTag=update_tag,
     )
 
@@ -201,23 +246,30 @@ def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> No
 
 @timeit
 def load_kms_key_details(
-        neo4j_session: neo4j.Session, policy_alias_grants_data: List[Tuple[Any, Any, Any, Any]], region: str,
+        neo4j_session: neo4j.Session,
+        policy_alias_grants_rotationstatus_data: List[Tuple[Any, Any, Any, Any, Any]],
+        region: str,
         aws_account_id: str, update_tag: int,
 ) -> None:
     """
-    Create dictionaries for all KMS key policies, aliases and grants so we can import them in a single query for each
+    Create dictionaries for all KMS key policies, aliases, grants, and rotation status
+    so we can import them in a single query for each
     """
     policies = []
     aliases: List[str] = []
     grants: List[str] = []
-    for key, policy, alias, grant in policy_alias_grants_data:
+    rotation_statuses = []
+    for key, policy, alias, grant, rotation_status in policy_alias_grants_rotationstatus_data:
         parsed_policy = parse_policy(key, policy)
         if parsed_policy is not None:
             policies.append(parsed_policy)
         if len(alias) > 0:
             aliases.extend(alias)
-        if len(grants) > 0:
+        if len(grant) > 0:
             grants.extend(grant)
+        parsed_rotation_status = parse_rotation_status(key, rotation_status)
+        if parsed_rotation_status is not None:
+            rotation_statuses.append(parsed_rotation_status)
 
     # cleanup existing policy properties
     run_cleanup_job(
@@ -229,6 +281,7 @@ def load_kms_key_details(
     _load_kms_key_policies(neo4j_session, policies, update_tag)
     _load_kms_key_aliases(neo4j_session, aliases, update_tag)
     _load_kms_key_grants(neo4j_session, grants, update_tag)
+    _load_kms_key_rotation_statuses(neo4j_session, rotation_statuses, update_tag)
     _set_default_values(neo4j_session, aws_account_id)
 
 
@@ -295,6 +348,25 @@ def parse_policy(key: str, policy: Policy) -> Optional[Dict[Any, Any]]:
 
 
 @timeit
+def parse_rotation_status(key: str, rotation_status) -> Optional[Dict[Any, Any]]:
+    """
+    Uses PolicyUniverse to parse KMS key policies and returns the internet accessibility results
+    """
+    # rotation_status is not required, so may be None
+    # rotation_status JSON format.
+    # {
+    #   'KeyRotationEnabled': True|False
+    # }
+    if rotation_status is not None:
+        return {
+            "kms_key": key,
+            "key_rotation_enabled": rotation_status['KeyRotationEnabled'],
+        }
+    else:
+        return None
+
+
+@timeit
 def load_kms_keys(
     neo4j_session: neo4j.Session, data: Dict, region: str, current_aws_account_id: str,
     aws_update_tag: int,
@@ -307,6 +379,8 @@ def load_kms_keys(
     SET kmskey.deletiondate = k.DeletionDate,
     kmskey.validto = k.ValidTo,
     kmskey.enabled = k.Enabled,
+    kmskey.keymanager = k.KeyManager,
+    kmskey.origin = k.Origin,
     kmskey.keystate = k.KeyState,
     kmskey.customkeystoreid = k.CustomKeyStoreId,
     kmskey.cloudhsmclusterid = k.CloudHsmClusterId,
@@ -349,8 +423,14 @@ def sync_kms_keys(
 
     load_kms_keys(neo4j_session, kms_keys, region, current_aws_account_id, aws_update_tag)
 
-    policy_alias_grants_data = get_kms_key_details(boto3_session, kms_keys, region)
-    load_kms_key_details(neo4j_session, policy_alias_grants_data, region, current_aws_account_id, aws_update_tag)
+    policy_alias_grants_rotationstatus_data = get_kms_key_details(boto3_session, kms_keys, region)
+    load_kms_key_details(
+        neo4j_session,
+        policy_alias_grants_rotationstatus_data,
+        region,
+        current_aws_account_id,
+        aws_update_tag,
+    )
 
 
 @timeit

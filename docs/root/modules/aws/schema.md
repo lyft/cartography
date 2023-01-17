@@ -2351,10 +2351,12 @@ Representation of an AWS [KMS Key](https://docs.aws.amazon.com/kms/latest/APIRef
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 | **id** | The id of the key|
-| name |  The name of the key |
 | description |  The description of the key |
 | enabled |  Whether the key is enabled |
 | region | The region where key is created|
+| keymanager | The manager of the KMS key |
+| origin | The source of the key material for the KMS key |
+| key_rotation_enabled | A Boolean value that specifies whether key rotation is enabled |
 | anonymous\_actions |  List of anonymous internet accessible actions that may be run on the key. |
 | anonymous\_access | True if this key has a policy applied to it that allows anonymous access or if it is open to the internet. |
 
