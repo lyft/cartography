@@ -1,6 +1,7 @@
 import enum
 import json
 import logging
+from dataclasses import dataclass
 from typing import Any
 from typing import Dict
 from typing import List
@@ -9,9 +10,20 @@ from typing import Tuple
 import boto3
 import neo4j
 
+from cartography.client.core.tx import load_graph_data
+from cartography.graph.model import CartographyNodeProperties
+from cartography.graph.model import CartographyNodeSchema
+from cartography.graph.model import CartographyRelProperties
+from cartography.graph.model import CartographyRelSchema
+from cartography.graph.model import LinkDirection
+from cartography.graph.model import make_target_node_matcher
+from cartography.graph.model import PropertyRef
+from cartography.graph.model import TargetNodeMatcher
+from cartography.graph.querybuilder import build_ingestion_query
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
 from cartography.stats import get_stats_client
+from cartography.util import dict_date_to_epoch
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -202,6 +214,16 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
             f"Could not get access key for user {username} due to NoSuchEntityException; skipping.",
         )
     return access_keys
+
+
+@timeit
+def get_server_certificates(boto3_session: boto3.session.Session) -> List[Dict]:
+    client = boto3_session.client('iam')
+    paginator = client.get_paginator('list_server_certificates')
+    server_certificates: List[Dict] = []
+    for page in paginator.paginate():
+        server_certificates.extend(page['ServerCertificateMetadataList'])
+    return server_certificates
 
 
 @timeit
@@ -600,6 +622,64 @@ def load_policy_data(neo4j_session: neo4j.Session, policy_map: Dict, policy_type
             load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag)
 
 
+@dataclass(frozen=True)
+class ServerCertificateNodeProperties(CartographyNodeProperties):
+    arn: PropertyRef = PropertyRef('Arn')
+    firstseen: PropertyRef = PropertyRef('firstseen')
+    id: PropertyRef = PropertyRef('Arn')
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    upload_date: PropertyRef = PropertyRef('UploadDate')
+    expiration: PropertyRef = PropertyRef('Expiration')
+
+
+@dataclass(frozen=True)
+class ServerCertificateToAWSAccountRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+# (:ServerCertificate)<-[:RESOURCE]-(:AWSAccount)
+class ServerCertificateToAWSAccount(CartographyRelSchema):
+    target_node_label: str = 'AWSAccount'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'id': PropertyRef('AccountId', set_in_kwargs=True)},
+    )
+    direction: LinkDirection = LinkDirection.INWARD
+    rel_label: str = "RESOURCE"
+    properties: ServerCertificateToAWSAccountRelProperties = ServerCertificateToAWSAccountRelProperties()
+
+
+@dataclass(frozen=True)
+class ServerCertificateSchema(CartographyNodeSchema):
+    label: str = 'ServerCertificate'
+    properties: ServerCertificateNodeProperties = ServerCertificateNodeProperties()
+    sub_resource_relationship: ServerCertificateToAWSAccount = ServerCertificateToAWSAccount()
+
+
+@timeit
+def load_server_certificates(
+        neo4j_session: neo4j.Session,
+        server_certificates: List[Dict],
+        current_aws_account_id: str,
+        aws_update_tag: int,
+) -> None:
+    logger.info("Loading %d server certificates into graph.", len(server_certificates))
+
+    ingestion_query = build_ingestion_query(ServerCertificateSchema())
+
+    for cert in server_certificates:
+        cert["UploadDate"] = dict_date_to_epoch(cert, "UploadDate")
+        cert["Expiration"] = dict_date_to_epoch(cert, "Expiration")
+
+    load_graph_data(
+        neo4j_session,
+        ingestion_query,
+        server_certificates,
+        lastupdated=aws_update_tag,
+        AccountId=current_aws_account_id,
+    )
+
+
 @timeit
 def sync_users(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
@@ -745,6 +825,21 @@ def sync_user_access_keys(
 
 
 @timeit
+def sync_server_certificates(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session,
+    current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
+) -> None:
+    logger.info("Syncing IAM server certificates for account '%s'.", current_aws_account_id)
+    server_certificates = get_server_certificates(boto3_session)
+    load_server_certificates(neo4j_session, server_certificates, current_aws_account_id, aws_update_tag)
+    run_cleanup_job(
+        'aws_import_server_certificates_cleanup.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+
+@timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
@@ -758,6 +853,7 @@ def sync(
     sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+    sync_server_certificates(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
     merge_module_sync_metadata(
         neo4j_session,

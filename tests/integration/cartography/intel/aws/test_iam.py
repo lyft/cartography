@@ -1,3 +1,4 @@
+import copy
 from unittest import mock
 
 import cartography.intel.aws.iam
@@ -149,3 +150,25 @@ def test_map_permissions(neo4j_session):
     assert results
     for result in results:
         assert result["rel_count"] == 1
+
+
+def test_load_server_certificates(neo4j_session):
+    data = copy.deepcopy(tests.data.aws.iam.LIST_SERVER_CERTIFICATES)
+    cartography.intel.aws.iam.load_server_certificates(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+
+    expected_nodes = {
+        ("arn:aws:iam::123456789012:server-certificate/myUpdatedServerCertificate", 1571203396),
+        ("arn:aws:iam::123456789012:server-certificate/Org1/Org2/MyTestCert", 1515981156),
+    }
+    nodes = neo4j_session.run(
+        """
+        MATCH (sc:ServerCertificate) RETURN sc.id as id, sc.expiration as expiration;
+        """,
+    )
+    actual_nodes = {(n['id'], n['expiration']) for n in nodes}
+    assert actual_nodes == expected_nodes

@@ -187,3 +187,22 @@ INSTACE = {
         },
     ],
 }
+
+LIST_SERVER_CERTIFICATES = [
+    {
+        "Path": "/",
+        "ServerCertificateName": "myUpdatedServerCertificate",
+        "ServerCertificateId": "ASCAEXAMPLE123EXAMPLE",
+        "Arn": "arn:aws:iam::123456789012:server-certificate/myUpdatedServerCertificate",
+        "UploadDate": datetime.datetime(2019, 4, 22, 21, 13, 44),
+        "Expiration": datetime.datetime(2019, 10, 15, 22, 23, 16),
+    },
+    {
+        "Path": "/cloudfront/",
+        "ServerCertificateName": "MyTestCert",
+        "ServerCertificateId": "ASCAEXAMPLE456EXAMPLE",
+        "Arn": "arn:aws:iam::123456789012:server-certificate/Org1/Org2/MyTestCert",
+        "UploadDate": datetime.datetime(2015, 4, 21, 18, 14, 16),
+        "Expiration": datetime.datetime(2018, 1, 14, 17, 52, 36),
+    },
+]

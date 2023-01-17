@@ -1,12 +1,25 @@
 import logging
+from dataclasses import dataclass
 from string import Template
 from typing import Dict
 from typing import List
+from typing import Optional
 
 import boto3
 import neo4j
 
 from .util import get_botocore_config
+from cartography.client.core.tx import load_graph_data
+from cartography.graph.model import CartographyNodeProperties
+from cartography.graph.model import CartographyNodeSchema
+from cartography.graph.model import CartographyRelProperties
+from cartography.graph.model import CartographyRelSchema
+from cartography.graph.model import LinkDirection
+from cartography.graph.model import make_target_node_matcher
+from cartography.graph.model import OtherRelationships
+from cartography.graph.model import PropertyRef
+from cartography.graph.model import TargetNodeMatcher
+from cartography.graph.querybuilder import build_ingestion_query
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -19,6 +32,17 @@ logger = logging.getLogger(__name__)
 def get_ec2_vpcs(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     return client.describe_vpcs()['Vpcs']
+
+
+@timeit
+@aws_handle_regions
+def get_ec2_flow_logs(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
+    flow_logs: List[Dict] = []
+    paginator = client.get_paginator('describe_flow_logs')
+    for page in paginator.paginate():
+        flow_logs.extend(page['FlowLogs'])
+    return flow_logs
 
 
 def _get_cidr_association_statement(block_type: str) -> str:
@@ -159,6 +183,57 @@ def load_ec2_vpcs(
         )
 
 
+@dataclass(frozen=True)
+class FlowLogNodeProperties(CartographyNodeProperties):
+    firstseen: PropertyRef = PropertyRef('firstseen')
+    flow_log_status: PropertyRef = PropertyRef('FlowLogStatus')
+    id: PropertyRef = PropertyRef('FlowLogId')
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    resource_id: PropertyRef = PropertyRef('ResourceId')
+
+
+@dataclass(frozen=True)
+class FlowLogToCloudTrailRelProps(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+# (:FlowLog)-[:MONITORS]->(:AWSVpc)
+class FlowLogToAWSVpc(CartographyRelSchema):
+    target_node_label: str = 'AWSVpc'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher({'id': PropertyRef('ResourceId')})
+    direction: LinkDirection = LinkDirection.OUTWARD
+    rel_label: str = "MONITORS"
+    properties: FlowLogToCloudTrailRelProps = FlowLogToCloudTrailRelProps()
+
+
+@dataclass(frozen=True)
+class FlowLogSchema(CartographyNodeSchema):
+    label: str = 'FlowLog'
+    properties: FlowLogNodeProperties = FlowLogNodeProperties()
+    other_relationships: Optional[OtherRelationships] = OtherRelationships([
+        FlowLogToAWSVpc(),
+    ])
+
+
+@timeit
+def load_ec2_flow_logs(
+    neo4j_session: neo4j.Session,
+    flow_logs: List[Dict],
+    update_tag: int,
+) -> None:
+    logger.info("Loading %d flow logs into graph.", len(flow_logs))
+
+    ingestion_query = build_ingestion_query(FlowLogSchema())
+
+    load_graph_data(
+        neo4j_session,
+        ingestion_query,
+        flow_logs,
+        lastupdated=update_tag,
+    )
+
+
 @timeit
 def cleanup_ec2_vpcs(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_vpc_cleanup.json', neo4j_session, common_job_parameters)
@@ -173,4 +248,7 @@ def sync_vpc(
         logger.info("Syncing EC2 VPC for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_vpcs(boto3_session, region)
         load_ec2_vpcs(neo4j_session, data, region, current_aws_account_id, update_tag)
+
+        flow_logs = get_ec2_flow_logs(boto3_session, region)
+        load_ec2_flow_logs(neo4j_session, flow_logs, update_tag)
     cleanup_ec2_vpcs(neo4j_session, common_job_parameters)

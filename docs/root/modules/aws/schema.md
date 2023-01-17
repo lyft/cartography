@@ -1690,6 +1690,27 @@ Representation of an AWS Elastic Load Balancer V2 [Listener](https://docs.aws.am
         ```
 
 
+### FlowLog
+
+Representation of a [Flow Log](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeFlowLogs.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| flow_log_status | The status of the flow log |
+| id | The ID of the flow log |
+| resource_id | The ID of the resource being monitored (e.g. VPC id) |
+
+
+#### Relationships
+
+- A FlowLog can monitor an AWSVpc .
+
+        ```
+        (FlowLog)-[:MONITORS]->(AWSVpc)
+        ```
+
 ### Ip
 
 Represents a generic IP address.
@@ -3351,6 +3372,26 @@ Representation of an AWS ECS [Container](https://docs.aws.amazon.com/AmazonECS/l
 
         ```
         (ECSTask)-[HAS_CONTAINER]->(ECSContainer)
+        ```
+
+### ServerCertificate
+
+Representation of an AWS IAM [server certificate](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-servercertificate.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated
+| arn | The arn of the cetificate|
+| id | Matches the arn field |
+| upload_date | Unix timestamp when the server certificate was uploaded |
+| expiration | Unix timestamp on which the certificate is set to expire |
+
+#### Relationships
+- ServerCertificate is a resource of an AWSAccount.
+
+        ```
+        (AWSAccount)-[RESOURCE]->(ServerCertificate)
         ```
 
 ### SSMInstanceInformation
