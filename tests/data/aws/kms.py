@@ -79,3 +79,14 @@ DESCRIBE_GRANTS = [
         ],
     },
 ]
+
+DESCRIBE_ROTATION_STATUSES = [
+    {
+        "kms_key": '9a1ad414-6e3b-47ce-8366-6b8f26ba467d',
+        "key_rotation_enabled": False,
+    },
+    {
+        "kms_key": '9a1ad414-6e3b-47ce-8366-6b8f28bc777g',
+        "key_rotation_enabled": True,
+    },
+]

@@ -192,3 +192,40 @@ def test_load_kms_key_grants_relationships(neo4j_session):
     }
 
     assert actual == expected
+
+
+def test_load_kms_key_rotation_statuses(neo4j_session):
+    # Load Test KMS Key
+    data_kms = tests.data.aws.kms.DESCRIBE_KEYS
+    cartography.intel.aws.kms.load_kms_keys(
+        neo4j_session,
+        data_kms,
+        TEST_REGION,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+
+    # Load test KMS Key Rotation Statuses
+    data_rotation_statuses = tests.data.aws.kms.DESCRIBE_ROTATION_STATUSES
+    cartography.intel.aws.kms._load_kms_key_rotation_statuses(
+        neo4j_session,
+        data_rotation_statuses,
+        TEST_UPDATE_TAG,
+    )
+
+    expected = {
+        ('arn:aws:kms:eu-west-1:000000000000:key/9a1ad414-6e3b-47ce-8366-6b8f26ba467d', False),
+        ('arn:aws:kms:eu-west-1:000000000000:key/9a1ad414-6e3b-47ce-8366-6b8f28bc777g', True),
+    }
+
+    # Fetch relationships
+    result = neo4j_session.run(
+        """
+        MATCH (n:KMSKey) RETURN n.arn, n.key_rotation_enabled
+        """,
+    )
+    actual = {
+        (r['n.arn'], r['n.key_rotation_enabled']) for r in result
+    }
+
+    assert actual == expected
