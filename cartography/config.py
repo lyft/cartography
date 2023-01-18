@@ -81,6 +81,14 @@ class Config:
     :param pagerduty_request_timeout: Seconds to timeout for pagerduty session requests. Optional
     :type: nist_cve_url: str
     :param nist_cve_url: NIST CVE data provider base URI, e.g. https://nvd.nist.gov/feeds/json/cve/1.1. Optional.
+    :type: gsuite_auth_method: str
+    :param gsuite_auth_method: Auth method (delegated, oauth) used for Google Workspace. Optional.
+    :type gsuite_config: str
+    :param gsuite_config: Base64 encoded config object or config file path for Google Workspace. Optional.
+    :type: hexnode_api_key: str
+    :param hexnode_api_key: API authentication key for Hexnode. Optional.
+    :type hexnode_tenant: str
+    :param hexnode_tenant: Tenant name for Hexnode. Optional.
     """
 
     def __init__(
@@ -124,6 +132,8 @@ class Config:
         crowdstrike_client_id=None,
         crowdstrike_client_secret=None,
         crowdstrike_api_url=None,
+        gsuite_auth_method=None,
+        gsuite_config=None,
         hexnode_api_key=None,
         hexnode_tenant=None,
     ):
@@ -166,5 +176,7 @@ class Config:
         self.crowdstrike_client_id = crowdstrike_client_id
         self.crowdstrike_client_secret = crowdstrike_client_secret
         self.crowdstrike_api_url = crowdstrike_api_url
+        self.gsuite_auth_method = gsuite_auth_method
+        self.gsuite_config = gsuite_config
         self.hexnode_api_key = hexnode_api_key
         self.hexnode_tenant = hexnode_tenant
