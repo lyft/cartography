@@ -403,6 +403,15 @@ class CLI:
                 'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
             ),
         )
+        parser.add_argument(
+            '--clevercloud-config-env-var',
+            type=str,
+            default=None,
+            help=(
+                'Name of an environment variable containing a Base64 encoded Clevercloud config.'
+                'Required if you are using the Clevercloud intel module. Ignored otherwise.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -531,6 +540,16 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
+
+        # Clevercloud config
+        if config.clevercloud_config_env_var:
+            logger.debug(
+                "Reading config string for Clevercloud from environment variable %s",
+                config.clevercloud_config_env_var,
+            )
+            config.clevercloud_config = os.environ.get(config.clevercloud_config_env_var)
+        else:
+            config.clevercloud_config = None
 
         # Run cartography
         try:

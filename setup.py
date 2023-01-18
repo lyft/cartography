@@ -59,6 +59,7 @@ setup(
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
         "python-dateutil",
+        "tldextract>=3.4.0",
     ],
     extras_require={
         ':python_version<"3.7"': [

@@ -81,6 +81,8 @@ class Config:
     :param pagerduty_request_timeout: Seconds to timeout for pagerduty session requests. Optional
     :type: nist_cve_url: str
     :param nist_cve_url: NIST CVE data provider base URI, e.g. https://nvd.nist.gov/feeds/json/cve/1.1. Optional.
+    :type clevercloud_config: str
+    :param clevercloud_config: Base64 encoded config object for Clevercloud ingestion. Optional.
     """
 
     def __init__(
@@ -124,6 +126,7 @@ class Config:
         crowdstrike_client_id=None,
         crowdstrike_client_secret=None,
         crowdstrike_api_url=None,
+        clevercloud_config=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -164,3 +167,4 @@ class Config:
         self.crowdstrike_client_id = crowdstrike_client_id
         self.crowdstrike_client_secret = crowdstrike_client_secret
         self.crowdstrike_api_url = crowdstrike_api_url
+        self.clevercloud_config = clevercloud_config

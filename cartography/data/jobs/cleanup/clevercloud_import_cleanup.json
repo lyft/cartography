@@ -1,0 +1,49 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (n:CleverCloudUser) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete CleverCloud users that no longer exist and detach them from all previously connected nodes."
+    },
+    {
+      "query": "MATCH (n:CleverCloudOrganisation) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete CleverCloud users that no longer exist and detach them from all previously connected nodes."
+    },
+    {
+      "query": "MATCH (:CleverCloudUser)-[r:MEMBER_OF]->(:CleverCloudOrganization) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (n:CleverCloudApplication) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete CleverCloud applications that no longer exist and detach them from all previously connected nodes."
+    },
+    {
+      "query": "MATCH (n:CleverCloudAddon) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+      "iterative": true,
+      "iterationsize": 100,
+      "__comment__": "Delete CleverCloud addons that no longer exist and detach them from all previously connected nodes."
+    },
+    {
+      "query": "MATCH (:CleverCloudApplication)-[r:USES]->(:CleverCloudAddon) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:CleverCloudApplication)<-[r:RESOURCE]-(:CleverCloudOrganization) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:CleverCloudAddon)<-[r:RESOURCE]-(:CleverCloudOrganization) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+      "iterative": true,
+      "iterationsize": 100
+    }
+  ],
+  "name": "cleanup CleverCloud"
+}
