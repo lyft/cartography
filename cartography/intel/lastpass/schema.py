@@ -2,12 +2,7 @@ from dataclasses import dataclass
 
 from cartography.graph.model import CartographyNodeProperties
 from cartography.graph.model import CartographyNodeSchema
-from cartography.graph.model import CartographyRelProperties
-from cartography.graph.model import CartographyRelSchema
-from cartography.graph.model import LinkDirection
-from cartography.graph.model import make_target_node_matcher
 from cartography.graph.model import PropertyRef
-from cartography.graph.model import TargetNodeMatcher
 
 
 @dataclass(frozen=True)
@@ -36,4 +31,4 @@ class LastpassUserNodeProperties(CartographyNodeProperties):
 @dataclass(frozen=True)
 class LastpassUserSchema(CartographyNodeSchema):
     label: str = 'LastpassUser'
-    properties: LastpassUserNodeProperties = LastpassUserNodeProperties()  # An object representing all properties on the EMR Cluster node
+    properties: LastpassUserNodeProperties = LastpassUserNodeProperties()
