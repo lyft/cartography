@@ -1,10 +1,14 @@
 import logging
-from typing import Dict, List
+from typing import Dict
+from typing import List
 
 import neo4j
-from requests import Session
 from dateutil import parser as dt_parse
+from requests import Session
 
+from cartography.client.core.tx import load_graph_data
+from cartography.graph.querybuilder import build_ingestion_query
+from cartography.intel.lastpass.schema import LastpassUserSchema
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -15,7 +19,7 @@ def sync(
     neo4j_session: neo4j.Session,
     update_tag: int,
     lastpass_cid: str,
-    lastpass_provhash: str
+    lastpass_provhash: str,
 ) -> None:
     users = get(lastpass_cid, lastpass_provhash)
     formated_users = transform(users)
@@ -28,12 +32,13 @@ def get(lastpass_cid: str, lastpass_provhash: str) -> dict:
         'cid': lastpass_cid,
         'provhash': lastpass_provhash,
         'cmd': 'getuserdata',
-        'data': None
+        'data': None,
     }
     session = Session()
     req = session.post('https://lastpass.com/enterpriseapi.php', data=payload, timeout=20)
     req.raise_for_status()
     return req.json()
+
 
 @timeit
 def transform(api_result: dict) -> List[Dict]:
@@ -41,11 +46,12 @@ def transform(api_result: dict) -> List[Dict]:
     for uid, user in api_result['Users'].items():
         n_user = user.copy()
         n_user['id'] = int(uid)
-        n_user['created'] = dt_parse.parse(user['created'])
-        n_user['last_pw_change'] = dt_parse.parse(user['last_pw_change'])
-        n_user['last_login'] = dt_parse.parse(user['last_login'])
+        n_user['created'] = int(dt_parse.parse(user['created']).timestamp() * 1000)
+        n_user['last_pw_change'] = int(dt_parse.parse(user['last_pw_change']).timestamp() * 1000)
+        n_user['last_login'] = int(dt_parse.parse(user['last_login']).timestamp() * 1000)
         result.append(n_user)
     return result
+
 
 def load(
     neo4j_session: neo4j.Session,
@@ -53,33 +59,11 @@ def load(
     update_tag: int,
 ) -> None:
 
-    query = """
-    UNWIND $UserData as user
-    MERGE (u:LastpassUser{id: user.id})
-    ON CREATE set u.firstseen = timestamp()
-    SET u.lastupdated = $UpdateTag,
-    u.id = user.id,
-    u.name = user.fullname,
-    u.email = user.username,
-    u.created = user.created,
-    u.last_pw_change = user.last_pw_change,
-    u.last_login = user.last_login,
-    u.neverloggedin = user.neverloggedin,
-    u.disabled = user.disabled,
-    u.admin = user.admin,
-    u.totalscore = user.totalscore,
-    u.mpstrength = user.mpstrength,
-    u.sites = user.sites,
-    u.notes = user.notes,
-    u.formfills = user.formfills,
-    u.applications = user.applications,
-    u.attachments = user.attachments,
-    u.password_reset_required = user.password_reset_required,
-    u.multifactor = user.multifactor
-    """
+    ingestion_query = build_ingestion_query(LastpassUserSchema())
 
-    neo4j_session.run(
-        query,
-        UserData=data,
-        UpdateTag=update_tag,
+    load_graph_data(
+        neo4j_session,
+        ingestion_query,
+        data,
+        lastupdated=update_tag,
     )

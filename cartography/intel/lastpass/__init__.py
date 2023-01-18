@@ -30,7 +30,12 @@ def start_lastpass_ingestion(neo4j_session: neo4j.Session, config: Config) -> No
         "UPDATE_TAG": config.update_tag,
     }
 
-    cartography.intel.lastpass.users.sync(neo4j_session, config.update_tag, config.lastpass_cid, config.lastpass_provhash)
+    cartography.intel.lastpass.users.sync(
+        neo4j_session,
+        config.update_tag,
+        config.lastpass_cid,
+        config.lastpass_provhash,
+    )
 
     run_cleanup_job(
         "lastpass_import_cleanup.json",

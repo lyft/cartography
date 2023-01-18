@@ -22,12 +22,12 @@ def test_load_lastpass_users(neo4j_session):
         """,
     )
     expected_nodes = {
-        (123456, 'john.doe@domain.tld')
+        (123456, 'john.doe@domain.tld'),
     }
     actual_nodes = {
         (
             n['e.id'],
-            n['e.email']
+            n['e.email'],
         ) for n in nodes
     }
     assert actual_nodes == expected_nodes
