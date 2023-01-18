@@ -7,10 +7,12 @@ TEST_UPDATE_TAG = 123456789
 
 def test_load_hibob_employees(neo4j_session):
 
-    data = cartography.intel.hibob.employees.transform(tests.data.hibob.employees.HIBOB_EMPLOYEES_GET_DATA)
+    data = tests.data.hibob.employees.HIBOB_EMPLOYEES_GET_DATA
+    departments, employees = cartography.intel.hibob.employees.transform(data)
     cartography.intel.hibob.employees.load(
         neo4j_session,
-        data,
+        departments,
+        employees,
         TEST_UPDATE_TAG,
     )
 
@@ -21,7 +23,6 @@ def test_load_hibob_employees(neo4j_session):
         """,
     )
     expected_nodes = {
-        ('None', None), # Dummy Employee cleaned by clean up job
         ("1234", 'john.doe@domain.tld'),
         ("5678", 'jane.smith@domain.tld'),
     }
@@ -49,11 +50,8 @@ def test_load_hibob_employees(neo4j_session):
     expected_nodes = {
         (
             '1234',
-            '5678'
+            '5678',
         ),
-        (   '5678',
-            'None'
-        )
     }
     assert actual_nodes == expected_nodes
 
@@ -73,11 +71,11 @@ def test_load_hibob_employees(neo4j_session):
     expected_nodes = {
         (
             '1234',
-            'R&D'
+            'R&D',
         ),
         (
             '5678',
-            'R&D'
+            'R&D',
         ),
     }
     assert actual_nodes == expected_nodes

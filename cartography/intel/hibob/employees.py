@@ -2,11 +2,18 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Set
+from typing import Tuple
 
 import neo4j
 from dateutil import parser as dt_parse
 from requests import Session
 
+from cartography.client.core.tx import load_graph_data
+from cartography.graph.querybuilder import build_ingestion_query
+from cartography.intel.hibob.schema import HiBobDepartmentSchema
+from cartography.intel.hibob.schema import HiBobEmployeeSchema
+from cartography.intel.hibob.schema import HumanSchema
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -18,9 +25,9 @@ def sync(
     update_tag: int,
     api_session: Session,
 ) -> None:
-    employees = get(api_session)
-    transformed_employees = transform(employees)
-    load(neo4j_session, transformed_employees, update_tag)
+    data = get(api_session)
+    departments, employees = transform(data)
+    load(neo4j_session, departments, employees, update_tag)
 
 
 @timeit
@@ -31,76 +38,72 @@ def get(api_session: Session) -> Dict[str, Any]:
 
 
 @timeit
-def transform(response_objects: Dict[str, List]) -> List[Dict]:
+def transform(response_objects: Dict[str, List]) -> Tuple[List[Dict], List[Dict]]:
     """  Strips list of API response objects to return list of group objects only
     :param response_objects:
     :return: list of dictionary objects as defined in /docs/schema/hibob.md
     """
+    departments = {}
     users: List[Dict] = []
+
+    transformed_users = {}
+
     for user in response_objects['employees']:
-        user['work']['startDate'] = dt_parse.parse(user['work']['startDate'])
-        users.append(user)
-    return users
+        # Extract department
+        if user['work']['department'] not in departments:
+            departments[user['work']['department']] = {
+                'id': user['work']['department'],
+                'name': user['work']['department'],
+            }
+        # Add junk reportsTo id if needed
+        if user['work']['reportsTo'] is None:
+            user['work']['reportsTo'] = {'id': "None"}
+        user['work']['startDate'] = int(dt_parse.parse(user['work']['startDate']).timestamp() * 1000)
+        transformed_users[user['id']] = user
+
+    # Order users to ensure work.reportsTo refer to an existing user
+    seen_users: Set[str] = set()
+    while len(transformed_users) > 0:
+        for uid in list(transformed_users.keys()):
+            user = transformed_users[uid]
+            if user['work']['reportsTo']['id'] == 'None':
+                users.append(user)
+                transformed_users.pop(uid)
+                seen_users.add(uid)
+            elif user['work']['reportsTo']['id'] in seen_users:
+                users.append(user)
+                transformed_users.pop(uid)
+                seen_users.add(uid)
+
+    return list(departments.values()), users
 
 
 def load(
-    neo4j_session: neo4j.Session, data: List[Dict], update_tag: int,
+    neo4j_session: neo4j.Session, departments: List[Dict], employees: List[Dict], update_tag: int,
 ) -> None:
     """
     Transform and load employees information
     """
 
-    query = """
-    UNWIND $UserData as user
-    MERGE (ou:HiBobDepartment{id: user.work.department})
-    ON CREATE SET ou.firstseen = timestamp()
-    SET ou.name = user.work.department,
-    ou.lastupdated = $UpdateTag
-
-    MERGE (h:Human{email: user.email})
-    ON CREATE SET h.firstseen = timestamp()
-    SET h.lastupdated = $UpdateTag,
-    h.name = user.displayName,
-    h.family_name = user.surname,
-    h.given_name = user.firstName,
-    h.gender = user.home.localGender
-
-    MERGE (u:HiBobEmployee{id: user.id})
-    ON CREATE set u.firstseen = timestamp()
-    SET u.user_id = user.id,
-    u.name = user.displayName,
-    u.family_name = user.surname,
-    u.given_name = user.firstName,
-    u.gender = user.home.localGender,
-    u.email = user.email,
-    u.private_mobile = user.home.mobilePhone,
-    u.private_phone = user.home.privatePhone,
-    u.private_email = user.home.privateEmail,
-    u.start_date = user.work.startDate,
-    u.is_manager = user.work.isManager,
-    u.work_phone = user.work.workPhone,
-    u.work_office = user.work.site,
-    u.lastupdated = $UpdateTag
-
-    MERGE (m:HiBobEmployee{id: coalesce(user.work.reportsTo.id, "None")})
-    ON CREATE set m.firstseen = timestamp()
-    SET m.email = user.work.reportsTo.email,
-    m.lastupdated = $UpdateTag
-
-    MERGE (h)-[rh:IS_EMPLOYEE]->(u)
-    ON CREATE SET rh.firstseen = timestamp()
-    SET rh.lastupdated = $UpdateTag
-
-    MERGE (u)-[rm:MANAGED_BY]->(m)
-    ON CREATE SET rm.firstseen = timestamp()
-    SET rm.lastupdated = $UpdateTag
-
-    MERGE (u)-[r:MEMBER_OF]->(ou)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $UpdateTag
-    """
-    neo4j_session.run(
-        query,
-        UserData=data,
-        UpdateTag=update_tag,
+    # Humans
+    query_humans = build_ingestion_query(HumanSchema())
+    load_graph_data(
+        neo4j_session,
+        query_humans,
+        employees,
+        lastupdated=update_tag,
+    )
+    query_departments = build_ingestion_query(HiBobDepartmentSchema())
+    load_graph_data(
+        neo4j_session,
+        query_departments,
+        departments,
+        lastupdated=update_tag,
+    )
+    query_employees = build_ingestion_query(HiBobEmployeeSchema())
+    load_graph_data(
+        neo4j_session,
+        query_employees,
+        employees,
+        lastupdated=update_tag,
     )

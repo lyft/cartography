@@ -13,7 +13,7 @@ HIBOB_EMPLOYEES_GET_DATA = {
                     "email": "jane.smith@domain.tld",
                     "surname": "Smith",
                     "firstName": "Jane",
-                    "id": "5678"
+                    "id": "5678",
                 },
                 "workMobile": "0601020304",
                 "department": "R&D",
@@ -26,10 +26,10 @@ HIBOB_EMPLOYEES_GET_DATA = {
                 "mobilePhone": None,
                 "privateEmail": "john.doe@gmail.com",
                 "legalGender": "Male",
-                "privatePhone": "06 11 22 33 44"
+                "privatePhone": "06 11 22 33 44",
             },
             "firstName": "John",
-            "id": "1234"
+            "id": "1234",
         },
         {
             "fullName": "Jane Smith",
@@ -51,10 +51,10 @@ HIBOB_EMPLOYEES_GET_DATA = {
                 "mobilePhone": None,
                 "privateEmail": "jjsmith@gmail.com",
                 "legalGender": "Female",
-                "privatePhone": "06 99 88 77 66"
+                "privatePhone": "06 99 88 77 66",
             },
             "firstName": "Jane",
-            "id": "5678"
-        }
-    ]
+            "id": "5678",
+        },
+    ],
 }

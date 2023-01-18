@@ -1,11 +1,6 @@
 {
     "statements": [
     {
-        "__comment": "Junk node created for not managed Employees",
-        "query": "MATCH (n:HiBobEmployee{id: 'None'}) DETACH DELETE (n)",
-        "iterative": false
-    },    
-    {
       "query": "MATCH (n:HiBobEmployee) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
       "iterative": true,
       "iterationsize": 100
@@ -38,4 +33,3 @@
 ],
     "name": "cleanup HiBob users data"
   }
-  
