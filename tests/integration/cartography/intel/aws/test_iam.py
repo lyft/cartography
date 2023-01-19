@@ -172,3 +172,46 @@ def test_load_server_certificates(neo4j_session):
     )
     actual_nodes = {(n['id'], n['expiration']) for n in nodes}
     assert actual_nodes == expected_nodes
+
+
+def test_load_credential_report_users(neo4j_session):
+    data = copy.deepcopy(tests.data.aws.iam.CREDENTIAL_REPORT_CONTENT)
+    credential_report_users = cartography.intel.aws.iam.transform_credential_report_users(data)
+    cartography.intel.aws.iam.load_credential_report_users(
+        neo4j_session,
+        credential_report_users,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+    expected_nodes = {
+        ("arn:aws:iam::000000000000:root", None),
+        ("arn:aws:iam::000000000000:user/user1", 1659361910),
+        ("arn:aws:iam::000000000000:user/user2", 1661944234),
+    }
+    nodes = neo4j_session.run(
+        """
+        MATCH (n:CredentialReportUser) RETURN n.arn as arn, n.access_key_1_last_rotated as access_key_1_last_rotated;
+        """,
+    )
+    actual_nodes = {(n['arn'], n['access_key_1_last_rotated']) for n in nodes}
+    assert actual_nodes == expected_nodes
+
+
+def test_load_account_password_policy(neo4j_session):
+    data = copy.deepcopy(tests.data.aws.iam.ACCOUNT_PASSWORD_POLICY)
+    cartography.intel.aws.iam.load_account_password_policy(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+    expected_nodes = {
+        ("000000000000", False, 90),
+    }
+    nodes = neo4j_session.run(
+        """
+        MATCH (n:AccountPasswordPolicy) RETURN n.id as id, n.expire_passwords as e, n.max_password_age as m;
+        """,
+    )
+    actual_nodes = {(n['id'], n['e'], n['m']) for n in nodes}
+    assert actual_nodes == expected_nodes

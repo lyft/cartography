@@ -1,3 +1,5 @@
+CREATE INDEX IF NOT EXISTS FOR (n:AccountPasswordPolicy) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:AccountPasswordPolicy) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:AWSConfigurationRecorder) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:AWSConfigurationRecorder) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:AWSConfigDeliveryChannel) ON (n.id);
@@ -85,6 +87,9 @@ CREATE INDEX IF NOT EXISTS FOR (n:CloudWatchLogGroup) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:CloudWatchMetricFilter) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:CloudWatchMetricFilter) ON (n.arn);
 CREATE INDEX IF NOT EXISTS FOR (n:CloudWatchMetricFilter) ON (n.lastupdated);
+CREATE INDEX IF NOT EXISTS FOR (n:CredentialReportUser) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:CredentialReportUser) ON (n.arn);
+CREATE INDEX IF NOT EXISTS FOR (n:CredentialReportUser) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:CrowdstrikeHost) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:CrowdstrikeHost) ON (n.instance_id);
 CREATE INDEX IF NOT EXISTS FOR (n:CrowdstrikeHost) ON (n.lastupdated);
