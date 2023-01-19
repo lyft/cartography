@@ -168,6 +168,11 @@ def get_role_tags(boto3_session: boto3.session.Session) -> List[Dict]:
     role_list = get_role_list_data(boto3_session)
     resource_client = boto3_session.resource('iam')
     role_tag_data: List[Dict] = []
+    if len(role_list) == 0:
+        logger.warning(
+                "Could not find tags for role due to empty list; skipping...",
+            )
+        return role_tag_data
     for role in role_list:
         try:
             name = role["RoleName"]
@@ -182,9 +187,9 @@ def get_role_tags(boto3_session: boto3.session.Session) -> List[Dict]:
                 'Tags': resource_role.tags,
             }
             role_tag_data.append(tag_data)
-        except resource_client.meta.client.exceptions.NoSuchEntityException:
+        except TypeError:
             logger.warning(
-                f"Could not get tags for role due to NoSuchEntityException; skipping.",
+                "Could not get tags for role due to Exception; skipping...",
             )
 
     return role_tag_data
