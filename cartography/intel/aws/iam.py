@@ -169,18 +169,23 @@ def get_role_tags(boto3_session: boto3.session.Session) -> List[Dict]:
     resource_client = boto3_session.resource('iam')
     role_tag_data: List[Dict] = []
     for role in role_list:
-        name = role["RoleName"]
-        role_arn = role["Arn"]
-        resource_role = resource_client.Role(name)
-        role_tags = resource_role.tags
-        if not role_tags:
-            continue
+        try:
+            name = role["RoleName"]
+            role_arn = role["Arn"]
+            resource_role = resource_client.Role(name)
+            role_tags = resource_role.tags
+            if not role_tags:
+                continue
 
-        tag_data = {
-            'ResourceARN': role_arn,
-            'Tags': resource_role.tags,
-        }
-        role_tag_data.append(tag_data)
+            tag_data = {
+                'ResourceARN': role_arn,
+                'Tags': resource_role.tags,
+            }
+            role_tag_data.append(tag_data)
+        except resource_client.meta.client.exceptions.NoSuchEntityException:
+            logger.warning(
+                f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
+            )
 
     return role_tag_data
 
