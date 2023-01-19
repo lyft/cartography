@@ -1,13 +1,18 @@
+import csv
 import enum
+import io
 import json
 import logging
+import time
 from dataclasses import dataclass
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 import boto3
+import dateutil.parser as dp
 import neo4j
 
 from cartography.client.core.tx import load_graph_data
@@ -224,6 +229,100 @@ def get_server_certificates(boto3_session: boto3.session.Session) -> List[Dict]:
     for page in paginator.paginate():
         server_certificates.extend(page['ServerCertificateMetadataList'])
     return server_certificates
+
+
+def _attempt_get_credential_report_content(boto3_session: boto3.session.Session) -> Optional[bytes]:
+    client = boto3_session.client('iam')
+    try:
+        return client.get_credential_report()['Content']
+    except (
+        client.exceptions.CredentialReportNotPresentException,
+        client.exceptions.CredentialReportExpiredException,
+        client.exceptions.CredentialReportNotReadyException,
+    ):
+        return None
+
+
+def _attempt_generate_credential_report_content(boto3_session: boto3.session.Session) -> None:
+    client = boto3_session.client('iam')
+    client.generate_credential_report()
+
+
+@timeit
+def get_credential_report_content(boto3_session: boto3.session.Session) -> Optional[bytes]:
+    content = None
+    for _ in range(3):
+        content = _attempt_get_credential_report_content(boto3_session)
+        if content is None:
+            _attempt_generate_credential_report_content(boto3_session)
+        else:
+            return content
+        time.sleep(3)
+    return content
+
+def transform_credential_report_users(credential_report_content: Optional[bytes]) -> List:
+    def str_to_optional_bool(s: str) -> Optional[bool]:
+        return True if s == 'true' else False if s == 'false' else None
+
+    def str_to_optional_timestamp(s: str) -> Optional[int]:
+        try:
+            return int(dp.parse(s).timestamp())
+        except dp.ParserError:
+            return None
+
+    def str_to_optional_str(s: str) -> Optional[str]:
+        return None if s == 'N/A' else s
+
+    if credential_report_content is None:
+        return []
+    credential_report_users = []
+    content_csv = credential_report_content.decode('utf-8')
+    with io.StringIO(content_csv) as fp:
+        csv_reader = csv.reader(fp, delimiter=",")
+        next(csv_reader)
+        for row in csv_reader:
+            credential_report_user: Dict[str, Any] = {}
+            credential_report_user['user'] = row[0]
+            credential_report_user['arn'] = row[1]
+            credential_report_user['user_creation_time'] = str_to_optional_timestamp(row[2])
+            credential_report_user['password_enabled'] = str_to_optional_bool(row[3])
+            credential_report_user['password_last_used'] = str_to_optional_timestamp(row[4])
+            credential_report_user['password_last_changed'] = str_to_optional_timestamp(row[5])
+            credential_report_user['password_next_rotation'] = str_to_optional_timestamp(row[6])
+            credential_report_user['mfa_active'] = str_to_optional_bool(row[7])
+            credential_report_user['access_key_1_active'] = str_to_optional_bool(row[8])
+            credential_report_user['access_key_1_last_rotated'] = str_to_optional_timestamp(row[9])
+            credential_report_user['access_key_1_last_used_date'] = str_to_optional_timestamp(row[10])
+            credential_report_user['access_key_1_last_used_region'] = str_to_optional_str(row[11])
+            credential_report_user['access_key_1_last_used_service'] = str_to_optional_str(row[12])
+            credential_report_user['access_key_2_active'] = str_to_optional_bool(row[13])
+            credential_report_user['access_key_2_last_rotated'] = str_to_optional_timestamp(row[14])
+            credential_report_user['access_key_2_last_used_date'] = str_to_optional_timestamp(row[15])
+            credential_report_user['access_key_2_last_used_region'] = str_to_optional_str(row[16])
+            credential_report_user['access_key_2_last_used_service'] = str_to_optional_str(row[17])
+            credential_report_user['cert_1_active'] = str_to_optional_bool(row[18])
+            credential_report_user['cert_1_last_rotated'] = str_to_optional_timestamp(row[19])
+            credential_report_user['cert_2_active'] = str_to_optional_bool(row[20])
+            credential_report_user['cert_2_last_rotated'] = str_to_optional_timestamp(row[21])
+            credential_report_users.append(credential_report_user)
+    return credential_report_users
+
+
+@timeit
+def get_account_password_policy(
+    boto3_session: boto3.session.Session,
+    current_aws_account_id: str,
+) -> Dict:
+    client = boto3_session.client('iam')
+    account_password_policy: Dict = {}
+    try:
+        account_password_policy = client.get_account_password_policy()['PasswordPolicy']
+    except client.exceptions.NoSuchEntityException:
+        logger.warning(
+            f"Could not get account password policy for account {current_aws_account_id} "
+            f"due to NoSuchEntityException; skipping.",
+        )
+    return account_password_policy
 
 
 @timeit
@@ -680,6 +779,140 @@ def load_server_certificates(
     )
 
 
+@dataclass(frozen=True)
+class CredentialReportUserNodeProperties(CartographyNodeProperties):
+    firstseen: PropertyRef = PropertyRef('firstseen')
+    id: PropertyRef = PropertyRef('arn')
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    user: PropertyRef = PropertyRef('user')
+    arn: PropertyRef = PropertyRef('arn')
+    user_creation_time: PropertyRef = PropertyRef('user_creation_time')
+    password_enabled: PropertyRef = PropertyRef('password_enabled')
+    password_last_used: PropertyRef = PropertyRef('password_last_used')
+    password_last_changed: PropertyRef = PropertyRef('password_last_changed')
+    password_next_rotation: PropertyRef = PropertyRef('password_next_rotation')
+    mfa_active: PropertyRef = PropertyRef('mfa_active')
+    access_key_1_active: PropertyRef = PropertyRef('access_key_1_active')
+    access_key_1_last_rotated: PropertyRef = PropertyRef('access_key_1_last_rotated')
+    access_key_1_last_used_date: PropertyRef = PropertyRef('access_key_1_last_used_date')
+    access_key_1_last_used_region: PropertyRef = PropertyRef('access_key_1_last_used_region')
+    access_key_1_last_used_service: PropertyRef = PropertyRef('access_key_1_last_used_service')
+    access_key_2_active: PropertyRef = PropertyRef('access_key_2_active')
+    access_key_2_last_rotated: PropertyRef = PropertyRef('access_key_2_last_rotated')
+    access_key_2_last_used_date: PropertyRef = PropertyRef('access_key_2_last_used_date')
+    access_key_2_last_used_region: PropertyRef = PropertyRef('access_key_2_last_used_region')
+    access_key_2_last_used_service: PropertyRef = PropertyRef('access_key_2_last_used_service')
+    cert_1_active: PropertyRef = PropertyRef('cert_1_active')
+    cert_1_last_rotated: PropertyRef = PropertyRef('cert_1_last_rotated')
+    cert_2_active: PropertyRef = PropertyRef('cert_2_active')
+    cert_2_last_rotated: PropertyRef = PropertyRef('cert_2_last_rotated')
+
+
+@dataclass(frozen=True)
+class CredentialReportUserToAWSAccountRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+# (:CredentialReportUser)<-[:RESOURCE]-(:AWSAccount)
+class CredentialReportUserToAWSAccount(CartographyRelSchema):
+    target_node_label: str = 'AWSAccount'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'id': PropertyRef('AccountId', set_in_kwargs=True)},
+    )
+    direction: LinkDirection = LinkDirection.INWARD
+    rel_label: str = "RESOURCE"
+    properties: CredentialReportUserToAWSAccountRelProperties = CredentialReportUserToAWSAccountRelProperties()
+
+
+@dataclass(frozen=True)
+class CredentialReportUserSchema(CartographyNodeSchema):
+    label: str = 'CredentialReportUser'
+    properties: CredentialReportUserNodeProperties = CredentialReportUserNodeProperties()
+    sub_resource_relationship: CredentialReportUserToAWSAccount = CredentialReportUserToAWSAccount()
+
+
+@timeit
+def load_credential_report_users(
+    neo4j_session: neo4j.Session,
+    credential_report_users: List,
+    current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
+    logger.info("Loading %d credential report users into graph.", len(credential_report_users))
+
+    ingestion_query = build_ingestion_query(CredentialReportUserSchema())
+
+    load_graph_data(
+        neo4j_session,
+        ingestion_query,
+        credential_report_users,
+        lastupdated=aws_update_tag,
+        AccountId=current_aws_account_id,
+    )
+
+
+@dataclass(frozen=True)
+class AccountPasswordPolicyNodeProperties(CartographyNodeProperties):
+    firstseen: PropertyRef = PropertyRef('firstseen')
+    id: PropertyRef = PropertyRef('AccountId', set_in_kwargs=True)
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    minimum_password_length: PropertyRef = PropertyRef('MinimumPasswordLength')
+    require_symbols: PropertyRef = PropertyRef('RequireSymbols')
+    require_numbers: PropertyRef = PropertyRef('RequireNumbers')
+    require_uppercase_characters: PropertyRef = PropertyRef('RequireUppercaseCharacters')
+    require_lowercase_characters: PropertyRef = PropertyRef('RequireLowercaseCharacters')
+    allow_users_to_change_password: PropertyRef = PropertyRef('AllowUsersToChangePassword')
+    expire_passwords: PropertyRef = PropertyRef('ExpirePasswords')
+    max_password_age: PropertyRef = PropertyRef('MaxPasswordAge')
+    password_reuse_prevention: PropertyRef = PropertyRef('PasswordReusePrevention')
+    hard_expiry: PropertyRef = PropertyRef('HardExpiry')
+
+
+@dataclass(frozen=True)
+class AccountPasswordPolicyToAWSAccountRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+# (:AccountPasswordPolicy)<-[:RESOURCE]-(:AWSAccount)
+class AccountPasswordPolicyToAWSAccount(CartographyRelSchema):
+    target_node_label: str = 'AWSAccount'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'id': PropertyRef('AccountId', set_in_kwargs=True)},
+    )
+    direction: LinkDirection = LinkDirection.INWARD
+    rel_label: str = "RESOURCE"
+    properties: AccountPasswordPolicyToAWSAccountRelProperties = AccountPasswordPolicyToAWSAccountRelProperties()
+
+
+@dataclass(frozen=True)
+class AccountPasswordPolicySchema(CartographyNodeSchema):
+    label: str = 'AccountPasswordPolicy'
+    properties: AccountPasswordPolicyNodeProperties = AccountPasswordPolicyNodeProperties()
+    sub_resource_relationship: AccountPasswordPolicyToAWSAccount = AccountPasswordPolicyToAWSAccount()
+
+
+@timeit
+def load_account_password_policy(
+    neo4j_session: neo4j.Session,
+    account_password_policy: Dict,
+    current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
+    logger.info("Loading account password policy into graph.")
+
+    ingestion_query = build_ingestion_query(AccountPasswordPolicySchema())
+
+    load_graph_data(
+        neo4j_session,
+        ingestion_query,
+        [account_password_policy],
+        lastupdated=aws_update_tag,
+        AccountId=current_aws_account_id,
+    )
+
+
 @timeit
 def sync_users(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
@@ -840,6 +1073,51 @@ def sync_server_certificates(
 
 
 @timeit
+def sync_credential_report_users(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session,
+    current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
+) -> None:
+    logger.info("Syncing credential report users for account '%s'.", current_aws_account_id)
+    credential_report_content = get_credential_report_content(boto3_session)
+    credential_report_users = transform_credential_report_users(credential_report_content)
+
+    # TODO: Use the existing AWSUser / AWSPrincipal constructs instead of creating a different label
+    # For simplicity of avoiding the merge, we separate it for now.
+    if credential_report_content is not None:
+        load_credential_report_users(
+            neo4j_session,
+            credential_report_users,
+            current_aws_account_id,
+            aws_update_tag,
+        )
+    run_cleanup_job(
+        'aws_import_credential_report_users_cleanup.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+
+@timeit
+def sync_account_password_policy(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session,
+    current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
+) -> None:
+    logger.info("Syncing account password policy for account '%s'.", current_aws_account_id)
+    account_password_policy = get_account_password_policy(boto3_session, current_aws_account_id)
+    load_account_password_policy(
+        neo4j_session,
+        account_password_policy,
+        current_aws_account_id,
+        aws_update_tag,
+    )
+    run_cleanup_job(
+        'aws_import_account_password_policy_cleanup.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+
+@timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
@@ -854,6 +1132,20 @@ def sync(
     sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_server_certificates(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+    sync_credential_report_users(
+        neo4j_session,
+        boto3_session,
+        current_aws_account_id,
+        update_tag,
+        common_job_parameters,
+    )
+    sync_account_password_policy(
+        neo4j_session,
+        boto3_session,
+        current_aws_account_id,
+        update_tag,
+        common_job_parameters,
+    )
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
     merge_module_sync_metadata(
         neo4j_session,

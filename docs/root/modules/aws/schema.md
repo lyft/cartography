@@ -2,6 +2,31 @@
 
 .. _aws_schema:
 
+### AccountPasswordPolicy
+Representation of an PasswordPolicy for an account (https://docs.aws.amazon.com/IAM/latest/APIReference/API_PasswordPolicy.html).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| id | The AccountID |
+| minimum_password_length | Minimum length to require for IAM user passwords |
+| require_symbols | Whether IAM user passwords must contain symbols |
+| require_numbers | Specifies whether IAM user passwords must contain at least one numeric character |
+| require_uppercase_characters | Specifies whether IAM user passwords must contain at least one uppercase character |
+| require_lowercase_characters | Specifies whether IAM user passwords must contain at least one lowercase character |
+| allow_users_to_change_password | Specifies whether IAM users are allowed to change their own password |
+| expire_passwords | Indicates whether passwords in the account expire |
+| max_password_age | The number of days that an IAM user password is valid |
+| password_reuse_prevention | Specifies the number of previous passwords that IAM users are prevented from reusing |
+| hard_expiry | Specifies whether IAM users are prevented from setting a new password via console after their password has expired |
+
+#### Relationships
+- AccountPasswordPolicy is a resource of an AWSAccount.
+        ```
+        (AWSAccount)-[RESOURCE]->(AccountPasswordPolicy)
+        ```
+
 ### AWSAccount
 
 Representation of an AWS Account.
@@ -560,6 +585,38 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
     ```
     (AWSAccount)-[RESOURCE]->(AWSRole)
     ```
+
+### CredentialReportUser
+Representation of an CredentialReportUser (In the future, this should be merged with AWSPrincipal / AWSUser).
+
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| id | Matches the arn field |
+| user | The friendly name of the user. |
+| arn | ARN of the user |
+| user_creation_time | Unix timestamp when the user was created |
+| password_enabled | Whether the user has a password |
+| password_last_used | Unix timestamp of when the AWS account root user or user's password was last used to sign in |
+| password_last_changed | Unix timestamp of when the user's password was last set |
+| password_next_rotation | When rotation required, Unix timestamp of when this is due |
+| mfa_active | Whether an MFA device has been enabled |
+| access_key_1_active | Whether first access key's status is active |
+| access_key_1_last_rotated | Unix timestamp when the user's access key was created or last changed |
+| access_key_1_last_used_date | Unix timestamp when the user's access key was most recently used to sign a request |
+| access_key_1_last_used_region | Region in which the access key was most recently used |
+| access_key_1_last_used_service | AWS service that was most recently accessed with the access key |
+| access_key_2_active | Whether second access key's status is active |
+| access_key_2_last_rotated | Unix timestamp when the user's access key was created or last changed |
+| access_key_2_last_used_date | Unix timestamp when the user's access key was most recently used to sign a request |
+| access_key_2_last_used_region | Region in which the access key was most recently used |
+| access_key_2_last_used_service | AWS service that was most recently accessed with the access key |
+| cert_1_active | Whether user has a X.509 signing certificate and that certificate's status is active |
+| cert_1_last_rotated | Unix timestamp when the user's signing certificate was created or last changed |
+| cert_2_active | Whether user has a second X.509 signing certificate and that certificate's status is active|
+| cert_2_last_rotated | Unix timestamp when the user's signing certificate was created or last changed |
+
 
 ### AWSTransitGateway
 Representation of an [AWS Transit Gateway](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_TransitGateway.html).
