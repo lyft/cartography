@@ -184,7 +184,7 @@ def get_role_tags(boto3_session: boto3.session.Session) -> List[Dict]:
             role_tag_data.append(tag_data)
         except resource_client.meta.client.exceptions.NoSuchEntityException:
             logger.warning(
-                f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
+                f"Could not get tags for role due to NoSuchEntityException; skipping.",
             )
 
     return role_tag_data
