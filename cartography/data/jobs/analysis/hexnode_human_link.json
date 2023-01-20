@@ -1,7 +1,7 @@
 {
   "statements": [
     {
-      "query": "MATCH (human:Human), (user:HexnodeUser) WHERE human.email = hexnode.email MERGE (human)-[r:IDENTITY_HEXNODE]->(user) ON CREATE SET r.firstseen = $UPDATE_TAG SET r.lastupdated = $UPDATE_TAG",
+      "query": "MATCH (human:Human), (user:HexnodeUser) WHERE human.email = user.email MERGE (human)-[r:IDENTITY_HEXNODE]->(user) ON CREATE SET r.firstseen = $UPDATE_TAG SET r.lastupdated = $UPDATE_TAG",
       "iterative": false
     },
     {
