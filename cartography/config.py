@@ -81,6 +81,10 @@ class Config:
     :param pagerduty_request_timeout: Seconds to timeout for pagerduty session requests. Optional
     :type: nist_cve_url: str
     :param nist_cve_url: NIST CVE data provider base URI, e.g. https://nvd.nist.gov/feeds/json/cve/1.1. Optional.
+    :type: gsuite_auth_method: str
+    :param gsuite_auth_method: Auth method (delegated, oauth) used for Google Workspace. Optional.
+    :type gsuite_config: str
+    :param gsuite_config: Base64 encoded config object or config file path for Google Workspace. Optional.
     """
 
     def __init__(
@@ -127,6 +131,8 @@ class Config:
         sumologic_access_id=None,
         sumologic_access_key=None,
         sumologic_api_url=None,
+        gsuite_auth_method=None,
+        gsuite_config=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -170,3 +176,5 @@ class Config:
         self.sumologic_access_id = sumologic_access_id
         self.sumologic_access_key = sumologic_access_key
         self.sumologic_api_url = sumologic_api_url
+        self.gsuite_auth_method = gsuite_auth_method
+        self.gsuite_config = gsuite_config
