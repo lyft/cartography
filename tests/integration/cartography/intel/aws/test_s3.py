@@ -92,7 +92,7 @@ def test_load_s3_policies(neo4j_session, *args):
     data = cartography.intel.aws.s3.parse_policy_statements("bucket-1", tests.data.aws.s3.LIST_STATEMENTS)
     cartography.intel.aws.s3._load_s3_policy_statements(neo4j_session, data, TEST_UPDATE_TAG)
 
-    expected_nodes = {
+    expected_nodes = [
         (
             "S3PolicyId1",
             "2012-10-17",
@@ -129,7 +129,7 @@ def test_load_s3_policies(neo4j_session, *args):
             "arn:aws:s3:::DOC-EXAMPLE-BUCKET/*",
             None,
         ),
-    }
+    ]
 
     nodes = neo4j_session.run(
         """
@@ -139,7 +139,7 @@ def test_load_s3_policies(neo4j_session, *args):
         s.policy_id, s.policy_version, s.id, s.sid, s.effect, s.principal, s.action, s.resource, s.condition
         """,
     )
-    actual_nodes = {
+    actual_nodes = [
         (
             n['s.policy_id'],
             n['s.policy_version'],
@@ -152,8 +152,10 @@ def test_load_s3_policies(neo4j_session, *args):
             n['s.condition'],
         )
         for n in nodes
-    }
-    assert actual_nodes == expected_nodes
+    ]
+    assert len(actual_nodes) == 3
+    for node in actual_nodes:
+        assert node in expected_nodes
 
     actual_relationships = neo4j_session.run(
         """
