@@ -269,27 +269,17 @@ def _build_attach_relationships_statement(
     return query_template.safe_substitute(attach_relationships_statement=attach_relationships_statement)
 
 
-class WhereIsTheRelationship(Enum):
-    """
-    Enum to represent where a relationship is located on a CartographyNodeSchema object.
-    """
-    ON_SUB_RESOURCE = auto()
-    ON_OTHER_RELATIONSHIPS = auto()
-
-
 def rel_present_on_node_schema(
         node_schema: CartographyNodeSchema,
         rel_schema: CartographyRelSchema,
-) -> Optional[WhereIsTheRelationship]:
+) -> bool:
     """
-    Answers the question: is the given rel_schema is present on the given node_schema, and if so, where?
+    Answers the question: is the given rel_schema is present on the given node_schema?
     """
     sub_res_rel, other_rels = filter_selected_relationships(node_schema, {rel_schema})
-    if sub_res_rel:
-        return WhereIsTheRelationship.ON_SUB_RESOURCE
-    if other_rels:
-        return WhereIsTheRelationship.ON_OTHER_RELATIONSHIPS
-    return None
+    if sub_res_rel or other_rels:
+        return True
+    return False
 
 
 def filter_selected_relationships(
@@ -302,7 +292,7 @@ def filter_selected_relationships(
     :param node_schema: The node schema object to filter relationships against
     :param selected_relationships: The set of relationships to check if they exist in the node schema. If empty set,
     this means that no relationships have been selected. None is not an accepted value here.
-    :return: a tuple of the (sub resource rel [if present in selected_relationships], an OtherRelationships object
+    :return: a tuple of the shape (sub resource rel [if present in selected_relationships], an OtherRelationships object
     containing all values of node_schema.other_relationships that are present in selected_relationships)
     """
     # The empty set means no relationships are selected
