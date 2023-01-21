@@ -1,7 +1,5 @@
 import logging
 from dataclasses import asdict
-from enum import auto
-from enum import Enum
 from string import Template
 from typing import Dict
 from typing import Optional
