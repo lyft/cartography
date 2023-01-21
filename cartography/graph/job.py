@@ -50,8 +50,7 @@ def get_parameters(queries: List[str]) -> Set[str]:
     for query in queries:
         as_template = Template(query)
         params = _get_identifiers(as_template)
-        for param in params:
-            parameter_set.add(param)
+        parameter_set.update(params)
     return parameter_set
 
 
