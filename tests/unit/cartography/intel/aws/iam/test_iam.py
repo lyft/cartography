@@ -35,3 +35,62 @@ def test__parse_principal_entries():
 def test_get_account_from_arn():
     result = iam.get_account_from_arn("arn:aws:iam::081157660428:role/TestRole")
     assert result == "081157660428"
+
+
+def test__get_role_tags_valid_tags(mocker):
+    mocker.patch(
+        'cartography.intel.aws.iam.get_role_list_data', return_value={
+            'Roles': [
+                {
+                    'RoleName': 'test-role',
+                    'Arn': 'test-arn',
+                },
+            ],
+        },
+    )
+    mocker.patch('boto3.session.Session')
+    mock_session = mocker.Mock()
+    mock_client = mocker.Mock()
+    mock_role = mocker.Mock()
+    mock_role.tags = [
+        {
+            'Key': 'k1', 'Value': 'v1',
+        },
+    ]
+    mock_client.Role.return_value = mock_role
+    mock_session.resource.return_value = mock_client
+    result = iam.get_role_tags(mock_session)
+
+    assert result == [{
+        'ResourceARN': 'test-arn',
+        'Tags': [
+            {
+                'Key': 'k1',
+                'Value': 'v1',
+            },
+        ],
+    }]
+
+
+def test__get_role_tags_no_tags(mocker):
+    mocker.patch(
+        'cartography.intel.aws.iam.get_role_list_data', return_value={
+            'Roles': [
+                {
+                    'RoleName': 'test-role',
+                    'Arn': 'test-arn',
+                },
+            ],
+        },
+    )
+    mocker.patch('boto3.session.Session')
+    mock_session = mocker.Mock()
+    mock_client = mocker.Mock()
+    mock_role = mocker.Mock()
+    mock_role.tags = [
+    ]
+    mock_client.Role.return_value = mock_role
+    mock_session.resource.return_value = mock_client
+    result = iam.get_role_tags(mock_session)
+
+    assert result == []
