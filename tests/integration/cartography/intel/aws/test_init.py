@@ -92,7 +92,7 @@ def test_start_aws_ingestion(mock_run_analysis, mock_sync_multiple, mock_orgs, m
     assert mock_sync_multiple.call_count == 1
 
     # Brittle, but here to ensure that our mock_run_analysis path is correct.
-    assert mock_run_analysis.call_count == 3
+    assert mock_run_analysis.call_count == 4
 
 
 @mock.patch('cartography.intel.aws.boto3.Session')
@@ -162,7 +162,7 @@ def test_start_aws_ingestion_does_cleanup(
     mock_get_aws_account.return_value = {'test_profile': 'test_account', 'test_profile2': 'test_account2'}
     cartography.intel.aws.start_aws_ingestion(neo4j_session, test_config)
 
-    assert mock_run_analysis.call_count == 3
+    assert mock_run_analysis.call_count == 4
     assert mock_run_cleanup_job.call_count == 1
 
 

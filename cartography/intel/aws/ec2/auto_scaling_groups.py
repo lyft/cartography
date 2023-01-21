@@ -1,5 +1,4 @@
 import logging
-import time
 from typing import Dict
 from typing import List
 
@@ -66,7 +65,7 @@ def load_launch_configurations(
         SET r.lastupdated = $update_tag
     """
     for lc in data:
-        lc['CreatedTime'] = str(time.mktime(lc['CreatedTime'].timetuple()))
+        lc['CreatedTime'] = str(int(lc['CreatedTime'].timestamp()))
 
     neo4j_session.run(
         ingest_lc,
