@@ -178,6 +178,40 @@ def _build_cleanup_rel_query(
     Generates an optimized and tuned relationship deletion query for the given node schema.
     Ensures that the node-relationship to be cleaned up is connected to a given sub resource, and (optionally) to
     another relationship -- this way it is much less likely to delete relationships that you weren't expecting.
+
+    Example 1: no selected relationship
+    ```
+    class InterestingAssetSchema(CartographyNodeSchema):
+        label: str = 'InterestingAsset'
+        sub_resource_relationship: InterestingAssetToSubResourceRel = InterestingAssetToSubResourceRel()
+        other_relationships: Optional[OtherRelationships] = OtherRelationships(
+            [
+                InterestingAssetToHelloAssetRel(),
+                InterestingAssetToWorldAssetRel(),
+            ],
+        )
+        # ... other attrs ...
+
+    _build_cleanup_rel_query(InterestingAssetSchema())
+    -->
+        MATCH (:InterestingAsset)<-[r:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        WHERE r.lastupdated <> $UPDATE_TAG
+        WITH r LIMIT $LIMIT_SIZE
+        DELETE r;
+    ```
+
+    Example 2: with a selected relationship
+    _build_cleanup_rel_query(
+        InterestingAssetSchema(),
+        InterestingAssetToHelloAssetRel(),
+    )
+    -->
+        MATCH (src:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (src)-[r:ASSOCIATED_WITH]->(:HelloAsset)
+        WHERE r.lastupdated <> $UPDATE_TAG
+        WITH r LIMIT $LIMIT_SIZE
+        DELETE r;
+
     :param node_schema: The node_schema to generate a query from.
     :param selected_relationship: If specified, generate a cleanup query for the node_schema and the given
     selected_relationship. selected_relationship must be in the set {node_schema.sub_resource_relationship} +
