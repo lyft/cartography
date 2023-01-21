@@ -51,6 +51,7 @@ def load_host_data(
             h.subscription_name = host.subscriptionName,
             h.resource_group = host.resourceGroup,
             h.hostname = host.name,
+            h.short_hostname = host.short_hostname,
             h.type = host.type,
             h.osname = host.osname,
             h.ostype = host.ostype,
