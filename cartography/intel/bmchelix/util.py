@@ -137,7 +137,6 @@ def get_bmchelix_hosts(
     )
     df_bmchelix_tmp["short_hostname"] = df_bmchelix_tmp["short_hostname"].str.lower()
     logger.debug("Example df line: %s", df_bmchelix_tmp.head(1).T.to_string())
-    logger.warning("Example df line: %s", df_bmchelix_tmp.head(1).T.to_string())
 
     # Remove uuid None or null
     df_bmchelix_tmp = df_bmchelix_tmp[df_bmchelix_tmp.uuid.notnull()]
