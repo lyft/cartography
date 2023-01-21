@@ -20,8 +20,11 @@ def build_cleanup_queries(
     """
     Generates queries to clean up stale nodes and relationships from the given CartographyNodeSchema.
     :param node_schema: The given CartographyNodeSchema to generate cleanup queries for.
-    :param selected_rels: Optional. If specified, only generate cleanup queries bound to the given set of selected
-    relationships. If not specified, generated cleanup queries against all relationships on the node_schema.
+    :param selected_rels: Optional. If specified, only generate cleanup queries where the `node_schema` is bound to this
+    given set of selected relationships. Raises an exception if any of the rels in `selected_rels` aren't actually
+    defined on the `node_schema`.
+    If `selected_rels` is not specified (default), we generate cleanup queries against all relationships defined on the
+    `node_schema`.
     :return: A list of Neo4j queries to clean up nodes and relationships. Order matters: we always clean up the sub
     resource relationship last because we only clean up stale nodes and rels that are associated with a given sub
     resource, so if we delete the sub resource first then we will not be able to reach the stale nodes and rels, thus
