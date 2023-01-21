@@ -81,6 +81,10 @@ class Config:
     :param pagerduty_request_timeout: Seconds to timeout for pagerduty session requests. Optional
     :type: nist_cve_url: str
     :param nist_cve_url: NIST CVE data provider base URI, e.g. https://nvd.nist.gov/feeds/json/cve/1.1. Optional.
+    :type: gsuite_auth_method: str
+    :param gsuite_auth_method: Auth method (delegated, oauth) used for Google Workspace. Optional.
+    :type gsuite_config: str
+    :param gsuite_config: Base64 encoded config object or config file path for Google Workspace. Optional.
     """
 
     def __init__(
@@ -126,6 +130,8 @@ class Config:
         crowdstrike_client_id=None,
         crowdstrike_client_secret=None,
         crowdstrike_api_url=None,
+        gsuite_auth_method=None,
+        gsuite_config=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -168,3 +174,5 @@ class Config:
         self.crowdstrike_client_id = crowdstrike_client_id
         self.crowdstrike_client_secret = crowdstrike_client_secret
         self.crowdstrike_api_url = crowdstrike_api_url
+        self.gsuite_auth_method = gsuite_auth_method
+        self.gsuite_config = gsuite_config
