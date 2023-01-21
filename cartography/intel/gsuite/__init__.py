@@ -1,8 +1,11 @@
+import base64
+import json
 import logging
 import os
 from collections import namedtuple
 
 import googleapiclient.discovery
+import httplib2
 import neo4j
 from googleapiclient.discovery import Resource
 from oauth2client.client import ApplicationDefaultCredentialsError
@@ -11,10 +14,6 @@ from oauth2client.client import GoogleCredentials
 from cartography.config import Config
 from cartography.intel.gsuite import api
 from cartography.util import timeit
-
-# GSuite Delegated admin e-mail https://developers.google.com/admin-sdk/directory/v1/guides/delegation
-GSUITE_DELEGATED_ADMIN = os.environ.get('GSUITE_DELEGATED_ADMIN')
-GSUITE_CREDS = os.environ.get('GSUITE_GOOGLE_APPLICATION_CREDENTIALS')
 
 OAUTH_SCOPE = [
     'https://www.googleapis.com/auth/admin.directory.user.readonly',
@@ -62,23 +61,50 @@ def start_gsuite_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
         "UPDATE_TAG": config.update_tag,
     }
 
-    try:
-        credentials = GoogleCredentials.from_stream(GSUITE_CREDS)
-        credentials = credentials.create_scoped(OAUTH_SCOPE)
-        credentials = credentials.create_delegated(GSUITE_DELEGATED_ADMIN)
+    if config.gsuite_auth_method == 'delegated':  # Legacy delegated method
+        logger.info('Attempting to authenticate to GSuite using legacy delegated method')
+        try:
+            credentials = GoogleCredentials.from_stream(config.gsuite_config)
+            credentials = credentials.create_scoped(OAUTH_SCOPE)
+            credentials = credentials.create_delegated(os.environ.get('GSUITE_DELEGATED_ADMIN'))
 
-    except ApplicationDefaultCredentialsError as e:
-        logger.debug('Error occurred calling GoogleCredentials.get_application_default().', exc_info=True)
-        logger.error(
-            (
-                "Unable to initialize GSuite creds. If you don't have GSuite data or don't want to load "
-                'Gsuite data then you can ignore this message. Otherwise, the error code is: %s '
-                'Make sure your GSuite credentials are configured correctly, your credentials file (if any) is valid. '
-                'For more details see README'
-            ),
-            e,
-        )
-        return
+        except ApplicationDefaultCredentialsError as e:
+            logger.error(
+                (
+                    "Unable to initialize GSuite creds. If you don't have GSuite data or don't want to load "
+                    'Gsuite data then you can ignore this message. Otherwise, the error code is: %s '
+                    'Make sure your GSuite credentials file (if any) is valid. '
+                    'For more details see README'
+                ),
+                e,
+            )
+            return
+    elif config.gsuite_auth_method == 'oauth':
+        auth_tokens = json.loads(str(base64.b64decode(config.gsuite_config).decode()))
+        logger.info('Attempting to authenticate to GSuite using OAuth')
+        try:
+            credentials = GoogleCredentials(
+                None,
+                auth_tokens['client_id'],
+                auth_tokens['client_secret'],
+                auth_tokens['refresh_token'],
+                None,
+                auth_tokens['token_uri'],
+                'Cartography',
+            )
+            credentials.refresh(httplib2.Http())
+            credentials = credentials.create_scoped(OAUTH_SCOPE)
+        except ApplicationDefaultCredentialsError as e:
+            logger.error(
+                (
+                    "Unable to initialize GSuite creds. If you don't have GSuite data or don't want to load "
+                    'Gsuite data then you can ignore this message. Otherwise, the error code is: %s '
+                    'Make sure your GSuite credentials are configured correctly, your credentials are valid. '
+                    'For more details see README'
+                ),
+                e,
+            )
+            return
 
     resources = _initialize_resources(credentials)
     api.sync_gsuite_users(neo4j_session, resources.admin, config.update_tag, common_job_parameters)

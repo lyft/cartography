@@ -179,6 +179,12 @@ def _sync_multiple_accounts(
                 exception_traceback = traceback.TracebackException.from_exception(e)
                 traceback_string = ''.join(exception_traceback.format())
                 exception_tracebacks.append(f'{timestamp} - Exception for account ID: {account_id}\n{traceback_string}')
+                logger.warning(
+                    f"Caught exception syncing account {account_id}. aws-best-effort-mode is on so we are continuing "
+                    f"on to the next AWS account. All exceptions will be aggregated and re-logged at the end of the "
+                    f"sync.",
+                    exc_info=True,
+                )
                 continue
             else:
                 raise

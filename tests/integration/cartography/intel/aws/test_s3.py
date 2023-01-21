@@ -153,7 +153,9 @@ def test_load_s3_policies(neo4j_session, *args):
         )
         for n in nodes
     ]
-    assert actual_nodes == expected_nodes
+    assert len(actual_nodes) == 3
+    for node in actual_nodes:
+        assert node in expected_nodes
 
     actual_relationships = neo4j_session.run(
         """
