@@ -317,6 +317,10 @@ def sync(
     )
     # FIRESTORE INDEXES
     for database in firestore_databases:
+        # If database is in DATASTORE MODE, indexes can not be fetched
+        if database['type'] == 'DATASTORE_MODE':
+            continue
+
         indexes = get_firestore_indexes(firestore, database, project_id)
         firestore_indexes = transform_indexes(indexes, database, project_id)
         load_firestore_indexes(neo4j_session, firestore_indexes, project_id, gcp_update_tag)

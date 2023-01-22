@@ -47,9 +47,9 @@ def transform_client_certificates(certs: List[Dict], region: str, account_id: st
     certificates = []
     for certificate in certs:
         certificate['region'] = region
-        console_arn = f"arn:aws:apigateway:{region}::certificate/{certificate['apiId']}"
-        certificate['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
-        certificate['arn'] = f"arn:aws:apigateway:{region}:{account_id}:clientcertificates/{certificate['clientCertificateId']}"
+        console_arn = f"arn:aws:apigateway:{region}:{account_id}:clientcertificates/{certificate['clientCertificateId']}"
+        # certificate['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
+        certificate['arn'] = console_arn
         certificates.append(certificate)
 
     return certificates
@@ -163,7 +163,7 @@ def transform_apigateway_rest_apis(apis):
 @timeit
 @aws_handle_regions
 def get_rest_api_details(
-        boto3_session: boto3.session.Session, rest_apis: List[Dict],
+        boto3_session: boto3.session.Session, rest_apis: List[Dict], aws_account_id: str
 ) -> Generator[Any, Any, Any]:
     """
     Iterates over all API Gateway REST APIs.
@@ -179,12 +179,14 @@ def get_rest_api_details(
         )
         client = boto3_session.client('apigateway', config=config)
         stages = get_rest_api_stages(api, client)
-        cert = get_rest_api_client_certificate(stages, client)  # clientcertificate id is given by the api stage
-        certificate = transform_rest_api_client_certificate(cert, api['id'], api['region'])
+        cert = get_rest_api_client_certificate(stages, client)
+        certificate = transform_rest_api_client_certificate(cert, api['region'], aws_account_id)
         resources = get_rest_api_resources(api, client)
         for resource in resources:
-            console_arn = f"arn:aws:apigateway:{api['region']}::/{api['id']}"
-            resource['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
+            # console_arn = f"arn:aws:apigateway:{api['region']}::/{api['id']}"
+            # resource['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
+            resource['consolelink'] = ''
+
         policy = get_rest_api_policy(api, client)
         yield api['id'], stages, certificate, resources, policy, api['region']
 
@@ -226,11 +228,12 @@ def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseCl
 
 
 @timeit
-def transform_rest_api_client_certificate(certs: List[Dict], api_id: str, api_region: str) -> List[Dict]:
+def transform_rest_api_client_certificate(certs: List[Dict], api_region: str, aws_account_id: str) -> List[Dict]:
     certificates = []
     for certificate in certs:
-        console_arn = f"arn:aws:apigateway:{api_region}::certificate/{api_id}"
-        certificate['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
+        # console_arn = f"arn:aws:apigateway:{api_region}:{aws_account_id}:clientcertificates/{certificate['clientCertificateId']}"
+        # certificate['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
+
         certificates.append(certificate)
 
     return certificates
@@ -568,7 +571,7 @@ def sync_apigateway_rest_apis(
 
     load_apigateway_rest_apis(neo4j_session, data, current_aws_account_id, aws_update_tag)
 
-    stages_certificate_resources = get_rest_api_details(boto3_session, data)
+    stages_certificate_resources = get_rest_api_details(boto3_session, data, current_aws_account_id)
 
     load_rest_api_details(
         neo4j_session, stages_certificate_resources, current_aws_account_id, aws_update_tag, common_job_parameters,

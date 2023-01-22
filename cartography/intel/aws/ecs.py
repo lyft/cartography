@@ -326,7 +326,14 @@ def load_ecs_task_definitions(
     for task_definition in data:
         task_definition['registeredAt'] = dict_date_to_epoch(task_definition, 'registeredAt')
         task_definition['deregisteredAt'] = dict_date_to_epoch(task_definition, 'deregisteredAt')
-        task_definition['consolelink'] = aws_console_link.get_console_link(arn=task_definition['taskDefinitionArn'])
+
+        # handle revision number in task definitions
+        arn = task_definition['taskDefinitionArn']
+        if len(arn.split(':')) > 6:
+            arn = arn[:arn.rfind(':')]
+
+        task_definition['consolelink'] = aws_console_link.get_console_link(arn=arn)
+
         for container in task_definition.get("containerDefinitions", []):
             container["_taskDefinitionArn"] = task_definition["taskDefinitionArn"]
             container_definitions.append(container)
