@@ -6,15 +6,14 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 
-from cartography.graph.model import CartographyNodeProperties
-from cartography.graph.model import CartographyNodeSchema
-from cartography.graph.model import CartographyRelSchema
-from cartography.graph.model import ExtraNodeLabels
-from cartography.graph.model import LinkDirection
-from cartography.graph.model import OtherRelationships
-from cartography.graph.model import PropertyRef
-from cartography.graph.model import TargetNodeMatcher
-
+from cartography.models.core.common import PropertyRef
+from cartography.models.core.nodes import CartographyNodeProperties
+from cartography.models.core.nodes import CartographyNodeSchema
+from cartography.models.core.nodes import ExtraNodeLabels
+from cartography.models.core.relationships import CartographyRelSchema
+from cartography.models.core.relationships import LinkDirection
+from cartography.models.core.relationships import OtherRelationships
+from cartography.models.core.relationships import TargetNodeMatcher
 
 logger = logging.getLogger(__name__)
 
