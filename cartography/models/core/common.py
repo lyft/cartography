@@ -8,16 +8,24 @@ class PropertyRef:
     (PropertyRef.set_in_kwargs=True).
     """
 
-    def __init__(self, name: str, set_in_kwargs=False):
+    def __init__(self, name: str, set_in_kwargs=False, extra_index=False):
         """
         :param name: The name of the property
         :param set_in_kwargs: Optional. If True, the property is not defined on the data dict, and we expect to find the
         property in the kwargs.
         If False, looks for the property in the data dict.
         Defaults to False.
+        :param extra_index: If True, make sure that we create an index for this property name.
+          Notes:
+          - extra_index is available for the case where you anticipate a property will be queried frequently.
+          - The `id` and `lastupdated` properties will always have indexes created for them automatically by
+            `ensure_indexes()`.
+          - All properties included in target node matchers will always have indexes created for them.
+            Defaults to False.
         """
         self.name = name
         self.set_in_kwargs = set_in_kwargs
+        self.extra_index = extra_index
 
     def _parameterize_name(self) -> str:
         return f"${self.name}"
