@@ -378,13 +378,19 @@ def build_ingestion_query(
 
 
 def build_create_index_queries(node_schema: CartographyNodeSchema) -> List[str]:
+    """
+    Generate queries to create indexes for the given CartographyNodeSchema and all node types attached to it via its
+    relationships.
+    :param node_schema: The Cartography node_schema object
+    :return: A list of queries of the form `CREATE INDEX IF NOT EXISTS FOR (n:$TargetNodeLabel) ON (n.$TargetAttribute)`
+    """
     index_template = Template('CREATE INDEX IF NOT EXISTS FOR (n:$TargetNodeLabel) ON (n.$TargetAttribute);')
 
-    # First create index for the node_schema and all extra labels
+    # First ensure an index exists for the node_schema and all extra labels on the `id` field
     result = [
         index_template.safe_substitute(
             TargetNodeLabel=node_schema.label,
-            TargetAttribute='id',
+            TargetAttribute='id',  # All CartographyNodeSchema objects have an id
         ),
     ]
 
@@ -396,6 +402,7 @@ def build_create_index_queries(node_schema: CartographyNodeSchema) -> List[str]:
             ) for label in node_schema.extra_node_labels.labels
         ])
 
+    # Now, for all relationships possible out of this node, ensure that indexes exist for all target nodes
     rel_schemas = []
     if node_schema.sub_resource_relationship:
         rel_schemas.extend([node_schema.sub_resource_relationship])

@@ -214,13 +214,16 @@ def load_graph_data(
         )
 
 
-def _ensure_indexes(neo4j_session: neo4j.Session, index_queries: List[str]) -> None:
-    for query in index_queries:
+def ensure_indexes(neo4j_session: neo4j.Session, node_schema: CartographyNodeSchema) -> None:
+    """
+    Ensures that indexes exist for the given CartographyNodeSchema object, as well as for all of the
+    relationships defined on its `other_relationships` and `sub_resource_relationship` fields.
+    :param neo4j_session: The neo4j session
+    :param node_schema: The node_schema object to create indexes for.
+    """
+    queries = build_create_index_queries(node_schema)
+
+    for query in queries:
         if not query.startswith('CREATE INDEX IF NOT EXISTS'):
             raise ValueError('Query provided to `ensure_indexes()` does not start with "CREATE INDEX IF NOT EXISTS".')
         neo4j_session.run(query)
-
-
-def ensure_indexes(neo4j_session: neo4j.Session, node_schema: CartographyNodeSchema) -> None:
-    queries = build_create_index_queries(node_schema)
-    _ensure_indexes(neo4j_session, queries)
