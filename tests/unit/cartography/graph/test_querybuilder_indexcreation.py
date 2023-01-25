@@ -1,5 +1,5 @@
 from cartography.graph.querybuilder import build_create_index_queries
-from cartography.intel.aws.emr import EMRClusterSchema
+from cartography.models.aws.emr import EMRClusterSchema
 from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetSchema
 
 
