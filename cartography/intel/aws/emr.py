@@ -61,11 +61,8 @@ def load_emr_clusters(
         aws_update_tag: int,
 ) -> None:
     logger.info("Loading EMR %d clusters for region '%s' into graph.", len(cluster_data), region)
-
     ensure_indexes(neo4j_session, EMRClusterSchema())
-
     ingestion_query = build_ingestion_query(EMRClusterSchema())
-
     load_graph_data(
         neo4j_session,
         ingestion_query,
