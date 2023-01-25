@@ -7,7 +7,7 @@ from typing import Union
 
 import neo4j
 
-from cartography.graph.model import CartographyNodeSchema
+from cartography.models.core.nodes import CartographyNodeSchema
 from cartography.graph.querybuilder import build_create_index_queries
 from cartography.util import batch
 
