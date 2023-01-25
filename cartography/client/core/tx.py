@@ -216,8 +216,9 @@ def load_graph_data(
 
 def ensure_indexes(neo4j_session: neo4j.Session, node_schema: CartographyNodeSchema) -> None:
     """
-    Ensures that indexes exist for the given CartographyNodeSchema object, as well as for all of the
-    relationships defined on its `other_relationships` and `sub_resource_relationship` fields.
+    Creates indexes if they don't exist for the given CartographyNodeSchema object, as well as for all of the
+    relationships defined on its `other_relationships` and `sub_resource_relationship` fields. This operation is
+    idempotent.
 
     This ensures that every time we need to MATCH on a node to draw a relationship to it, the field used for the MATCH
     will be indexed, making the operation fast.
