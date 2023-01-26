@@ -11,7 +11,7 @@ CLOUDTRAIL_TRAILS = [
         "IncludeGlobalServiceEvents": True,
         "IsMultiRegionTrail": True,
         "HomeRegion": "HomeRegion",
-        "TrailARN": "TrailARN1",
+        "TrailARN": "arn:aws:cloudtrail:us-east-1:000000000000:trail/TRAIL1",
         "LogFileValidationEnabled": True,
         "CloudWatchLogsLogGroupArn": "CloudWatchLogsLogGroupArn",
         "CloudWatchLogsRoleArn": "CloudWatchLogsRoleArn",
@@ -30,7 +30,7 @@ CLOUDTRAIL_TRAILS = [
         "IncludeGlobalServiceEvents": False,
         "IsMultiRegionTrail": False,
         "HomeRegion": "HomeRegion",
-        "TrailARN": "TrailARN2",
+        "TrailARN": "arn:aws:cloudtrail:us-east-1:000000000001:trail/TRAIL2",
         "LogFileValidationEnabled": True,
         "CloudWatchLogsLogGroupArn": "CloudWatchLogsLogGroupArn",
         "LatestCloudWatchLogsDeliveryTime": datetime.datetime(2021, 10, 12, 12, 19, 6, 294000, tzinfo=tz.utc),
@@ -44,7 +44,7 @@ CLOUDTRAIL_TRAILS = [
 ]
 
 TRAIL_ARN_TO_CLOUDTRAIL_EVENT_SELECTORS = {
-    "TrailARN1": [
+    "arn:aws:cloudtrail:us-east-1:000000000000:trail/TRAIL1": [
         {
             'ReadWriteType': 'All',
             'IncludeManagementEvents': True,
@@ -69,7 +69,7 @@ TRAIL_ARN_TO_CLOUDTRAIL_EVENT_SELECTORS = {
             'ExcludeManagementEventSources': [],
         },
     ],
-    "TrailARN2": [
+    "arn:aws:cloudtrail:us-east-1:000000000001:trail/TRAIL2": [
         {
             'ReadWriteType': 'All',
             'IncludeManagementEvents': True,
