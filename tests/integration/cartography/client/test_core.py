@@ -126,7 +126,7 @@ def test_ensure_indexes(neo4j_session):
             "HelloAsset" in labelsOrTypes OR
             "WorldAsset" in labelsOrTypes
     ''').data()
-    assert len(indexes) == 3
+    assert len(indexes) == 4
 
     # Assert there is 1 label for each index created (Neo4j's data-shape of `SHOW ALL INDEXES` is weird)
     for item in indexes:
@@ -142,4 +142,4 @@ def test_ensure_indexes(neo4j_session):
 
     # Assert that the indexed property for all 3 node labels is as expected (`id` in this case)
     indexed_fields = {item['properties'][0] for item in indexes}
-    assert indexed_fields == {'id'}
+    assert indexed_fields == {'id', 'lastupdated'}
