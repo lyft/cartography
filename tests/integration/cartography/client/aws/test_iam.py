@@ -34,6 +34,7 @@ def _ensure_test_data(neo4j_session):
         "group_inline_policy",
         "inline",
         "arn:aws:iam::000000000000:group/example-group-0",
+        TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
 

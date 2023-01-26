@@ -260,6 +260,7 @@ def get_credential_report_content(boto3_session: boto3.session.Session) -> Optio
         time.sleep(3)
     return content
 
+
 def transform_credential_report_users(credential_report_content: Optional[bytes]) -> List:
     def str_to_optional_bool(s: str) -> Optional[bool]:
         return True if s == 'true' else False if s == 'false' else None
@@ -647,7 +648,7 @@ def transform_policy_id(principal_arn: str, policy_type: str, name: str) -> str:
 
 def _load_policy_tx(
     tx: neo4j.Transaction, policy_id: str, policy_name: str, policy_type: str, principal_arn: str,
-    aws_update_tag: int,
+    current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_policy = """
     MERGE (policy:AWSPolicy{id: $PolicyId})
@@ -660,6 +661,11 @@ def _load_policy_tx(
     MATCH (principal:AWSPrincipal{arn: $PrincipalArn})
     MERGE (policy) <-[r:POLICY]-(principal)
     SET r.lastupdated = $aws_update_tag
+    WITH policy
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
+    MERGE (aa)-[r:RESOURCE]->(policy)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $aws_update_tag
     """
     tx.run(
         ingest_policy,
@@ -667,6 +673,7 @@ def _load_policy_tx(
         PolicyName=policy_name,
         PolicyType=policy_type,
         PrincipalArn=principal_arn,
+        AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
     )
 
@@ -674,9 +681,12 @@ def _load_policy_tx(
 @timeit
 def load_policy(
     neo4j_session: neo4j.Session, policy_id: str, policy_name: str, policy_type: str, principal_arn: str,
-    aws_update_tag: int,
+    current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
-    neo4j_session.write_transaction(_load_policy_tx, policy_id, policy_name, policy_type, principal_arn, aws_update_tag)
+    neo4j_session.write_transaction(
+        _load_policy_tx, policy_id, policy_name, policy_type, principal_arn,
+        current_aws_account_id, aws_update_tag,
+    )
 
 
 @timeit
@@ -712,12 +722,18 @@ def load_policy_statements(
 
 
 @timeit
-def load_policy_data(neo4j_session: neo4j.Session, policy_map: Dict, policy_type: str, aws_update_tag: int) -> None:
+def load_policy_data(
+    neo4j_session: neo4j.Session, policy_map: Dict, policy_type: str,
+    current_aws_account_id: str, aws_update_tag: int,
+) -> None:
     for principal_arn, policy_list in policy_map.items():
         logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
         for policy_name, statements in policy_list.items():
             policy_id = transform_policy_id(principal_arn, policy_type, policy_name)
-            load_policy(neo4j_session, policy_id, policy_name, policy_type, principal_arn, aws_update_tag)
+            load_policy(
+                neo4j_session, policy_id, policy_name, policy_type, principal_arn,
+                current_aws_account_id, aws_update_tag,
+            )
             load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag)
 
 
@@ -922,9 +938,13 @@ def sync_users(
     data = get_user_list_data(boto3_session)
     load_users(neo4j_session, data['Users'], current_aws_account_id, aws_update_tag)
 
-    sync_user_inline_policies(boto3_session, data, neo4j_session, aws_update_tag)
+    sync_user_inline_policies(
+        boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag,
+    )
 
-    sync_user_managed_policies(boto3_session, data, neo4j_session, aws_update_tag)
+    sync_user_managed_policies(
+        boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag,
+    )
 
     run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -932,21 +952,27 @@ def sync_users(
 @timeit
 def sync_user_managed_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
+    current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     managed_policy_data = get_user_managed_policy_data(boto3_session, data['Users'])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, aws_update_tag)
+    load_policy_data(
+        neo4j_session, managed_policy_data, PolicyType.managed.value,
+        current_aws_account_id, aws_update_tag,
+    )
 
 
 @timeit
 def sync_user_inline_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
+    current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     policy_data = get_user_policy_data(boto3_session, data['Users'])
     transform_policy_data(policy_data, PolicyType.inline.value)
-    load_policy_data(neo4j_session, policy_data, PolicyType.inline.value, aws_update_tag)
+    load_policy_data(
+        neo4j_session, policy_data, PolicyType.inline.value,
+        current_aws_account_id, aws_update_tag,
+    )
 
 
 @timeit
@@ -958,29 +984,39 @@ def sync_groups(
     data = get_group_list_data(boto3_session)
     load_groups(neo4j_session, data['Groups'], current_aws_account_id, aws_update_tag)
 
-    sync_groups_inline_policies(boto3_session, data, neo4j_session, aws_update_tag)
+    sync_groups_inline_policies(
+        boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag,
+    )
 
-    sync_group_managed_policies(boto3_session, data, neo4j_session, aws_update_tag)
+    sync_group_managed_policies(
+        boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag,
+    )
 
     run_cleanup_job('aws_import_groups_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def sync_group_managed_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
+    current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     managed_policy_data = get_group_managed_policy_data(boto3_session, data["Groups"])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, aws_update_tag)
+    load_policy_data(
+        neo4j_session, managed_policy_data, PolicyType.managed.value,
+        current_aws_account_id, aws_update_tag,
+    )
 
 
 def sync_groups_inline_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    aws_update_tag: int,
+    current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     policy_data = get_group_policy_data(boto3_session, data["Groups"])
     transform_policy_data(policy_data, PolicyType.inline.value)
-    load_policy_data(neo4j_session, policy_data, PolicyType.inline.value, aws_update_tag)
+    load_policy_data(
+        neo4j_session, policy_data, PolicyType.inline.value,
+        current_aws_account_id, aws_update_tag,
+    )
 
 
 @timeit
@@ -992,31 +1028,41 @@ def sync_roles(
     data = get_role_list_data(boto3_session)
     load_roles(neo4j_session, data['Roles'], current_aws_account_id, aws_update_tag)
 
-    sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
+    sync_role_inline_policies(
+        boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag,
+    )
 
-    sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
+    sync_role_managed_policies(
+        boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag,
+    )
 
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def sync_role_managed_policies(
-    current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
-    neo4j_session: neo4j.Session, aws_update_tag: int,
+    boto3_session: boto3.session.Session, data: Dict,
+    neo4j_session: neo4j.Session, current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     logger.info("Syncing IAM role managed policies for account '%s'.", current_aws_account_id)
     managed_policy_data = get_role_managed_policy_data(boto3_session, data["Roles"])
     transform_policy_data(managed_policy_data, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value, aws_update_tag)
+    load_policy_data(
+        neo4j_session, managed_policy_data, PolicyType.managed.value,
+        current_aws_account_id, aws_update_tag,
+    )
 
 
 def sync_role_inline_policies(
-    current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
-    neo4j_session: neo4j.Session, aws_update_tag: int,
+    boto3_session: boto3.session.Session, data: Dict,
+    neo4j_session: neo4j.Session, current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     logger.info("Syncing IAM role inline policies for account '%s'.", current_aws_account_id)
     inline_policy_data = get_role_policy_data(boto3_session, data["Roles"])
     transform_policy_data(inline_policy_data, PolicyType.inline.value)
-    load_policy_data(neo4j_session, inline_policy_data, PolicyType.inline.value, aws_update_tag)
+    load_policy_data(
+        neo4j_session, inline_policy_data, PolicyType.inline.value,
+        current_aws_account_id, aws_update_tag,
+    )
 
 
 @timeit

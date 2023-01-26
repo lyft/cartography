@@ -792,6 +792,11 @@ Representation of an AWS [CloudTrail trail](https://docs.aws.amazon.com/awscloud
         ```
         (AWSAccount)-[RESOURCE]->(CloudTrail)
         ```
+- CloudTrail monitors an AWSAccount.
+
+        ```
+        (CloudTrail)-[MONITORS]->(AWSAccount)
+        ```
 - CloudTrail delivers logs to an S3Bucket.
 
         ```

@@ -1,4 +1,5 @@
 import hashlib
+import itertools
 import json
 import logging
 from dataclasses import dataclass
@@ -30,6 +31,11 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
 
+def get_account_from_arn(arn: str) -> str:
+    # TODO use policyuniverse to parse ARN?
+    return arn.split(":")[4]
+
+
 @timeit
 @aws_handle_regions
 def get_cloudtrail_trails(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
@@ -47,22 +53,31 @@ def get_cloudtrail_trails(boto3_session: boto3.session.Session, region: str) -> 
 
 
 @timeit
-def transform_trail_and_related_objects(trails: List[Dict]) -> Tuple[List, List, List]:
+def transform_trail_and_related_objects(
+    trails: List[Dict], current_aws_account_id: str,
+) -> Tuple[List, List, List, List]:
+    native_trails: List[Dict] = []
+    foreign_trails: List[Dict] = []
     s3_buckets: List[Dict] = []
     log_groups: List[Dict] = []
-    for i in range(len(trails)):
-        trails[i]['LatestCloudWatchLogsDeliveryTime'] = dict_date_to_epoch(
-            trails[i], 'LatestCloudWatchLogsDeliveryTime',
+    for trail in trails:
+        trail['LatestCloudWatchLogsDeliveryTime'] = dict_date_to_epoch(
+            trail, 'LatestCloudWatchLogsDeliveryTime',
         )
-        if 'S3BucketName' in trails[i] and len(trails[i]['S3BucketName']) > 0:
-            s3_buckets.append({
-                'S3BucketName': trails[i]['S3BucketName'],
-            })
-        if 'CloudWatchLogsLogGroupArn' in trails[i] and len(trails[i]['CloudWatchLogsLogGroupArn']) > 0:
-            log_groups.append({
-                'CloudWatchLogsLogGroupArn': trails[i]['CloudWatchLogsLogGroupArn'],
-            })
-    return trails, s3_buckets, log_groups
+        if get_account_from_arn(trail['TrailARN']) == current_aws_account_id:
+            native_trails.append(trail)
+            if 'S3BucketName' in trail and len(trail['S3BucketName']) > 0:
+                s3_buckets.append({
+                    'S3BucketName': trail['S3BucketName'],
+                })
+            if 'CloudWatchLogsLogGroupArn' in trail and len(trail['CloudWatchLogsLogGroupArn']) > 0:
+                log_groups.append({
+                    'CloudWatchLogsLogGroupArn': trail['CloudWatchLogsLogGroupArn'],
+                })
+        else:
+            foreign_trails.append(trail)
+
+    return native_trails, foreign_trails, s3_buckets, log_groups
 
 
 @timeit
@@ -137,6 +152,23 @@ class CloudTrailToAWSAccount(CartographyRelSchema):
 
 
 @dataclass(frozen=True)
+class CloudTrailMonitorsAWSAccountRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+# (:CloudTrail)-[:MONITORS]->(:AWSAccount)
+class CloudTrailMonitorsAWSAccount(CartographyRelSchema):
+    target_node_label: str = 'AWSAccount'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'id': PropertyRef('MonitorsAccountId', set_in_kwargs=True)},
+    )
+    direction: LinkDirection = LinkDirection.OUTWARD
+    rel_label: str = "MONITORS"
+    properties: CloudTrailMonitorsAWSAccountRelProperties = CloudTrailMonitorsAWSAccountRelProperties()
+
+
+@dataclass(frozen=True)
 class CloudTrailToS3BucketRelProps(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
@@ -173,31 +205,67 @@ class CloudTrailSchema(CartographyNodeSchema):
     sub_resource_relationship: CloudTrailToAWSAccount = CloudTrailToAWSAccount()
     other_relationships: Optional[OtherRelationships] = OtherRelationships(
         [
+            CloudTrailMonitorsAWSAccount(),
             CloudTrailToS3Bucket(),
             CloudTrailToCloudWatchLogGroup(),
         ],
     )
 
 
+# For trails belonging to other accounts, we skip delivers to and resource relationships
+@dataclass(frozen=True)
+class ForeignCloudTrailSchema(CartographyNodeSchema):
+    label: str = 'CloudTrail'
+    properties: CloudTrailNodeProperties = CloudTrailNodeProperties()
+    other_relationships: Optional[OtherRelationships] = OtherRelationships(
+        [
+            CloudTrailMonitorsAWSAccount(),
+        ],
+    )
+
+
 @timeit
-def load_cloudtrail_trails(
+def load_cloudtrail_native_trails(
         neo4j_session: neo4j.Session,
-        trails: List[Dict],
+        native_trails: List[Dict],
         region: str,
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
-    logger.info("Loading %d cloudtrail trails for region '%s' into graph.", len(trails), region)
+    logger.info("Loading %d cloudtrail native trails for region '%s' into graph.", len(native_trails), region)
 
     ingestion_query = build_ingestion_query(CloudTrailSchema())
 
     load_graph_data(
         neo4j_session,
         ingestion_query,
-        trails,
+        native_trails,
         lastupdated=aws_update_tag,
         Region=region,
         AccountId=current_aws_account_id,
+        MonitorsAccountId=current_aws_account_id,
+    )
+
+
+@timeit
+def load_cloudtrail_foreign_trails(
+        neo4j_session: neo4j.Session,
+        foreign_trails: List[Dict],
+        region: str,
+        current_aws_account_id: str,
+        aws_update_tag: int,
+) -> None:
+    logger.info("Loading %d cloudtrail foreign trails for region '%s' into graph.", len(foreign_trails), region)
+
+    ingestion_query = build_ingestion_query(ForeignCloudTrailSchema())
+
+    load_graph_data(
+        neo4j_session,
+        ingestion_query,
+        foreign_trails,
+        lastupdated=aws_update_tag,
+        Region=region,
+        MonitorsAccountId=current_aws_account_id,
     )
 
 
@@ -333,17 +401,24 @@ def sync(
         logger.info("Syncing cloudtrail trails for region '%s' in account '%s'.", region, current_aws_account_id)
 
         trails = get_cloudtrail_trails(boto3_session, region)
-        trails, s3_buckets, log_groups = transform_trail_and_related_objects(trails)
+        native_trails, foreign_trails, s3_buckets, log_groups = transform_trail_and_related_objects(
+            trails, current_aws_account_id,
+        )
 
         transformed_event_selectors: List[Dict] = []
-        for trail in trails:
+        for trail in itertools.chain(native_trails, foreign_trails):
             event_selectors = get_cloudtrail_event_selectors(boto3_session, region, trail)
             event_selectors = transform_event_selectors(event_selectors, trail)
             transformed_event_selectors.extend(event_selectors)
 
         load_cloudtrail_s3_buckets(neo4j_session, s3_buckets, update_tag)
         load_cloudtrail_log_groups(neo4j_session, log_groups, update_tag)
-        load_cloudtrail_trails(neo4j_session, trails, region, current_aws_account_id, update_tag)
+        load_cloudtrail_native_trails(
+            neo4j_session, native_trails, region, current_aws_account_id, update_tag,
+        )
+        load_cloudtrail_foreign_trails(
+            neo4j_session, foreign_trails, region, current_aws_account_id, update_tag,
+        )
         load_cloudtrail_event_selectors(neo4j_session, transformed_event_selectors, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
