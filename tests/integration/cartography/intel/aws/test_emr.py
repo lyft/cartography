@@ -80,12 +80,25 @@ def test_cleanup_emr(neo4j_session):
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
-    # Setup: assert that data is in the graph
-    expected_nodes = {
+    # Arrange: load in an unrelated EC2 instance. This should not be affected by the EMR module's cleanup job.
+    neo4j_session.run(
+        '''
+        MERGE (i:EC2Instance{id:1234, lastupdated: $lastupdated})<-[r:RESOURCE]-(:AWSAccount{id: $aws_account_id})
+        SET r.lastupdated = $lastupdated
+        ''',
+        aws_account_id=TEST_ACCOUNT_ID,
+        lastupdated=TEST_UPDATE_TAG,
+    )
+
+    # [Pre-test] Assert that the EMR clusters exist
+    assert check_nodes(neo4j_session, 'EMRCluster', ['arn']) == {
         ("arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-awesome",),
         ("arn:aws:elasticmapreduce:us-east-1:190000000000:cluster/j-meh",),
     }
-    assert check_nodes(neo4j_session, 'EMRCluster', ['arn']) == expected_nodes
+    # [Pre-test] Assert that the unrelated EC2 instance exists
+    assert check_rels(neo4j_session, 'AWSAccount', 'id', 'EC2Instance', 'id', 'RESOURCE') == {
+        (TEST_ACCOUNT_ID, 1234),
+    }
 
     # Act: run the cleanup job
     cleanup(
@@ -98,3 +111,7 @@ def test_cleanup_emr(neo4j_session):
 
     # Assert: Expect no EMR clusters in the graph now
     assert check_nodes(neo4j_session, 'EMRCluster', ['arn']) == set()
+    # Assert: Expect that the unrelated EC2 instance was not touched by the cleanup job
+    assert check_rels(neo4j_session, 'AWSAccount', 'id', 'EC2Instance', 'id', 'RESOURCE') == {
+        (TEST_ACCOUNT_ID, 1234),
+    }
