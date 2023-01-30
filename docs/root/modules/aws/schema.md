@@ -457,10 +457,10 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
         (AWSPrincipal)-[MEMBER_AWS_GROUP]->(AWSGroup)
         ```
 
-- This AccountAccessKey is used to authenticate to this AWSPrincipal.
+- This UserAccessKey is used to authenticate to this AWSPrincipal.
 
         ```
-        (AWSPrincipal)-[AWS_ACCESS_KEY]->(AccountAccessKey)
+        (AWSPrincipal)-[AWS_ACCESS_KEY]->(UserAccessKey)
         ```
 
 - AWS Roles can trust AWS Principals.
@@ -508,10 +508,10 @@ Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReferen
         (AWSUser)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
         ```
 
-- This AccountAccessKey is used to authenticate to this AWSUser
+- This UserAccessKey is used to authenticate to this AWSUser
 
         ```
-        (AWSUser)-[AWS_ACCESS_KEY]->(AccountAccessKey)
+        (AWSUser)-[AWS_ACCESS_KEY]->(UserAccessKey)
         ```
 
 - AWS Accounts contain AWS Users.
@@ -681,7 +681,7 @@ Representation of an AWS [Tag](https://docs.aws.amazon.com/resourcegroupstagging
         (AWSVpc, DBSubnetGroup, EC2Instance, EC2SecurityGroup, EC2Subnet, NetworkInterface, RDSInstance, S3Bucket)-[TAGGED]->(AWSTag)
         ```
 
-### AccountAccessKey
+### UserAccessKey
 
 Representation of an AWS [Access Key](https://docs.aws.amazon.com/IAM/latest/APIReference/API_AccessKey.html).
 
@@ -691,13 +691,14 @@ Representation of an AWS [Access Key](https://docs.aws.amazon.com/IAM/latest/API
 | lastupdated |  Timestamp of the last time the node was updated
 | createdate | Date when access key was created |
 | status | Active: valid for API calls.  Inactive: not valid for API calls|
+| lastused | Date when the access key was last used |
 | **accesskeyid** | The ID for this access key|
 
 #### Relationships
 - Account Access Keys may authenticate AWS Users and AWS Principal objects.
 
         ```
-        (AWSUser, AWSPrincipal)-[AWS_ACCESS_KEY]->(AccountAccessKey)
+        (AWSUser, AWSPrincipal)-[AWS_ACCESS_KEY]->(UserAccessKey)
         ```
 
 

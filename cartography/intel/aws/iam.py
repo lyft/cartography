@@ -227,6 +227,16 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
         logger.warning(
             f"Could not get access key for user {username} due to NoSuchEntityException; skipping.",
         )
+    # We add Last Used data to each access key
+    access_keys_metadata = access_keys.get('AccessKeyMetadata', [])
+    for access_key in access_keys_metadata:
+        access_key_id = access_key.get('AccessKeyId')
+        if not access_key_id:
+            access_key['LastUsed'] = None
+            continue
+        last_used_result = client.get_access_key_last_used(AccessKeyId=access_key_id)
+        last_used_info = last_used_result.get('AccessKeyLastUsed', {"LastUsedDate": None})
+        access_key['LastUsed'] = last_used_info.get('LastUsedDate', None)
     return access_keys
 
 
@@ -252,7 +262,7 @@ def load_users(
             ingest_user,
             ARN=user["Arn"],
             USERID=user["UserId"],
-            CREATE_DATE=str(user["CreateDate"]),
+            CREATE_DATE=user["CreateDate"],
             USERNAME=user["UserName"],
             PATH=user["Path"],
             PASSWORD_LASTUSED=str(user.get("PasswordLastUsed", "")),
@@ -281,7 +291,7 @@ def load_groups(
             ingest_group,
             ARN=group["Arn"],
             GROUP_ID=group["GroupId"],
-            CREATE_DATE=str(group["CreateDate"]),
+            CREATE_DATE=group["CreateDate"],
             GROUP_NAME=group["GroupName"],
             PATH=group["Path"],
             AWS_ACCOUNT_ID=current_aws_account_id,
@@ -358,7 +368,7 @@ def load_roles(
             ingest_role,
             Arn=role["Arn"],
             RoleId=role["RoleId"],
-            CreateDate=str(role["CreateDate"]),
+            CreateDate=role["CreateDate"],
             RoleName=role["RoleName"],
             Path=role["Path"],
             AWS_ACCOUNT_ID=current_aws_account_id,
@@ -480,13 +490,15 @@ def sync_assumerole_relationships(
 
 @timeit
 def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, aws_update_tag: int) -> None:
-    # TODO change the node label to reflect that this is a user access key, not an account access key
-    ingest_account_key = """
+    ingest_user_key = """
     MATCH (user:AWSUser{arn: $UserARN})
     WITH user
-    MERGE (key:AccountAccessKey{accesskeyid: $AccessKeyId})
+    MERGE (key:UserAccessKey{accesskeyid: $AccessKeyId})
     ON CREATE SET key.firstseen = timestamp(), key.createdate = $CreateDate
-    SET key.status = $Status, key.lastupdated = $aws_update_tag
+    SET
+    key.status = $Status,
+    key.lastused = $LastUsed,
+    key.lastupdated = $aws_update_tag
     WITH user,key
     MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
     ON CREATE SET r.firstseen = timestamp()
@@ -497,11 +509,12 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
         for key in access_keys["AccessKeyMetadata"]:
             if key.get('AccessKeyId'):
                 neo4j_session.run(
-                    ingest_account_key,
+                    ingest_user_key,
                     UserARN=arn,
                     AccessKeyId=key['AccessKeyId'],
-                    CreateDate=str(key['CreateDate']),
+                    CreateDate=key['CreateDate'],
                     Status=key['Status'],
+                    LastUsed=key['LastUsed'],
                     aws_update_tag=aws_update_tag,
                 )
 
