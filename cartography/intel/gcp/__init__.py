@@ -370,7 +370,7 @@ def concurrent_execution(
 ):
     logger.info(f"BEGIN processing for service: {service}")
 
-    regions = config.params.get('regions', None)
+    regions = config.params.get('regions', [])
 
     neo4j_auth = (config.neo4j_user, config.neo4j_password)
     neo4j_driver = GraphDatabase.driver(
