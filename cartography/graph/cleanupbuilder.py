@@ -58,16 +58,90 @@ def build_cleanup_queries(
                 _build_cleanup_rel_query(node_schema, rel),
             )
 
-    if sub_resource_rel:
-        # Make sure that the sub resource one is last in the list; order matters.
-        result.append(
-            _build_cleanup_node_query(node_schema),
-        )
-        result.append(
-            _build_cleanup_rel_query(node_schema),
-        )
+    # Make sure that the sub resource one is last in the list; order matters.
+    result.append(
+        _build_cleanup_node_query(node_schema),
+    )
+    result.append(
+        _build_cleanup_rel_query(node_schema),
+    )
     # Note that auto-cleanups for a node with no relationships does not happen at all - we don't support it.
     return result
+
+
+def _build_cleanup_query(
+        node_schema: CartographyNodeSchema,
+        delete_action_clause: str,
+        selected_relationship: Optional[CartographyRelSchema] = None,
+) -> str:
+    """
+    Private function that performs the main string template logic for generating cleanup node and relationship queries.
+    :param node_schema: The given CartographyNodeSchema to generate cleanup queries for.
+    :param delete_action_clause: A neo4j clause of the form
+        `WHERE $var.lastupdated <> $UPDATE_TAG
+         WITH $var LIMIT $LIMIT_SIZE
+         [DETACH] DELETE $var;`.
+    This clause is used to control whether the returned query deletes nodes, relationships, or the sub resource
+    relationship.
+    :param selected_relationship: If specified, generate a cleanup query for the node_schema and the given
+    selected_relationship. selected_relationship must be in the set {node_schema.sub_resource_relationship} +
+    node_schema.other_relationships. If not specified, we clean up the sub resource relationship.
+    :return: A cleanup query.
+    """
+    # Validation
+    if not node_schema.sub_resource_relationship:
+        raise ValueError(
+            f"_build_cleanup_node_query() failed: '{node_schema.label}' does not have a sub_resource_relationship "
+            "defined, so we cannot generate a query to clean it up. Please verify that the class definition is what "
+            "you expect.",
+        )
+    if selected_relationship and not rel_present_on_node_schema(node_schema, selected_relationship):
+        raise ValueError(
+            f"_build_cleanup_node_query(): Attempted to build cleanup query for node '{node_schema.label}' and "
+            f"relationship {selected_relationship.rel_label} but that relationship is not present on the node. Please "
+            "verify the node class definition for the relationships that it has.",
+        )
+
+    # Draw sub resource rel with correct direction
+    if node_schema.sub_resource_relationship.direction == LinkDirection.INWARD:
+        sub_resource_link_template = Template("<-[s:$SubResourceRelLabel]-")
+    else:
+        sub_resource_link_template = Template("-[s:$SubResourceRelLabel]->")
+    sub_resource_link = sub_resource_link_template.safe_substitute(
+        SubResourceRelLabel=node_schema.sub_resource_relationship.rel_label,
+    )
+
+    selected_rel_clause = ""
+    if selected_relationship and selected_relationship != node_schema.sub_resource_relationship:
+        # Draw selected relationship with correct direction
+        if selected_relationship.direction == LinkDirection.INWARD:
+            selected_rel_template = Template("<-[r:$SelectedRelLabel]-")
+        else:
+            selected_rel_template = Template("-[r:$SelectedRelLabel]->")
+        selected_rel = selected_rel_template.safe_substitute(SelectedRelLabel=selected_relationship.rel_label)
+
+        selected_rel_clause_template = Template("""MATCH (n)$selected_rel(:$other_node_label)""")
+        selected_rel_clause = selected_rel_clause_template.safe_substitute(
+            selected_rel=selected_rel,
+            other_node_label=selected_relationship.target_node_label,
+        )
+
+    # Ensure the node is attached to the sub resource and delete the node
+    query_template = Template(
+        """
+        MATCH (n:$node_label)$sub_resource_link(:$sub_resource_label{$match_sub_res_clause})
+        $selected_rel_clause
+        $delete_action_clause
+        """,
+    )
+    return query_template.safe_substitute(
+        node_label=node_schema.label,
+        sub_resource_link=sub_resource_link,
+        sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
+        match_sub_res_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
+        selected_rel_clause=selected_rel_clause,
+        delete_action_clause=delete_action_clause,
+    )
 
 
 def _build_cleanup_node_query(
@@ -93,7 +167,7 @@ def _build_cleanup_node_query(
 
     _build_cleanup_node_query(InterestingAssetSchema())
     -->
-        MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
         WHERE n.lastupdated <> $UPDATE_TAG
         WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
@@ -101,8 +175,8 @@ def _build_cleanup_node_query(
     Example 2: specifying a selected rel: in this case we anchor the InterestingAsset to the HelloAsset.
     _build_cleanup_node_query(InterestingAssetSchema(), InterestingAssetToHelloAssetRel())
     -->
-        MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (n)-[:ASSOCIATED_WITH]->(:HelloAsset)
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)-[r:ASSOCIATED_WITH]->(:HelloAsset)
         WHERE n.lastupdated <> $UPDATE_TAG
         WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
@@ -110,64 +184,16 @@ def _build_cleanup_node_query(
     :param node_schema: The node_schema to generate a query from.
     :param selected_relationship: If specified, generate a cleanup query for the node_schema and the given
     selected_relationship. selected_relationship must be in the set {node_schema.sub_resource_relationship} +
-    node_schema.other_relationships. If not specified, this defaults to the sub resource relationship.
+    node_schema.other_relationships. If not specified, this defaults to None, meaning that we generate a query to clean
+    up stale nodes attached to the sub resource relationship.
     :return: A Neo4j query to clean up stale nodes of the given type.
     """
-    # Validation
-    if not node_schema.sub_resource_relationship:
-        raise ValueError(
-            f"_build_cleanup_node_query() failed: '{node_schema.label}' does not have a sub_resource_relationship "
-            "defined, so we cannot generate a query to clean it up. Please verify that the class definition is what "
-            "you expect.",
-        )
-    if selected_relationship and not rel_present_on_node_schema(node_schema, selected_relationship):
-        raise ValueError(
-            f"_build_cleanup_node_query(): Attempted to build cleanup query for node '{node_schema.label}' and "
-            f"relationship {selected_relationship.rel_label} but that relationship is not present on the node. Please "
-            "verify the node class definition for the relationships that it has.",
-        )
-
-    # Draw sub resource rel with correct direction
-    if node_schema.sub_resource_relationship.direction == LinkDirection.INWARD:
-        sub_resource_link_template = Template("<-[:$SubResourceRelLabel]-")
-    else:
-        sub_resource_link_template = Template("-[:$SubResourceRelLabel]->")
-    sub_resource_link = sub_resource_link_template.safe_substitute(
-        SubResourceRelLabel=node_schema.sub_resource_relationship.rel_label,
-    )
-
-    selected_rel_clause = ""
-    if selected_relationship and selected_relationship != node_schema.sub_resource_relationship:
-        # Draw selected relationship with correct direction
-        if selected_relationship.direction == LinkDirection.INWARD:
-            selected_rel_template = Template("<-[:$SelectedRelLabel]-")
-        else:
-            selected_rel_template = Template("-[:$SelectedRelLabel]->")
-        selected_rel = selected_rel_template.safe_substitute(SelectedRelLabel=selected_relationship.rel_label)
-
-        selected_rel_clause_template = Template("""MATCH (n)$selected_rel(:$other_node_label)""")
-        selected_rel_clause = selected_rel_clause_template.safe_substitute(
-            selected_rel=selected_rel,
-            other_node_label=selected_relationship.target_node_label,
-        )
-
-    # Ensure the node is attached to the sub resource and delete the node
-    query_template = Template(
-        """
-        MATCH (n:$node_label)$sub_resource_link(:$sub_resource_label{$match_sub_res_clause})
-        $selected_rel_clause
+    delete_action_clause = """
         WHERE n.lastupdated <> $UPDATE_TAG
         WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
-        """,
-    )
-    return query_template.safe_substitute(
-        node_label=node_schema.label,
-        sub_resource_link=sub_resource_link,
-        sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
-        match_sub_res_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
-        selected_rel_clause=selected_rel_clause,
-    )
+    """
+    return _build_cleanup_query(node_schema, delete_action_clause, selected_relationship)
 
 
 def _build_cleanup_rel_query(
@@ -194,10 +220,10 @@ def _build_cleanup_rel_query(
 
     _build_cleanup_rel_query(InterestingAssetSchema())
     -->
-        MATCH (:InterestingAsset)<-[r:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        WHERE r.lastupdated <> $UPDATE_TAG
-        WITH r LIMIT $LIMIT_SIZE
-        DELETE r;
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        WHERE s.lastupdated <> $UPDATE_TAG
+        WITH s LIMIT $LIMIT_SIZE
+        DELETE s;
     ```
 
     Example 2: with a selected relationship
@@ -206,73 +232,50 @@ def _build_cleanup_rel_query(
         InterestingAssetToHelloAssetRel(),
     )
     -->
-        MATCH (src:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (src)-[r:ASSOCIATED_WITH]->(:HelloAsset)
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)-[r:ASSOCIATED_WITH]->(:HelloAsset)
         WHERE r.lastupdated <> $UPDATE_TAG
         WITH r LIMIT $LIMIT_SIZE
         DELETE r;
 
     :param node_schema: The node_schema to generate a query from.
-    :param selected_relationship: If specified, generate a cleanup query for the node_schema and the given
+    :param selected_relationship: If specified, generate a cleanup query including the node_schema and the given
     selected_relationship. selected_relationship must be in the set {node_schema.sub_resource_relationship} +
-    node_schema.other_relationships. If not specified, this defaults to the sub resource relationship.
+    node_schema.other_relationships. If not specified, this defaults to None, meaning that we generate a query to clean
+    up stale sub resource relationships.
     :return: A Neo4j query to clean up stale relationships of the given type in the given node_schema.
     """
-    if not node_schema.sub_resource_relationship:
-        raise ValueError(
-            f"_build_cleanup_rel_query() failed: '{node_schema.label}' does not have a sub_resource_relationship "
-            "defined, so we cannot generate a query to clean up rels. Please verify that the class definition is what "
-            "you expect. If this is intended, then please write a manual cleanup job in json as auto cleanup jobs "
-            "without sub resource rels is currently not supported.",
-        )
-    # Make query to consider just the sub resource and nothing else
-    if not selected_relationship:
-        return _build_cleanup_rel_sub_resource_only(node_schema)
-
-    if not rel_present_on_node_schema(node_schema, selected_relationship):
-        raise ValueError(
-            f"_build_cleanup_rel_query(): Attempted to build cleanup query for node '{node_schema.label}' and "
-            f"relationship {selected_relationship.rel_label} but that relationship is not present on the node. Please "
-            f"verify the node class definition for the relationships that it has.",
-        )
-
-    # Draw sub resource rel with correct direction
-    if node_schema.sub_resource_relationship.direction == LinkDirection.INWARD:
-        sub_resource_link_template = Template("<-[:$SubRelLabel]-")
-    else:
-        sub_resource_link_template = Template("-[:$SubRelLabel]->")
-    sub_resource_link = sub_resource_link_template.safe_substitute(
-        SubRelLabel=node_schema.sub_resource_relationship.rel_label,
-    )
-
-    # Draw selected relationship with correct direction
-    if selected_relationship.direction == LinkDirection.INWARD:
-        rel_to_delete_template = Template("<-[r:$RelToDeleteLabel]-")
-    else:
-        rel_to_delete_template = Template("-[r:$RelToDeleteLabel]->")
-    rel_to_delete = rel_to_delete_template.safe_substitute(RelToDeleteLabel=selected_relationship.rel_label)
-
-    # Ensure the node is attached to the sub resource and delete the relationship
-    query_template = Template(
+    if selected_relationship:
+        # Clean up a relationship defined on node_schema.other_relationships
+        delete_action_clause = """
+            WHERE r.lastupdated <> $UPDATE_TAG
+            WITH r LIMIT $LIMIT_SIZE
+            DELETE r;
         """
-        MATCH (src:$node_label)$sub_resource_link(:$sub_resource_label{$match_sub_res_clause})
-        MATCH (src)$rel_to_delete(:$other_node)
-        WHERE r.lastupdated <> $UPDATE_TAG
-        WITH r LIMIT $LIMIT_SIZE
-        DELETE r;
-        """,
-    )
-    return query_template.safe_substitute(
-        node_label=node_schema.label,
-        sub_resource_link=sub_resource_link,
-        sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
-        match_sub_res_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
-        rel_to_delete=rel_to_delete,
-        other_node=selected_relationship.target_node_label,
-    )
+    else:
+        if not node_schema.sub_resource_relationship:
+            raise ValueError(
+                f"_build_cleanup_rel_query() failed: '{node_schema.label}' does not have a sub_resource_relationship "
+                "defined, so we cannot generate a query to clean up rels. Please verify that the class definition is "
+                "what you expect. If this is intended, then please write a manual cleanup job in json as auto cleanup "
+                "jobs without sub resource rels is currently not supported.",
+            )
+        _validate_target_node_matcher_for_cleanup_job(node_schema.sub_resource_relationship.target_node_matcher)
+
+        # Clean up the sub resource relationship
+        delete_action_clause = """
+            WHERE s.lastupdated <> $UPDATE_TAG
+            WITH s LIMIT $LIMIT_SIZE
+            DELETE s;
+        """
+    return _build_cleanup_query(node_schema, delete_action_clause, selected_relationship)
 
 
 def _validate_target_node_matcher_for_cleanup_job(tgm: TargetNodeMatcher):
+    """
+    Raises ValueError if a single PropertyRef in the given TargetNodeMatcher does not have set_in_kwargs=True.
+    This is a private function meant only to be called when we clean up the sub resource relationship.
+    """
     tgm_asdict = asdict(tgm)
 
     for key, prop_ref in tgm_asdict.items():
@@ -281,41 +284,3 @@ def _validate_target_node_matcher_for_cleanup_job(tgm: TargetNodeMatcher):
                 f"TargetNodeMatcher PropertyRefs in the sub_resource_relationship must have set_in_kwargs=True. "
                 f"{key} has set_in_kwargs=False, please check.",
             )
-
-
-def _build_cleanup_rel_sub_resource_only(node_schema: CartographyNodeSchema) -> str:
-    """
-    Generate a query to clean up stale relationships between nodes and their sub resource.
-    :param node_schema: The CartographyNodeSchema object
-    """
-    if not node_schema.sub_resource_relationship:
-        raise ValueError(
-            f"_build_cleanup_rel_sub_resource_only() failed: {node_schema.label}' does not have a "
-            "sub_resource_relationship defined, so we cannot generate a query to clean it up. Please verify that the "
-            "class definition is what you expect.",
-        )
-    _validate_target_node_matcher_for_cleanup_job(node_schema.sub_resource_relationship.target_node_matcher)
-
-    # Draw sub resource rel with correct direction
-    if node_schema.sub_resource_relationship.direction == LinkDirection.INWARD:
-        sub_resource_link_template = Template("<-[r:$SubRelLabel]-")
-    else:
-        sub_resource_link_template = Template("-[r:$SubRelLabel]->")
-    sub_resource_link = sub_resource_link_template.safe_substitute(
-        SubRelLabel=node_schema.sub_resource_relationship.rel_label,
-    )
-
-    query_template = Template(
-        """
-        MATCH (:$node_label)$sub_resource_link(:$sub_resource_label{$sub_res_match_clause})
-        WHERE r.lastupdated <> $UPDATE_TAG
-        WITH r LIMIT $LIMIT_SIZE
-        DELETE r;
-        """,
-    )
-    return query_template.safe_substitute(
-        node_label=node_schema.label,
-        sub_resource_label=node_schema.sub_resource_relationship.target_node_label,
-        sub_resource_link=sub_resource_link,
-        sub_res_match_clause=_build_match_clause(node_schema.sub_resource_relationship.target_node_matcher),
-    )

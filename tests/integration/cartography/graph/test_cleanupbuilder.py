@@ -86,7 +86,7 @@ def test_cleanup_interesting_asset_end_to_end(neo4j_session):
         'CONNECTED',
         rel_direction_right=True,
     ) == set()
-    # but we don't delete the WorldAsset itself, as that cleanup should be handled by the WorldAsset's own intel module:
+    # but we don't delete the WorldAsset itself, as that cleanup should be handled by the WorldAsset's own intel module.
     assert check_nodes(neo4j_session, 'WorldAsset', ['id']) == {('the-worldasset-id-1',)}
 
     # Same thing here: the rel between InterestingAsset and WorldAsset was stale (lastupdated != 2) and was cleaned up,
@@ -99,7 +99,7 @@ def test_cleanup_interesting_asset_end_to_end(neo4j_session):
         'ASSOCIATED_WITH',
         rel_direction_right=False,
     ) == set()
-    # but we don't delete the HelloAsset itself, as that cleanup should be handled by the HelloAsset's own intel module:
+    # but we don't delete the HelloAsset itself, as that cleanup should be handled by the HelloAsset's own intel module.
     assert check_nodes(neo4j_session, 'HelloAsset', ['id']) == {('the-helloasset-id-1',)}
 
     # This is the only rel we expect to remain intact as it was last updated in our call to `load_graph_data()` above.

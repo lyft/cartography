@@ -18,7 +18,7 @@ def test_cleanup_node_sub_rel_only():
     """
     actual_query: str = _build_cleanup_node_query(InterestingAssetSchema())
     expected_query = """
-        MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
         WHERE n.lastupdated <> $UPDATE_TAG
         WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
@@ -42,8 +42,8 @@ def test_cleanup_node_with_selected_rel():
     """
     actual_query: str = _build_cleanup_node_query(InterestingAssetSchema(), InterestingAssetToHelloAssetRel())
     expected = """
-        MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (n)-[:ASSOCIATED_WITH]->(:HelloAsset)
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)-[r:ASSOCIATED_WITH]->(:HelloAsset)
         WHERE n.lastupdated <> $UPDATE_TAG
         WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
@@ -68,10 +68,10 @@ def test_cleanup_rel_sub_rel_only():
     """
     actual_query: str = _build_cleanup_rel_query(InterestingAssetSchema())
     expected_query = """
-        MATCH (:InterestingAsset)<-[r:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        WHERE r.lastupdated <> $UPDATE_TAG
-        WITH r LIMIT $LIMIT_SIZE
-        DELETE r;
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        WHERE s.lastupdated <> $UPDATE_TAG
+        WITH s LIMIT $LIMIT_SIZE
+        DELETE s;
     """
     assert remove_leading_whitespace_and_empty_lines(actual_query) == \
         remove_leading_whitespace_and_empty_lines(expected_query)
@@ -96,8 +96,8 @@ def test_cleanup_rel_with_selected_rel():
         InterestingAssetToHelloAssetRel(),
     )
     expected_query = """
-        MATCH (src:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (src)-[r:ASSOCIATED_WITH]->(:HelloAsset)
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)-[r:ASSOCIATED_WITH]->(:HelloAsset)
         WHERE r.lastupdated <> $UPDATE_TAG
         WITH r LIMIT $LIMIT_SIZE
         DELETE r;
@@ -124,44 +124,44 @@ def test_build_cleanup_queries():
     actual_queries: list[str] = build_cleanup_queries(InterestingAssetSchema())
     expected_queries = [
         """
-        MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (n)-[:ASSOCIATED_WITH]->(:HelloAsset)
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)-[r:ASSOCIATED_WITH]->(:HelloAsset)
         WHERE n.lastupdated <> $UPDATE_TAG
         WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
         """,
         """
-        MATCH (src:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (src)-[r:ASSOCIATED_WITH]->(:HelloAsset)
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)-[r:ASSOCIATED_WITH]->(:HelloAsset)
         WHERE r.lastupdated <> $UPDATE_TAG
         WITH r LIMIT $LIMIT_SIZE
         DELETE r;
         """,
         """
-        MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (n)<-[:CONNECTED]-(:WorldAsset)
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)<-[r:CONNECTED]-(:WorldAsset)
         WHERE n.lastupdated <> $UPDATE_TAG
         WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
         """,
         """
-        MATCH (src:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (src)<-[r:CONNECTED]-(:WorldAsset)
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)<-[r:CONNECTED]-(:WorldAsset)
         WHERE r.lastupdated <> $UPDATE_TAG
         WITH r LIMIT $LIMIT_SIZE
         DELETE r;
         """,
         """
-        MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
         WHERE n.lastupdated <> $UPDATE_TAG
         WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
         """,
         """
-        MATCH (:InterestingAsset)<-[r:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        WHERE r.lastupdated <> $UPDATE_TAG
-        WITH r LIMIT $LIMIT_SIZE
-        DELETE r;""",
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        WHERE s.lastupdated <> $UPDATE_TAG
+        WITH s LIMIT $LIMIT_SIZE
+        DELETE s;""",
     ]
     assert [remove_leading_whitespace_and_empty_lines(a) for a in actual_queries] == [
         remove_leading_whitespace_and_empty_lines(e) for e in expected_queries
