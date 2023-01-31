@@ -6,6 +6,8 @@ from cartography.graph.cleanupbuilder import _build_cleanup_node_and_rel_queries
 from cartography.graph.cleanupbuilder import build_cleanup_queries
 from cartography.graph.job import get_parameters
 from cartography.intel.aws.emr import EMRClusterToAWSAccount
+from tests.data.graph.querybuilder.sample_models.asset_with_non_kwargs_tgm import FakeEC2InstanceSchema
+from tests.data.graph.querybuilder.sample_models.asset_with_non_kwargs_tgm import FakeEC2InstanceToAWSAccount
 from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetSchema
 from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetToHelloAssetRel
 from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetToSubResourceRel
@@ -69,7 +71,8 @@ def test_cleanup_with_invalid_selected_rel_raises_exc():
     Test that we raise a ValueError if we try to cleanup a node and provide a specified rel but the rel doesn't exist on
     the node schema.
     """
-    with pytest.raises(ValueError):
+    exc_msg = "EMRClusterToAWSAccount is not defined on CartographyNodeSchema type InterestingAssetSchema"
+    with pytest.raises(ValueError, match=exc_msg):
         _build_cleanup_node_and_rel_queries(InterestingAssetSchema(), EMRClusterToAWSAccount())
 
 
@@ -130,7 +133,7 @@ def test_get_params_from_queries():
     assert set(get_parameters(queries)) == {'UPDATE_TAG', 'sub_resource_id', 'LIMIT_SIZE'}
 
 
-def test_get_build_cleanup_queries_selected_rels():
+def test_build_cleanup_queries_selected_rels():
     """
     Test that we are able to correctly make cleanup jobs for a subset of relationships.
     """
@@ -141,12 +144,17 @@ def test_get_build_cleanup_queries_selected_rels():
     assert len(queries) == 4  # == 2 to delete nodes and rels bound to the sub resource + 2 for the HelloAsset
 
 
-def test_get_build_cleanup_queries_selected_rels_no_sub_res_raises_exc():
+def test_build_cleanup_queries_selected_rels_no_sub_res_raises_exc():
     """
     Test that not specifying the sub resource rel as a selected_relationship in build_cleanup_queries raises exception
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='node_schema without a sub resource relationship is not supported'):
         build_cleanup_queries(
             InterestingAssetSchema(),
             {InterestingAssetToHelloAssetRel()},
         )
+
+
+def test_build_cleanup_node_and_rel_queries_sub_res_tgm_not_validated_raises_exc():
+    with pytest.raises(ValueError, match='must have set_in_kwargs=True'):
+        _build_cleanup_node_and_rel_queries(FakeEC2InstanceSchema(), FakeEC2InstanceToAWSAccount())

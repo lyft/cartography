@@ -166,6 +166,8 @@ def _build_selected_rel_clause(selected_relationship: CartographyRelSchema) -> s
 def _validate_target_node_matcher_for_cleanup_job(tgm: TargetNodeMatcher):
     """
     Raises ValueError if a single PropertyRef in the given TargetNodeMatcher does not have set_in_kwargs=True.
+    Auto cleanups require the sub resource target node matcher to have set_in_kwargs=True because the GraphJob
+    class injects the sub resource id via a query kwarg parameter. See GraphJob and GraphStatement classes.
     This is a private function meant only to be called when we clean up the sub resource relationship.
     """
     tgm_asdict = asdict(tgm)
