@@ -1,5 +1,3 @@
-
-
 from dataclasses import dataclass
 
 from cartography.graph.model import CartographyNodeProperties
@@ -8,9 +6,9 @@ from cartography.graph.model import CartographyRelProperties
 from cartography.graph.model import CartographyRelSchema
 from cartography.graph.model import LinkDirection
 from cartography.graph.model import make_target_node_matcher
+from cartography.graph.model import OtherRelationships
 from cartography.graph.model import PropertyRef
 from cartography.graph.model import TargetNodeMatcher
-from cartography.graph.model import OtherRelationships
 
 
 @dataclass(frozen=True)
@@ -19,10 +17,12 @@ class HiBobDepartmentNodeProperties(CartographyNodeProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     name: PropertyRef = PropertyRef('name')
 
+
 @dataclass(frozen=True)
 class HiBobDepartmentSchema(CartographyNodeSchema):
     label: str = 'HiBobDepartment'
     properties: HiBobDepartmentNodeProperties = HiBobDepartmentNodeProperties()
+
 
 @dataclass(frozen=True)
 class HumanNodeProperties(CartographyNodeProperties):
@@ -34,10 +34,12 @@ class HumanNodeProperties(CartographyNodeProperties):
     given_name: PropertyRef = PropertyRef('firstName')
     gender: PropertyRef = PropertyRef('home.localGender')
 
+
 @dataclass(frozen=True)
 class HumanSchema(CartographyNodeSchema):
     label: str = 'Human'
     properties: HumanNodeProperties = HumanNodeProperties()
+
 
 @dataclass(frozen=True)
 class HiBobEmployeeNodeProperties(CartographyNodeProperties):
@@ -56,9 +58,11 @@ class HiBobEmployeeNodeProperties(CartographyNodeProperties):
     work_phone: PropertyRef = PropertyRef('work.workPhone')
     work_office: PropertyRef = PropertyRef('work.site')
 
+
 @dataclass(frozen=True)
 class HiBobEmployeeToHiBobEmployeeRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
 
 @dataclass(frozen=True)
 # (:HiBobEmployee)-[:MANAGED_BY]->(:HiBobEmployee)
@@ -71,9 +75,11 @@ class HiBobEmployeeToHiBobEmployee(CartographyRelSchema):
     rel_label: str = "MANAGED_BY"
     properties: HiBobEmployeeToHiBobEmployeeRelProperties = HiBobEmployeeToHiBobEmployeeRelProperties()
 
+
 @dataclass(frozen=True)
 class HiBobEmployeeToHumanRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
 
 @dataclass(frozen=True)
 # (:HiBobEmployee)<-[:IS_EMPLOYEE]-(:Human)
@@ -86,9 +92,11 @@ class HiBobEmployeeToHuman(CartographyRelSchema):
     rel_label: str = "IS_EMPLOYEE"
     properties: HiBobEmployeeToHumanRelProperties = HiBobEmployeeToHumanRelProperties()
 
+
 @dataclass(frozen=True)
 class HiBobEmployeeToDepartmentRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
 
 @dataclass(frozen=True)
 # (:HiBobEmployee)-[:MEMBER_OF]->(:HiBobDepartment)
@@ -101,6 +109,7 @@ class HiBobEmployeeToHiBobDepartment(CartographyRelSchema):
     rel_label: str = "MEMBER_OF"
     properties: HiBobEmployeeToDepartmentRelProperties = HiBobEmployeeToDepartmentRelProperties()
 
+
 @dataclass(frozen=True)
 class HiBobEmployeeSchema(CartographyNodeSchema):
     label: str = 'HiBobEmployee'
@@ -108,5 +117,5 @@ class HiBobEmployeeSchema(CartographyNodeSchema):
     other_relationships: OtherRelationships = OtherRelationships([
         HiBobEmployeeToHuman(),
         HiBobEmployeeToHiBobEmployee(),
-        HiBobEmployeeToHiBobDepartment()
+        HiBobEmployeeToHiBobDepartment(),
     ])
