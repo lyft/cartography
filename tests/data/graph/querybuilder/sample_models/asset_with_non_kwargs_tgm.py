@@ -1,7 +1,12 @@
 from dataclasses import dataclass
 
-from cartography.graph.model import CartographyNodeSchema, PropertyRef, CartographyRelProperties, CartographyRelSchema, \
-    TargetNodeMatcher, make_target_node_matcher, LinkDirection
+from cartography.graph.model import CartographyNodeSchema
+from cartography.graph.model import CartographyRelProperties
+from cartography.graph.model import CartographyRelSchema
+from cartography.graph.model import LinkDirection
+from cartography.graph.model import make_target_node_matcher
+from cartography.graph.model import PropertyRef
+from cartography.graph.model import TargetNodeMatcher
 from tests.data.graph.querybuilder.sample_models.simple_node import SimpleNodeProperties
 
 
