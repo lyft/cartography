@@ -164,6 +164,8 @@ def _load_database_account_write_locations(
     if 'write_locations' in database_account and len(database_account['write_locations']) > 0:
         database_account_id = database_account['id']
         write_locations = database_account['write_locations']
+        for location in write_locations:
+            location["id"] = f'{database_account_id}/writeLocations/{location["id"]}'
 
         ingest_write_location = """
         UNWIND $write_locations_list as wl
@@ -201,6 +203,8 @@ def _load_database_account_read_locations(
     if 'read_locations' in database_account and len(database_account['read_locations']) > 0:
         database_account_id = database_account['id']
         read_locations = database_account['read_locations']
+        for location in read_locations:
+            location["id"] = f'{database_account_id}/readLocations/{location["id"]}'
 
         ingest_read_location = """
         UNWIND $read_locations_list as rl
@@ -238,6 +242,8 @@ def _load_database_account_associated_locations(
     if 'locations' in database_account and len(database_account['locations']) > 0:
         database_account_id = database_account['id']
         associated_locations = database_account['locations']
+        for location in associated_locations:
+            location["id"] = f'{database_account_id}/locations/{location["id"]}'
 
         ingest_associated_location = """
         UNWIND $associated_locations_list as al
@@ -326,6 +332,8 @@ def _load_cosmosdb_failover_policies(
     if 'failover_policies' in database_account and len(database_account['failover_policies']) > 0:
         database_account_id = database_account['id']
         failover_policies = database_account['failover_policies']
+        for policy in failover_policies:
+            policy["id"] = f'{database_account_id}/failoverPolicies/{policy["id"]}'
 
         ingest_failover_policies = """
         UNWIND $failover_policies_list AS fp
