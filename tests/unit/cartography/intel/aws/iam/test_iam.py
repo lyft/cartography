@@ -39,12 +39,14 @@ def test_get_account_from_arn():
 
 def test__get_role_tags_valid_tags(mocker):
     mocker.patch(
-        'cartography.intel.aws.iam.get_role_list_data', return_value=[
-            {
-                'RoleName': 'test-role',
-                'Arn': 'test-arn',
-            },
-        ],
+        'cartography.intel.aws.iam.get_role_list_data', return_value={
+            'Roles': [
+                {
+                    'RoleName': 'test-role',
+                    'Arn': 'test-arn',
+                },
+            ],
+        },
     )
     mocker.patch('boto3.session.Session')
     mock_session = mocker.Mock()
@@ -72,12 +74,14 @@ def test__get_role_tags_valid_tags(mocker):
 
 def test__get_role_tags_no_tags(mocker):
     mocker.patch(
-        'cartography.intel.aws.iam.get_role_list_data', return_value=[
-            {
-                'RoleName': 'test-role',
-                'Arn': 'test-arn',
-            },
-        ],
+        'cartography.intel.aws.iam.get_role_list_data', return_value={
+            'Roles': [
+                {
+                    'RoleName': 'test-role',
+                    'Arn': 'test-arn',
+                },
+            ],
+        },
     )
     mocker.patch('boto3.session.Session')
     mock_session = mocker.Mock()
