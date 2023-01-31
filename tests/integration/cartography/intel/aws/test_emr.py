@@ -104,7 +104,7 @@ def test_cleanup_emr(neo4j_session):
     cleanup(
         neo4j_session,
         {
-            'UPDATE_TAG': TEST_UPDATE_TAG + 1,  # Simulate that is a new sync run so the prev update tag is obsolete now
+            'UPDATE_TAG': TEST_UPDATE_TAG + 1,  # Simulate a new sync run finished so the old update tag is obsolete now
             'AccountId': TEST_ACCOUNT_ID,
         },
     )

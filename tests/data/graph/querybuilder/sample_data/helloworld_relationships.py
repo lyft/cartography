@@ -28,6 +28,19 @@ INTERESTING_NODE_WITH_PARTIAL_RELS = [
     },
 ]
 
+# This dataset shows an InterestingNode attached to a SubResource and a HelloAsset, but no WorldAsset.
+INTERESTING_NODE_NO_WORLD_ASSET = [
+    {
+        'Id': 'interesting-node-id',
+        'property1': 'b',
+        'property2': 'c',
+        'AnotherField': 'd',
+        'YetAnotherRelField': 'e',
+        'hello_asset_id': 'the-helloasset-id-1',
+        'sub_resource_id': 'sub-resource-id',
+    },
+]
+
 # This dataset shows an InterestingNode attached to a HelloAsset and a WorldAsset.
 INTERESTING_NODE_WITH_ALL_RELS = [
     {
