@@ -133,12 +133,6 @@ def load_load_balancer_v2s(
                 current_aws_account_id, update_tag,
             )
 
-        if lb['TargetGroups']:
-            load_load_balancer_v2_target_groups(
-                neo4j_session, load_balancer_id, lb['TargetGroups'],
-                current_aws_account_id, update_tag,
-            )
-
 
 @timeit
 def load_load_balancer_v2_subnets(

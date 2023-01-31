@@ -213,6 +213,8 @@ def _sync_multiple_accounts(
     failed_account_ids = []
     exception_tracebacks = []
 
+    num_accounts = len(accounts)
+
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id

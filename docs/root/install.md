@@ -11,8 +11,6 @@ Time to set up the server that will run Cartography.  Cartography _should_ work 
 
     1. Go to the [Neo4j download page](https://neo4j.com/download-center/#community), and download Neo4j Community Edition 4.4.\*.
 
-            ⚠️ Please read the "Get and run Cartography" instructions below carefully about Neo4j 4.x support. ⚠️
-
     1. [Install](https://neo4j.com/docs/operations-manual/current/installation/) Neo4j on the server you will run Cartography on.
 
             ⚠️ For local testing, you might want to turn off authentication via property `dbms.security.auth_enabled` in file /NEO4J_PATH/conf/neo4j.conf

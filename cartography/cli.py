@@ -101,6 +101,16 @@ class CLI:
                 '.'
             ),
         )
+        parser.add_argument(
+            '--neo4j-database',
+            type=str,
+            default=None,
+            help=(
+                'The name of the database in Neo4j to connect to. If not specified, uses the config settings of your '
+                'Neo4j database itself to infer which database is set to default. '
+                'See https://neo4j.com/docs/api/python-driver/4.4/api.html#database.'
+            ),
+        )
         # TODO add the below parameters to a 'sync' subparser
         parser.add_argument(
             '--update-tag',
@@ -414,6 +424,23 @@ class CLI:
                 'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
             ),
         )
+        parser.add_argument(
+            '--gsuite-auth-method',
+            type=str,
+            default='delegated',
+            choices=['delegated', 'oauth'],
+            help=(
+                'The method used by GSuite to authenticate. delegated is the legacy one.'
+            ),
+        )
+        parser.add_argument(
+            '--gsuite-tokens-env-var',
+            type=str,
+            default='GSUITE_GOOGLE_APPLICATION_CREDENTIALS',
+            help=(
+                'The name of environment variable containing secrets for GSuite authentication.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -542,6 +569,13 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
+
+        # GSuite config
+        if config.gsuite_tokens_env_var:
+            logger.debug(f"Reading config string for GSuite from environment variable {config.gsuite_tokens_env_var}")
+            config.gsuite_config = os.environ.get(config.gsuite_tokens_env_var)
+        else:
+            config.github_config = None
 
         # Run cartography
         try:

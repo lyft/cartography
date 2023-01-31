@@ -10,6 +10,7 @@ import boto3
 import neo4j
 from neo4j import GraphDatabase
 
+from cartography.intel.aws.iam import get_role_tags
 from cartography.util import aws_handle_regions
 from cartography.util import batch
 from cartography.util import run_cleanup_job
@@ -124,6 +125,9 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'iam:role': {'label': 'AWSRole', 'property': 'arn'},
     'iam:user': {'label': 'AWSUser', 'property': 'arn'},
     'kms:key': {'label': 'KMSKey', 'property': 'arn'},
+    'iam:group': {'label': 'AWSGroup', 'property': 'arn'},
+    'iam:role': {'label': 'AWSRole', 'property': 'arn'},
+    'iam:user': {'label': 'AWSUser', 'property': 'arn'},
     'lambda:function': {'label': 'AWSLambda', 'property': 'id'},
     'lambda:layer': {'label': 'AWSLambdaLayer', 'property': 'id'},
     'lambda:event-source-mapping': {'label': 'AWSLambdaEventSourceMapping', 'property': 'id'},
@@ -131,6 +135,8 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'rds:cluster': {'label': 'RDSCluster', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
     'rds:subgrp': {'label': 'DBSubnetGroup', 'property': 'id'},
+    'rds:cluster': {'label': 'RDSCluster', 'property': 'id'},
+    'rds:snapshot': {'label': 'RDSSnapshot', 'property': 'id'},
     # Buckets are the only objects in the S3 service: https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html
     's3': {'label': 'S3Bucket', 'property': 'id', 'id_func': get_bucket_name_from_arn},
     'secretsmanager:secret': {'label': 'SecretsManagerSecret', 'property': 'id'},
@@ -140,17 +146,23 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
 
 @timeit
 @aws_handle_regions
-def get_tags(boto3_session: boto3.session.Session, resource_types: List[str], region: str) -> List[Dict]:
+def get_tags(boto3_session: boto3.session.Session, resource_type: str, region: str) -> List[Dict]:
     """
     Create boto3 client and retrieve tag data.
     """
+    # this is a temporary workaround to populate AWS tags for IAM roles.
+    # resourcegroupstaggingapi does not support IAM roles and no ETA is provided
+    # TODO: when resourcegroupstaggingapi supports iam:role, remove this condition block
+    if resource_type == 'iam:role':
+        return get_role_tags(boto3_session)
+
     client = boto3_session.client('resourcegroupstaggingapi', region_name=region)
     paginator = client.get_paginator('get_resources')
     resources: List[Dict] = []
     for page in paginator.paginate(
         # Only ingest tags for resources that Cartography supports.
         # This is just a starting list; there may be others supported by this API.
-        ResourceTypeFilters=resource_types,
+        ResourceTypeFilters=[resource_type],
     ):
         resources.extend(page['ResourceTagMappingList'])
     return resources
@@ -245,22 +257,20 @@ def sync(
     common_job_parameters: Dict,
     tag_resource_type_mappings: Dict = TAG_RESOURCE_TYPE_MAPPINGS,
 ) -> None:
-    tic = time.perf_counter()
-
-    logger.info("Begin processing tags for account '%s', at %s.", current_aws_account_id, tic)
-
-    # Process each region in parallel.
-    with ThreadPoolExecutor(max_workers=len(regions)) as executor:
-        futures = []
-
-        for region in regions:
-            logger.info("Syncing AWS tags for region '%s'.", region)
-            for resource_type in tag_resource_type_mappings.keys():
-                futures.append(executor.submit(concurrent_execution, config, region, resource_type, current_aws_account_id, update_tag))
-
-        for future in as_completed(futures):
-            logger.info(f'Result from Future - Tags Processing: {future.result()}')
-
+    for region in regions:
+        logger.info(f"Syncing AWS tags for account {current_aws_account_id} and region {region}")
+        for resource_type in tag_resource_type_mappings.keys():
+            tag_data = get_tags(boto3_session, resource_type, region)
+            transform_tags(tag_data, resource_type)  # type: ignore
+            logger.info(f"Loading {len(tag_data)} tags for resource type {resource_type}")
+            load_tags(
+                neo4j_session=neo4j_session,
+                tag_data=tag_data,  # type: ignore
+                resource_type=resource_type,
+                region=region,
+                current_aws_account_id=current_aws_account_id,
+                aws_update_tag=update_tag,
+            )
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
