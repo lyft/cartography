@@ -5,7 +5,7 @@ import pytest
 from cartography.graph.cleanupbuilder import _build_cleanup_node_and_rel_queries
 from cartography.graph.cleanupbuilder import build_cleanup_queries
 from cartography.graph.job import get_parameters
-from cartography.intel.aws.emr import EMRClusterToAWSAccount
+from cartography.models.aws.emr import EMRClusterToAWSAccount
 from tests.data.graph.querybuilder.sample_models.asset_with_non_kwargs_tgm import FakeEC2InstanceSchema
 from tests.data.graph.querybuilder.sample_models.asset_with_non_kwargs_tgm import FakeEC2InstanceToAWSAccount
 from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetSchema
