@@ -228,12 +228,9 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
             f"Could not get access key for user {username} due to NoSuchEntityException; skipping.",
         )
     # We add Last Used data to each access key
-    access_keys_metadata = access_keys.get('AccessKeyMetadata', [])
+    access_keys_metadata = access_keys['AccessKeyMetadata']
     for access_key in access_keys_metadata:
-        access_key_id = access_key.get('AccessKeyId')
-        if not access_key_id:
-            access_key['LastUsed'] = None
-            continue
+        access_key_id = access_key['AccessKeyId']
         last_used_result = client.get_access_key_last_used(AccessKeyId=access_key_id)
         last_used_info = last_used_result.get('AccessKeyLastUsed', {"LastUsedDate": None})
         access_key['LastUsed'] = last_used_info.get('LastUsedDate', None)
