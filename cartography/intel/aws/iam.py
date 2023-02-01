@@ -232,8 +232,13 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
     for access_key in access_keys_metadata:
         access_key_id = access_key['AccessKeyId']
         last_used_result = client.get_access_key_last_used(AccessKeyId=access_key_id)
-        last_used_info = last_used_result.get('AccessKeyLastUsed', {"LastUsedDate": None})
-        access_key['LastUsed'] = last_used_info.get('LastUsedDate', None)
+        last_used_info = last_used_result.get(
+            'AccessKeyLastUsed',
+            {"LastUsedDate": None, "LastUsedService": None, "LastUsedRegion": None}
+        )
+        access_key['LastUsedDate'] = last_used_info.get('LastUsedDate', None)
+        access_key['LastUsedService'] = last_used_info.get('ServiceName', None)
+        access_key['LastUsedRegion'] = last_used_info.get('Region', None)
     return access_keys
 
 
@@ -494,7 +499,9 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
     ON CREATE SET key.firstseen = timestamp(), key.createdate = $CreateDate
     SET
     key.status = $Status,
-    key.lastused = $LastUsed,
+    key.lastuseddate = $LastUsedDate,
+    key.lastusedservice = $LastUsedService,
+    key.lastusedregion = $LastUsedRegion,
     key.lastupdated = $aws_update_tag
     WITH user,key
     MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
@@ -511,7 +518,9 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
                     AccessKeyId=key['AccessKeyId'],
                     CreateDate=key['CreateDate'],
                     Status=key['Status'],
-                    LastUsed=key['LastUsed'],
+                    LastUsedDate=key['LastUsedDate'],
+                    LastUsedService=key['LastUsedService'],
+                    LastUsedRegion=key['LastUsedRegion'],
                     aws_update_tag=aws_update_tag,
                 )
 
