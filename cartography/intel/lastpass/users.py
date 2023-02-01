@@ -46,12 +46,10 @@ def transform(api_result: dict) -> List[Dict]:
     for uid, user in api_result['Users'].items():
         n_user = user.copy()
         n_user['id'] = int(uid)
-        n_user['created'] = int(dt_parse.parse(user['created']).timestamp() * 1000)
-        n_user['last_pw_change'] = int(dt_parse.parse(user['last_pw_change']).timestamp() * 1000)
-        try:
-            n_user['last_login'] = int(dt_parse.parse(user['last_login']).timestamp() * 1000)
-        except dt_parse.ParserError:
-            pass
+        for k in ('created', 'last_pw_change', 'last_login'):
+            if n_user[k] == '':
+                n_user.pop(k)
+            n_user[k] = int(dt_parse.parse(user[k]).timestamp() * 1000)
         result.append(n_user)
     return result
 
