@@ -70,7 +70,7 @@ def _build_cleanup_node_and_rel_queries(
     selected_relationship must be in the set {node_schema.sub_resource_relationship} + node_schema.other_relationships.
     :return: A list of 2 cleanup queries. The first one cleans up stale nodes attached to the given
     selected_relationships, and the second one cleans up stale selected_relationships. For example outputs, see
-    tests.unit.cartography.graph.autocleanup.test_cleanupbuilder.
+    tests.unit.cartography.graph.test_cleanupbuilder.
     """
     if not node_schema.sub_resource_relationship:
         raise ValueError(
