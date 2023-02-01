@@ -44,7 +44,7 @@ class PropertyRef:
     (PropertyRef.set_in_kwargs=True).
     """
 
-    def __init__(self, name: str, set_in_kwargs=False):
+    def __init__(self, name: str, set_in_kwargs: bool = False):
         """
         :param name: The name of the property
         :param set_in_kwargs: Optional. If True, the property is not defined on the data dict, and we expect to find the
@@ -52,8 +52,8 @@ class PropertyRef:
         If False, looks for the property in the data dict.
         Defaults to False.
         """
-        self.name = name
-        self.set_in_kwargs = set_in_kwargs
+        self.name: str = name
+        self.set_in_kwargs: bool = set_in_kwargs
 
     def _parameterize_name(self) -> str:
         return f"${self.name}"

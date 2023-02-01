@@ -1,19 +1,57 @@
 import json
 import logging
+import string
 from pathlib import Path
+from string import Template
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Union
 
 import neo4j
 
+from cartography.graph.cleanupbuilder import build_cleanup_queries
+from cartography.graph.model import CartographyNodeSchema
+from cartography.graph.model import CartographyRelSchema
 from cartography.graph.statement import get_job_shortname
 from cartography.graph.statement import GraphStatement
 
-
 logger = logging.getLogger(__name__)
+
+
+def _get_identifiers(template: string.Template) -> List[str]:
+    """
+    :param template: A string Template
+    :return: the variable names that start with a '$' like $this in the given Template.
+    Stolen from https://github.com/python/cpython/issues/90465#issuecomment-1093941790.
+    TODO we can get rid of this and use template.get_identifiers() once we are on python 3.11
+    """
+    return list(
+        set(
+            filter(
+                lambda v: v is not None,
+                (
+                    mo.group('named') or mo.group('braced')
+                    for mo in template.pattern.finditer(template.template)
+                ),
+            ),
+        ),
+    )
+
+
+def get_parameters(queries: List[str]) -> Set[str]:
+    """
+    :param queries: A list of Neo4j queries with parameters indicated by leading '$' like $this.
+    :return: The set of all parameters across all given Neo4j queries.
+    """
+    parameter_set = set()
+    for query in queries:
+        as_template = Template(query)
+        params = _get_identifiers(as_template)
+        parameter_set.update(params)
+    return parameter_set
 
 
 class GraphJobJSONEncoder(json.JSONEncoder):
@@ -85,6 +123,41 @@ class GraphJob:
         statements = _get_statements_from_json(data, short_name)
         name = data["name"]
         return cls(name, statements, short_name)
+
+    @classmethod
+    def from_node_schema(
+            cls,
+            node_schema: CartographyNodeSchema,
+            parameters: Dict[str, Any],
+            selected_rels: Optional[Set[CartographyRelSchema]] = None,
+    ) -> 'GraphJob':
+        """
+        Create a cleanup job from a CartographyNodeSchema object.
+        For a given node, the fields used in the node_schema.sub_resource_relationship.target_node_node_matcher.keys()
+        must be provided as keys and values in the params dict.
+        """
+        queries: List[str] = build_cleanup_queries(node_schema, selected_rels)
+
+        # Validate params
+        expected_param_keys: Set[str] = get_parameters(queries)
+        actual_param_keys: Set[str] = set(parameters.keys())
+        # Hacky, but LIMIT_SIZE is specified by default in cartography.graph.statement, so we exclude it from validation
+        actual_param_keys.add('LIMIT_SIZE')
+        if actual_param_keys != expected_param_keys:
+            raise ValueError(
+                f'Expected query params "{expected_param_keys}" but got "{actual_param_keys}". Please check the value '
+                f'passed to `parameters`.',
+            )
+
+        statements: List[GraphStatement] = [
+            GraphStatement(query, parameters=parameters, iterative=True, iterationsize=100) for query in queries
+        ]
+
+        return cls(
+            f"Cleanup {node_schema.label}",
+            statements,
+            node_schema.label,
+        )
 
     @classmethod
     def from_json_file(cls, file_path: Union[str, Path]) -> 'GraphJob':
