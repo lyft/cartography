@@ -582,7 +582,7 @@ def get_table_resources(credentials: Credentials, subscription_id: str, database
 
 @timeit
 def transform_database_account_resources(
-        account_id: Any, name: Any, resource_group: Any, resources: List[Dict],
+        account_id: Any, name: Any, resource_group: Any, resources: List[Dict], common_job_parameters: Dict
 ) -> List[Dict]:
     """
     Transform the SQL Database/Cassandra Keyspace/MongoDB Database/Table Resource response for neo4j ingestion.
@@ -591,6 +591,8 @@ def transform_database_account_resources(
         resource['database_account_name'] = name
         resource['database_account_id'] = account_id
         resource['resource_group_name'] = resource_group
+        resource['consolelink'] = azure_console_link.get_console_link(id=resource['id'],
+                                                                      primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
     return resources
 
 
@@ -609,27 +611,19 @@ def load_database_account_details(
 
     for account_id, name, resourceGroup, sql_database, cassandra_keyspace, mongodb_database, table in details:
         if len(sql_database) > 0:
-            sql_database['consolelink'] = azure_console_link.get_console_link(id=sql_database['id'],
-                                                                              primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-            dbs = transform_database_account_resources(account_id, name, resourceGroup, sql_database)
+            dbs = transform_database_account_resources(account_id, name, resourceGroup, sql_database, common_job_parameters)
             sql_databases.extend(dbs)
 
         if len(cassandra_keyspace) > 0:
-            cassandra_keyspace['consolelink'] = azure_console_link.get_console_link(id=cassandra_keyspace['id'],
-                                                                                    primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-            keyspaces = transform_database_account_resources(account_id, name, resourceGroup, cassandra_keyspace)
+            keyspaces = transform_database_account_resources(account_id, name, resourceGroup, cassandra_keyspace, common_job_parameters)
             cassandra_keyspaces.extend(keyspaces)
 
         if len(mongodb_database) > 0:
-            mongodb_database['consolelink'] = azure_console_link.get_console_link(id=mongodb_database['id'],
-                                                                                  primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-            mongo_dbs = transform_database_account_resources(account_id, name, resourceGroup, mongodb_database)
+            mongo_dbs = transform_database_account_resources(account_id, name, resourceGroup, mongodb_database, common_job_parameters)
             mongodb_databases.extend(mongo_dbs)
 
         if len(table) > 0:
-            table['consolelink'] = azure_console_link.get_console_link(id=table['id'],
-                                                                       primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-            t = transform_database_account_resources(account_id, name, resourceGroup, table)
+            t = transform_database_account_resources(account_id, name, resourceGroup, table, common_job_parameters)
             table_resources.extend(t)
 
     # Loading the table resources
