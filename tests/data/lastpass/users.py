@@ -6,7 +6,7 @@ LASTPASS_USERS = {
             "mpstrength": "100",
             "created": "2022-08-31 04:45:15",
             "last_pw_change": "2022-08-31 06:03:16",
-            "last_login": "2023-01-12 09:43:34",
+            "last_login": "",
             "neverloggedin": False,
             "disabled": False,
             "admin": True,

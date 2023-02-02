@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 from typing import Dict
 from typing import List
 
@@ -12,6 +13,8 @@ from cartography.intel.lastpass.schema import LastpassUserSchema
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+# Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
+_TIMEOUT = (60, 60)
 
 
 @timeit
@@ -27,7 +30,7 @@ def sync(
 
 
 @timeit
-def get(lastpass_cid: str, lastpass_provhash: str) -> dict:
+def get(lastpass_cid: str, lastpass_provhash: str) -> Dict[str, Any]:
     payload = {
         'cid': lastpass_cid,
         'provhash': lastpass_provhash,
@@ -35,7 +38,7 @@ def get(lastpass_cid: str, lastpass_provhash: str) -> dict:
         'data': None,
     }
     session = Session()
-    req = session.post('https://lastpass.com/enterpriseapi.php', data=payload, timeout=20)
+    req = session.post('https://lastpass.com/enterpriseapi.php', data=payload, timeout=_TIMEOUT)
     req.raise_for_status()
     return req.json()
 
@@ -47,9 +50,7 @@ def transform(api_result: dict) -> List[Dict]:
         n_user = user.copy()
         n_user['id'] = int(uid)
         for k in ('created', 'last_pw_change', 'last_login'):
-            if n_user[k] == '':
-                n_user.pop(k)
-            n_user[k] = int(dt_parse.parse(user[k]).timestamp() * 1000)
+            n_user[k] = int(dt_parse.parse(user[k]).timestamp() * 1000) if user[k] else None
         result.append(n_user)
     return result
 
