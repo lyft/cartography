@@ -125,57 +125,6 @@ def test_build_cleanup_queries():
     assert clean_query_list(actual_queries) == clean_query_list(expected_queries)
 
 
-def test_build_cleanup_queries():
-    """
-    Test that the full set of cleanup queries generated for a node schema is what we expect. Order matters!
-    """
-    actual_queries: list[str] = build_cleanup_queries(InterestingAssetSchema())
-    expected_queries = [
-        """
-        MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (n)-[:ASSOCIATED_WITH]->(:HelloAsset)
-        WHERE n.lastupdated <> $UPDATE_TAG
-        WITH n LIMIT $LIMIT_SIZE
-        DETACH DELETE n;
-        """,
-        """
-        MATCH (src:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (src)-[r:ASSOCIATED_WITH]->(:HelloAsset)
-        WHERE r.lastupdated <> $UPDATE_TAG
-        WITH r LIMIT $LIMIT_SIZE
-        DELETE r;
-        """,
-        """
-        MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (n)<-[:CONNECTED]-(:WorldAsset)
-        WHERE n.lastupdated <> $UPDATE_TAG
-        WITH n LIMIT $LIMIT_SIZE
-        DETACH DELETE n;
-        """,
-        """
-        MATCH (src:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (src)<-[r:CONNECTED]-(:WorldAsset)
-        WHERE r.lastupdated <> $UPDATE_TAG
-        WITH r LIMIT $LIMIT_SIZE
-        DELETE r;
-        """,
-        """
-        MATCH (n:InterestingAsset)<-[:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        WHERE n.lastupdated <> $UPDATE_TAG
-        WITH n LIMIT $LIMIT_SIZE
-        DETACH DELETE n;
-        """,
-        """
-        MATCH (:InterestingAsset)<-[r:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        WHERE r.lastupdated <> $UPDATE_TAG
-        WITH r LIMIT $LIMIT_SIZE
-        DELETE r;""",
-    ]
-    assert [remove_leading_whitespace_and_empty_lines(a) for a in actual_queries] == [
-        remove_leading_whitespace_and_empty_lines(e) for e in expected_queries
-    ]
-
-
 def test_get_params_from_queries():
     """
     Test that we are able to correctly retrieve parameter names from the generated cleanup queries.
