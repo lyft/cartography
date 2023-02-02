@@ -17,6 +17,8 @@ from cartography.intel.hibob.schema import HumanSchema
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+# Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
+_TIMEOUT = (60, 60)
 
 
 @timeit
@@ -32,7 +34,7 @@ def sync(
 
 @timeit
 def get(api_session: Session) -> Dict[str, Any]:
-    req = api_session.get('https://api.hibob.com/v1/people', timeout=10)
+    req = api_session.get('https://api.hibob.com/v1/people', params={'humanReadable': 'true'}, timeout=_TIMEOUT)
     req.raise_for_status()
     return req.json()
 
@@ -56,24 +58,28 @@ def transform(response_objects: Dict[str, List]) -> Tuple[List[Dict], List[Dict]
                 'name': user['work']['department'],
             }
         # Add junk reportsTo id if needed
-        if user['work']['reportsTo'] is None:
-            user['work']['reportsTo'] = {'id': "None"}
+        if 'reportsTo' not in user['work']:
+            user['work']['reportsTo'] = "None"
         user['work']['startDate'] = int(dt_parse.parse(user['work']['startDate']).timestamp() * 1000)
         transformed_users[user['id']] = user
 
     # Order users to ensure work.reportsTo refer to an existing user
     seen_users: Set[str] = set()
+    initial_len = len(transformed_users)
     while len(transformed_users) > 0:
         for uid in list(transformed_users.keys()):
             user = transformed_users[uid]
-            if user['work']['reportsTo']['id'] == 'None':
+            if user['work']['reportsTo'] == 'None':
                 users.append(user)
                 transformed_users.pop(uid)
-                seen_users.add(uid)
-            elif user['work']['reportsTo']['id'] in seen_users:
+                seen_users.add(user['displayName'])
+            elif user['work']['reportsTo'] in seen_users:
                 users.append(user)
                 transformed_users.pop(uid)
-                seen_users.add(uid)
+                seen_users.add(user['displayName'])
+        # Avoid infinite loop
+        if initial_len == len(transformed_users):
+            users += transformed_users
 
     return list(departments.values()), users
 

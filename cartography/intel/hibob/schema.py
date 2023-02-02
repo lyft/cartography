@@ -46,6 +46,7 @@ class HiBobEmployeeNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     name: PropertyRef = PropertyRef('displayName')
+    title: PropertyRef = PropertyRef('work.title')
     family_name: PropertyRef = PropertyRef('surname')
     given_name: PropertyRef = PropertyRef('firstName')
     gender: PropertyRef = PropertyRef('home.localGender')
@@ -69,7 +70,7 @@ class HiBobEmployeeToHiBobEmployeeRelProperties(CartographyRelProperties):
 class HiBobEmployeeToHiBobEmployee(CartographyRelSchema):
     target_node_label: str = 'HiBobEmployee'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('work.reportsTo.id')},
+        {'name': PropertyRef('work.reportsTo')},
     )
     direction: LinkDirection = LinkDirection.OUTWARD
     rel_label: str = "MANAGED_BY"
