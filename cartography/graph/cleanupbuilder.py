@@ -4,13 +4,13 @@ from typing import List
 from typing import Optional
 from typing import Set
 
-from cartography.graph.model import CartographyNodeSchema
-from cartography.graph.model import CartographyRelSchema
-from cartography.graph.model import LinkDirection
-from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import _build_match_clause
 from cartography.graph.querybuilder import filter_selected_relationships
 from cartography.graph.querybuilder import rel_present_on_node_schema
+from cartography.models.core.nodes import CartographyNodeSchema
+from cartography.models.core.relationships import CartographyRelSchema
+from cartography.models.core.relationships import LinkDirection
+from cartography.models.core.relationships import TargetNodeMatcher
 
 
 def build_cleanup_queries(

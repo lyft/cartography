@@ -1,6 +1,5 @@
 import logging
 import time
-from dataclasses import dataclass
 from typing import Dict
 from typing import List
 
@@ -10,16 +9,9 @@ import neo4j
 
 from cartography.client.core.tx import load_graph_data
 from cartography.graph.job import GraphJob
-from cartography.graph.model import CartographyNodeProperties
-from cartography.graph.model import CartographyNodeSchema
-from cartography.graph.model import CartographyRelProperties
-from cartography.graph.model import CartographyRelSchema
-from cartography.graph.model import LinkDirection
-from cartography.graph.model import make_target_node_matcher
-from cartography.graph.model import PropertyRef
-from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import build_ingestion_query
 from cartography.intel.aws.ec2.util import get_botocore_config
+from cartography.models.aws.emr import EMRClusterSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
 
@@ -57,56 +49,6 @@ def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, 
             e.response['Error']['Message'],
         )
     return cluster_details
-
-
-@dataclass(frozen=True)
-class EMRClusterNodeProperties(CartographyNodeProperties):
-    arn: PropertyRef = PropertyRef('ClusterArn')
-    auto_terminate: PropertyRef = PropertyRef('AutoTerminate')
-    autoscaling_role: PropertyRef = PropertyRef('AutoScalingRole')
-    custom_ami_id: PropertyRef = PropertyRef('CustomAmiId')
-    id: PropertyRef = PropertyRef('Id')
-    instance_collection_type: PropertyRef = PropertyRef('InstanceCollectionType')
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    log_encryption_kms_key_id: PropertyRef = PropertyRef('LogEncryptionKmsKeyId')
-    log_uri: PropertyRef = PropertyRef('LogUri')
-    master_public_dns_name: PropertyRef = PropertyRef('MasterPublicDnsName')
-    name: PropertyRef = PropertyRef('Name')
-    outpost_arn: PropertyRef = PropertyRef('OutpostArn')
-    region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
-    release_label: PropertyRef = PropertyRef('ReleaseLabel')
-    repo_upgrade_on_boot: PropertyRef = PropertyRef('RepoUpgradeOnBoot')
-    requested_ami_version: PropertyRef = PropertyRef('RequestedAmiVersion')
-    running_ami_version: PropertyRef = PropertyRef('RunningAmiVersion')
-    scale_down_behavior: PropertyRef = PropertyRef('ScaleDownBehavior')
-    security_configuration: PropertyRef = PropertyRef('SecurityConfiguration')
-    servicerole: PropertyRef = PropertyRef('ServiceRole')
-    termination_protected: PropertyRef = PropertyRef('TerminationProtected')
-    visible_to_all_users: PropertyRef = PropertyRef('VisibleToAllUsers')
-
-
-@dataclass(frozen=True)
-class EMRClusterToAwsAccountRelProperties(CartographyRelProperties):
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-
-
-@dataclass(frozen=True)
-# (:EMRCluster)<-[:RESOURCE]-(:AWSAccount)
-class EMRClusterToAWSAccount(CartographyRelSchema):
-    target_node_label: str = 'AWSAccount'
-    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('AccountId', set_in_kwargs=True)},
-    )
-    direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "RESOURCE"
-    properties: EMRClusterToAwsAccountRelProperties = EMRClusterToAwsAccountRelProperties()
-
-
-@dataclass(frozen=True)
-class EMRClusterSchema(CartographyNodeSchema):
-    label: str = 'EMRCluster'
-    properties: EMRClusterNodeProperties = EMRClusterNodeProperties()
-    sub_resource_relationship: EMRClusterToAWSAccount = EMRClusterToAWSAccount()
 
 
 @timeit
