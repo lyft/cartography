@@ -6,6 +6,7 @@ from typing import List
 import boto3
 import neo4j
 
+from cartography.intel.aws.iam import get_role_tags
 from cartography.util import aws_handle_regions
 from cartography.util import batch
 from cartography.util import run_cleanup_job
@@ -119,17 +120,23 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
 
 @timeit
 @aws_handle_regions
-def get_tags(boto3_session: boto3.session.Session, resource_types: List[str], region: str) -> List[Dict]:
+def get_tags(boto3_session: boto3.session.Session, resource_type: str, region: str) -> List[Dict]:
     """
     Create boto3 client and retrieve tag data.
     """
+    # this is a temporary workaround to populate AWS tags for IAM roles.
+    # resourcegroupstaggingapi does not support IAM roles and no ETA is provided
+    # TODO: when resourcegroupstaggingapi supports iam:role, remove this condition block
+    if resource_type == 'iam:role':
+        return get_role_tags(boto3_session)
+
     client = boto3_session.client('resourcegroupstaggingapi', region_name=region)
     paginator = client.get_paginator('get_resources')
     resources: List[Dict] = []
     for page in paginator.paginate(
         # Only ingest tags for resources that Cartography supports.
         # This is just a starting list; there may be others supported by this API.
-        ResourceTypeFilters=resource_types,
+        ResourceTypeFilters=[resource_type],
     ):
         resources.extend(page['ResourceTagMappingList'])
     return resources
@@ -226,7 +233,7 @@ def sync(
     for region in regions:
         logger.info(f"Syncing AWS tags for account {current_aws_account_id} and region {region}")
         for resource_type in tag_resource_type_mappings.keys():
-            tag_data = get_tags(boto3_session, [resource_type], region)
+            tag_data = get_tags(boto3_session, resource_type, region)
             transform_tags(tag_data, resource_type)  # type: ignore
             logger.info(f"Loading {len(tag_data)} tags for resource type {resource_type}")
             load_tags(
