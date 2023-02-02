@@ -6,15 +6,14 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 
-from cartography.graph.model import CartographyNodeProperties
-from cartography.graph.model import CartographyNodeSchema
-from cartography.graph.model import CartographyRelSchema
-from cartography.graph.model import ExtraNodeLabels
-from cartography.graph.model import LinkDirection
-from cartography.graph.model import OtherRelationships
-from cartography.graph.model import PropertyRef
-from cartography.graph.model import TargetNodeMatcher
-
+from cartography.models.core.common import PropertyRef
+from cartography.models.core.nodes import CartographyNodeProperties
+from cartography.models.core.nodes import CartographyNodeSchema
+from cartography.models.core.nodes import ExtraNodeLabels
+from cartography.models.core.relationships import CartographyRelSchema
+from cartography.models.core.relationships import LinkDirection
+from cartography.models.core.relationships import OtherRelationships
+from cartography.models.core.relationships import TargetNodeMatcher
 
 logger = logging.getLogger(__name__)
 
@@ -267,7 +266,20 @@ def _build_attach_relationships_statement(
     return query_template.safe_substitute(attach_relationships_statement=attach_relationships_statement)
 
 
-def _filter_selected_relationships(
+def rel_present_on_node_schema(
+        node_schema: CartographyNodeSchema,
+        rel_schema: CartographyRelSchema,
+) -> bool:
+    """
+    Answers the question: is the given rel_schema is present on the given node_schema?
+    """
+    sub_res_rel, other_rels = filter_selected_relationships(node_schema, {rel_schema})
+    if sub_res_rel or other_rels:
+        return True
+    return False
+
+
+def filter_selected_relationships(
         node_schema: CartographyNodeSchema,
         selected_relationships: Set[CartographyRelSchema],
 ) -> Tuple[Optional[CartographyRelSchema], Optional[OtherRelationships]]:
@@ -277,7 +289,7 @@ def _filter_selected_relationships(
     :param node_schema: The node schema object to filter relationships against
     :param selected_relationships: The set of relationships to check if they exist in the node schema. If empty set,
     this means that no relationships have been selected. None is not an accepted value here.
-    :return: a tuple of the (sub resource rel [if present in selected_relationships], an OtherRelationships object
+    :return: a tuple of the shape (sub resource rel [if present in selected_relationships], an OtherRelationships object
     containing all values of node_schema.other_relationships that are present in selected_relationships)
     """
     # The empty set means no relationships are selected
@@ -294,8 +306,8 @@ def _filter_selected_relationships(
     for selected_rel in selected_relationships:
         if selected_rel not in all_rels_on_node:
             raise ValueError(
-                f"build_ingestion_query() failed: CartographyRelSchema {selected_rel.__class__.__name__} is not "
-                f"defined on CartographyNodeSchema type {node_schema.__class__.__name__}. Please verify the "
+                f"filter_selected_relationships() failed: CartographyRelSchema {selected_rel.__class__.__name__} is "
+                f"not defined on CartographyNodeSchema type {node_schema.__class__.__name__}. Please verify the "
                 f"value of `selected_relationships` passed to `build_ingestion_query()`.",
             )
 
@@ -350,7 +362,7 @@ def build_ingestion_query(
     sub_resource_rel: Optional[CartographyRelSchema] = node_schema.sub_resource_relationship
     other_rels: Optional[OtherRelationships] = node_schema.other_relationships
     if selected_relationships or selected_relationships == set():
-        sub_resource_rel, other_rels = _filter_selected_relationships(node_schema, selected_relationships)
+        sub_resource_rel, other_rels = filter_selected_relationships(node_schema, selected_relationships)
 
     ingest_query = query_template.safe_substitute(
         node_label=node_schema.label,
