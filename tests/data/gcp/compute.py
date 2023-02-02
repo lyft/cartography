@@ -206,6 +206,7 @@ GCP_LIST_INSTANCES_RESPONSE = {
     ],
     'kind': 'compute#instanceList',
     'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/zones/europe-west2-b/instances',
+    'zone': 'https://www.googleapis.com/compute/v1/projects/project-abc/zones/europe-west2-b',
 }
 
 TRANSFORMED_GCP_VPCS = [{
@@ -228,6 +229,7 @@ TRANSFORMED_GCP_SUBNETS = [{
     'region': 'europe-west2',
     'gateway_address': '10.0.0.1',
     'ip_cidr_range': '10.0.0.0/20',
+    'consolelink': "www.consolelink.com",
     'self_link': 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/subnetworks/default',
     'private_ip_google_access': False,
 }]
@@ -515,6 +517,7 @@ TRANSFORMED_FW_LIST = [
         'name': 'default-allow-icmp',
         'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
         'priority': 65534,
+        'consolelink': 'www.consolelink.com',
         'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-icmp',
         'sourceRanges': ['0.0.0.0/0'],
         'transformed_allow_list': [{
@@ -550,6 +553,7 @@ TRANSFORMED_FW_LIST = [
         'name': 'default-allow-internal',
         'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
         'priority': 65534,
+        'consolelink': 'www.consolelink.com',
         'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-internal',
         'sourceRanges': ['10.128.0.0/9'],
         'transformed_allow_list': [
@@ -590,6 +594,7 @@ TRANSFORMED_FW_LIST = [
         'name': 'default-allow-rdp',
         'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
         'priority': 65534,
+        'consolelink': 'www.consolelink.com',
         'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-rdp',
         'sourceRanges': ['0.0.0.0/0'],
         'transformed_allow_list': [{
@@ -618,6 +623,7 @@ TRANSFORMED_FW_LIST = [
         'name': 'default-allow-ssh',
         'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
         'priority': 65534,
+        'consolelink': 'www.consolelink.com',
         'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-ssh',
         'sourceRanges': ['0.0.0.0/0'],
         'transformed_allow_list': [{
@@ -646,6 +652,7 @@ TRANSFORMED_FW_LIST = [
         'name': 'custom-port-incoming',
         'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
         'priority': 1000,
+        'consolelink': 'www.consolelink.com',
         'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/custom-port-incoming',
         'sourceRanges': ['0.0.0.0/0'],
         'targetTags': ['test'],
@@ -752,4 +759,3 @@ TEST_PROXIES = [
         'sslPolicy': 'policy123'
     }
 ]
-

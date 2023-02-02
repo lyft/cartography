@@ -399,7 +399,8 @@ def _load_cosmosdb_virtual_network_rules(
     if 'virtual_network_rules' in database_account and len(database_account['virtual_network_rules']) > 0:
         database_account_id = database_account['id']
         virtual_network_rules = database_account['virtual_network_rules']
-        virtual_network_rules['consolelink'] = azure_console_link.get_console_link(id=virtual_network_rules['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+        for network_rule in virtual_network_rules:
+            network_rule['consolelink'] = azure_console_link.get_console_link(id=network_rule['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
 
         ingest_virtual_network_rules = """
         UNWIND $virtual_network_rules_list AS vnr

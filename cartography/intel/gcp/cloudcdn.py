@@ -274,10 +274,6 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
             raise
 
 
-@timeit
-def load_backend_services(session: neo4j.Session, region_services: List[Dict], project_id: str, update_tag: int) -> None:
-    session.write_transaction(load_backend_services_tx, region_services, project_id, update_tag)
-
 
 @timeit
 def sync_regional_backend_services(

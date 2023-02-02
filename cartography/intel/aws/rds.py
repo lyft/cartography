@@ -275,58 +275,6 @@ def transform_snapshots(snps: List[Dict], region: str) -> List[Dict]:
     return snapshots
 
 
-def load_rds_snapshots(session: neo4j.Session, snapshots: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
-    session.write_transaction(_load_rds_snapshots_tx, snapshots, current_aws_account_id, aws_update_tag)
-
-
-@timeit
-def _load_rds_snapshots_tx(
-    tx: neo4j.Transaction, data: List[Dict], current_aws_account_id: str,
-    aws_update_tag: int,
-) -> None:
-    ingest_rds_snapshot = """
-    UNWIND $snapshots as rds_snapshot
-        MERGE (snap:RDSSnapshot{id: rds_snapshot.DBSnapshotArn})
-        ON CREATE SET snap.firstseen = timestamp(),
-            snap.arn = rds_snapshot.DBSnapshotArn
-        SET snap.db_snapshot_identifier = rds_snapshot.DBSnapshotIdentifier,
-            snap.name = rds_snapshot.name,
-            snap.db_instance_identifier = rds_snapshot.DBInstanceIdentifier,
-            snap.snapshot_create_time = rds_snapshot.SnapshotCreateTime,
-            snap.engine = rds_snapshot.Engine,
-            snap.consolelink = rds_snapshot.consolelink,
-            snap.allocated_storage = rds_snapshot.AllocatedStorage,
-            snap.status = rds_snapshot.Status,
-            snap.port = rds_snapshot.Port,
-            snap.availability_zone = rds_snapshot.AvailabilityZone,
-            snap.vpc_id = rds_snapshot.VpcId,
-            snap.instance_create_time = rds_snapshot.InstanceCreateTime,
-            snap.master_username = rds_snapshot.MasterUsername,
-            snap.engine_version = rds_snapshot.EngineVersion,
-            snap.license_model = rds_snapshot.LicenseModel,
-            snap.snapshot_type = rds_snapshot.SnapshotType,
-            snap.option_group_name = rds_snapshot.OptionGroupName,
-            snap.percent_progress = rds_snapshot.PercentProgress,
-            snap.storage_type = rds_snapshot.StorageType,
-            snap.encrypted = rds_snapshot.Encrypted,
-            snap.iam_database_authentication_enabled = rds_snapshot.IAMDatabaseAuthenticationEnabled,
-            snap.dbi_resource_id = rds_snapshot.DbiResourceId,
-            snap.lastupdated = $aws_update_tag
-        WITH snap
-        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
-        MERGE (aa)-[r:RESOURCE]->(snap)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = $aws_update_tag
-    """
-
-    tx.run(
-        ingest_rds_snapshot,
-        snapshots=data,
-        AWS_ACCOUNT_ID=current_aws_account_id,
-        aws_update_tag=aws_update_tag,
-    )
-
-
 def cleanup_rds_snapshots(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_rds_snapshots_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -592,7 +540,7 @@ def get_rds_snapshot_data(boto3_session: boto3.session.Session, region: str) -> 
 
 @timeit
 def load_rds_snapshots(
-    neo4j_session: neo4j.Session, data: Dict, region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, data: Dict, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     """
@@ -633,8 +581,8 @@ def load_rds_snapshots(
             snapshot.original_snapshot_create_time = rds_snapshot.OriginalSnapshotCreateTime,
             snapshot.snapshot_database_time = rds_snapshot.SnapshotDatabaseTime,
             snapshot.snapshot_target = rds_snapshot.SnapshotTarget,
-            snapshot.storage_throughput = rds_snapshot.StorageThroughput,
-            snapshot.region = $Region,
+            snapshot.storage_throughput = rds_snapshot.StorageThroughput,       
+            snapshot.consolelink = rds_snapshot.consolelink,
             snapshot.lastupdated = $aws_update_tag
         WITH snapshot
         MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
@@ -648,7 +596,6 @@ def load_rds_snapshots(
     neo4j_session.run(
         ingest_rds_snapshot,
         Snapshots=data,
-        Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
     )
@@ -961,21 +908,6 @@ def sync_rds_instances(
 
     load_rds_instances(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)
-
-
-@timeit
-def sync_rds_snapshots(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
-) -> None:
-    """
-    Grab RDS snapshot data from AWS, ingest to neo4j, and run the cleanup job.
-    """
-    for region in regions:
-        logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_rds_snapshot_data(boto3_session, region)
-        load_rds_snapshots(neo4j_session, data, region, current_aws_account_id, update_tag)  # type: ignore
-    cleanup_rds_snapshots(neo4j_session, common_job_parameters)
 
 
 @timeit

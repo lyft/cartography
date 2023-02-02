@@ -112,7 +112,7 @@ def _ensure_local_neo4j_has_test_rds_security_group_data(neo4j_session):
 def test_load_rds_snapshots_data(neo4j_session):
     _ensure_local_neo4j_has_test_rds_snapshots_data(neo4j_session)
     expected_nodes = {
-        "arn:aws:rds:us-east-1:123456789012:snapshot:mydbsnapshot",
+        'arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
     }
     nodes = neo4j_session.run(
         """
@@ -125,28 +125,26 @@ def test_load_rds_snapshots_data(neo4j_session):
 
 def _ensure_local_neo4j_has_test_rds_snapshots_data(neo4j_session):
     cartography.intel.aws.rds.load_rds_snapshots(
-        neo4j_session,
-        DESCRIBE_SNAPSHOTS_RESPONSE,
-        '123456789012',
-        TEST_UPDATE_TAG,
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBSNAPSHOTS_RESPONSE['DBSnapshots'],
+        current_aws_account_id='123456789012',
+        aws_update_tag=TEST_UPDATE_TAG,
     )
 
 
 def test_load_rds_snapshots_basic(neo4j_session):
     """Test that we successfully load RDS snapshots to the graph"""
     cartography.intel.aws.rds.load_rds_instances(
-        neo4j_session,
-        DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
-        'us-east1',
-        '1234',
-        TEST_UPDATE_TAG,
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
+        current_aws_account_id='1234',
+        aws_update_tag=TEST_UPDATE_TAG,
     )
     cartography.intel.aws.rds.load_rds_snapshots(
-        neo4j_session,
-        DESCRIBE_DBSNAPSHOTS_RESPONSE['DBSnapshots'],
-        'us-east1',
-        '1234',
-        TEST_UPDATE_TAG,
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBSNAPSHOTS_RESPONSE['DBSnapshots'],
+        current_aws_account_id='1234',
+        aws_update_tag=TEST_UPDATE_TAG,
     )
 
     query = """MATCH(rds:RDSSnapshot) RETURN rds.id, rds.arn, rds.db_snapshot_identifier, rds.db_instance_identifier"""
