@@ -412,12 +412,11 @@ def build_create_index_queries(node_schema: CartographyNodeSchema) -> List[str]:
         rel_schemas.extend([node_schema.sub_resource_relationship])
     if node_schema.other_relationships:
         rel_schemas.extend(node_schema.other_relationships.rels)
-    result.extend([
-        index_template.safe_substitute(
-            TargetNodeLabel=rs.target_node_label,
-            TargetAttribute=target_key,
-        ) for rs in rel_schemas for target_key in asdict(rs.target_node_matcher).keys()
-    ])
+    for rs in rel_schemas:
+        for target_key in asdict(rs.target_node_matcher).keys():
+            result.append(
+                index_template.safe_substitute(TargetNodeLabel=rs.target_node_label, TargetAttribute=target_key),
+            )
 
     # Now, include extra indexes defined by the module author on the node schema's property refs.
     node_props_as_dict: Dict[str, PropertyRef] = asdict(node_schema.properties)

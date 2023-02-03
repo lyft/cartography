@@ -230,7 +230,7 @@ All of these queries use indexes for faster lookup.
 
 #### indexes.cypher
 
-Older intel modules define indexes in [indexes.cypher file](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher).
+Older intel modules define indexes in [indexes.cypher](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher).
 By using CartographyNodeSchema and CartographyRelSchema objects, indexes are automatically created so you don't need to update this file!
 
 
