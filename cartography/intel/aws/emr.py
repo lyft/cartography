@@ -25,7 +25,7 @@ DESCRIBE_SLEEP = 1
 
 @timeit
 @aws_handle_regions
-def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
+def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
     clusters: List[Dict] = []
     paginator = client.get_paginator('list_clusters')
@@ -37,9 +37,9 @@ def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[
 
 
 @timeit
-def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict:
+def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict[str, Any]:
     client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
-    cluster_details: Dict = {}
+    cluster_details: Dict[str, Any] = {}
     try:
         response = client.describe_cluster(ClusterId=cluster_id)
         cluster_details = response['Cluster']
@@ -74,7 +74,7 @@ def load_emr_clusters(
 
 
 @timeit
-def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any]) -> None:
     logger.debug("Running EMR cleanup job.")
     cleanup_job = GraphJob.from_node_schema(EMRClusterSchema(), common_job_parameters)
     cleanup_job.run(neo4j_session)
@@ -83,7 +83,7 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 @timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+    update_tag: int, common_job_parameters: Dict[str, Any],
 ) -> None:
     for region in regions:
         logger.info("Syncing EMR for region '%s' in account '%s'.", region, current_aws_account_id)

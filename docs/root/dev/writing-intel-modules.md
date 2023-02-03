@@ -228,11 +228,11 @@ In this older example of ingesting GCP VPCs, we connect VPCs with GCPProjects
 and [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher#L42).
 All of these queries use indexes for faster lookup.
 
-#### Create an index for new nodes
+#### indexes.cypher
 
-Be sure to [update the indexes.cypher file](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher)
-with your new node type. Indexing on "`id`" is required, and indexing on anything else that will be frequently queried is
-encouraged.
+Older intel modules define indexes in [indexes.cypher file](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher).
+By using CartographyNodeSchema and CartographyRelSchema objects, indexes are automatically created so you don't need to update this file!
+
 
 #### lastupdated and firstseen
 
@@ -241,8 +241,19 @@ On every cartography node and relationship, we set the `lastupdated` field to th
 ### Cleanup
 
 We have just added new nodes and relationships to the graph, and we have also updated previously-added ones
-by using `MERGE`. We now need to delete nodes and relationships that no longer exist, and we do this by simply removing
+by using `MERGE`. We now need to delete nodes and relationships that no longer exist, and we do this by removing
 all nodes and relationships that have `lastupdated` NOT set to the `update_tag` of this current run.
+
+By using Cartography schema objects, a cleanup function is [trivial to write](https://github.com/lyft/cartography/blob/82e1dd0e851475381ac8f2a9a08027d67ec1d772/cartography/intel/aws/emr.py#L77-L80):
+
+```python
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    logger.debug("Running EMR cleanup job.")
+    cleanup_job = GraphJob.from_node_schema(EMRClusterSchema(), common_job_parameters)
+    cleanup_job.run(neo4j_session)
+```
+
+Older intel modules still do this process with hand-written cleanup jobs that work like this:
 
 - Delete all old nodes
 
