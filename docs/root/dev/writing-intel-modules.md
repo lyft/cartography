@@ -68,13 +68,12 @@ def load_emr_clusters(
         aws_update_tag: int,
 ) -> None:
     logger.info(f"Loading EMR {len(cluster_data)} clusters for region '{region}' into graph.")
-
     ingestion_query = build_ingestion_query(EMRClusterSchema())
-
-    load_graph_data(
+    load(
         neo4j_session,
-        ingestion_query,
+        EMRClusterSchema(),
         cluster_data,
+        ingestion_query,
         lastupdated=aws_update_tag,
         Region=region,
         AccountId=current_aws_account_id,
@@ -83,7 +82,7 @@ def load_emr_clusters(
 ```
 
 
-`load_graph_data()` requires an `ingestion_query` to be generated from `CartographyNodeSchema` and `CartographyRelSchema` objects. [cartography.graph.querybuilder.build_ingestion_query()](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/querybuilder.py#L312) does just that: it accepts those schema objects as input and returns a well-formed and optimized cypher query.
+The `load()` function's `ingestion_query` argument is a string generated from `CartographyNodeSchema` and `CartographyRelSchema` objects. [cartography.graph.querybuilder.build_ingestion_query()](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/querybuilder.py#L312) does just that: it accepts those schema objects as input and returns a well-formed and optimized cypher query.
 
 
 #### Defining a node

@@ -8,6 +8,7 @@ from typing import Union
 import neo4j
 
 from cartography.graph.querybuilder import build_create_index_queries
+from cartography.graph.querybuilder import build_ingestion_query
 from cartography.models.core.nodes import CartographyNodeSchema
 from cartography.util import batch
 
@@ -231,3 +232,30 @@ def ensure_indexes(neo4j_session: neo4j.Session, node_schema: CartographyNodeSch
         if not query.startswith('CREATE INDEX IF NOT EXISTS'):
             raise ValueError('Query provided to `ensure_indexes()` does not start with "CREATE INDEX IF NOT EXISTS".')
         neo4j_session.run(query)
+
+
+def load(
+        neo4j_session: neo4j.Session,
+        node_schema: CartographyNodeSchema,
+        dict_list: List[Dict[str, Any]],
+        ingestion_query: Optional[str] = None,
+        **kwargs,
+) -> None:
+    """
+    Main entry point for intel modules to write data to the graph. Ensures that indexes exist for the datatypes loaded
+    to the graph and then performs the load operation.
+    :param neo4j_session: The Neo4j session
+    :param node_schema: The CartographyNodeSchema object to create indexes for and - if requested - generate a query.
+    :param ingestion_query: Optional. If not specified, we use the given `node_schema` to generate an ingestion query
+    using default parameters.
+    If specified, we run this given query to ingest the given `dict_list` of data.
+    You would want to specify your own if you are calling `build_ingestion_query()` yourself and using the
+    `selected_relationships` argument.
+    :param dict_list: The data to load to the graph represented as a list of dicts.
+    :param kwargs: Allows additional keyword args to be supplied to the Neo4j query.
+    :return: None
+    """
+    ensure_indexes(neo4j_session, node_schema)
+    if not ingestion_query:
+        ingestion_query = build_ingestion_query(node_schema)
+    load_graph_data(neo4j_session, ingestion_query, dict_list, **kwargs)
