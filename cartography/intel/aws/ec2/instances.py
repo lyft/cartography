@@ -204,6 +204,7 @@ def _load_ec2_instances_tx(
                 instance.state = inst.State.Name,
                 instance.launchtime = inst.LaunchTime,
                 instance.launchtimeunix = inst.LaunchTimeUnix,
+                instance.instancelifecycle = inst.InstanceLifecycle,
                 instance.region = inst.region,
                 instance.lastupdated = $update_tag,
                 instance.iaminstanceprofile = inst.IamInstanceProfile.Arn,
