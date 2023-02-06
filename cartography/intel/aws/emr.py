@@ -28,7 +28,7 @@ DESCRIBE_SLEEP = 1
 @aws_handle_regions
 def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
-    clusters: List[Dict] = []
+    clusters: List[Dict[str, Any]] = []
     paginator = client.get_paginator('list_clusters')
     for page in paginator.paginate():
         cluster = page['Clusters']
@@ -56,7 +56,7 @@ def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, 
 @timeit
 def load_emr_clusters(
         neo4j_session: neo4j.Session,
-        cluster_data: List[Dict],
+        cluster_data: List[Dict[str, Any]],
         region: str,
         current_aws_account_id: str,
         aws_update_tag: int,
@@ -91,7 +91,7 @@ def sync(
 
         clusters = get_emr_clusters(boto3_session, region)
 
-        cluster_data: List[Dict] = []
+        cluster_data: List[Dict[str, Any]] = []
         for cluster in clusters:
             cluster_id = cluster['Id']
             cluster_details = get_emr_describe_cluster(boto3_session, region, cluster_id)
