@@ -1,4 +1,5 @@
 import logging
+import math
 from typing import Dict
 from typing import List
 
@@ -18,7 +19,26 @@ azure_console_link = AzureLinker()
 
 
 def load_tenant_users(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
-    session.write_transaction(_load_tenant_users_tx, tenant_id, data_list, update_tag)
+    iteration_size = 500
+    total_items = len(data_list)
+    total_iterations = math.ceil(len(data_list) / iteration_size)
+    logging.info(f"total users: {total_items}")
+    logging.info(f"total iterations: {total_iterations}")
+
+    for counter in range(0, total_iterations):
+        start = iteration_size * (counter)
+
+        if (start + iteration_size) >= total_items:
+            end = total_items
+            paged_users = data_list[start:]
+
+        else:
+            end = start + iteration_size
+            paged_users = data_list[start:end]
+
+        session.write_transaction(_load_tenant_users_tx, tenant_id, paged_users, update_tag)
+
+        logging.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paged_users)}")
 
 
 def load_roles(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int, SUBSCRIPTION_ID: str) -> None:
@@ -60,21 +80,71 @@ def get_authorization_client(credentials: Credentials, subscription_id: str) -> 
 
 
 @timeit
-def get_tenant_users_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
+def list_tenant_users(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
     try:
-        tenant_users_list = list(
-            map(lambda x: x.as_dict(), client.users.list()),
-        )
+        users = client.users.list()
 
-        for user in tenant_users_list:
-            user['id'] = f"tenants/{tenant_id}/users/{user.get('object_id',None)}"
-            user['consolelink'] = azure_console_link.get_console_link(id=user['object_id'], iam_entity_type='user')
+        users = transform_users(client.users.list(), tenant_id)
 
-        return tenant_users_list
+        return users
 
     except HttpResponseError as e:
-        logger.warning(f"Error while retrieving tenant users - {e}")
+        logging.warning(f"Error while retrieving tenant users - {e}")
         return []
+
+def transform_users(users_list: List[Dict], tenant_id:str) -> List[Dict]:
+    users: List[Dict] = []
+
+    # User properties - https://learn.microsoft.com/en-us/graph/api/resources/user?view=graph-rest-1.0
+    for user in users_list:
+        usr = {
+            'id': f"tenants/{tenant_id}/users/{user.object_id}",
+            'consolelink': azure_console_link.get_console_link(id=user.object_id, iam_entity_type='user'),
+            'object_id': user.object_id,
+            'user_principal_name': user.user_principal_name,
+            'email': user.mail,
+            'name': user.display_name,
+            'given_name': user.given_name,
+            'surname': user.surname,
+            'user_type': user.user_type,
+            'object_type': user.object_type,
+            'mail_nickname': user.mail_nickname,
+            'account_enabled': user.account_enabled,
+            'usage_location': user.usage_location,
+            'account_enabled': user.account_enabled,
+            'deletion_timestamp': user.deletion_timestamp,
+            'create_date': user.additional_properties['createdDateTime'],
+            'company_name': user.additional_properties['companyName'],
+            'refresh_tokens_valid_from': user.additional_properties['refreshTokensValidFromDateTime'],
+            'mobile': user.additional_properties['mobile'],
+        }
+        users.append(usr)
+
+    return users
+
+def transform_user(user: Dict, tenant_id:str) -> Dict:
+    # User properties - https://learn.microsoft.com/en-us/graph/api/resources/user?view=graph-rest-1.0
+    return {
+        'id': f"tenants/{tenant_id}/users/{user.object_id}",
+        'consolelink': azure_console_link.get_console_link(id=user.object_id, iam_entity_type='user'),
+        'object_id': user.object_id,
+        'user_principal_name': user.user_principal_name,
+        'email': user.mail,
+        'name': user.display_name,
+        'given_name': user.given_name,
+        'surname': user.surname,
+        'user_type': user.user_type,
+        'object_type': user.object_type,
+        'mail_nickname': user.mail_nickname,
+        'account_enabled': user.account_enabled,
+        'usage_location': user.usage_location,
+        'account_enabled': user.account_enabled,
+        'deletion_timestamp': user.deletion_timestamp,
+        'create_date': user.additional_properties['createdDateTime'],
+        'company_name': user.additional_properties['companyName'],
+        'refresh_tokens_valid_from': user.additional_properties['refreshTokensValidFromDateTime'],
+        'mobile': user.additional_properties['mobile'],
+    }
 
 
 def _load_tenant_users_tx(
@@ -85,19 +155,41 @@ def _load_tenant_users_tx(
     MERGE (i:AzureUser{id: user.id})
     ON CREATE SET i:AzurePrincipal,
     i.firstseen = timestamp(),
-    i.object_id=user.object_id,
-    i.name = user.display_name,
-    i.region = $region,
-    i.create_date = $createDate,
-    i.given_name = user.given_name,
-    i.surname = user.surname,
-    i.user_type = user.user_type,
-    i.consolelink = user.consolelink,
-    i.mobile = user.mobile
+    i.consolelink =user.consolelink,
+    i.object_id =user.object_id,
+    i.user_principal_name =user.user_principal_name,
+    i.email =user.email,
+    i.name =user.name,
+    i.given_name =user.given_name,
+    i.surname =user.surname,
+    i.user_type =user.user_type,
+    i.object_type =user.object_type,
+    i.mail_nickname =user.mail_nickname,
+    i.account_enabled =user.account_enabled,
+    i.usage_location =user.usage_location,
+    i.account_enabled =user.account_enabled,
+    i.deletion_timestamp =user.deletion_timestamp,
+    i.create_date =user.create_date,
+    i.company_name =user.company_name,
+    i.refresh_tokens_valid_from =user.refresh_tokens_valid_from,
+    i.mobile =user.mobile,
+    i.region = $region
     SET i.lastupdated = $update_tag,
-    i.account_enabled = user.account_enabled,
-    i.refreshTokensValidFromDateTime = user.refreshTokensValidFromDateTime,
-    i.user_principal_name = user.user_principal_name
+    i.consolelink =user.consolelink,
+    i.user_principal_name =user.user_principal_name,
+    i.name =user.name,
+    i.given_name =user.given_name,
+    i.surname =user.surname,
+    i.mail_nickname =user.mail_nickname,
+    i.account_enabled =user.account_enabled,
+    i.usage_location =user.usage_location,
+    i.account_enabled =user.account_enabled,
+    i.deletion_timestamp =user.deletion_timestamp,
+    i.create_date =user.create_date,
+    i.company_name =user.company_name,
+    i.refresh_tokens_valid_from =user.refresh_tokens_valid_from,
+    i.mobile =user.mobile,
+    i.region = $region
     WITH i
     MATCH (owner:AzureTenant{id: $tenant_id})
     MERGE (owner)-[r:RESOURCE]->(i)
@@ -124,26 +216,26 @@ def sync_tenant_users(
     common_job_parameters: Dict,
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
-    tenant_users_list = get_tenant_users_list(client, tenant_id)
-
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-        totalPages = len(tenant_users_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for iam users {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        if page_end > len(tenant_users_list) or page_end == len(tenant_users_list):
-            tenant_users_list = tenant_users_list[page_start:]
-        else:
-            has_next_page = True
-            tenant_users_list = tenant_users_list[page_start:page_end]
-            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+    tenant_users_list = list_tenant_users(client, tenant_id)
+    
+    # if common_job_parameters.get('pagination', {}).get('iam', None):
+    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+    #     totalPages = len(tenant_users_list) / pageSize
+    #     if int(totalPages) != totalPages:
+    #         totalPages = totalPages + 1
+    #     totalPages = int(totalPages)
+    #     if pageNo < totalPages or pageNo == totalPages:
+    #         logging.info(f'pages process for iam users {pageNo}/{totalPages} pageSize is {pageSize}')
+    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     if page_end > len(tenant_users_list) or page_end == len(tenant_users_list):
+    #         tenant_users_list = tenant_users_list[page_start:]
+    #     else:
+    #         has_next_page = True
+    #         tenant_users_list = tenant_users_list[page_start:page_end]
+    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_users(neo4j_session, tenant_id, tenant_users_list, update_tag)
     cleanup_tenant_users(neo4j_session, common_job_parameters)
@@ -161,7 +253,7 @@ def get_tenant_groups_list(client: GraphRbacManagementClient, tenant_id: str) ->
         return tenant_groups_list
 
     except HttpResponseError as e:
-        logger.warning(f"Error while retrieving tenant groups - {e}")
+        logging.warning(f"Error while retrieving tenant groups - {e}")
         return []
 
 
@@ -212,24 +304,24 @@ def sync_tenant_groups(
     client = get_graph_client(credentials, tenant_id)
     tenant_groups_list = get_tenant_groups_list(client, tenant_id)
 
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-        totalPages = len(tenant_groups_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for iam groups {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        if page_end > len(tenant_groups_list) or page_end == len(tenant_groups_list):
-            tenant_groups_list = tenant_groups_list[page_start:]
-        else:
-            has_next_page = True
-            tenant_groups_list = tenant_groups_list[page_start:page_end]
-            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+    # if common_job_parameters.get('pagination', {}).get('iam', None):
+    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+    #     totalPages = len(tenant_groups_list) / pageSize
+    #     if int(totalPages) != totalPages:
+    #         totalPages = totalPages + 1
+    #     totalPages = int(totalPages)
+    #     if pageNo < totalPages or pageNo == totalPages:
+    #         logging.info(f'pages process for iam groups {pageNo}/{totalPages} pageSize is {pageSize}')
+    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     if page_end > len(tenant_groups_list) or page_end == len(tenant_groups_list):
+    #         tenant_groups_list = tenant_groups_list[page_start:]
+    #     else:
+    #         has_next_page = True
+    #         tenant_groups_list = tenant_groups_list[page_start:page_end]
+    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_groups(neo4j_session, tenant_id, tenant_groups_list, update_tag)
     cleanup_tenant_groups(neo4j_session, common_job_parameters)
@@ -247,7 +339,7 @@ def get_tenant_applications_list(client: GraphRbacManagementClient, tenant_id: s
         return tenant_applications_list
 
     except HttpResponseError as e:
-        logger.warning(f"Error while retrieving tenant applications - {e}")
+        logging.warning(f"Error while retrieving tenant applications - {e}")
         return []
 
 
@@ -295,24 +387,24 @@ def sync_tenant_applications(
     client = get_graph_client(credentials, tenant_id)
     tenant_applications_list = get_tenant_applications_list(client, tenant_id)
 
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-        totalPages = len(tenant_applications_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for iam applications {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        if page_end > len(tenant_applications_list) or page_end == len(tenant_applications_list):
-            tenant_applications_list = tenant_applications_list[page_start:]
-        else:
-            has_next_page = True
-            tenant_applications_list = tenant_applications_list[page_start:page_end]
-            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+    # if common_job_parameters.get('pagination', {}).get('iam', None):
+    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+    #     totalPages = len(tenant_applications_list) / pageSize
+    #     if int(totalPages) != totalPages:
+    #         totalPages = totalPages + 1
+    #     totalPages = int(totalPages)
+    #     if pageNo < totalPages or pageNo == totalPages:
+    #         logging.info(f'pages process for iam applications {pageNo}/{totalPages} pageSize is {pageSize}')
+    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     if page_end > len(tenant_applications_list) or page_end == len(tenant_applications_list):
+    #         tenant_applications_list = tenant_applications_list[page_start:]
+    #     else:
+    #         has_next_page = True
+    #         tenant_applications_list = tenant_applications_list[page_start:page_end]
+    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_applications(neo4j_session, tenant_id, tenant_applications_list, update_tag)
     cleanup_tenant_applications(neo4j_session, common_job_parameters)
@@ -333,7 +425,7 @@ def get_tenant_service_accounts_list(client: GraphRbacManagementClient, tenant_i
         return tenant_service_accounts_list
 
     except HttpResponseError as e:
-        logger.warning(f"Error while retrieving tenant service accounts - {e}")
+        logging.warning(f"Error while retrieving tenant service accounts - {e}")
         return []
 
 
@@ -382,24 +474,24 @@ def sync_tenant_service_accounts(
     client = get_graph_client(credentials, tenant_id)
     tenant_service_accounts_list = get_tenant_service_accounts_list(client, tenant_id)
 
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-        totalPages = len(tenant_service_accounts_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for iam service_accounts {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        if page_end > len(tenant_service_accounts_list) or page_end == len(tenant_service_accounts_list):
-            tenant_service_accounts_list = tenant_service_accounts_list[page_start:]
-        else:
-            has_next_page = True
-            tenant_service_accounts_list = tenant_service_accounts_list[page_start:page_end]
-            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+    # if common_job_parameters.get('pagination', {}).get('iam', None):
+    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+    #     totalPages = len(tenant_service_accounts_list) / pageSize
+    #     if int(totalPages) != totalPages:
+    #         totalPages = totalPages + 1
+    #     totalPages = int(totalPages)
+    #     if pageNo < totalPages or pageNo == totalPages:
+    #         logging.info(f'pages process for iam service_accounts {pageNo}/{totalPages} pageSize is {pageSize}')
+    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     if page_end > len(tenant_service_accounts_list) or page_end == len(tenant_service_accounts_list):
+    #         tenant_service_accounts_list = tenant_service_accounts_list[page_start:]
+    #     else:
+    #         has_next_page = True
+    #         tenant_service_accounts_list = tenant_service_accounts_list[page_start:page_end]
+    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_service_accounts(neo4j_session, tenant_id, tenant_service_accounts_list, update_tag)
     cleanup_tenant_service_accounts(neo4j_session, common_job_parameters)
@@ -417,7 +509,7 @@ def get_tenant_domains_list(client: GraphRbacManagementClient, tenant_id: str) -
         return tenant_domains_list
 
     except HttpResponseError as e:
-        logger.warning(f"Error while retrieving tenant domains - {e}")
+        logging.warning(f"Error while retrieving tenant domains - {e}")
         return []
 
 
@@ -466,24 +558,24 @@ def sync_tenant_domains(
     client = get_graph_client(credentials, tenant_id)
     tenant_domains_list = get_tenant_domains_list(client, tenant_id)
 
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-        totalPages = len(tenant_domains_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for iam domains {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        if page_end > len(tenant_domains_list) or page_end == len(tenant_domains_list):
-            tenant_domains_list = tenant_domains_list[page_start:]
-        else:
-            has_next_page = True
-            tenant_domains_list = tenant_domains_list[page_start:page_end]
-            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
+    # if common_job_parameters.get('pagination', {}).get('iam', None):
+    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
+    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
+    #     totalPages = len(tenant_domains_list) / pageSize
+    #     if int(totalPages) != totalPages:
+    #         totalPages = totalPages + 1
+    #     totalPages = int(totalPages)
+    #     if pageNo < totalPages or pageNo == totalPages:
+    #         logging.info(f'pages process for iam domains {pageNo}/{totalPages} pageSize is {pageSize}')
+    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
+    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
+    #     if page_end > len(tenant_domains_list) or page_end == len(tenant_domains_list):
+    #         tenant_domains_list = tenant_domains_list[page_start:]
+    #     else:
+    #         has_next_page = True
+    #         tenant_domains_list = tenant_domains_list[page_start:page_end]
+    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_domains(neo4j_session, tenant_id, tenant_domains_list, update_tag)
     cleanup_tenant_domains(neo4j_session, common_job_parameters)
@@ -514,7 +606,7 @@ def get_roles_list(client: AuthorizationManagementClient, common_job_parameters:
         return roles_list
 
     except HttpResponseError as e:
-        logger.warning(f"Error while retrieving roles - {e}")
+        logging.warning(f"Error while retrieving roles - {e}")
         return []
 
 
@@ -616,7 +708,7 @@ def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing IAM for Tenant '%s'.", tenant_id)
+    logging.info("Syncing IAM for Tenant '%s'.", tenant_id)
 
     common_job_parameters['AZURE_TENANT_ID'] = tenant_id
 
@@ -633,17 +725,17 @@ def sync(
             tenant_id, update_tag, common_job_parameters,
         )
         sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
-        if common_job_parameters.get('pagination', {}).get('iam', None):
-            if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
-                sync_roles(
-                    neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
-                )
-                set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
-        else:
-            sync_roles(
-                neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
-            )
-            set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
+        # if common_job_parameters.get('pagination', {}).get('iam', None):
+        #     if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
+        #         sync_roles(
+        #             neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
+        #         )
+        #         set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
+        # else:
+        sync_roles(
+            neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
+        )
+        set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
 
     except Exception as ex:
-        print(f'exception from IAM - {ex}')
+        logging.error(f'exception from IAM - {ex}', exc_info=True, stack_info=True)

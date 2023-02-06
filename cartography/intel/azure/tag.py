@@ -42,11 +42,9 @@ def load_tags(session: neo4j.Session, data_list: List[Dict], update_tag: int, co
             end = start + iteration_size
             paginated_tags = data_list[start:end]
 
-        logger.info(f"Start - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_tags)}")
-
         session.write_transaction(_load_tags_tx, paginated_tags, update_tag, common_job_parameters)
 
-        logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_tags)}")
+        logger.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_tags)}")
 
 
 @timeit

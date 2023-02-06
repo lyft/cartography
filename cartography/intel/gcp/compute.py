@@ -302,12 +302,12 @@ def load_proxies_tx(
     )
 
 @timeit
-def attach_compute_disks_to_inastance(session: neo4j.Session, data_list: List[Dict], instance_id: str, update_tag: int) -> None:
-    session.write_transaction(attach_compute_disks_to_inastance_tx, data_list, instance_id, update_tag)
+def attach_compute_disks_to_instance(session: neo4j.Session, data_list: List[Dict], instance_id: str, update_tag: int) -> None:
+    session.write_transaction(attach_compute_disks_to_instance_tx, data_list, instance_id, update_tag)
 
 
 @timeit
-def attach_compute_disks_to_inastance_tx(
+def attach_compute_disks_to_instance_tx(
     tx: neo4j.Transaction, data: List[Dict],
     instance_id: str, gcp_update_tag: int,
 ) -> None:
@@ -911,17 +911,15 @@ def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_u
             end = start + iteration_size
             paginated_instances = instances_list[start:end]
 
-        logger.info(f"Start - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
-
         session.write_transaction(load_gcp_instances_tx, paginated_instances, gcp_update_tag)
 
-        logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
+        logger.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
 
-    # for instance in instances_list:
-    #     _attach_instance_tags(session, instance, gcp_update_tag)
-    #     _attach_gcp_nics(session, instance, gcp_update_tag)
-    #     _attach_gcp_vpc(session, instance['partial_uri'], gcp_update_tag)
-    #     _attach_instance_service_account(session, instance, gcp_update_tag)
+    for instance in instances_list:
+        _attach_instance_tags(session, instance, gcp_update_tag)
+        _attach_gcp_nics(session, instance, gcp_update_tag)
+        _attach_gcp_vpc(session, instance['partial_uri'], gcp_update_tag)
+        _attach_instance_service_account(session, instance, gcp_update_tag)
 
 
 @timeit
@@ -1758,13 +1756,13 @@ def sync_gcp_instances(
 
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
 
-    # attach compute inastance to disks
+    # attach compute instance to disks
     for instance in instance_list:
         disks = []
         for disk in instance.get('disks', []):
             disk['id'] = f"projects/{project_id}/disks/{disk.get('initializeParams', {}).get('diskName', '')}"
             disks.append(disk)
-        attach_compute_disks_to_inastance(neo4j_session, disks, instance['partial_uri'], gcp_update_tag)
+        attach_compute_disks_to_instance(neo4j_session, disks, instance['partial_uri'], gcp_update_tag)
 
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
