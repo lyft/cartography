@@ -8,10 +8,8 @@ import boto3
 import botocore.exceptions
 import neo4j
 
-from cartography.client.core.tx import ensure_indexes
-from cartography.client.core.tx import load_graph_data
+from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
-from cartography.graph.querybuilder import build_ingestion_query
 from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.models.aws.emr import EMRClusterSchema
 from cartography.util import aws_handle_regions
@@ -45,11 +43,9 @@ def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, 
         response = client.describe_cluster(ClusterId=cluster_id)
         cluster_details = response['Cluster']
     except botocore.exceptions.ClientError as e:
-        logger.warning(
-            "Could not run EMR describe_cluster due to boto3 error %s: %s. Skipping.",
-            e.response['Error']['Code'],
-            e.response['Error']['Message'],
-        )
+        code = e.response['Error']['Code']
+        msg = e.response['Error']['Message']
+        logger.warning(f"Could not run EMR describe_cluster due to boto3 error {code}: {msg}. Skipping.")
     return cluster_details
 
 
@@ -61,12 +57,10 @@ def load_emr_clusters(
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
-    logger.info("Loading EMR %d clusters for region '%s' into graph.", len(cluster_data), region)
-    ensure_indexes(neo4j_session, EMRClusterSchema())
-    ingestion_query = build_ingestion_query(EMRClusterSchema())
-    load_graph_data(
+    logger.info(f"Loading EMR {len(cluster_data)} clusters for region '{region}' into graph.")
+    load(
         neo4j_session,
-        ingestion_query,
+        EMRClusterSchema(),
         cluster_data,
         lastupdated=aws_update_tag,
         Region=region,
@@ -87,7 +81,7 @@ def sync(
     update_tag: int, common_job_parameters: Dict[str, Any],
 ) -> None:
     for region in regions:
-        logger.info("Syncing EMR for region '%s' in account '%s'.", region, current_aws_account_id)
+        logger.info(f"Syncing EMR for region '{region}' in account '{current_aws_account_id}'.")
 
         clusters = get_emr_clusters(boto3_session, region)
 

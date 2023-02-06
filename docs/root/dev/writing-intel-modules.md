@@ -73,10 +73,9 @@ def load_emr_clusters(
         neo4j_session,
         EMRClusterSchema(),
         cluster_data,
-        ingestion_query,
         lastupdated=aws_update_tag,
         Region=region,
-        AccountId=current_aws_account_id,
+        AWS_ID=current_aws_account_id,
     )
 
 ```
