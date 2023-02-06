@@ -138,15 +138,17 @@ class GraphJob:
         """
         queries: List[str] = build_cleanup_queries(node_schema, selected_rels)
 
-        # Validate params
         expected_param_keys: Set[str] = get_parameters(queries)
         actual_param_keys: Set[str] = set(parameters.keys())
         # Hacky, but LIMIT_SIZE is specified by default in cartography.graph.statement, so we exclude it from validation
         actual_param_keys.add('LIMIT_SIZE')
-        if actual_param_keys != expected_param_keys:
+
+        missing_params: Set[str] = expected_param_keys - actual_param_keys
+
+        if missing_params:
             raise ValueError(
-                f'Expected query params "{expected_param_keys}" but got "{actual_param_keys}". Please check the value '
-                f'passed to `parameters`.',
+                f'GraphJob is missing the following expected query parameters: "{missing_params}". Please check the '
+                f'value passed to `parameters`.',
             )
 
         statements: List[GraphStatement] = [
