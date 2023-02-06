@@ -8,7 +8,8 @@ import boto3
 import botocore.exceptions
 import neo4j
 
-from cartography.client.core.tx import load
+from cartography.client.core.tx import ensure_indexes
+from cartography.client.core.tx import load_graph_data
 from cartography.graph.job import GraphJob
 from cartography.graph.querybuilder import build_ingestion_query
 from cartography.intel.aws.ec2.util import get_botocore_config
@@ -55,18 +56,18 @@ def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, 
 @timeit
 def load_emr_clusters(
         neo4j_session: neo4j.Session,
-        cluster_data: List[Dict[str, Any]],
+        cluster_data: List[Dict],
         region: str,
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
     logger.info("Loading EMR %d clusters for region '%s' into graph.", len(cluster_data), region)
+    ensure_indexes(neo4j_session, EMRClusterSchema())
     ingestion_query = build_ingestion_query(EMRClusterSchema())
-    load(
+    load_graph_data(
         neo4j_session,
-        EMRClusterSchema(),
-        cluster_data,
         ingestion_query,
+        cluster_data,
         lastupdated=aws_update_tag,
         Region=region,
         AWS_ID=current_aws_account_id,
