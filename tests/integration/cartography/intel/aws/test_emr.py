@@ -101,13 +101,15 @@ def test_cleanup_emr(neo4j_session):
     }
 
     # Act: run the cleanup job
-    cleanup(
-        neo4j_session,
-        {
-            'UPDATE_TAG': TEST_UPDATE_TAG + 1,  # Simulate a new sync run finished so the old update tag is obsolete now
-            'AccountId': TEST_ACCOUNT_ID,
-        },
-    )
+    common_job_parameters = {
+        'UPDATE_TAG': TEST_UPDATE_TAG + 1,  # Simulate a new sync run finished so the old update tag is obsolete now
+        'AWS_ID': TEST_ACCOUNT_ID,
+        # Add in extra params that may have been added by other modules.
+        # Expectation: These should not affect cleanup job execution.
+        'permission_relationships_file': '/path/to/perm/rels/file',
+        'OKTA_ORG_ID': 'my-org-id',
+    }
+    cleanup(neo4j_session, common_job_parameters)
 
     # Assert: Expect no EMR clusters in the graph now
     assert check_nodes(neo4j_session, 'EMRCluster', ['arn']) == set()
