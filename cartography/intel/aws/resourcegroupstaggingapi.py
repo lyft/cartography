@@ -125,9 +125,6 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'iam:role': {'label': 'AWSRole', 'property': 'arn'},
     'iam:user': {'label': 'AWSUser', 'property': 'arn'},
     'kms:key': {'label': 'KMSKey', 'property': 'arn'},
-    'iam:group': {'label': 'AWSGroup', 'property': 'arn'},
-    'iam:role': {'label': 'AWSRole', 'property': 'arn'},
-    'iam:user': {'label': 'AWSUser', 'property': 'arn'},
     'lambda:function': {'label': 'AWSLambda', 'property': 'id'},
     'lambda:layer': {'label': 'AWSLambdaLayer', 'property': 'id'},
     'lambda:event-source-mapping': {'label': 'AWSLambdaEventSourceMapping', 'property': 'id'},
@@ -135,7 +132,6 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'rds:cluster': {'label': 'RDSCluster', 'property': 'id'},
     'rds:db': {'label': 'RDSInstance', 'property': 'id'},
     'rds:subgrp': {'label': 'DBSubnetGroup', 'property': 'id'},
-    'rds:cluster': {'label': 'RDSCluster', 'property': 'id'},
     'rds:snapshot': {'label': 'RDSSnapshot', 'property': 'id'},
     # Buckets are the only objects in the S3 service: https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-arn-format.html
     's3': {'label': 'S3Bucket', 'property': 'id', 'id_func': get_bucket_name_from_arn},
@@ -257,6 +253,22 @@ def sync(
     common_job_parameters: Dict,
     tag_resource_type_mappings: Dict = TAG_RESOURCE_TYPE_MAPPINGS,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Begin processing tags for account '%s', at %s.", current_aws_account_id, tic)
+
+    # Process each region in parallel.
+    with ThreadPoolExecutor(max_workers=len(regions)) as executor:
+        futures = []
+
+        for region in regions:
+            logger.info("Syncing AWS tags for region '%s'.", region)
+            for resource_type in tag_resource_type_mappings.keys():
+                futures.append(executor.submit(concurrent_execution, config, region, resource_type, current_aws_account_id, update_tag))
+
+        for future in as_completed(futures):
+            logger.info(f'Result from Future - Tags Processing: {future.result()}')
+
     for region in regions:
         logger.info(f"Syncing AWS tags for account {current_aws_account_id} and region {region}")
         for resource_type in tag_resource_type_mappings.keys():

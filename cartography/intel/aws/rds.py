@@ -17,6 +17,8 @@ from cartography.util import timeit
 from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
+stat_handler = get_stats_client(__name__)
+
 aws_console_link = AWSLinker()
 
 
@@ -529,16 +531,6 @@ def load_rds_instances(
 
 
 @timeit
-@aws_handle_regions
-def get_rds_snapshot_data(boto3_session: boto3.session.Session, region: str) -> List[Any]:
-    """
-    Create an RDS boto3 client and grab all the DBSnapshots.
-    """
-    client = boto3_session.client('rds', region_name=region)
-    return aws_paginate(client, 'describe_db_snapshots', 'DBSnapshots')
-
-
-@timeit
 def load_rds_snapshots(
     neo4j_session: neo4j.Session, data: Dict, current_aws_account_id: str,
     aws_update_tag: int,
@@ -826,14 +818,6 @@ def cleanup_rds_clusters(neo4j_session: neo4j.Session, common_job_parameters: Di
 
 
 @timeit
-def cleanup_rds_snapshots(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    """
-    Remove RDS snapshots graph nodes
-    """
-    run_cleanup_job('aws_import_rds_snapshots_cleanup.json', neo4j_session, common_job_parameters)
-
-
-@timeit
 def sync_rds_clusters(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
@@ -940,10 +924,6 @@ def sync(
         stat_handler=stat_handler,
     )
     sync_rds_security_groups(
-        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
-        common_job_parameters,
-    )
-    sync_rds_snapshots(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag,
         common_job_parameters,
     )
