@@ -125,7 +125,7 @@ Cartography uses its data model to automatically create indexes for
 - node properties are used to connect a node to other nodes (i.e. they are used as part of a `TargetNodeMatcher` on a `CartographyRelSchema`.)
 - a node's `lastupdated` field -- this is used to enable faster cleanup jobs
 
-As seen in the above definition for `EMRClusterNodeProperties.arn`, you can also explicitly specify additional indexes for fields that you expect to be queried on:
+As seen in the above definition for `EMRClusterNodeProperties.arn`, you can also explicitly specify additional indexes for fields that you expect to be queried on by providing `extra_index=True` to the `PropertyRef` constructor:
 
 ```python
 class EMRClusterNodeProperties(CartographyNodeProperties):
@@ -135,7 +135,7 @@ class EMRClusterNodeProperties(CartographyNodeProperties):
 
 Index creation is idempotent (we only create them if they don't exist).
 
-See [below](#indexescypher) for more information.
+See [below](#indexescypher) for more information on indexes.
 
 
 #### Defining relationships
