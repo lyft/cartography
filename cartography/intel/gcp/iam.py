@@ -119,9 +119,9 @@ def get_organization_custom_roles(iam: Resource, crm_v1: Resource, project_id: s
     try:
         req = crm_v1.projects().get(projectId=project_id)
         res_project = req.execute()
-        if res_project.get('parent').get('type') == 'organization':
+        if res_project.get('parent',{}).get('type','') == 'organization':
             req = iam.organizations().roles().list(
-                parent=f"organizations/{res_project.get('parent').get('id')}", view="FULL")
+                parent=f"organizations/{res_project.get('parent',).get('id')}", view="FULL")
             while req is not None:
                 res = req.execute()
                 page = res.get('roles', [])

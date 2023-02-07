@@ -49,11 +49,9 @@ def load_labels(session: neo4j.Session, data_list: List[Dict], update_tag: int, 
             end = start + iteration_size
             labels = data_list[start:end]
 
-        logger.info(f"Start - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(labels)}")
-
         session.write_transaction(_load_labels_tx, labels, update_tag, common_job_parameters, service_label)
 
-        logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(labels)}")
+        logger.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(labels)}")
 
 
 def _load_labels_tx(tx: neo4j.Transaction, labels: List[Dict], update_tag: int, common_job_parameters: Dict, service_label: str) -> None:

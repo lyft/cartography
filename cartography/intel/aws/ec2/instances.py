@@ -171,8 +171,6 @@ def _load_ec2_instances(
             end = start + iteration_size
             paginated_instances = instances[start:end]
 
-        logger.info(f"Start - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
-
         neo4j_session.write_transaction(
             _load_ec2_instances_tx,
             paginated_instances,
@@ -180,7 +178,7 @@ def _load_ec2_instances(
             update_tag,
         )
 
-        logger.info(f"End - Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
+        logger.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
 
 
 def _load_ec2_instances_tx(
@@ -204,6 +202,7 @@ def _load_ec2_instances_tx(
                 instance.state = inst.State.Name,
                 instance.launchtime = inst.LaunchTime,
                 instance.launchtimeunix = inst.LaunchTimeUnix,
+                instance.instancelifecycle = inst.InstanceLifecycle,
                 instance.region = inst.region,
                 instance.lastupdated = $update_tag,
                 instance.iaminstanceprofile = inst.IamInstanceProfile.Arn,

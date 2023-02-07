@@ -190,7 +190,14 @@ def _autodiscover_accounts(
 def list_all_regions(boto3_session, logger):
     try:
         client = boto3_session.client('ec2', region_name="us-east-2", config=get_botocore_config())
-        regions = client.describe_regions()
+        regions = client.describe_regions(Filters=[
+                {
+                    'Name': 'opt-in-status',
+                    'Values': [
+                        'opt-in-not-required',
+                    ]
+                },
+            ])
 
     except Exception as e:
         logger.error(f"Failed retrieve enabled regions. Error - {e}")
