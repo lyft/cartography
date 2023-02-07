@@ -68,7 +68,6 @@ def load_emr_clusters(
         aws_update_tag: int,
 ) -> None:
     logger.info(f"Loading EMR {len(cluster_data)} clusters for region '{region}' into graph.")
-    ingestion_query = build_ingestion_query(EMRClusterSchema())
     load(
         neo4j_session,
         EMRClusterSchema(),
@@ -79,9 +78,6 @@ def load_emr_clusters(
     )
 
 ```
-
-
-The `load()` function's `ingestion_query` argument is a string generated from `CartographyNodeSchema` and `CartographyRelSchema` objects. [cartography.graph.querybuilder.build_ingestion_query()](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/querybuilder.py#L312) does just that: it accepts those schema objects as input and returns a well-formed and optimized cypher query.
 
 
 #### Defining a node
@@ -108,7 +104,7 @@ Here's our [EMRClusterNodeProperties code](https://github.com/lyft/cartography/b
 ```python
 @dataclass(frozen=True)
 class EMRClusterNodeProperties(CartographyNodeProperties):
-    arn: PropertyRef = PropertyRef('ClusterArn')
+    arn: PropertyRef = PropertyRef('ClusterArn', extra_index=True)
     firstseen: PropertyRef = PropertyRef('firstseen')
     id: PropertyRef = PropertyRef('Id')
     # ...
@@ -122,6 +118,24 @@ A `CartographyNodeProperties` object consists of [`PropertyRef`](https://github.
 For example, `id: PropertyRef = PropertyRef('Id')` above tells the querybuilder to set a field called `id` on the `EMRCluster` node using the value located at key `'id'` on each dict in the list.
 
 As another example, `region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)` tells the querybuilder to set a field called `region` on the `EMRCluster` node using a keyword argument called `Region` supplied to `cartography.client.core.tx.load_graph_data()`. `set_in_kwargs=True` is useful in cases where we want every object loaded by a single call to `load_graph_data()` to have the same value for a given attribute.
+
+##### Node property indexes
+Cartography uses its data model to automatically create indexes for
+- node properties that uniquely identify the node (e.g. `id`)
+- node properties are used to connect a node to other nodes (i.e. they are used as part of a `TargetNodeMatcher` on a `CartographyRelSchema`.)
+- a node's `lastupdated` field -- this is used to enable faster cleanup jobs
+
+As seen in the above definition for `EMRClusterNodeProperties.arn`, you can also explicitly specify additional indexes for fields that you expect to be queried on:
+
+```python
+class EMRClusterNodeProperties(CartographyNodeProperties):
+    # ...
+    arn: PropertyRef = PropertyRef('ClusterArn', extra_index=True)
+```
+
+Index creation is idempotent (we only create them if they don't exist).
+
+See [below](#indexescypher) for more information.
 
 
 #### Defining relationships

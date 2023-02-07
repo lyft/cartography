@@ -244,7 +244,7 @@ def load(
     Main entrypoint for intel modules to write data to the graph. Ensures that indexes exist for the datatypes loaded
     to the graph and then performs the load operation.
     :param neo4j_session: The Neo4j session
-    :param node_schema: The CartographyNodeSchema object to create indexes for and - if requested - generate a query.
+    :param node_schema: The CartographyNodeSchema object to create indexes for and generate a query.
     :param dict_list: The data to load to the graph represented as a list of dicts.
     :param kwargs: Allows additional keyword args to be supplied to the Neo4j query.
     :return: None
