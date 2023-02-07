@@ -19,14 +19,20 @@ class Config:
     :param neo4j_database: The name of the database in Neo4j to connect to. If not specified, uses your Neo4j database
     settings to infer which database is set to default.
     See https://neo4j.com/docs/api/python-driver/4.4/api.html#database. Optional.
-    :type update_tag: int
-    :param update_tag: Update tag for a cartography sync run. Optional.
-    :type aws_sync_all_profiles: bool
-    :param aws_sync_all_profiles: If True, AWS sync will run for all non-default profiles in the AWS_CONFIG_FILE. If
-        False (default), AWS sync will run using the default credentials only. Optional.
     :type aws_best_effort_mode: bool
     :param aws_best_effort_mode: If True, AWS sync will not raise any exceptions, just log. If False (default),
         exceptions will be raised.
+    :type update_tag: int
+    :param update_tag: Update tag for a cartography sync run. Optional.
+    :type aws_custom_sync_profile_dct: Dict[str, str]
+    :param aws_custom_sync_profile_dct: Dict with account_name, aws_access_key_id, aws_secret_access_key,
+        default_region. Optional.
+    :type aws_sync_all_profiles: bool
+    :param aws_sync_all_profiles: If True, AWS sync will run for all non-default profiles in the AWS_CONFIG_FILE. If
+        False (default), AWS sync will run using the default credentials only. Optional.
+    :type neo4j_clear_db: bool
+    :param neo4j_clear_db: If True, nodes and relationships will be deleted before syncing. If False (default),
+        nodes and relationships will carry over.
     :type azure_sync_all_subscriptions: bool
     :param azure_sync_all_subscriptions: If True, Azure sync will run for all profiles in azureProfile.json. If
         False (default), Azure sync will run using current user session via CLI credentials. Optional.
@@ -90,7 +96,9 @@ class Config:
         neo4j_password=None,
         neo4j_max_connection_lifetime=None,
         neo4j_database=None,
+        neo4j_clear_db=False,
         update_tag=None,
+        aws_custom_sync_profile_dct=None,
         aws_sync_all_profiles=False,
         aws_best_effort_mode=False,
         azure_sync_all_subscriptions=False,
@@ -130,7 +138,9 @@ class Config:
         self.neo4j_password = neo4j_password
         self.neo4j_max_connection_lifetime = neo4j_max_connection_lifetime
         self.neo4j_database = neo4j_database
+        self.neo4j_clear_db = neo4j_clear_db
         self.update_tag = update_tag
+        self.aws_custom_sync_profile_dct = aws_custom_sync_profile_dct
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.aws_best_effort_mode = aws_best_effort_mode
         self.azure_sync_all_subscriptions = azure_sync_all_subscriptions

@@ -58,6 +58,9 @@ setup(
         "kubernetes>=22.6.0",
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
+        "flask>=2.1.0",
+        "flask-executor>=1.0.0",
+        "gunicorn>=20.1.0",
     ],
     extras_require={
         ':python_version<"3.7"': [
