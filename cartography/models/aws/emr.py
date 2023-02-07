@@ -12,7 +12,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 @dataclass(frozen=True)
 class EMRClusterNodeProperties(CartographyNodeProperties):
-    arn: PropertyRef = PropertyRef('ClusterArn')
+    arn: PropertyRef = PropertyRef('ClusterArn', extra_index=True)
     auto_terminate: PropertyRef = PropertyRef('AutoTerminate')
     autoscaling_role: PropertyRef = PropertyRef('AutoScalingRole')
     custom_ami_id: PropertyRef = PropertyRef('CustomAmiId')

@@ -2,6 +2,7 @@ import logging
 from dataclasses import asdict
 from string import Template
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Set
 from typing import Tuple
@@ -374,3 +375,55 @@ def build_ingestion_query(
         attach_relationships_statement=_build_attach_relationships_statement(sub_resource_rel, other_rels),
     )
     return ingest_query
+
+
+def build_create_index_queries(node_schema: CartographyNodeSchema) -> List[str]:
+    """
+    Generate queries to create indexes for the given CartographyNodeSchema and all node types attached to it via its
+    relationships.
+    :param node_schema: The Cartography node_schema object
+    :return: A list of queries of the form `CREATE INDEX IF NOT EXISTS FOR (n:$TargetNodeLabel) ON (n.$TargetAttribute)`
+    """
+    index_template = Template('CREATE INDEX IF NOT EXISTS FOR (n:$TargetNodeLabel) ON (n.$TargetAttribute);')
+
+    # First ensure an index exists for the node_schema and all extra labels on the `id` and `lastupdated` fields
+    result = [
+        index_template.safe_substitute(
+            TargetNodeLabel=node_schema.label,
+            TargetAttribute='id',
+        ),
+        index_template.safe_substitute(
+            TargetNodeLabel=node_schema.label,
+            TargetAttribute='lastupdated',
+        ),
+    ]
+    if node_schema.extra_node_labels:
+        result.extend([
+            index_template.safe_substitute(
+                TargetNodeLabel=label,
+                TargetAttribute='id',  # Precondition: 'id' is defined on all cartography node_schema objects.
+            ) for label in node_schema.extra_node_labels.labels
+        ])
+
+    # Next, for all relationships possible out of this node, ensure that indexes exist for all target nodes' properties
+    # as specified in their TargetNodeMatchers.
+    rel_schemas = []
+    if node_schema.sub_resource_relationship:
+        rel_schemas.extend([node_schema.sub_resource_relationship])
+    if node_schema.other_relationships:
+        rel_schemas.extend(node_schema.other_relationships.rels)
+    for rs in rel_schemas:
+        for target_key in asdict(rs.target_node_matcher).keys():
+            result.append(
+                index_template.safe_substitute(TargetNodeLabel=rs.target_node_label, TargetAttribute=target_key),
+            )
+
+    # Now, include extra indexes defined by the module author on the node schema's property refs.
+    node_props_as_dict: Dict[str, PropertyRef] = asdict(node_schema.properties)
+    result.extend([
+        index_template.safe_substitute(
+            TargetNodeLabel=node_schema.label,
+            TargetAttribute=prop_name,
+        ) for prop_name, prop_ref in node_props_as_dict.items() if prop_ref.extra_index
+    ])
+    return result
