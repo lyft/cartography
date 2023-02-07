@@ -139,6 +139,7 @@ def _autodiscover_accounts(
 def _sync_multiple_accounts(
     neo4j_session: neo4j.Session,
     accounts: Dict[str, str],
+    custom_aws_account_creds: Dict[str, Any],
     sync_tag: int,
     common_job_parameters: Dict[str, Any],
     aws_best_effort_mode: bool,
@@ -155,7 +156,13 @@ def _sync_multiple_accounts(
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
-        if num_accounts == 1:
+        if profile_name in custom_aws_account_creds:
+            boto3_session = boto3.Session(
+                aws_access_key_id=custom_aws_account_creds[profile_name]["aws_access_key_id"],
+                aws_secret_access_key=custom_aws_account_creds[profile_name]["aws_secret_access_key"],
+                region_name=custom_aws_account_creds[profile_name]["default_region"],
+            )
+        elif num_accounts == 1:
             # Use the default boto3 session because boto3 gets confused if you give it a profile name with 1 account
             boto3_session = boto3.Session()
         else:
@@ -204,7 +211,14 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "permission_relationships_file": config.permission_relationships_file,
     }
     try:
-        boto3_session = boto3.Session()
+        if config.aws_custom_sync_profile_dct:
+            boto3_session = boto3.Session(
+                aws_access_key_id=config.aws_custom_sync_profile_dct["aws_access_key_id"],
+                aws_secret_access_key=config.aws_custom_sync_profile_dct["aws_secret_access_key"],
+                region_name=config.aws_custom_sync_profile_dct["default_region"],
+            )
+        else:
+            boto3_session = boto3.Session()
     except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
         logger.debug("Error occurred calling boto3.Session().", exc_info=True)
         logger.error(
@@ -217,10 +231,20 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         )
         return
 
-    if config.aws_sync_all_profiles:
+    if config.aws_custom_sync_profile_dct:
+        aws_accounts = organizations.get_aws_account_custom(
+            boto3_session,
+            config.aws_custom_sync_profile_dct["account_name"],
+        )
+        custom_aws_account_creds = {
+            config.aws_custom_sync_profile_dct["account_name"]: config.aws_custom_sync_profile_dct,
+        }
+    elif config.aws_sync_all_profiles:
         aws_accounts = organizations.get_aws_accounts_from_botocore_config(boto3_session)
+        custom_aws_account_creds = {}
     else:
         aws_accounts = organizations.get_aws_account_default(boto3_session)
+        custom_aws_account_creds = {}
 
     if not aws_accounts:
         logger.warning(
@@ -243,6 +267,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     sync_successful = _sync_multiple_accounts(
         neo4j_session,
         aws_accounts,
+        custom_aws_account_creds,
         config.update_tag,
         common_job_parameters,
         config.aws_best_effort_mode,

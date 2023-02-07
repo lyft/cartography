@@ -79,6 +79,10 @@ class Sync:
         """
         logger.info("Starting sync with update tag '%d'", config.update_tag)
         with neo4j_driver.session(database=config.neo4j_database) as neo4j_session:
+            if config.neo4j_clear_db:
+                neo4j_session.run(
+                    "MATCH (n) DETACH DELETE n",
+                )
             for stage_name, stage_func in self._stages.items():
                 logger.info("Starting sync stage '%s'", stage_name)
                 try:

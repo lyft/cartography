@@ -24,6 +24,21 @@ def get_current_aws_account_id(boto3_session: boto3.session.Session) -> Dict:
     return get_caller_identity(boto3_session)['Account']
 
 
+def get_aws_account_custom(boto3_session: boto3.session.Session, account_name: str) -> Dict:
+    try:
+        return {account_name: get_current_aws_account_id(boto3_session)}
+    except (botocore.exceptions.BotoCoreError, botocore.exceptions.ClientError) as e:
+        logger.debug("Error occurred getting default AWS account number.", exc_info=True)
+        logger.error(
+            (
+                "Unable to get AWS account number, an error occurred: '%s'. Make sure your AWS credentials are "
+                "configured correctly, and your credentials have the SecurityAudit policy attached."
+            ),
+            e,
+        )
+        return {}
+
+
 def get_aws_account_default(boto3_session: boto3.session.Session) -> Dict:
     try:
         return {boto3_session.profile_name: get_current_aws_account_id(boto3_session)}

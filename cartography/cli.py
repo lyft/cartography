@@ -7,6 +7,7 @@ import sys
 import cartography.config
 import cartography.sync
 import cartography.util
+from cartography.intel.aws.util.common import parse_and_validate_aws_custom_sync_profile
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
 
@@ -110,6 +111,13 @@ class CLI:
                 'See https://neo4j.com/docs/api/python-driver/4.4/api.html#database.'
             ),
         )
+        parser.add_argument(
+            '--neo4j-clear-db',
+            action='store_true',
+            help=(
+                'Delete nodes and relationships in the db before syncing.'
+            ),
+        )
         # TODO add the below parameters to a 'sync' subparser
         parser.add_argument(
             '--update-tag',
@@ -119,6 +127,16 @@ class CLI:
                 'A unique tag to apply to all Neo4j nodes and relationships created or updated during the sync run. '
                 'This tag is used by cleanup jobs to identify nodes and relationships that are stale and need to be '
                 'removed from the graph. By default, cartography will use a UNIX timestamp as the update tag.'
+            ),
+        )
+        parser.add_argument(
+            '--aws-custom-sync-profile',
+            type=str,
+            default=None,
+            help=(
+                'Enable AWS sync with custom credentials. If enabled, cartography will attempt to execute the sync '
+                'with the supplied credentials and not those found in AWS_CONFIG_FILE. The format of the string is '
+                'a JSON string with account_name, aws_access_key_id, aws_secret_access_key, default_region fields.'
             ),
         )
         parser.add_argument(
@@ -413,7 +431,9 @@ class CLI:
         :param argv: The parameters supplied to the command line program.
         """
         # TODO support parameter lookup in environment variables if not present on command line
-        config: argparse.Namespace = self.parser.parse_args(argv)
+        return self.run_from_config(self.parser.parse_args(argv))
+
+    def run_from_config(self, config: argparse.Namespace) -> int:
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
@@ -422,6 +442,7 @@ class CLI:
         else:
             logging.getLogger('cartography').setLevel(logging.INFO)
         logger.debug("Launching cartography with CLI configuration: %r", vars(config))
+
         # Neo4j config
         if config.neo4j_user:
             config.neo4j_password = None
@@ -444,6 +465,12 @@ class CLI:
         if config.aws_requested_syncs:
             # No need to store the returned value; we're using this for input validation.
             parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
+        if config.aws_custom_sync_profile:
+            config.aws_custom_sync_profile_dct = parse_and_validate_aws_custom_sync_profile(
+                config.aws_custom_sync_profile,
+            )
+        else:
+            config.aws_custom_sync_profile_dct = None
 
         # Azure config
         if config.azure_sp_auth and config.azure_client_secret_env_var:
