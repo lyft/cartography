@@ -383,3 +383,5 @@ def sync(
         transformed_backups = transform_instances_backups(backups, project_id)
         load_spanner_instances_backups(neo4j_session, transformed_backups, project_id, gcp_update_tag)
     run_cleanup_job('gcp_spanner_cleanup.json', neo4j_session, common_job_parameters)
+    toc = time.perf_counter()
+    logger.info(f"Time to process Spanner: {toc - tic:0.4f} seconds")
