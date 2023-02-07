@@ -6,7 +6,7 @@ from tests.integration.util import check_nodes
 
 def test_load_missing_fields_in_data(neo4j_session):
     # Act: load our sample data where some items only have `property1` defined and other items only have `property2`
-    # defined.
+    # defined. `SimpleNodeSchema` includes both `property1` and `property2`.
     load(neo4j_session, SimpleNodeSchema(), SIMPLE_NODE_MISSING_PROPS, lastupdated=1)
 
     # Assert that if we ingest a dict that has fewer fields than defined on the node schema, then the missing fields
