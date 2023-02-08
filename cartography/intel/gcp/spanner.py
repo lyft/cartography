@@ -89,6 +89,11 @@ def load_spanner_instances_tx(tx: neo4j.Transaction, data: List[Dict], project_i
 
 
 @timeit
+def cleanup_spanner_instances(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_spanner_instances_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
 def get_spanner_instance_configs(spanner: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     instance_configs = []
     try:
@@ -157,6 +162,11 @@ def load_spanner_instance_configs_tx(tx: neo4j.Transaction, data: List[Dict], pr
 
 
 @timeit
+def cleanup_spanner_instance_configs(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_spanner_instance_configs_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
 def transform_spanner_instance_configs_replicas(instance_configs: List[Dict], project_id: str, regions: list, common_job_parameters):
     all_replicas = []
     for instance_config in instance_configs:
@@ -192,6 +202,11 @@ def load_spanner_instance_configs_replicas_tx(tx: neo4j.Transaction, data: List[
     SET rt.lastupdated = $gcp_update_tag
     """
     tx.run(query=query, Records=data, ProjectId=project_id, gcp_update_tag=gcp_update_tag)
+
+
+@timeit
+def cleanup_spanner_instance_configs_replicas(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_spanner_instance_configs_replicas_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -273,6 +288,11 @@ def load_spanner_instances_databases_tx(tx: neo4j.Transaction, data: List[Dict],
 
 
 @timeit
+def cleanup_spanner_instance_databases(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_spanner_instance_databases_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
 def get_spanner_instances_backups(spanner: Resource, instance: Dict, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     backups = []
     try:
@@ -348,6 +368,11 @@ def load_spanner_instances_backups_tx(tx: neo4j.Transaction, data: List[Dict], p
 
 
 @timeit
+def cleanup_spanner_instance_backups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_spanner_instance_backups_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
 def sync(
     neo4j_session: neo4j.Session, spanner: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict, regions: List,
@@ -382,6 +407,11 @@ def sync(
         backups = get_spanner_instances_backups(spanner, instance, project_id, regions, common_job_parameters)
         transformed_backups = transform_instances_backups(backups, project_id)
         load_spanner_instances_backups(neo4j_session, transformed_backups, project_id, gcp_update_tag)
-    run_cleanup_job('gcp_spanner_cleanup.json', neo4j_session, common_job_parameters)
+
+    cleanup_spanner_instance_configs_replicas(neo4j_session, common_job_parameters)
+    cleanup_spanner_instance_configs(neo4j_session, common_job_parameters)
+    cleanup_spanner_instance_backups(neo4j_session, common_job_parameters)
+    cleanup_spanner_instance_databases(neo4j_session, common_job_parameters)
+    cleanup_spanner_instances(neo4j_session, common_job_parameters)
     toc = time.perf_counter()
     logger.info(f"Time to process Spanner: {toc - tic:0.4f} seconds")
