@@ -47,7 +47,8 @@ def transform_instances(instances: List[Dict], project_id: str) -> List[Dict]:
     for instance in instances:
         instance['project_id'] = project_id
         instance['region'] = 'global'
-        instance['instance_name'] = instance['name'].split('/')[-1]
+        instance['id'] = instance['name']
+        instance['instance_id'] = instance['name'].split('/')[-1]
         instance['consolelink'] = ''  # TODO
         transformed_instances.append(instance)
     return transformed_instances
@@ -62,13 +63,14 @@ def load_spanner_instances(session: neo4j.Session, data_list: List[Dict], projec
 def load_spanner_instances_tx(tx: neo4j.Transaction, data: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     query = """
     UNWIND $Records as record
-    MERGE (instance:GCPSpannerInstance{name:record.name})
+    MERGE (instance:GCPSpannerInstance{id:record.id})
     ON CREATE SET
         instance.firstseen = timestamp()
     SET
         instance.lastupdated = $gcp_update_tag,
         instance.region = record.region,
-        instance.name = record.name,
+        instance.id = record.id,
+        instance.name = record.instance_id,
         instance.config = record.config,
         instance.create_time = record.createTime,
         instance.display_name = record.displayName,
@@ -123,6 +125,7 @@ def transform_instance_configs(instance_configs: List[Dict], project_id: str) ->
     for instance_config in instance_configs:
         instance_config['project_id'] = project_id
         instance_config['region'] = 'global'
+        instance_config['id'] = instance_config['name']
         instance_config['instance_config_name'] = instance_config['name'].split('/')[-1]
         instance_config['consolelink'] = ''  # TODO
         transformed_instance_configs.append(instance_config)
@@ -138,13 +141,14 @@ def load_spanner_instance_configs(session: neo4j.Session, data_list: List[Dict],
 def load_spanner_instance_configs_tx(tx: neo4j.Transaction, data: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     query = """
     UNWIND $Records as record
-    MERGE (instance_config:GCPSpannerInstanceConfig{name: record.name})
+    MERGE (instance_config:GCPSpannerInstanceConfig{id: record.id})
     ON CREATE SET
         instance_config.firstseen = timestamp()
     SET
         instance_config.lastupdated = $gcp_update_tag,
         instance_config.region = record.region,
-        instance_config.name = record.name,
+        instance_config.id = record.id,
+        instance_config.name = record.instance_config_name,
         instance_config.base_config = record.baseConfig,
         instance_config.config_type = record.configType,
         instance_config.display_name = record.displayName,
@@ -152,7 +156,7 @@ def load_spanner_instance_configs_tx(tx: neo4j.Transaction, data: List[Dict], pr
         instance_config.reconciling = record.reconciling,
         instance_config.state = record.state
     WITH instance_config
-    MATCH (instance:GCPSpannerInstance{config:instance_config.name})
+    MATCH (instance:GCPSpannerInstance{config:instance_config.id})
     MERGE (instance)-[rt:HAS]->(instance_config)
     ON CREATE SET
         rt.firstseen = timestamp()
@@ -173,6 +177,7 @@ def transform_spanner_instance_configs_replicas(instance_configs: List[Dict], pr
         replicas = instance_config.get('replicas', [])
         for replica in replicas:
             replica['config'] = instance_config.get('name')
+            replica['id'] = instance_config.get('name') + '/replicas/' + replica.get('location')
         all_replicas.extend(replicas)
     return all_replicas
 
@@ -186,16 +191,17 @@ def load_spanner_instance_configs_replicas(session: neo4j.Session, data_list: Li
 def load_spanner_instance_configs_replicas_tx(tx: neo4j.Transaction, data: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     query = """
     UNWIND $Records as record
-    MERGE (replica:GCPSpannerInstanceConfigReplica{default_leader_location: record.defaultLeaderLocation, location: record.location, type: record.type})
+    MERGE (replica:GCPSpannerInstanceConfigReplica{id: record.id})
     ON CREATE SET
         replica.firstseen = timestamp()
     SET
         replica.lastupdated = $gcp_update_tag,
+        replica.id = record.id,
         replica.default_leader_location = record.defaultLeaderLocation,
         replica.location = record.location,
         replica.type = record.type
     WITH replica, record
-    MATCH (instance_config:GCPSpannerInstanceConfig{name: record.config})
+    MATCH (instance_config:GCPSpannerInstanceConfig{id: record.config})
     MERGE (instance_config)-[rt:HAS]->(replica)
     ON CREATE SET
         rt.firstseen = timestamp()
@@ -239,8 +245,9 @@ def transform_instances_databases(databases: List[Dict], project_id: str) -> Lis
     for database in databases:
         database['project_id'] = project_id
         database['region'] = 'global'
+        database['id'] = database['name']
         database['database_name'] = database['name'].split('/')[-1]
-        database['instance_name'] = "/".join(database['name'].split('/')[:-2])
+        database['instance_id'] = "/".join(database['name'].split('/')[:-2])
         database['consolelink'] = ''  # TODO
         transformed_databases.append(database)
     return transformed_databases
@@ -253,15 +260,18 @@ def load_spanner_instances_databases(session: neo4j.Session, data_list: List[Dic
 
 @timeit
 def load_spanner_instances_databases_tx(tx: neo4j.Transaction, data: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+    for da in data:
+        print(f"found -> {da['restoreInfo']['backupInfo']['backup']}")
     query = """
     UNWIND $Records as record
-    MERGE (database:GCPSpannerInstanceDatabase{name: record.name})
+    MERGE (database:GCPSpannerInstanceDatabase{id: record.id})
     ON CREATE SET
         database.firstseen = timestamp()
     SET
         database.lastupdated = $gcp_update_tag,
         database.region = record.region,
-        database.name = record.name,
+        database.id = record.id,
+        database.name = record.database_name,
         database.create_time = record.createTime,
         database.database_dialect = record.databaseDialect,
         database.default_leader = record.defaultLeader,
@@ -272,13 +282,13 @@ def load_spanner_instances_databases_tx(tx: neo4j.Transaction, data: List[Dict],
         database.state = record.state,
         database.version_retention_period = record.versionRetentionPeriod
     WITH database, record
-    MATCH (instance:GCPSpannerInstance{name: record.instance_name})
+    MATCH (instance:GCPSpannerInstance{id: record.instance_id})
     MERGE (instance)-[r:HAS_DATABASE]->(database)
     ON CREATE SET
         r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     WITH database
-    MATCH (backup:GCPSpannerInstanceBackup{name: database.backup})
+    MATCH (backup:GCPSpannerInstanceBackup{id: database.backup})
     MERGE (database)-[rt:HAS_BACKUP]->(backup)
     ON CREATE SET
         rt.firstseen = timestamp()
@@ -323,7 +333,8 @@ def transform_instances_backups(backups: List[Dict], project_id: str) -> List[Di
         backup['project_id'] = project_id
         backup['region'] = 'global'
         backup['backup_name'] = backup['name'].split('/')[-1]
-        backup['instance_name'] = "/".join(backup['name'].split('/')[:-2])
+        backup['id'] = backup['name']
+        backup['instance_id'] = "/".join(backup['name'].split('/')[:-2])
         backup['consolelink'] = ''  # TODO
         transformed_backups.append(backup)
     return transformed_backups
@@ -338,13 +349,14 @@ def load_spanner_instances_backups(session: neo4j.Session, data_list: List[Dict]
 def load_spanner_instances_backups_tx(tx: neo4j.Transaction, data: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     query = """
     UNWIND $Records as record
-    MERGE (backup:GCPSpannerInstanceBackup{name: record.name})
+    MERGE (backup:GCPSpannerInstanceBackup{id: record.id})
     ON CREATE SET
         backup.firstseen = timestamp()
     SET
         backup.lastupdated = $gcp_update_tag,
         backup.region = record.region,
-        backup.name = record.name,
+        backup.id = record.id,
+        backup.name = record.backup_name,
         backup.create_time = record.createTime,
         backup.database = record.database,
         backup.database_dialect = record.databaseDialect,
@@ -358,8 +370,8 @@ def load_spanner_instances_backups_tx(tx: neo4j.Transaction, data: List[Dict], p
         backup.state = record.state,
         backup.version_time = record.versionTime
     WITH backup, record
-    MATCH (database:GCPSpannerInstanceDatabase{name: record.database})
-    MERGE (backup)-[r:OF_DATABASE]->(database)
+    MATCH (instance:GCPSpannerInstance{id: record.instance_id})
+    MERGE (instance)-[r:HAS_BACKUP]->(backup)
     ON CREATE SET
         r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
@@ -400,13 +412,13 @@ def sync(
     load_spanner_instance_configs_replicas(neo4j_session, replicas, project_id, gcp_update_tag)
 
     for instance in instances:
-        databases = get_spanner_instances_databases(spanner, instance, project_id, regions, common_job_parameters)
-        transformed_databases = transform_instances_databases(databases, project_id)
-        load_spanner_instances_databases(neo4j_session, transformed_databases, project_id, gcp_update_tag)
-
         backups = get_spanner_instances_backups(spanner, instance, project_id, regions, common_job_parameters)
         transformed_backups = transform_instances_backups(backups, project_id)
         load_spanner_instances_backups(neo4j_session, transformed_backups, project_id, gcp_update_tag)
+
+        databases = get_spanner_instances_databases(spanner, instance, project_id, regions, common_job_parameters)
+        transformed_databases = transform_instances_databases(databases, project_id)
+        load_spanner_instances_databases(neo4j_session, transformed_databases, project_id, gcp_update_tag)
 
     cleanup_spanner_instance_configs_replicas(neo4j_session, common_job_parameters)
     cleanup_spanner_instance_configs(neo4j_session, common_job_parameters)
