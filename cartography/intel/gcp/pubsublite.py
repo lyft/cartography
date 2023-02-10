@@ -63,13 +63,12 @@ def load_pubsublite_topics(session: neo4j.Session, data_list: List[Dict], projec
 def load_pubsublite_topics_tx(tx: neo4j.Transaction, data: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     query = """
     UNWIND $Records as record
-    MERGE (topic:GCPPubSubLiteTopic{name: record.name})
+    MERGE (topic:GCPPubSubLiteTopic{id: record.id})
     ON CREATE SET
         topic.firstseen = timestamp()
     SET
         topic.lastupdated = $gcp_update_tag,
         topic.region = record.region,
-        topic.id = record.id,
         topic.name = record.topic_name,
         topic.consolelink = record.consolelink,
         topic.publish_mib_per_sec = record.partitionConfig.capacity.publishMibPerSec,
@@ -101,8 +100,8 @@ def get_pubsublite_subscriptions(pubsublite: Resource, project_id: str, regions:
         req = pubsublite.admin().projects().locations().subscriptions().list(parent=f"projects/{project_id}/locations/*")
         while req is not None:
             res = req.execute()
-            if res.get('topics'):
-                subscriptions.extend(res.get('topics', []))
+            if res.get('subscriptions'):
+                subscriptions.extend(res.get('subscriptions', []))
             req = pubsublite.admin().projects().locations().subscriptions().list_next(previous_request=req, previous_response=res)
         return subscriptions
     except HttpError as e:
@@ -146,7 +145,6 @@ def load_pubsublite_subscriptions_tx(tx: neo4j.Transaction, data: List[Dict], pr
     SET
         subscription.lastupdated = $gcp_update_tag,
         subscription.region = record.region,
-        subscription.id = record.id,
         subscription.name = record.subscription_name,
         subscription.consolelink = record.consolelink,
         subscription.delivery_requirement = record.deliveryConfig.deliveryRequirement,
