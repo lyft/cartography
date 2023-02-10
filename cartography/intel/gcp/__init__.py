@@ -301,6 +301,16 @@ def _get_bigquery_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('bigquery', 'v2', credentials=credentials, cache_discovery=False)
 
 
+def _get_cloudtasks_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloudtasks resource object.
+    See: https://cloud.google.com/tasks/docs/reference/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('cloudtasks', 'v2', credentials=credentials, cache_discovery=False)
+
+
 def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     """
     Create namedtuple of all resource objects necessary for GCP data gathering.
@@ -331,6 +341,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         loadbalancer=_get_compute_resource(credentials),
         apikey=_get_apikey_resource(credentials),
         bigquery=_get_bigquery_resource(credentials),
+        cloudtasks=_get_cloudtasks_resource(credentials),
     )
 
 
