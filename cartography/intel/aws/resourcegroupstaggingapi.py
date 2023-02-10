@@ -98,7 +98,7 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
         'label': 'LoadBalancerV2',
         'property': 'name', 'id_func': get_short_id_from_lb2_arn,
     },
-    'elasticmapreduce:cluster': {'label': 'EMRCluster', 'property': 'arn'},
+    # 'elasticmapreduce:cluster': {'label': 'EMRCluster', 'property': 'arn'},
     'es:domain': {'label': 'ESDomain', 'property': 'arn'},
     'kms:key': {'label': 'KMSKey', 'property': 'arn'},
     'iam:group': {'label': 'AWSGroup', 'property': 'arn'},
