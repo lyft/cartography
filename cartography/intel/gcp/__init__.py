@@ -301,6 +301,16 @@ def _get_bigquery_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('bigquery', 'v2', credentials=credentials, cache_discovery=False)
 
 
+def _get_bigquery_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a dataflow resource object.
+    See: https://cloud.google.com/dataflow/docs/reference/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('dataflow', 'v1b3', credentials=credentials, cache_discovery=False)
+
+
 def _initialize_resources(credentials: GoogleCredentials) -> Resource:
     """
     Create namedtuple of all resource objects necessary for GCP data gathering.
