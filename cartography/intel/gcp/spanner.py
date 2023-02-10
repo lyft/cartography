@@ -48,7 +48,7 @@ def transform_instances(instances: List[Dict], project_id: str) -> List[Dict]:
         instance['project_id'] = project_id
         instance['region'] = 'global'
         instance['id'] = instance['name']
-        instance['instance_id'] = instance['name'].split('/')[-1]
+        instance['instance_name'] = instance['name'].split('/')[-1]
         instance['consolelink'] = ''  # TODO
         transformed_instances.append(instance)
     return transformed_instances
@@ -69,8 +69,7 @@ def load_spanner_instances_tx(tx: neo4j.Transaction, data: List[Dict], project_i
     SET
         instance.lastupdated = $gcp_update_tag,
         instance.region = record.region,
-        instance.id = record.id,
-        instance.name = record.instance_id,
+        instance.name = record.instance_name,
         instance.config = record.config,
         instance.create_time = record.createTime,
         instance.display_name = record.displayName,
@@ -147,7 +146,6 @@ def load_spanner_instance_configs_tx(tx: neo4j.Transaction, data: List[Dict], pr
     SET
         instance_config.lastupdated = $gcp_update_tag,
         instance_config.region = record.region,
-        instance_config.id = record.id,
         instance_config.name = record.instance_config_name,
         instance_config.base_config = record.baseConfig,
         instance_config.config_type = record.configType,
@@ -177,7 +175,7 @@ def transform_spanner_instance_configs_replicas(instance_configs: List[Dict], pr
         replicas = instance_config.get('replicas', [])
         for replica in replicas:
             replica['config'] = instance_config.get('name')
-            replica['id'] = instance_config.get('name') + '/replicas/' + replica.get('location')
+            replica['id'] = f"{instance_config.get('name')}/replicas/{replica.get('location')}"
         all_replicas.extend(replicas)
     return all_replicas
 
@@ -196,7 +194,6 @@ def load_spanner_instance_configs_replicas_tx(tx: neo4j.Transaction, data: List[
         replica.firstseen = timestamp()
     SET
         replica.lastupdated = $gcp_update_tag,
-        replica.id = record.id,
         replica.default_leader_location = record.defaultLeaderLocation,
         replica.location = record.location,
         replica.type = record.type
@@ -270,7 +267,6 @@ def load_spanner_instances_databases_tx(tx: neo4j.Transaction, data: List[Dict],
     SET
         database.lastupdated = $gcp_update_tag,
         database.region = record.region,
-        database.id = record.id,
         database.name = record.database_name,
         database.create_time = record.createTime,
         database.database_dialect = record.databaseDialect,
@@ -355,7 +351,6 @@ def load_spanner_instances_backups_tx(tx: neo4j.Transaction, data: List[Dict], p
     SET
         backup.lastupdated = $gcp_update_tag,
         backup.region = record.region,
-        backup.id = record.id,
         backup.name = record.backup_name,
         backup.create_time = record.createTime,
         backup.database = record.database,
