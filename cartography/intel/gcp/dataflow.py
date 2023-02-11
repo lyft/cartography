@@ -46,6 +46,28 @@ def transform_jobs(jobs: List[Dict], project_id: str) -> List[Dict]:
     transformed_jobs = []
     for job in jobs:
         job['consolelink'] = ''  # TODO
+
+        big_table_details = job.get('jobMetadata', {}).get('bigTableDetails', [])
+        big_tables = []
+        for big_table in big_table_details:
+            big_table_id = f"projects/{big_table.get('projectId')}/instances/{big_table.get('instanceId')}/tables/{big_table.get('tableId')}"
+            big_tables.append(big_table_id)
+        job['bigTables'] = big_tables
+
+        big_query_details = job.get('jobMetadata', {}).get('bigqueryDetails', [])
+        big_queries = []
+        for big_query in big_query_details:
+            big_query_id = f"projects/{big_query.get('projectId')}/datasets/{big_query.get('dataset')}/tables/{big_query.get('table')}"
+            big_queries.append(big_query_id)
+        job['bigQueries'] = big_queries
+
+        pubsub_details = job.get('jobMetadata', {}).get('pubsubDetails', [])
+        pubsub_all = []
+        for pubsub in pubsub_details:
+            topic_id = f"projects/{job.get('projectId')}/datasets/{big_query.get('dataset')}/tables/{big_query.get('table')}"
+            big_queries.append(big_query_id)
+        job['bigQueries'] = big_queries
+
         transformed_jobs.append(job)
     return transformed_jobs
 
@@ -68,6 +90,7 @@ def load_dataflow_jobs_tx(
         job.firstseen = timestamp()
     SET
         job.lastupdated = $gcp_update_tag,
+        job.create_time = record.createTime,
         job.region = record.location,
         job.name = record.name,
         job.replace_job_id = record.replaceJobId,
@@ -83,7 +106,9 @@ def load_dataflow_jobs_tx(
         job.current_state = record.currentState,
         job.requested_state = record.requestedState,
         job.consolelink = record.consolelink,
-        topic.satisfies_pzs = record.satisfiesPzs,
+        job.satisfies_pzs = record.satisfiesPzs,
+        job.replace_job_id = record.replaceJobId,
+        job.replaced_by_job_id = record.replacedByJobId,
     WITH topic
     MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(topic)
