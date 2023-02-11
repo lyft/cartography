@@ -34,7 +34,7 @@ def start_activedirectory_ingestion(
         logger.error("activedirectory config not found")
         return
 
-    authorization = (config.activedirectory_dirpath, config.activedirectory_name)
+    authorization = config.activedirectory_dirpath
     sync_hosts(
         neo4j_session,
         config.update_tag,

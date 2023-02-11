@@ -13,8 +13,8 @@ import pandas
 logger = logging.getLogger(__name__)
 
 
-def activedirectory_hosts(
-    authorization: Tuple[str, str],
+def get_activedirectory_hosts(
+    authorization: Tuple[str],
 ) -> List:
     """
     Get ActiveDirectory (Logging) coverage inventory
@@ -22,10 +22,7 @@ def activedirectory_hosts(
     Loaded from json files produced by tool like SharpHound, BloodHound.py or RustHound
     """
 
-    (
-        activedirectory_dirpath,
-        activedirectory_domain,
-    ) = authorization
+    (activedirectory_dirpath,) = authorization
     activedirectory_filename = os.path.join(activedirectory_dirpath, "computers.json")
 
     if not (
@@ -48,7 +45,6 @@ def activedirectory_hosts(
     logger.info("Example df_computers[0]: %s", df_computers.iloc[:1].to_string())
     logger.warning("Example df_computers[0]: %s", df_computers.iloc[:1].to_string())
 
-    # df_computers["ad_domain"] = activedirectory_domain
     df_computers["ad_domain"] = df_computers["Properties_domain"]
     df_computers["hostname"] = df_computers["Properties_name"]
     df_computers["short_hostname"] = df_computers["hostname"].str.lower()
