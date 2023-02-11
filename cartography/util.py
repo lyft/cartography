@@ -151,7 +151,13 @@ def aws_paginate(
     for i, page in enumerate(paginator.paginate(**kwargs), start=1):
         if i % 100 == 0:
             logger.info(f'fetching page number {i}')
-        items.extend(page[object_name])
+        if object_name in page:
+            items.extend(page[object_name])
+        else:
+            logger.warning(
+                f'''aws_paginate: Key "{object_name}" is not present, check if this is a typo.
+If not, then the AWS datatype somehow does not have this key.''',
+            )
     return items
 
 

@@ -100,6 +100,16 @@ class CLI:
                 '.'
             ),
         )
+        parser.add_argument(
+            '--neo4j-database',
+            type=str,
+            default=None,
+            help=(
+                'The name of the database in Neo4j to connect to. If not specified, uses the config settings of your '
+                'Neo4j database itself to infer which database is set to default. '
+                'See https://neo4j.com/docs/api/python-driver/4.4/api.html#database.'
+            ),
+        )
         # TODO add the below parameters to a 'sync' subparser
         parser.add_argument(
             '--update-tag',
@@ -394,6 +404,23 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--gsuite-auth-method',
+            type=str,
+            default='delegated',
+            choices=['delegated', 'oauth'],
+            help=(
+                'The method used by GSuite to authenticate. delegated is the legacy one.'
+            ),
+        )
+        parser.add_argument(
+            '--gsuite-tokens-env-var',
+            type=str,
+            default='GSUITE_GOOGLE_APPLICATION_CREDENTIALS',
+            help=(
+                'The name of environment variable containing secrets for GSuite authentication.'
+            ),
+        )
+        parser.add_argument(
             '--activedirectory-name',
             type=str,
             default=None,
@@ -407,15 +434,6 @@ class CLI:
             default=None,
             help=(
                 'Directory path where to find ActiveDirectory data from BloodHound and similar tools.'
-            ),
-        )
-        parser.add_argument(
-            '--experimental-neo4j-4x-support',
-            default=False,
-            action='store_true',
-            help=(
-                'enable the experimental suppor for neo4j 4.x. Can also be enabled by environment variable. '
-                'See cartography.__init__.py'
             ),
         )
         return parser
@@ -547,11 +565,12 @@ class CLI:
         else:
             config.crowdstrike_client_secret = None
 
-        if config.experimental_neo4j_4x_support:
-            logger.warning(
-                'EXPERIMENTAL_NEO4J_4X_SUPPORT is now enabled by default,'
-                ' and this option will be removed when code hard-coded syntax upgrades are completed',
-            )
+        # GSuite config
+        if config.gsuite_tokens_env_var:
+            logger.debug(f"Reading config string for GSuite from environment variable {config.gsuite_tokens_env_var}")
+            config.gsuite_config = os.environ.get(config.gsuite_tokens_env_var)
+        else:
+            config.github_config = None
 
         # Run cartography
         try:

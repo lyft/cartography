@@ -150,10 +150,16 @@ def _sync_multiple_accounts(
     failed_account_ids = []
     exception_tracebacks = []
 
+    num_accounts = len(accounts)
+
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
-        boto3_session = boto3.Session(profile_name=profile_name)
+        if num_accounts == 1:
+            # Use the default boto3 session because boto3 gets confused if you give it a profile name with 1 account
+            boto3_session = boto3.Session()
+        else:
+            boto3_session = boto3.Session(profile_name=profile_name)
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
@@ -173,6 +179,12 @@ def _sync_multiple_accounts(
                 exception_traceback = traceback.TracebackException.from_exception(e)
                 traceback_string = ''.join(exception_traceback.format())
                 exception_tracebacks.append(f'{timestamp} - Exception for account ID: {account_id}\n{traceback_string}')
+                logger.warning(
+                    f"Caught exception syncing account {account_id}. aws-best-effort-mode is on so we are continuing "
+                    f"on to the next AWS account. All exceptions will be aggregated and re-logged at the end of the "
+                    f"sync.",
+                    exc_info=True,
+                )
                 continue
             else:
                 raise
