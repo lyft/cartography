@@ -70,6 +70,20 @@ class ScopedStatsClient:
             return self._root._client.timer(stat, rate)
         return None
 
+    def gauge(self, stat: str, value: int, rate: float = 1.0, delta: bool = False):
+        """
+        This method uses statsd to report a gauge value.
+        :param stat: the name of the gauge to report.
+        :param value: the value to report.
+        :param rate: a sample rate, a float between 0 and 1. Will only send data this percentage of the time.
+        :param delta: if True, the current reported value will be updated instead of being set by the new value.
+        """
+        if self.is_enabled():
+            if self._scope_prefix:
+                stat = f"{self._scope_prefix}.{stat}"
+            return self._root._client.gauge(stat, value, rate=rate, delta=delta)
+        return None
+
     def set_stats_client(self, stats_client: StatsClient) -> None:
         self._root._client = stats_client
 
