@@ -14,6 +14,10 @@ def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
     """
     Generates queries to clean up stale nodes and relationships from the given CartographyNodeSchema.
     Note that auto-cleanups for a node with no relationships is not currently supported.
+    Algorithm:
+    1. First delete all stale nodes attached to the node_schema's sub resource
+    2. Delete all stale node to sub resource relationships
+    3. For all relationships defined on the node schema, delete all stale ones.
     :param node_schema: The given CartographyNodeSchema
     :return: A list of Neo4j queries to clean up nodes and relationships.
     """
@@ -22,7 +26,14 @@ def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
             "Auto-creating a cleanup job for a node_schema without a sub resource relationship is not supported. "
             f'Please check the class definition of "{node_schema.__class__.__name__}".',
         )
-    return _build_cleanup_node_and_rel_queries(node_schema, node_schema.sub_resource_relationship)
+
+    result = _build_cleanup_node_and_rel_queries(node_schema, node_schema.sub_resource_relationship)
+    if node_schema.other_relationships:
+        for rel in node_schema.other_relationships.rels:
+            # [0] is the delete node query, [1] is the delete relationship query. We only want the latter.
+            result.append(_build_cleanup_node_and_rel_queries(node_schema, rel)[1])
+
+    return result
 
 
 def _build_cleanup_node_and_rel_queries(

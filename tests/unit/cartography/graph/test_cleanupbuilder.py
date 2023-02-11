@@ -85,15 +85,28 @@ def test_build_cleanup_queries():
     expected_queries = [
         """
         MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        WHERE n.lastupdated <> $UPDATE_TAG\n
-        WITH n LIMIT $LIMIT_SIZE\n
+        WHERE n.lastupdated <> $UPDATE_TAG
+        WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
         """,
         """
         MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
         WHERE s.lastupdated <> $UPDATE_TAG
         WITH s LIMIT $LIMIT_SIZE
-        DELETE s;
+        DELETE s;""",
+        """
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)-[r:ASSOCIATED_WITH]->(:HelloAsset)
+        WHERE r.lastupdated <> $UPDATE_TAG
+        WITH r LIMIT $LIMIT_SIZE
+        DELETE r;
+        """,
+        """
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)<-[r:CONNECTED]-(:WorldAsset)
+        WHERE r.lastupdated <> $UPDATE_TAG
+        WITH r LIMIT $LIMIT_SIZE
+        DELETE r;
         """,
     ]
     assert clean_query_list(actual_queries) == clean_query_list(expected_queries)
