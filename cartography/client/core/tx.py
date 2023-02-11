@@ -7,6 +7,9 @@ from typing import Union
 
 import neo4j
 
+from cartography.graph.querybuilder import build_create_index_queries
+from cartography.graph.querybuilder import build_ingestion_query
+from cartography.models.core.nodes import CartographyNodeSchema
 from cartography.util import batch
 
 
@@ -210,3 +213,42 @@ def load_graph_data(
             DictList=data_batch,
             **kwargs,
         )
+
+
+def ensure_indexes(neo4j_session: neo4j.Session, node_schema: CartographyNodeSchema) -> None:
+    """
+    Creates indexes if they don't exist for the given CartographyNodeSchema object, as well as for all of the
+    relationships defined on its `other_relationships` and `sub_resource_relationship` fields. This operation is
+    idempotent.
+
+    This ensures that every time we need to MATCH on a node to draw a relationship to it, the field used for the MATCH
+    will be indexed, making the operation fast.
+    :param neo4j_session: The neo4j session
+    :param node_schema: The node_schema object to create indexes for.
+    """
+    queries = build_create_index_queries(node_schema)
+
+    for query in queries:
+        if not query.startswith('CREATE INDEX IF NOT EXISTS'):
+            raise ValueError('Query provided to `ensure_indexes()` does not start with "CREATE INDEX IF NOT EXISTS".')
+        neo4j_session.run(query)
+
+
+def load(
+        neo4j_session: neo4j.Session,
+        node_schema: CartographyNodeSchema,
+        dict_list: List[Dict[str, Any]],
+        **kwargs,
+) -> None:
+    """
+    Main entrypoint for intel modules to write data to the graph. Ensures that indexes exist for the datatypes loaded
+    to the graph and then performs the load operation.
+    :param neo4j_session: The Neo4j session
+    :param node_schema: The CartographyNodeSchema object to create indexes for and generate a query.
+    :param dict_list: The data to load to the graph represented as a list of dicts.
+    :param kwargs: Allows additional keyword args to be supplied to the Neo4j query.
+    :return: None
+    """
+    ensure_indexes(neo4j_session, node_schema)
+    ingestion_query = build_ingestion_query(node_schema)
+    load_graph_data(neo4j_session, ingestion_query, dict_list, **kwargs)

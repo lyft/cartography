@@ -2,17 +2,17 @@ from dataclasses import dataclass
 
 from pytest import raises
 
-from cartography.graph.model import CartographyNodeProperties
-from cartography.graph.model import CartographyNodeSchema
-from cartography.graph.model import CartographyRelProperties
-from cartography.graph.model import CartographyRelSchema
-from cartography.graph.model import LinkDirection
-from cartography.graph.model import make_target_node_matcher
-from cartography.graph.model import OtherRelationships
-from cartography.graph.model import PropertyRef
-from cartography.graph.model import TargetNodeMatcher
 from cartography.graph.querybuilder import _build_attach_additional_links_statement
 from cartography.graph.querybuilder import _build_attach_sub_resource_statement
+from cartography.models.core.common import PropertyRef
+from cartography.models.core.nodes import CartographyNodeProperties
+from cartography.models.core.nodes import CartographyNodeSchema
+from cartography.models.core.relationships import CartographyRelProperties
+from cartography.models.core.relationships import CartographyRelSchema
+from cartography.models.core.relationships import LinkDirection
+from cartography.models.core.relationships import make_target_node_matcher
+from cartography.models.core.relationships import OtherRelationships
+from cartography.models.core.relationships import TargetNodeMatcher
 
 
 @dataclass(frozen=True)

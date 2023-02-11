@@ -284,7 +284,7 @@ def load_rds_snapshots(
 
     neo4j_session.run(
         ingest_rds_snapshot,
-        Snapshots=data,
+        Snapshots=snapshots,
         Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,

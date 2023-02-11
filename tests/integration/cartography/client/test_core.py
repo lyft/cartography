@@ -1,8 +1,10 @@
+from cartography.client.core.tx import ensure_indexes
 from cartography.client.core.tx import read_list_of_dicts_tx
 from cartography.client.core.tx import read_list_of_tuples_tx
 from cartography.client.core.tx import read_list_of_values_tx
 from cartography.client.core.tx import read_single_dict_tx
 from cartography.client.core.tx import read_single_value_tx
+from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetSchema
 
 
 def _ensure_test_data(neo4j_session):
@@ -110,3 +112,34 @@ def test_read_list_of_tuples_tx(neo4j_session):
     # Assert
     assert len(data) == 3
     assert data[0][0] == 'Lisa'
+
+
+def test_ensure_indexes(neo4j_session):
+    # Act
+    ensure_indexes(neo4j_session, InterestingAssetSchema())
+
+    # Assert: check the test database for indexes
+    indexes = neo4j_session.run('''
+        SHOW ALL INDEXES
+        WHERE
+            "InterestingAsset" in labelsOrTypes OR
+            "HelloAsset" in labelsOrTypes OR
+            "WorldAsset" in labelsOrTypes
+    ''').data()
+    assert len(indexes) == 4
+
+    # Assert there is 1 label for each index created (Neo4j's data-shape of `SHOW ALL INDEXES` is weird)
+    for item in indexes:
+        assert len(item['labelsOrTypes']) == 1
+
+    # Assert all the node labels involved in the InterestingAsset's relationships are indexed
+    labels = {item['labelsOrTypes'][0] for item in indexes}
+    assert labels == {'InterestingAsset', 'HelloAsset', 'WorldAsset'}
+
+    # Assert there is 1 property for each index created (again, Neo4j's data-shape of `SHOW ALL INDEXES` is weird)
+    for item in indexes:
+        assert len(item['properties']) == 1
+
+    # Assert that the indexed property for all 3 node labels is as expected (`id` in this case)
+    indexed_fields = {item['properties'][0] for item in indexes}
+    assert indexed_fields == {'id', 'lastupdated'}

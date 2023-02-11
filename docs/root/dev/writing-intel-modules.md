@@ -58,7 +58,7 @@ For the sake of consistency, if a field does not exist, set it to `None` and not
 
 ### Load
 
-[As seen in our AWS EMR example](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/intel/aws/emr.py#L113-L132), the `load` function ingests a list of dicts to Neo4j by calling [cartography.client.core.tx.load_graph_data()](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/client/core/tx.py#L191-L212):
+[As seen in our AWS EMR example](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/intel/aws/emr.py#L113-L132), the `load` function ingests a list of dicts to Neo4j by calling [cartography.client.core.tx.load()](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/client/core/tx.py#L191-L212):
 ```python
 def load_emr_clusters(
         neo4j_session: neo4j.Session,
@@ -68,22 +68,16 @@ def load_emr_clusters(
         aws_update_tag: int,
 ) -> None:
     logger.info(f"Loading EMR {len(cluster_data)} clusters for region '{region}' into graph.")
-
-    ingestion_query = build_ingestion_query(EMRClusterSchema())
-
-    load_graph_data(
+    load(
         neo4j_session,
-        ingestion_query,
+        EMRClusterSchema(),
         cluster_data,
         lastupdated=aws_update_tag,
         Region=region,
-        AccountId=current_aws_account_id,
+        AWS_ID=current_aws_account_id,
     )
 
 ```
-
-
-`load_graph_data()` requires an `ingestion_query` to be generated from `CartographyNodeSchema` and `CartographyRelSchema` objects. [cartography.graph.querybuilder.build_ingestion_query()](https://github.com/lyft/cartography/blob/e6ada9a1a741b83a34c1c3207515a1863debeeb9/cartography/graph/querybuilder.py#L312) does just that: it accepts those schema objects as input and returns a well-formed and optimized cypher query.
 
 
 #### Defining a node
@@ -110,7 +104,7 @@ Here's our [EMRClusterNodeProperties code](https://github.com/lyft/cartography/b
 ```python
 @dataclass(frozen=True)
 class EMRClusterNodeProperties(CartographyNodeProperties):
-    arn: PropertyRef = PropertyRef('ClusterArn')
+    arn: PropertyRef = PropertyRef('ClusterArn', extra_index=True)
     firstseen: PropertyRef = PropertyRef('firstseen')
     id: PropertyRef = PropertyRef('Id')
     # ...
@@ -123,7 +117,25 @@ A `CartographyNodeProperties` object consists of [`PropertyRef`](https://github.
 
 For example, `id: PropertyRef = PropertyRef('Id')` above tells the querybuilder to set a field called `id` on the `EMRCluster` node using the value located at key `'id'` on each dict in the list.
 
-As another example, `region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)` tells the querybuilder to set a field called `region` on the `EMRCluster` node using a keyword argument called `Region` supplied to `cartography.client.core.tx.load_graph_data()`. `set_in_kwargs=True` is useful in cases where we want every object loaded by a single call to `load_graph_data()` to have the same value for a given attribute.
+As another example, `region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)` tells the querybuilder to set a field called `region` on the `EMRCluster` node using a keyword argument called `Region` supplied to `cartography.client.core.tx.load()`. `set_in_kwargs=True` is useful in cases where we want every object loaded by a single call to `load()` to have the same value for a given attribute.
+
+##### Node property indexes
+Cartography uses its data model to automatically create indexes for
+- node properties that uniquely identify the node (e.g. `id`)
+- node properties are used to connect a node to other nodes (i.e. they are used as part of a `TargetNodeMatcher` on a `CartographyRelSchema`.)
+- a node's `lastupdated` field -- this is used to enable faster cleanup jobs
+
+As seen in the above definition for `EMRClusterNodeProperties.arn`, you can also explicitly specify additional indexes for fields that you expect to be queried on by providing `extra_index=True` to the `PropertyRef` constructor:
+
+```python
+class EMRClusterNodeProperties(CartographyNodeProperties):
+    # ...
+    arn: PropertyRef = PropertyRef('ClusterArn', extra_index=True)
+```
+
+Index creation is idempotent (we only create them if they don't exist).
+
+See [below](#indexescypher) for more information on indexes.
 
 
 #### Defining relationships
@@ -229,11 +241,11 @@ In this older example of ingesting GCP VPCs, we connect VPCs with GCPProjects
 and [here](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher#L42).
 All of these queries use indexes for faster lookup.
 
-#### Create an index for new nodes
+#### indexes.cypher
 
-Be sure to [update the indexes.cypher file](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher)
-with your new node type. Indexing on "`id`" is required, and indexing on anything else that will be frequently queried is
-encouraged.
+Older intel modules define indexes in [indexes.cypher](https://github.com/lyft/cartography/blob/8d60311a10156cd8aa16de7e1fe3e109cc3eca0f/cartography/data/indexes.cypher).
+By using CartographyNodeSchema and CartographyRelSchema objects, indexes are automatically created so you don't need to update this file!
+
 
 #### lastupdated and firstseen
 
@@ -242,8 +254,19 @@ On every cartography node and relationship, we set the `lastupdated` field to th
 ### Cleanup
 
 We have just added new nodes and relationships to the graph, and we have also updated previously-added ones
-by using `MERGE`. We now need to delete nodes and relationships that no longer exist, and we do this by simply removing
+by using `MERGE`. We now need to delete nodes and relationships that no longer exist, and we do this by removing
 all nodes and relationships that have `lastupdated` NOT set to the `update_tag` of this current run.
+
+By using Cartography schema objects, a cleanup function is [trivial to write](https://github.com/lyft/cartography/blob/82e1dd0e851475381ac8f2a9a08027d67ec1d772/cartography/intel/aws/emr.py#L77-L80):
+
+```python
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    logger.debug("Running EMR cleanup job.")
+    cleanup_job = GraphJob.from_node_schema(EMRClusterSchema(), common_job_parameters)
+    cleanup_job.run(neo4j_session)
+```
+
+Older intel modules still do this process with hand-written cleanup jobs that work like this:
 
 - Delete all old nodes
 
