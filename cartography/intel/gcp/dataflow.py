@@ -101,7 +101,6 @@ def load_dataflow_jobs_tx(
         job.create_time = record.createTime,
         job.region = record.location,
         job.name = record.name,
-        job.replace_job_id = record.replaceJobId,
         job.type = record.type,
         job.cluster_manager_api_service = record.environment.clusterManagerApiService,
         job.dataset = record.environment.dataset,
@@ -114,37 +113,36 @@ def load_dataflow_jobs_tx(
         job.current_state = record.currentState,
         job.requested_state = record.requestedState,
         job.consolelink = record.consolelink,
-        job.satisfies_pzs = record.satisfiesPzs,
-        job.replace_job_id = record.replaceJobId,
-        job.replaced_by_job_id = record.replacedByJobId
+        job.satisfies_pzs = record.satisfiesPzs
     WITH job, record
     UNWIND record.bigTables as big_table_id
     MATCH (big_table:GCPBigtableTable{id: big_table_id})
-    MERGE (job)-[r:REFERENCES]->(big_table)
+    MERGE (job)-[rjbt:REFERENCES]->(big_table)
     ON CREATE SET
-        r.firstseen = timestamp()
+        rjbt.firstseen = timestamp()
     WITH job, record
     UNWIND record.bigQueries as big_query_id
     MATCH (big_query:GCPBigqueryTable{id: big_query_id})
-    MERGE (job)-[r:REFERENCES]->(big_query)
+    MERGE (job)-[rjbq:REFERENCES]->(big_query)
     ON CREATE SET
-        r.firstseen = timestamp()
+        rjbq.firstseen = timestamp()
     WITH job, record
     UNWIND record.pubSub as pubsub
     MATCH (topic:GCPPubsubTopic{id: pubsub.topicId})
-    MERGE (job)-[r:REFERENCES]->(topic)
+    MERGE (job)-[rt:REFERENCES]->(topic)
     ON CREATE SET
-        r.firstseen = timestamp()
+        rt.firstseen = timestamp()
+    WITH job, pubsub, record
     MATCH (subscription:GCPPubsubSubscription{id: pubsub.subscriptionId})
-    MERGE (job)-[r:REFERENCES]->(subscription)
+    MERGE (job)-[rs:REFERENCES]->(subscription)
     ON CREATE SET
-        r.firstseen = timestamp()
+        rs.firstseen = timestamp()
     WITH job, record
     UNWIND record.spannerDatabases as spanner_database_id
     MATCH (database:GCPSpannerInstanceDatabase{id: spanner_database_id})
-    MERGE (job)-[r:REFERENCES]->(database)
+    MERGE (job)-[rd:REFERENCES]->(database)
     ON CREATE SET
-        r.firstseen = timestamp()
+        rd.firstseen = timestamp()
     WITH job
     MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(job)
