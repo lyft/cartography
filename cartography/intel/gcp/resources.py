@@ -24,6 +24,7 @@ from . import cloudcdn
 from . import loadbalancer
 from . import bigquery
 from . import spanner
+from . import pubsublite
 
 
 RESOURCE_FUNCTIONS: Dict = {
@@ -47,4 +48,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'loadbalancer': loadbalancer.sync,
     'bigquery': bigquery.sync,
     'spanner': spanner.sync,
+    'pubsublite': pubsublite.sync,
 }

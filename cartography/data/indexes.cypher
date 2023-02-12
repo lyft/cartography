@@ -167,6 +167,8 @@ CREATE INDEX IF NOT EXISTS FOR (n:GCPSpannerInstanceConfig) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPSpannerInstanceConfigReplica) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPSpannerInstanceBackup) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPSpannerInstanceDatabase) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:GCPPubSubLiteTopic) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:GCPPubSubLiteSubscription) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:Ip) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:Ip) ON (n.ip);
 CREATE INDEX IF NOT EXISTS FOR (n:IpPermissionInbound) ON (n.ruleid);
