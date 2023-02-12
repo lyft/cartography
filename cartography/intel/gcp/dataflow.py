@@ -64,9 +64,17 @@ def transform_jobs(jobs: List[Dict], project_id: str) -> List[Dict]:
         pubsub_details = job.get('jobMetadata', {}).get('pubsubDetails', [])
         pubsub_all = []
         for pubsub in pubsub_details:
-            topic_id = f"projects/{job.get('projectId')}/datasets/{big_query.get('dataset')}/tables/{big_query.get('table')}"
-            big_queries.append(big_query_id)
-        job['bigQueries'] = big_queries
+            topic_id = f"projects/{job.get('projectId')}/topics/{pubsub.get('topic')}"
+            subscription_id = f"projects/{job.get('projectId')}/subscriptions/{pubsub.get('subscription')}"
+            pubsub_all.append({'topicId': topic_id, 'subscriptionId': subscription_id})
+        job['pubSub'] = pubsub_all
+
+        spanner_details = job.get('jobMetadata', {}).get('spannerDetails', [])
+        spanner_databases = []
+        for spanner in spanner_details:
+            spanner_database_id = f"projects/{spanner.get('projectId')}/instances/{spanner.get('instanceId')}/databases/{spanner.get('databaseId')}"
+            spanner_databases.append(spanner_database_id)
+        job['spannerDatabases'] = spanner_databases
 
         transformed_jobs.append(job)
     return transformed_jobs
@@ -108,10 +116,38 @@ def load_dataflow_jobs_tx(
         job.consolelink = record.consolelink,
         job.satisfies_pzs = record.satisfiesPzs,
         job.replace_job_id = record.replaceJobId,
-        job.replaced_by_job_id = record.replacedByJobId,
-    WITH topic
+        job.replaced_by_job_id = record.replacedByJobId
+    WITH job, record
+    UNWIND record.bigTables as big_table_id
+    MATCH (big_table:GCPBigtableTable{id: big_table_id})
+    MERGE (job)-[r:REFERENCES]->(big_table)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    WITH job, record
+    UNWIND record.bigQueries as big_query_id
+    MATCH (big_query:GCPBigqueryTable{id: big_query_id})
+    MERGE (job)-[r:REFERENCES]->(big_query)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    WITH job, record
+    UNWIND record.pubSub as pubsub
+    MATCH (topic:GCPPubsubTopic{id: pubsub.topicId})
+    MERGE (job)-[r:REFERENCES]->(topic)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    MATCH (subscription:GCPPubsubSubscription{id: pubsub.subscriptionId})
+    MERGE (job)-[r:REFERENCES]->(subscription)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    WITH job, record
+    UNWIND record.spannerDatabases as spanner_database_id
+    MATCH (database:GCPSpannerInstanceDatabase{id: spanner_database_id})
+    MERGE (job)-[r:REFERENCES]->(database)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    WITH job
     MATCH (owner:GCPProject{id: $ProjectId})
-    MERGE (owner)-[r:RESOURCE]->(topic)
+    MERGE (owner)-[r:RESOURCE]->(job)
     ON CREATE SET
         r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
@@ -122,15 +158,6 @@ def load_dataflow_jobs_tx(
         ProjectId=project_id,
         gcp_update_tag=gcp_update_tag,
     )
-
-
-@timeit
-def transform_job_worker_pools(jobs: List[Dict], project_id: str):
-    transformed_worker_pools = []
-    for job in jobs:
-        worker_pools = job.get('environment', {}).get('workerPools', [])
-        for worker_pool in worker_pools:
-            worker_pool['job'] = job['id']
 
 
 @timeit
