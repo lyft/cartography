@@ -23,6 +23,7 @@ from . import dataproc
 from . import cloudcdn
 from . import loadbalancer
 from . import bigquery
+from . import spanner
 from . import pubsublite
 
 
@@ -46,5 +47,6 @@ RESOURCE_FUNCTIONS: Dict = {
     'cloudcdn': cloudcdn.sync,
     'loadbalancer': loadbalancer.sync,
     'bigquery': bigquery.sync,
-    'pubsublite': pubsublite.sync
+    'spanner': spanner.sync,
+    'pubsublite': pubsublite.sync,
 }
