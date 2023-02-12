@@ -27,13 +27,13 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
-        iam apigateway cloudkms cloudrun sql bigtable firestore pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer apikey bigquery',
+        iam apigateway cloudkms cloudrun sql bigtable firestore pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer apikey bigquery cloudtasks',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
-    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey bigquery',
+    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey bigquery cloudtasks',
 )
 service_names = Services(
     compute='compute.googleapis.com',
@@ -52,7 +52,7 @@ service_names = Services(
     firestore='firestore.googleapis.com',
     apikey='apikeys.googleapis.com',
     bigquery='bigquery.googleapis.com',
-
+    cloudtasks='cloudtasks.googleapis.com',
 )
 
 
