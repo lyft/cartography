@@ -16,6 +16,7 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 gcp_console_link = GCPLinker()
 
+
 @timeit
 def get_pubsub_subscriptions(pubsub: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     subscriptions = []
@@ -40,6 +41,7 @@ def get_pubsub_subscriptions(pubsub: Resource, project_id: str, regions: list, c
         else:
             raise
 
+
 @timeit
 def transform_subscriptions(subscriptions: List[Dict], project_id: str) -> List[Dict]:
     subscriptions = []
@@ -47,11 +49,12 @@ def transform_subscriptions(subscriptions: List[Dict], project_id: str) -> List[
         subscription['project_id'] = project_id
         subscription['region'] = 'global'
         subscription['subscription_name'] = subscription['id'].split('/')[-1]
-        subscription['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, \
-                                subscription_name=subscription['subscription_name'], resource_name='cloud_pubsub_subscription')
+        subscription['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
+                                                                        subscription_name=subscription['subscription_name'], resource_name='cloud_pubsub_subscription')
         subscriptions.append(subscription)
 
     return subscriptions
+
 
 @timeit
 def load_pubsub_subscriptions(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -132,7 +135,7 @@ def get_pubsub_topics(pubsub: Resource, project_id: str, regions: list, common_j
                 logger.info(f'pages process for pubsub topics {pageNo}/{totalPages} pageSize is {pageSize}')
             page_start = (
                 common_job_parameters.get('pagination', {}).get('pubsub', None)[
-                'pageNo'
+                    'pageNo'
                 ] - 1
             ) * common_job_parameters.get('pagination', {}).get('pubsub', None)['pageSize']
             page_end = page_start + common_job_parameters.get('pagination', {}).get('pubsub', None)['pageSize']
@@ -156,6 +159,7 @@ def get_pubsub_topics(pubsub: Resource, project_id: str, regions: list, common_j
         else:
             raise
 
+
 @timeit
 def transform_topics(topics: List[Dict], project_id: str) -> List[Dict]:
     topics = []
@@ -167,6 +171,7 @@ def transform_topics(topics: List[Dict], project_id: str) -> List[Dict]:
         topics.append(topic)
 
     return topics
+
 
 @timeit
 def load_pubsub_topics(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -233,7 +238,7 @@ def sync(
     if common_job_parameters.get('pagination', {}).get('pubsub', None):
         if not common_job_parameters.get('pagination', {}).get('pubsub', {}).get('hasNextPage', False):
             subs = get_pubsub_subscriptions(pubsub, project_id, regions, common_job_parameters)
-            subscriptions  = transform_subscriptions(subs, project_id)
+            subscriptions = transform_subscriptions(subs, project_id)
             load_pubsub_subscriptions(neo4j_session, subscriptions, project_id, gcp_update_tag)
 
             cleanup_pubsub_subscriptions(neo4j_session, common_job_parameters)
