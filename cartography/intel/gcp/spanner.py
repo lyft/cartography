@@ -257,8 +257,6 @@ def load_spanner_instances_databases(session: neo4j.Session, data_list: List[Dic
 
 @timeit
 def load_spanner_instances_databases_tx(tx: neo4j.Transaction, data: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    for da in data:
-        print(f"found -> {da['restoreInfo']['backupInfo']['backup']}")
     query = """
     UNWIND $Records as record
     MERGE (database:GCPSpannerInstanceDatabase{id: record.id})
