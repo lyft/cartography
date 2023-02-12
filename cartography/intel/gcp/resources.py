@@ -1,3 +1,6 @@
+from . import pubsublite
+from . import spanner
+from . import cloudtasks
 from typing import Dict
 
 from . import apigateway
@@ -23,7 +26,9 @@ from . import dataproc
 from . import cloudcdn
 from . import loadbalancer
 from . import bigquery
-from . import cloudtasks
+<< << << < HEAD
+== == == =
+>>>>>> > ce5d7086e0711afa1dad6457719e58fef723f78b
 
 
 RESOURCE_FUNCTIONS: Dict = {
@@ -47,4 +52,6 @@ RESOURCE_FUNCTIONS: Dict = {
     'loadbalancer': loadbalancer.sync,
     'bigquery': bigquery.sync,
     'cloudtasks': cloudtasks.sync,
+    'spanner': spanner.sync,
+    'pubsublite': pubsublite.sync,
 }
