@@ -45,9 +45,7 @@ def get_cloudtasks_locations(cloudtasks: Resource, project_id: str) -> List[Dict
 def transform_cloudtasks_locations(locations: List[Dict]) -> List[str]:
     transformed_locations = []
     for location in locations:
-        location_id = location.get('locationId', None)
-        if not location_id:
-            transformed_locations.append(location_id)
+        transformed_locations.append(location.get['locationId'])
     return transformed_locations
 
 
