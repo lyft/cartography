@@ -3,13 +3,13 @@ import getpass
 import logging
 import os
 import sys
-from typing import Optional, List
+from typing import Optional
 
 import cartography.config
 import cartography.sync
 import cartography.util
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
-from cartography.sync import parse_and_validate_selected_modules
+
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,7 @@ class CLI:
                 'If not specified, cartography by default will run all modules available and log warnings when it '
                 'does not find credentials configured for them. '
                 # TODO remove this mention about the create-indexes module when everything is using auto-indexes.
-                'We recommend that you always specify the `create-indexes` module first in this list. ' 
+                'We recommend that you always specify the `create-indexes` module first in this list. '
                 'If you specify the `analysis` module, we recommend that you include it as the LAST item of this list, '
                 '(because it does not make sense to perform analysis on an empty/out-of-date graph).'
             ),

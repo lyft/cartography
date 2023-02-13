@@ -213,7 +213,7 @@ def parse_and_validate_selected_modules(selected_modules: str) -> List[str]:
                 f'Error parsing `selected_modules`. You specified "{selected_modules}". '
                 f'Please check that your string is formatted properly. '
                 f'Example valid input looks like "aws,gcp,analysis" or "azure, oci, crowdstrike". '
-                f'Our full list of valid values is: {valid_modules}.'
+                f'Our full list of valid values is: {valid_modules}.',
             )
     return validated_modules
 
@@ -226,6 +226,6 @@ def build_sync(selected_modules_as_str: str) -> Sync:
     selected_modules = parse_and_validate_selected_modules(selected_modules_as_str)
     sync = Sync()
     sync.add_stages(
-        [(sync_name, TOP_LEVEL_MODULES[sync_name]) for sync_name in selected_modules]
+        [(sync_name, TOP_LEVEL_MODULES[sync_name]) for sync_name in selected_modules],
     )
     return sync
