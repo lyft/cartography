@@ -21,12 +21,12 @@ gcp_console_link = GCPLinker()
 def get_dataflow_jobs(dataflow: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     jobs = []
     try:
-        req = dataflow.projects().jobs().list(projectId=project_id)
+        req = dataflow.projects().jobs().aggregated(projectId=project_id)
         while req is not None:
             res = req.execute()
             if res.get('jobs'):
                 jobs.extend(res.get('jobs', []))
-            req = dataflow.projects().jobs().list_next(previous_request=req, previous_response=res)
+            req = dataflow.projects().jobs().aggregated_next(previous_request=req, previous_response=res)
         return jobs
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
