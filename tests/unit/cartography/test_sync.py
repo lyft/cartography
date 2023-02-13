@@ -1,6 +1,9 @@
 import pytest
 
-from cartography.sync import TOP_LEVEL_MODULES, build_default_sync, build_sync, parse_and_validate_selected_modules
+from cartography.sync import build_default_sync
+from cartography.sync import build_sync
+from cartography.sync import parse_and_validate_selected_modules
+from cartography.sync import TOP_LEVEL_MODULES
 
 
 def test_build_default_sync():
