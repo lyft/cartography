@@ -162,6 +162,7 @@ CREATE INDEX IF NOT EXISTS FOR (n:GCPFirestoreDatabase) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPFirestoreIndex) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPBigqueryDataset) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPBigqueryTable) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:GCPCloudTasksQueue) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPSpannerInstance) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPSpannerInstanceConfig) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPSpannerInstanceConfigReplica) ON (n.id);
