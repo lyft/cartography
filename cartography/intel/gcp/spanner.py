@@ -274,7 +274,8 @@ def load_spanner_instances_databases_tx(tx: neo4j.Transaction, data: List[Dict],
         database.backup = record.restoreInfo.backupInfo.backup,
         database.source_type = record.restoreInfo.sourceType,
         database.state = record.state,
-        database.version_retention_period = record.versionRetentionPeriod
+        database.version_retention_period = record.versionRetentionPeriod,
+        database.consolelink = record.consolelink
     WITH database, record
     MATCH (instance:GCPSpannerInstance{id: record.instance_id})
     MERGE (instance)-[r:HAS_DATABASE]->(database)
@@ -361,7 +362,8 @@ def load_spanner_instances_backups_tx(tx: neo4j.Transaction, data: List[Dict], p
         backup.referencing_databases = record.referencingDatabases,
         backup.size_bytes = record.sizeBytes,
         backup.state = record.state,
-        backup.version_time = record.versionTime
+        backup.version_time = record.versionTime,
+        backup.consolelink = record.consolelink
     WITH backup, record
     MATCH (instance:GCPSpannerInstance{id: record.instance_id})
     MERGE (instance)-[r:HAS_BACKUP]->(backup)
