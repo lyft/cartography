@@ -31,7 +31,8 @@ def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
     if node_schema.other_relationships:
         for rel in node_schema.other_relationships.rels:
             # [0] is the delete node query, [1] is the delete relationship query. We only want the latter.
-            result.append(_build_cleanup_node_and_rel_queries(node_schema, rel)[1])
+            _, rel_query = _build_cleanup_node_and_rel_queries(node_schema, rel)
+            result.append(rel_query)
 
     return result
 
