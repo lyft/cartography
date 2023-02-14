@@ -17,6 +17,8 @@ def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
     Algorithm:
     1. First delete all stale nodes attached to the node_schema's sub resource
     2. Delete all stale node to sub resource relationships
+        - We don't expect this to be very common (never for AWS resources, at least), but in case it is possible for an
+          asset to change sub resources, we want to handle it properly.
     3. For all relationships defined on the node schema, delete all stale ones.
     :param node_schema: The given CartographyNodeSchema
     :return: A list of Neo4j queries to clean up nodes and relationships.
