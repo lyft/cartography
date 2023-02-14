@@ -27,13 +27,13 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
-        iam apigateway cloudkms cloudrun sql bigtable firestore pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer apikey bigquery dataflow spanner pubsublite',
+        iam apigateway cloudkms cloudrun sql bigtable firestore pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer apikey bigquery dataflow spanner pubsublite cloudtasks',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
-    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey bigquery dataflow spanner pubsublite',
+    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey bigquery dataflow spanner pubsublite cloudtasks',
 )
 service_names = Services(
     compute='compute.googleapis.com',
@@ -53,6 +53,7 @@ service_names = Services(
     apikey='apikeys.googleapis.com',
     bigquery='bigquery.googleapis.com',
     dataflow='dataflow.googleapis.com',
+    cloudtasks='cloudtasks.googleapis.com',
     spanner='spanner.googleapis.com',
     pubsublite='pubsublite.googleapis.com',
 )
@@ -313,6 +314,16 @@ def _get_dataflow_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('dataflow', 'v1b3', credentials=credentials, cache_discovery=False)
 
 
+def _get_cloudtasks_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a cloudtasks resource object.
+    See: https://cloud.google.com/tasks/docs/reference/rest
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('cloudtasks', 'v2', credentials=credentials, cache_discovery=False)
+
+
 def _get_spanner_resource(credentials: GoogleCredentials) -> Resource:
     """
     Instantiates a spanner resource object.
@@ -364,6 +375,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         apikey=_get_apikey_resource(credentials),
         bigquery=_get_bigquery_resource(credentials),
         dataflow=_get_dataflow_resource(credentials),
+        cloudtasks=_get_cloudtasks_resource(credentials),
         spanner=_get_spanner_resource(credentials),
         pubsublite=_get_pubsublite_resource(credentials),
     )

@@ -1,3 +1,6 @@
+from . import pubsublite
+from . import spanner
+from . import cloudtasks
 from typing import Dict
 
 from . import apigateway
@@ -26,6 +29,7 @@ from . import bigquery
 from . import dataflow
 from . import spanner
 from . import pubsublite
+from . import cloudtasks
 
 
 RESOURCE_FUNCTIONS: Dict = {
@@ -51,4 +55,5 @@ RESOURCE_FUNCTIONS: Dict = {
     'dataflow': dataflow.sync,
     'spanner': spanner.sync,
     'pubsublite': pubsublite.sync,
+    'cloudtasks': cloudtasks.sync,
 }
