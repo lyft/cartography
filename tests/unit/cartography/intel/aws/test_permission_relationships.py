@@ -30,6 +30,117 @@ def test_admin_statements():
         statement, ["S3:GetObject"], "arn:aws:s3:::testbucket",
     )
 
+def test_calculate_admin_principals():
+    principals = {
+        "arn:aws:iam::000000000000:role/test1": {
+            "ListAllow": [{
+                "action": [
+                    "s3:listobject"
+                    "dynamodb:query",
+                ],
+                "resource": [
+                    "*",
+                ],
+                "effect": "Allow",
+            }],
+            "explicitallow": [{
+                "action": [
+                    "s3:getobject",
+                ],
+                "resource": [
+                    "arn:aws:s3:::testbucket",
+                ],
+                "effect": "Allow",
+            }],
+        },
+        ## This is an admin.
+        "arn:aws:iam::000000000000:user/user_1": {
+            "TestAllow": [{
+                "action": [
+                    "*"
+                ],
+                "effect": "Allow",
+                "resource": [ "*" ]
+            }],
+        },
+        "arn:aws:iam::000000000000:user/user_2": {
+            "TestDenyAllow": [
+            {
+                "action": [
+                    "*"
+                ],
+                "effect": "Deny",
+                "resource": [ "*" ]
+            }, 
+            {
+                "action": [
+                    "*"
+                ],
+                "effect": "Allow",
+                "resource": [ "*" ]
+            }],
+        },
+        ## This is an admin.
+        "arn:aws:iam::000000000000:user/user_3": {
+            "Test": [
+            {
+                "action": [
+                    "iam:PutUserPolicy",
+                    "iam:RemoveUserFromGroup",
+                ],
+                "effect": "Allow",
+                "resource": [ "*" ]
+            }],
+            "s3Allow": [{
+                "action": [
+                    "s3:getobject",
+                ],
+                "resource": [
+                    "arn:aws:s3:::testbucket",
+                ],
+                "effect": "Allow",
+            }],
+        },
+        ## This is an admin.
+        "arn:aws:iam::000000000000:user/user_4": {
+            "Test": [
+            {
+                "action": [
+                    "iam:PutUserPolicy",
+                ],
+                "effect": "Allow",
+                "resource": [ "arn:aws:iam::000000000000:user/user_4" ]
+            }],
+        },
+        "arn:aws:iam::000000000000:user/user_5": {
+            "Test": [
+            {
+                "action": [
+                    "iam:PutUserPolicy",
+                ],
+                "effect": "Allow",
+                "resource": [ "arn:aws:iam::000000000000:user/user_10000" ]
+            }],
+        },
+        ## This is admin.
+        "arn:aws:iam::000000000000:role/admin_role_1": {
+            "Test": [
+            {
+                "action": [
+                    "iam:PutRolePolicy",
+                ],
+                "effect": "Allow",
+                "resource": [ "*" ]
+            }],
+        },
+    }
+    assert 4 == len(
+        permission_relationships.calculate_admin_principals(
+            principals
+        ),
+    ) 
+
+
 
 def test_not_action_statement():
     statement = [{
