@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.74.0'
+__version__ = '0.75.0rc1'
 
 
 setup(
