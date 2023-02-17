@@ -65,7 +65,6 @@ def test_build_ingestion_query_with_sub_resource():
 def test_build_ingestion_query_case_insensitive_match():
     query = build_ingestion_query(FakeEmpSchema())
 
-    # TODO - if there is just one relationship, then we repeat `WITH i, item`. Functionally it still works but fix this.
     expected = """
         UNWIND $DictList AS item
             MERGE (i:FakeEmployee{id: item.id})
@@ -77,7 +76,6 @@ def test_build_ingestion_query_case_insensitive_match():
 
             WITH i, item
             CALL {
-                WITH i, item
                 WITH i, item
                 OPTIONAL MATCH (n0:GitHubUser)
                 WHERE

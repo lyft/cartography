@@ -167,6 +167,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
 
     sub_resource_attach_template = Template(
         """
+        WITH i, item
         OPTIONAL MATCH (j:$SubResourceLabel)
         WHERE
             $WhereClause
@@ -284,7 +285,6 @@ def _build_attach_relationships_statement(
         """
         WITH i, item
         CALL {
-            WITH i, item
             $attach_relationships_statement
         }
         """,
