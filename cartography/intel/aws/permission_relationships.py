@@ -58,13 +58,9 @@ def evaluate_resource_for_permission(statement: Dict, resource_arn: str) -> bool
     """Return whether the given IAM 'resource' statement applies to the resource_arn"""
     if 'resource' not in statement:
         return False
-    print("evaluate_resource_for_permission Statement, resource: ", statement['resource'])
-    print("evaluate_resource_for_permission Resource ARN: ", resource_arn)
-    print("Check Equality: ", resource_arn == statement['resource'])
     for clause in statement['resource']:
         if evaluate_clause(clause, resource_arn):
             return True
-    print("Return Value of evaluate_resource_for_permission: ", False)
     return False
 
 
@@ -89,10 +85,6 @@ def evaluate_statements_for_permission(statements: List[Dict], permission: str, 
     Returns:
         [bool] -- If the statement grants the specific permission to the resource
     """
-    print("--Evaulate statements for permissions function: --")
-    print("Statements: ", statements)
-    print("Permission: ", permission)
-    print("Resource ARN: ", resource_arn)
 
     allowed = False
     for statement in statements:
@@ -126,8 +118,6 @@ def evaluate_policy_for_permissions(
     """
     allow_statements = [s for s in statements if s["effect"] == "Allow"]
     deny_statements = [s for s in statements if s["effect"] == "Deny"]
-    print("allow_statements: ", allow_statements)
-    print("deny_statements: ", deny_statements)
     for permission in permissions:
         if evaluate_statements_for_permission(deny_statements, permission, resource_arn):
             # The action explicitly denied then no other policy can override it
@@ -138,6 +128,7 @@ def evaluate_policy_for_permissions(
                 return True, False
     # The action is not allowed by this policy, but not specifically denied either
     return False, False
+
 
 def principal_allowed_on_resource(policies: Dict, resource_arn: str, permissions: List[str]) -> bool:
     """ Evaluates an enture set of policies for a specific resource for a specific permission.
@@ -153,14 +144,9 @@ def principal_allowed_on_resource(policies: Dict, resource_arn: str, permissions
     """
     if not isinstance(permissions, list):
         raise ValueError("permissions is not a list")
-    print("Policies: ", policies)
-    print("Resource ARN: ", resource_arn)
-    print("Permissions: ", permissions)
     granted = False
     for _, statements in policies.items():
         allowed, explicit_deny = evaluate_policy_for_permissions(statements, permissions, resource_arn)
-        print("allowed: ", allowed)
-        print("explicit_deny: ", explicit_deny)
         if explicit_deny:
             return False
         if not granted and allowed:
@@ -196,6 +182,7 @@ def calculate_permission_relationships(
                 allowed_mappings.append({"principal_arn": principal_arn, "resource_arn": resource_arn})
     return allowed_mappings
 
+
 def calculate_seed_admin_principals(
     iam_principals: Dict,
 ) -> List[Dict]:
@@ -207,16 +194,14 @@ def calculate_seed_admin_principals(
         [dict] -- List of seed principals marked as admin
     """
     seed_admin_principals: List[Dict] = []
-
-    ## Create a list of principals that should be admin.
-    for principal_arn, policies in iam_principals.items(): 
-        if not policies: 
+    for principal_arn, policies in iam_principals.items():
+        if not policies:
             continue
 
         principal_node_arn_str = ':'.join(principal_arn.split(':')[5:])
         principal_node_type = principal_node_arn_str.split("/")[0]
 
-        ## Can principal modify own inline policies to itself.
+        # Can principal modify own inline policies to itself.
         if principal_node_type == 'user':
             permission = 'iam:PutUserPolicy'
         elif principal_node_type == 'role':
@@ -226,24 +211,22 @@ def calculate_seed_admin_principals(
         if principal_allowed_on_resource(policies, principal_arn, [permission]):
             seed_admin_principals.append({"principal_arn": principal_arn, "admin_reason": permission})
             continue
-            
-        ## Can node attach AdministratorAccessPolicy to itself.
-        ## TODO: condition key should be added to check & service control policies.
+
+        # Can node attach AdministratorAccessPolicy to itself.
         if principal_node_type == 'user':
             permission = 'iam:AttachUserPolicy'
         elif principal_node_type == 'role':
             permission = 'iam:AttachRolePolicy'
-        else: 
+        else:
             permission = 'iam:AttachGroupPolicy'
         if principal_allowed_on_resource(policies, principal_arn, [permission]):
             seed_admin_principals.append({"principal_arn": principal_arn, "admin_reason": permission})
             continue
 
-        ## TODO: Node can create a role & attach managed policy: AdministratorAccessPolicy or an inline policy.
-
-        ## TODO: Can node update attached customer managed policy. (Retrieve policy arn)
-
-        ## TODO: Check if node can attach/modify group's policies.
+        # TODO: Node can create a role & attach managed policy:
+        # AdministratorAccessPolicy or an inline policy.
+        # TODO: Can node update attached customer managed policy. (Retrieve policy arn)
+        # TODO: Check if node can attach/modify group's policies.
     return seed_admin_principals
 
 
@@ -329,6 +312,7 @@ def get_principals_for_account(neo4j_session: neo4j.Session, account_id: str) ->
         principals[principal_arn][policy_id] = compile_statement(parse_statement_node(statements))
     return principals
 
+
 def get_iam_principals_for_account(neo4j_session: neo4j.Session, account_id: str) -> Dict:
     get_iam_principals_query = """
     MATCH
@@ -356,12 +340,10 @@ def get_iam_principals_for_account(neo4j_session: neo4j.Session, account_id: str
         statements = r["statements"]
         if principal_arn not in iam_principals:
             iam_principals[principal_arn] = {}
-        if policy_id == None:
+        if policy_id is None:
             continue
         iam_principals[principal_arn][policy_id] = compile_statement(parse_statement_node(statements))
     return iam_principals
-
-
 
 
 def get_resource_arns(neo4j_session: neo4j.Session, account_id: str, node_label: str) -> List[Any]:
@@ -401,27 +383,10 @@ def load_principal_mappings(
         aws_update_tag=update_tag,
     )
 
-def set_remaining_admin_principals(neo4j_session: neo4j.Session) -> None:
-    admin_cleanup_query = """
-        MATCH
-        (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->
-        (principal:AWSPrincipal)-[:STS_ASSUMEROLE_ALLOW*..8]->
-        (adminPrincipal:AWSPrincipal)
-        WHERE adminPrincipal.is_admin = True
-        WITH principal, COLLECT(adminPrincipal) as adminPrincipals
-        SET principal.is_admin = True, 
-        principal.admin_reason = "Role Assumption to a Principal With" + adminPrincipals[0].admin_reason
-    """
-    neo4j_session.run(
-                admin_cleanup_query,
-                AccountId=current_aws_id,
-    ) 
-    return 
-
 
 def cleanup_principal_admin_attributes(
-    neo4j_session: neo4j.Session, 
-    current_aws_id: str,
+    neo4j_session: neo4j.Session,
+    current_aws_account_id: str,
 ) -> None:
     logger.info("Cleaning up admin attributes")
     admin_cleanup_query = """
@@ -431,8 +396,8 @@ def cleanup_principal_admin_attributes(
         SET principal.is_admin = NULL, principal.admin_reason = NULL
     """
     neo4j_session.run(
-                admin_cleanup_query,
-                AccountId=current_aws_id,
+        admin_cleanup_query,
+        AccountId=current_aws_account_id,
     )
 
 
@@ -483,39 +448,85 @@ def is_valid_rpr(rpr: Dict) -> bool:
 
     return True
 
+
 def load_seed_admin_principals(
-    neo4j_session: neo4j.Session, 
+    neo4j_session: neo4j.Session,
     seed_admin_principals: List[Dict],
 ) -> None:
     set_seed_admin_query = """
     UNWIND $principals as principal
     MATCH (p:AWSPrincipal{arn:principal.principal_arn})
     SET p.is_admin = True, p.admin_reason = {principal.admin_reason}
-    """        
+    """
     neo4j_session.run(
-            set_seed_admin_query,
-            principals=seed_admin_principals,
+        set_seed_admin_query,
+        principals=seed_admin_principals,
     )
 
 
-def sync_admin_attributes(neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict) -> None: 
+def set_remaining_admin_principals(neo4j_session: neo4j.Session, current_aws_account_id: str) -> None:
+    set_admin_through_role_assumption_query = """
+        MATCH
+        (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->
+        (p:AWSPrincipal)-[:STS_ASSUMEROLE_ALLOW*..10]->
+        (admin:AWSPrincipal)
+        WHERE admin.is_admin = True
+        WITH p, COLLECT(admin) as admins
+        SET p.is_admin = True,
+        p.admin_reason = "Role assumption chain to admin role " +
+        admins[0].arn
+    """
+    neo4j_session.run(
+        set_admin_through_role_assumption_query,
+        AccountId=current_aws_account_id,
+    )
+
+    set_admin_through_group_membership_query = """
+        MATCH
+        (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->
+        (p:AWSPrincipal)-[:MEMBER_AWS_GROUP]->
+        (adminGroup:AWSGroup)
+        WHERE adminGroup.is_admin = True
+        WITH p, COLLECT(adminGroup) as adminGroups
+        SET p.is_admin = True,
+        p.admin_reason = "Member of admin group" + adminGroups[0].arn
+    """
+    neo4j_session.run(
+        set_admin_through_group_membership_query,
+        AccountId=current_aws_account_id,
+    )
+
+
+def sync_admin_attributes(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
+    current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
+) -> None:
     logger.info("Syncing Admin Attributes for account '%s'.", current_aws_account_id)
 
     cleanup_principal_admin_attributes(neo4j_session, current_aws_account_id)
     iam_principals = get_iam_principals_for_account(neo4j_session, current_aws_account_id)
     seed_admin_principals = calculate_seed_admin_principals(iam_principals)
     load_seed_admin_principals(neo4j_session, seed_admin_principals)
+    set_remaining_admin_principals(neo4j_session, current_aws_account_id)
 
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
+    current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    sync_admin_attributes(
+        neo4j_session,
+        boto3_session,
+        regions,
+        current_aws_account_id,
+        update_tag,
+        common_job_parameters,
+    )
+
     logger.info("Syncing Permission Relationships for account '%s'.", current_aws_account_id)
     principals = get_principals_for_account(neo4j_session, current_aws_account_id)
-    
+
     pr_file = common_job_parameters["permission_relationships_file"]
     if not pr_file:
         logger.warning(

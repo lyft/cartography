@@ -1,19 +1,21 @@
-from flask import Flask, jsonify, request
-from flask_executor import Executor
-from typing import List
 import logging
 import os
-import sys
+from typing import List
 
+from flask import Flask
+from flask import jsonify
+from flask import request
+from flask_executor import Executor
+
+import cartography.cli
 import cartography.config
 import cartography.sync
-import cartography.cli
-
 from cartography.intel.aws.util.common import parse_and_validate_aws_custom_sync_profile
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
 executor = Executor(app)
+
 
 @app.get('/get_status')
 def get_status():
@@ -22,8 +24,9 @@ def get_status():
     """
     done_status = executor.futures.done('cartography_job')
     if done_status is None or done_status:
-        return jsonify({'status':'READY'})
+        return jsonify({'status': 'READY'})
     return jsonify({'status': 'RUNNING'})
+
 
 def run_cartography_job(aws_custom_sync_profile: str):
     logging.basicConfig(level=logging.INFO)
@@ -39,13 +42,14 @@ def run_cartography_job(aws_custom_sync_profile: str):
     if os.environ.get('CARTOGRAPHY_VERBOSE', "False") == "True":
         args.append('-v')
     args.append(
-        f'--neo4j-uri={os.environ.get("CARTOGRAPHY_NEO4J_URI", "bolt://localhost:7687")}'
+        f'--neo4j-uri={os.environ.get("CARTOGRAPHY_NEO4J_URI", "bolt://localhost:7687")}',
     )
     config = cliObj.parser.parse_args(args)
-    config.aws_custom_sync_profile=aws_custom_sync_profile
+    config.aws_custom_sync_profile = aws_custom_sync_profile
     cliObj.run_from_config(config)
 
     logger.info("Finished cartography job")
+
 
 @app.post('/start_job')
 def start_job():
@@ -61,7 +65,7 @@ def start_job():
     except ValueError:
         return jsonify({'status': 'FAILED'})
 
-    # Run job if not already started  
+    # Run job if not already started
     done_status = executor.futures.done('cartography_job')
     if done_status:
         executor.futures.pop('cartography_job')
@@ -71,8 +75,9 @@ def start_job():
             run_cartography_job,
             request_text,
         )
-        return jsonify({'status':'STARTED'})
+        return jsonify({'status': 'STARTED'})
     return jsonify({'status': 'RUNNING'})
+
 
 def main(argv=None):
     app.run(port=6000, debug=True)
