@@ -117,15 +117,16 @@ def _build_where_clause_for_rel_match(node_var: str, matcher: TargetNodeMatcher)
     :return: a Neo4j where clause
     """
     match = Template("$node_var.$key = $prop_ref")
-    imatch = Template("toLower($node_var.$key) = toLower($prop_ref)")
+    case_insensitive_match = Template("toLower($node_var.$key) = toLower($prop_ref)")
 
     matcher_asdict = asdict(matcher)
 
     result = []
     for key, prop_ref in matcher_asdict.items():
-        prop_line = match.safe_substitute(node_var=node_var, key=key, prop_ref=prop_ref)
         if prop_ref.ignore_case:
-            prop_line = imatch.safe_substitute(node_var=node_var, key=key, prop_ref=prop_ref)
+            prop_line = case_insensitive_match.safe_substitute(node_var=node_var, key=key, prop_ref=prop_ref)
+        else:
+            prop_line = match.safe_substitute(node_var=node_var, key=key, prop_ref=prop_ref)
         result.append(prop_line)
     return ' AND\n'.join(result)
 

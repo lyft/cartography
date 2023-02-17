@@ -30,7 +30,7 @@ class PropertyRef:
             case-insensitive. Suppose your company's internal personnel database stores GitHub usernames all as
             lowercase. If you wanted to map your company's employees to their GitHub identities, you would need to
             perform a case-insensitive match between your company's record of a user's GitHub username and your
-            cartography catalog of GitHubUser nodes. Therefore, you would need `ignore_case=False` in the PropertyRef
+            cartography catalog of GitHubUser nodes. Therefore, you would need `ignore_case=True` in the PropertyRef
             that points to the GitHubUser node's name field, otherwise if one of your employees' GitHub usernames
             contains capital letters, you would not be able to map them properly to a GitHubUser node in your graph.
         """
