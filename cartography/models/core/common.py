@@ -8,7 +8,7 @@ class PropertyRef:
     (PropertyRef.set_in_kwargs=True).
     """
 
-    def __init__(self, name: str, set_in_kwargs=False, extra_index=False):
+    def __init__(self, name: str, set_in_kwargs=False, extra_index=False, ignore_case=False):
         """
         :param name: The name of the property
         :param set_in_kwargs: Optional. If True, the property is not defined on the data dict, and we expect to find the
@@ -22,10 +22,22 @@ class PropertyRef:
             `ensure_indexes()`.
           - All properties included in target node matchers will always have indexes created for them.
             Defaults to False.
+        :param ignore_case: If True, performs a case-insensitive match when comparing the value of this property during
+        relationship creation. Defaults to False. This only has effect as part of a TargetNodeMatcher, and this is not
+        supported for the sub resource relationship.
+            Example on why you would set this to True:
+            GitHub usernames can have both uppercase and lowercase characters, but GitHub itself treats usernames as
+            case-insensitive. Suppose your company's internal personnel database stores GitHub usernames all as
+            lowercase. If you wanted to map your company's employees to their GitHub identities, you would need to
+            perform a case-insensitive match between your company's record of a user's GitHub username and your
+            cartography catalog of GitHubUser nodes. Therefore, you would need `ignore_case=True` in the PropertyRef
+            that points to the GitHubUser node's name field, otherwise if one of your employees' GitHub usernames
+            contains capital letters, you would not be able to map them properly to a GitHubUser node in your graph.
         """
         self.name = name
         self.set_in_kwargs = set_in_kwargs
         self.extra_index = extra_index
+        self.ignore_case = ignore_case
 
     def _parameterize_name(self) -> str:
         return f"${self.name}"

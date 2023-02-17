@@ -109,6 +109,28 @@ def _build_match_clause(matcher: TargetNodeMatcher) -> str:
     return ', '.join(match.safe_substitute(Key=key, PropRef=prop_ref) for key, prop_ref in matcher_asdict.items())
 
 
+def _build_where_clause_for_rel_match(node_var: str, matcher: TargetNodeMatcher) -> str:
+    """
+    Same as _build_match_clause, but puts the matching logic in a WHERE clause.
+    This is intended specifically to use for joining with relationships where we need a case-insensitive match.
+    :param matcher: A TargetNodeMatcher object
+    :return: a Neo4j where clause
+    """
+    match = Template("$node_var.$key = $prop_ref")
+    case_insensitive_match = Template("toLower($node_var.$key) = toLower($prop_ref)")
+
+    matcher_asdict = asdict(matcher)
+
+    result = []
+    for key, prop_ref in matcher_asdict.items():
+        if prop_ref.ignore_case:
+            prop_line = case_insensitive_match.safe_substitute(node_var=node_var, key=key, prop_ref=prop_ref)
+        else:
+            prop_line = match.safe_substitute(node_var=node_var, key=key, prop_ref=prop_ref)
+        result.append(prop_line)
+    return ' AND\n'.join(result)
+
+
 def _asdict_with_validate_relprops(link: CartographyRelSchema) -> Dict[str, PropertyRef]:
     """
     Give a helpful error message when forgetting to put `()` when instantiating a CartographyRelSchema, as this
@@ -146,6 +168,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
 
     sub_resource_attach_template = Template(
         """
+        WITH i, item
         OPTIONAL MATCH (j:$SubResourceLabel{$MatchClause})
         WITH i, item, j WHERE j IS NOT NULL
         $RelMergeClause
@@ -192,7 +215,9 @@ def _build_attach_additional_links_statement(
     additional_links_template = Template(
         """
         WITH i, item
-        OPTIONAL MATCH ($node_var:$AddlLabel{$MatchClause})
+        OPTIONAL MATCH ($node_var:$AddlLabel)
+        WHERE
+            $WhereClause
         WITH i, item, $node_var WHERE $node_var IS NOT NULL
         $RelMerge
         ON CREATE SET $rel_var.firstseen = timestamp()
@@ -220,7 +245,7 @@ def _build_attach_additional_links_statement(
 
         additional_ref = additional_links_template.safe_substitute(
             AddlLabel=link.target_node_label,
-            MatchClause=_build_match_clause(link.target_node_matcher),
+            WhereClause=_build_where_clause_for_rel_match(node_var, link.target_node_matcher),
             node_var=node_var,
             rel_var=rel_var,
             RelMerge=rel_merge,
@@ -259,7 +284,6 @@ def _build_attach_relationships_statement(
         """
         WITH i, item
         CALL {
-            WITH i, item
             $attach_relationships_statement
         }
         """,
