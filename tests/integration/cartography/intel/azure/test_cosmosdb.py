@@ -468,9 +468,9 @@ def test_load_cosmosdb_private_endpoint_connections_relationships(neo4j_session)
 def test_load_cosmosdb_virtual_network_rules(neo4j_session):
     for database_account in DESCRIBE_DATABASE_ACCOUNTS:
         cosmosdb._load_cosmosdb_virtual_network_rules(
-            neo4j_session,
-            database_account,
-            TEST_UPDATE_TAG,
+            neo4j_session=neo4j_session,
+            database_account=database_account,
+            azure_update_tag=TEST_UPDATE_TAG,
             common_job_parameters={'Azure_Primary_AD_Domain_Name': 'cdx'}
         )
 

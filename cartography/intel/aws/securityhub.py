@@ -6,6 +6,7 @@ from typing import List
 
 import boto3
 import neo4j
+from dateutil import parser
 
 from botocore.exceptions import ClientError
 from botocore.exceptions import ConnectTimeoutError
@@ -29,7 +30,7 @@ def get_hub(boto3_session: boto3.session.Session) -> Dict:
 
 def transform_hub(hub_data: Dict) -> None:
     if 'SubscribedAt' in hub_data and hub_data['SubscribedAt']:
-        subbed_at = datetime.datetime.strptime(hub_data['SubscribedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        subbed_at = parser.parse(hub_data['SubscribedAt'])
         hub_data['SubscribedAt'] = int(subbed_at.timestamp())
 
     else:

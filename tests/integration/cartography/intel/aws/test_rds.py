@@ -3,6 +3,7 @@ from tests.data.aws.rds import DESCRIBE_DBCLUSTERS_RESPONSE
 from tests.data.aws.rds import DESCRIBE_DBINSTANCES_RESPONSE
 from tests.data.aws.rds import DESCRIBE_SECURITY_GROUPS_RESPONSE
 from tests.data.aws.rds import DESCRIBE_SNAPSHOTS_RESPONSE
+from tests.data.aws.rds import DESCRIBE_DBSNAPSHOTS_RESPONSE
 TEST_UPDATE_TAG = 123456789
 
 
@@ -111,7 +112,7 @@ def _ensure_local_neo4j_has_test_rds_security_group_data(neo4j_session):
 def test_load_rds_snapshots_data(neo4j_session):
     _ensure_local_neo4j_has_test_rds_snapshots_data(neo4j_session)
     expected_nodes = {
-        "arn:aws:rds:us-east-1:123456789012:snapshot:mydbsnapshot",
+        'arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
     }
     nodes = neo4j_session.run(
         """
@@ -124,8 +125,55 @@ def test_load_rds_snapshots_data(neo4j_session):
 
 def _ensure_local_neo4j_has_test_rds_snapshots_data(neo4j_session):
     cartography.intel.aws.rds.load_rds_snapshots(
-        neo4j_session,
-        DESCRIBE_SNAPSHOTS_RESPONSE,
-        '123456789012',
-        TEST_UPDATE_TAG,
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBSNAPSHOTS_RESPONSE['DBSnapshots'],
+        current_aws_account_id='123456789012',
+        aws_update_tag=TEST_UPDATE_TAG,
     )
+
+
+def test_load_rds_snapshots_basic(neo4j_session):
+    """Test that we successfully load RDS snapshots to the graph"""
+    cartography.intel.aws.rds.load_rds_instances(
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
+        current_aws_account_id='1234',
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+    cartography.intel.aws.rds.load_rds_snapshots(
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBSNAPSHOTS_RESPONSE['DBSnapshots'],
+        current_aws_account_id='1234',
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+
+    query = """MATCH(rds:RDSSnapshot) RETURN rds.id, rds.arn, rds.db_snapshot_identifier, rds.db_instance_identifier"""
+    snapshots = neo4j_session.run(query)
+
+    actual_snapshots = {
+        (n['rds.id'], n['rds.arn'], n['rds.db_snapshot_identifier'], n['rds.db_instance_identifier']) for n in snapshots
+    }
+    expected_snapshots = {
+        (
+            'arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
+            'arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
+            'some-db-snapshot-identifier',
+            'some-prod-db-iad-0',
+        ),
+    }
+    assert actual_snapshots == expected_snapshots
+
+    query = """MATCH(rdsInstance:RDSInstance)-[:IS_SNAPSHOT_SOURCE]-(rdsSnapshot:RDSSnapshot)
+               RETURN rdsInstance.id, rdsSnapshot.id"""
+    results = neo4j_session.run(query)
+
+    actual_results = {
+        (n['rdsInstance.id'], n['rdsSnapshot.id']) for n in results
+    }
+    expected_results = {
+        (
+            'arn:aws:rds:us-east-1:some-arn:db:some-prod-db-iad-0',
+            'arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
+        ),
+    }
+    assert actual_results == expected_results

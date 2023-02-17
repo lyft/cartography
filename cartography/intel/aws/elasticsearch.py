@@ -18,7 +18,6 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
-
 # TODO get this programmatically
 # https://docs.aws.amazon.com/general/latest/gr/rande.html#elasticsearch-service-regions
 es_regions = [
@@ -322,8 +321,13 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    tic = time.perf_counter()
+    for region in regions:
+        logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, current_aws_account_id)
+        client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
+        data = _get_es_domains(client)
+        _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
 
+    tic = time.perf_counter()
     logger.info("Syncing Elasticsearch Service for account '%s', at %s.", current_aws_account_id, tic)
 
     data = []
