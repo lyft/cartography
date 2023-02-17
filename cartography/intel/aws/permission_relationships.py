@@ -456,7 +456,7 @@ def load_seed_admin_principals(
     set_seed_admin_query = """
     UNWIND $principals as principal
     MATCH (p:AWSPrincipal{arn:principal.principal_arn})
-    SET p.is_admin = True, p.admin_reason = {principal.admin_reason}
+    SET p.is_admin = True, p.admin_reason = principal.admin_reason
     """
     neo4j_session.run(
         set_seed_admin_query,
@@ -469,7 +469,7 @@ def set_remaining_admin_principals(neo4j_session: neo4j.Session, current_aws_acc
         MATCH
         (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->
         (p:AWSPrincipal)-[:STS_ASSUMEROLE_ALLOW*..10]->
-        (admin:AWSPrincipal)
+        (admin:AWSPrincipal)<-[:RESOURCE]-(acc:AWSAccount{id:$AccountId})
         WHERE admin.is_admin = True
         WITH p, COLLECT(admin) as admins
         SET p.is_admin = True,
@@ -485,11 +485,11 @@ def set_remaining_admin_principals(neo4j_session: neo4j.Session, current_aws_acc
         MATCH
         (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->
         (p:AWSPrincipal)-[:MEMBER_AWS_GROUP]->
-        (adminGroup:AWSGroup)
+        (adminGroup:AWSGroup)<-[:RESOURCE]-(acc:AWSAccount{id:$AccountId})
         WHERE adminGroup.is_admin = True
         WITH p, COLLECT(adminGroup) as adminGroups
         SET p.is_admin = True,
-        p.admin_reason = "Member of admin group" + adminGroups[0].arn
+        p.admin_reason = "Member of admin group " + adminGroups[0].arn
     """
     neo4j_session.run(
         set_admin_through_group_membership_query,
