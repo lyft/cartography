@@ -31,6 +31,165 @@ def test_admin_statements():
     )
 
 
+def test_calculate_seed_admin_principals():
+    iam_principals = {
+        "arn:aws:iam::000000000000:role/non_admin_role_1": {
+            "ListAllow": [{
+                "action": [
+                    "s3:listobject"
+                    "dynamodb:query",
+                ],
+                "resource": [
+                    "*",
+                ],
+                "effect": "Allow",
+            }],
+            "explicitallow": [{
+                "action": [
+                    "s3:getobject",
+                ],
+                "resource": [
+                    "arn:aws:s3:::testbucket",
+                ],
+                "effect": "Allow",
+            }],
+        },
+        "arn:aws:iam::000000000000:role/admin_role_2": {
+            "Test": [
+                {
+                    "action": [
+                        "iam:PutRolePolicy",
+                    ],
+                    "effect": "Allow",
+                    "resource": ["*"],
+                },
+            ],
+        },
+        "arn:aws:iam::000000000000:role/admin_role_3": {
+            "Test": [
+                {
+                    "action": [
+                        "iam:PutRolePolicy",
+                    ],
+                    "effect": "Allow",
+                    "resource": [
+                        "arn:aws:iam::000000000000:role/admin_role_3",
+                        "arn:aws:iam::000000000000:role/non_admin_role_4",
+                    ],
+                },
+            ],
+        },
+        "arn:aws:iam::000000000000:role/admin_role_5": {
+            "Test": [
+                {
+                    "action": [
+                        "iam:AttachRolePolicy",
+                    ],
+                    "effect": "Allow",
+                    "resource": ["*"],
+                },
+            ],
+        },
+        "arn:aws:iam::000000000000:user/admin_user_1": {
+            "TestAllow": [{
+                "action": [
+                    "*",
+                ],
+                "effect": "Allow",
+                "resource": ["*"],
+            }],
+        },
+        "arn:aws:iam::000000000000:user/non_admin_user_2": {
+            "TestDenyAllow": [
+                {
+                    "action": [
+                        "*",
+                    ],
+                    "effect": "Deny",
+                    "resource": ["*"],
+                },
+                {
+                    "action": [
+                        "*",
+                    ],
+                    "effect": "Allow",
+                    "resource": ["*"],
+                },
+            ],
+        },
+        "arn:aws:iam::000000000000:user/admin_user_3": {
+            "Test": [
+                {
+                    "action": [
+                        "iam:PutUserPolicy",
+                        "iam:RemoveUserFromGroup",
+                    ],
+                    "effect": "Allow",
+                    "resource": ["*"],
+                },
+            ],
+            "s3Allow": [{
+                "action": [
+                    "s3:getobject",
+                ],
+                "resource": [
+                    "arn:aws:s3:::testbucket",
+                ],
+                "effect": "Allow",
+            }],
+        },
+        "arn:aws:iam::000000000000:user/admin_user_4": {
+            "Test": [
+                {
+                    "action": [
+                        "iam:PutUserPolicy",
+                    ],
+                    "effect": "Allow",
+                    "resource": ["arn:aws:iam::000000000000:user/admin_user_4"],
+                },
+            ],
+        },
+        "arn:aws:iam::000000000000:user/non_admin_user_5": {
+            "Test": [
+                {
+                    "action": [
+                        "iam:PutUserPolicy",
+                    ],
+                    "effect": "Allow",
+                    "resource": ["arn:aws:iam::000000000000:user/random_user_6"],
+                },
+            ],
+        },
+        "arn:aws:iam::000000000011:group/admin_group_1": {
+            "TestGroup": [
+                {
+                    "action": [
+                        "iam:AttachGroupPolicy",
+                    ],
+                    "effect": "Allow",
+                    "resource": ["arn:aws:iam::000000000011:group/admin_group_1"],
+                },
+            ],
+        },
+        "arn:aws:iam::000000000011:group/non_admin_group_2": {
+            "TestGroup": [
+                {
+                    "action": [
+                        "iam:AttachGroupPolicy",
+                    ],
+                    "effect": "Deny",
+                    "resource": ["arn:aws:iam::000000000011:group/non_admin_group_2"],
+                },
+            ],
+        },
+    }
+    assert 7 == len(
+        permission_relationships.calculate_seed_admin_principals(
+            iam_principals,
+        ),
+    )
+
+
 def test_not_action_statement():
     statement = [{
         "action": [

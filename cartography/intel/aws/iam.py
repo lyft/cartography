@@ -405,11 +405,12 @@ def load_roles(
     neo4j_session: neo4j.Session, roles: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_role = """
-    MERGE (rnode:AWSRole{arn: $Arn})
-    ON CREATE SET rnode:AWSPrincipal, rnode.roleid = $RoleId, rnode.firstseen = timestamp(),
+    MERGE (rnode:AWSPrincipal{arn: $Arn})
+    ON CREATE SET rnode.roleid = $RoleId, rnode.firstseen = timestamp(),
     rnode.createdate = $CreateDate
     ON MATCH SET rnode.name = $RoleName, rnode.path = $Path
-    SET rnode.lastupdated = $aws_update_tag
+    SET rnode:AWSRole,
+    rnode.lastupdated = $aws_update_tag
     WITH rnode
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(rnode)

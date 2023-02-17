@@ -31,7 +31,7 @@ def get_cve_sync_metadata(neo4j_session: neo4j.Session) -> List[int]:
 def get_cves(nist_cve_url: str, cve_type: str) -> Dict[Any, Any]:
     url = f"{nist_cve_url}/nvdcve-1.1-{cve_type}.json.gz"
     with requests.get(url, stream=True) as res:
-        extracted = gzip.decompress(res.content)
+        extracted = gzip.decompress(res.content)  # type: ignore
     return json.loads(extracted)
 
 
