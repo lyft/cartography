@@ -168,9 +168,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
     sub_resource_attach_template = Template(
         """
         WITH i, item
-        OPTIONAL MATCH (j:$SubResourceLabel)
-        WHERE
-            $WhereClause
+        OPTIONAL MATCH (j:$SubResourceLabel{$MatchClause})
         WITH i, item, j WHERE j IS NOT NULL
         $RelMergeClause
         ON CREATE SET r.firstseen = timestamp()
@@ -190,7 +188,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
 
     attach_sub_resource_statement = sub_resource_attach_template.safe_substitute(
         SubResourceLabel=sub_resource_link.target_node_label,
-        WhereClause=_build_where_clause_for_rel_match("j", sub_resource_link.target_node_matcher),
+        MatchClause=_build_match_clause(sub_resource_link.target_node_matcher),
         RelMergeClause=rel_merge_clause,
         SubResourceRelLabel=sub_resource_link.rel_label,
         set_rel_properties_statement=_build_rel_properties_statement('r', rel_props_as_dict),

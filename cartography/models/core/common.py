@@ -23,7 +23,8 @@ class PropertyRef:
           - All properties included in target node matchers will always have indexes created for them.
             Defaults to False.
         :param ignore_case: If True, performs a case-insensitive match when comparing the value of this property during
-        relationship creation. Defaults to False. This only has effect as part of a TargetNodeMatcher.
+        relationship creation. Defaults to False. This only has effect as part of a TargetNodeMatcher, and this is not
+        supported for the sub resource relationship.
             Example on why you would set this to True:
             GitHub usernames can have both uppercase and lowercase characters, but GitHub itself treats usernames as
             case-insensitive. Suppose your company's internal personnel database stores GitHub usernames all as

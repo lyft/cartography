@@ -45,9 +45,7 @@ def test_build_ingestion_query_with_sub_resource():
             WITH i, item
             CALL {
                 WITH i, item
-                OPTIONAL MATCH (j:SubResource)
-                WHERE
-                    j.id = $sub_resource_id
+                OPTIONAL MATCH (j:SubResource{id: $sub_resource_id})
                 WITH i, item, j WHERE j IS NOT NULL
                 MERGE (i)<-[r:RELATIONSHIP_LABEL]-(j)
                 ON CREATE SET r.firstseen = timestamp()
