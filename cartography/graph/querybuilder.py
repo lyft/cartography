@@ -2,19 +2,19 @@ import logging
 from dataclasses import asdict
 from string import Template
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Set
 from typing import Tuple
 
-from cartography.graph.model import CartographyNodeProperties
-from cartography.graph.model import CartographyNodeSchema
-from cartography.graph.model import CartographyRelSchema
-from cartography.graph.model import ExtraNodeLabels
-from cartography.graph.model import LinkDirection
-from cartography.graph.model import OtherRelationships
-from cartography.graph.model import PropertyRef
-from cartography.graph.model import TargetNodeMatcher
-
+from cartography.models.core.common import PropertyRef
+from cartography.models.core.nodes import CartographyNodeProperties
+from cartography.models.core.nodes import CartographyNodeSchema
+from cartography.models.core.nodes import ExtraNodeLabels
+from cartography.models.core.relationships import CartographyRelSchema
+from cartography.models.core.relationships import LinkDirection
+from cartography.models.core.relationships import OtherRelationships
+from cartography.models.core.relationships import TargetNodeMatcher
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +109,28 @@ def _build_match_clause(matcher: TargetNodeMatcher) -> str:
     return ', '.join(match.safe_substitute(Key=key, PropRef=prop_ref) for key, prop_ref in matcher_asdict.items())
 
 
+def _build_where_clause_for_rel_match(node_var: str, matcher: TargetNodeMatcher) -> str:
+    """
+    Same as _build_match_clause, but puts the matching logic in a WHERE clause.
+    This is intended specifically to use for joining with relationships where we need a case-insensitive match.
+    :param matcher: A TargetNodeMatcher object
+    :return: a Neo4j where clause
+    """
+    match = Template("$node_var.$key = $prop_ref")
+    case_insensitive_match = Template("toLower($node_var.$key) = toLower($prop_ref)")
+
+    matcher_asdict = asdict(matcher)
+
+    result = []
+    for key, prop_ref in matcher_asdict.items():
+        if prop_ref.ignore_case:
+            prop_line = case_insensitive_match.safe_substitute(node_var=node_var, key=key, prop_ref=prop_ref)
+        else:
+            prop_line = match.safe_substitute(node_var=node_var, key=key, prop_ref=prop_ref)
+        result.append(prop_line)
+    return ' AND\n'.join(result)
+
+
 def _asdict_with_validate_relprops(link: CartographyRelSchema) -> Dict[str, PropertyRef]:
     """
     Give a helpful error message when forgetting to put `()` when instantiating a CartographyRelSchema, as this
@@ -146,6 +168,7 @@ def _build_attach_sub_resource_statement(sub_resource_link: Optional[Cartography
 
     sub_resource_attach_template = Template(
         """
+        WITH i, item
         OPTIONAL MATCH (j:$SubResourceLabel{$MatchClause})
         WITH i, item, j WHERE j IS NOT NULL
         $RelMergeClause
@@ -192,7 +215,9 @@ def _build_attach_additional_links_statement(
     additional_links_template = Template(
         """
         WITH i, item
-        OPTIONAL MATCH ($node_var:$AddlLabel{$MatchClause})
+        OPTIONAL MATCH ($node_var:$AddlLabel)
+        WHERE
+            $WhereClause
         WITH i, item, $node_var WHERE $node_var IS NOT NULL
         $RelMerge
         ON CREATE SET $rel_var.firstseen = timestamp()
@@ -220,7 +245,7 @@ def _build_attach_additional_links_statement(
 
         additional_ref = additional_links_template.safe_substitute(
             AddlLabel=link.target_node_label,
-            MatchClause=_build_match_clause(link.target_node_matcher),
+            WhereClause=_build_where_clause_for_rel_match(node_var, link.target_node_matcher),
             node_var=node_var,
             rel_var=rel_var,
             RelMerge=rel_merge,
@@ -259,7 +284,6 @@ def _build_attach_relationships_statement(
         """
         WITH i, item
         CALL {
-            WITH i, item
             $attach_relationships_statement
         }
         """,
@@ -267,7 +291,20 @@ def _build_attach_relationships_statement(
     return query_template.safe_substitute(attach_relationships_statement=attach_relationships_statement)
 
 
-def _filter_selected_relationships(
+def rel_present_on_node_schema(
+        node_schema: CartographyNodeSchema,
+        rel_schema: CartographyRelSchema,
+) -> bool:
+    """
+    Answers the question: is the given rel_schema is present on the given node_schema?
+    """
+    sub_res_rel, other_rels = filter_selected_relationships(node_schema, {rel_schema})
+    if sub_res_rel or other_rels:
+        return True
+    return False
+
+
+def filter_selected_relationships(
         node_schema: CartographyNodeSchema,
         selected_relationships: Set[CartographyRelSchema],
 ) -> Tuple[Optional[CartographyRelSchema], Optional[OtherRelationships]]:
@@ -277,7 +314,7 @@ def _filter_selected_relationships(
     :param node_schema: The node schema object to filter relationships against
     :param selected_relationships: The set of relationships to check if they exist in the node schema. If empty set,
     this means that no relationships have been selected. None is not an accepted value here.
-    :return: a tuple of the (sub resource rel [if present in selected_relationships], an OtherRelationships object
+    :return: a tuple of the shape (sub resource rel [if present in selected_relationships], an OtherRelationships object
     containing all values of node_schema.other_relationships that are present in selected_relationships)
     """
     # The empty set means no relationships are selected
@@ -294,8 +331,8 @@ def _filter_selected_relationships(
     for selected_rel in selected_relationships:
         if selected_rel not in all_rels_on_node:
             raise ValueError(
-                f"build_ingestion_query() failed: CartographyRelSchema {selected_rel.__class__.__name__} is not "
-                f"defined on CartographyNodeSchema type {node_schema.__class__.__name__}. Please verify the "
+                f"filter_selected_relationships() failed: CartographyRelSchema {selected_rel.__class__.__name__} is "
+                f"not defined on CartographyNodeSchema type {node_schema.__class__.__name__}. Please verify the "
                 f"value of `selected_relationships` passed to `build_ingestion_query()`.",
             )
 
@@ -350,7 +387,7 @@ def build_ingestion_query(
     sub_resource_rel: Optional[CartographyRelSchema] = node_schema.sub_resource_relationship
     other_rels: Optional[OtherRelationships] = node_schema.other_relationships
     if selected_relationships or selected_relationships == set():
-        sub_resource_rel, other_rels = _filter_selected_relationships(node_schema, selected_relationships)
+        sub_resource_rel, other_rels = filter_selected_relationships(node_schema, selected_relationships)
 
     ingest_query = query_template.safe_substitute(
         node_label=node_schema.label,
@@ -362,3 +399,55 @@ def build_ingestion_query(
         attach_relationships_statement=_build_attach_relationships_statement(sub_resource_rel, other_rels),
     )
     return ingest_query
+
+
+def build_create_index_queries(node_schema: CartographyNodeSchema) -> List[str]:
+    """
+    Generate queries to create indexes for the given CartographyNodeSchema and all node types attached to it via its
+    relationships.
+    :param node_schema: The Cartography node_schema object
+    :return: A list of queries of the form `CREATE INDEX IF NOT EXISTS FOR (n:$TargetNodeLabel) ON (n.$TargetAttribute)`
+    """
+    index_template = Template('CREATE INDEX IF NOT EXISTS FOR (n:$TargetNodeLabel) ON (n.$TargetAttribute);')
+
+    # First ensure an index exists for the node_schema and all extra labels on the `id` and `lastupdated` fields
+    result = [
+        index_template.safe_substitute(
+            TargetNodeLabel=node_schema.label,
+            TargetAttribute='id',
+        ),
+        index_template.safe_substitute(
+            TargetNodeLabel=node_schema.label,
+            TargetAttribute='lastupdated',
+        ),
+    ]
+    if node_schema.extra_node_labels:
+        result.extend([
+            index_template.safe_substitute(
+                TargetNodeLabel=label,
+                TargetAttribute='id',  # Precondition: 'id' is defined on all cartography node_schema objects.
+            ) for label in node_schema.extra_node_labels.labels
+        ])
+
+    # Next, for all relationships possible out of this node, ensure that indexes exist for all target nodes' properties
+    # as specified in their TargetNodeMatchers.
+    rel_schemas = []
+    if node_schema.sub_resource_relationship:
+        rel_schemas.extend([node_schema.sub_resource_relationship])
+    if node_schema.other_relationships:
+        rel_schemas.extend(node_schema.other_relationships.rels)
+    for rs in rel_schemas:
+        for target_key in asdict(rs.target_node_matcher).keys():
+            result.append(
+                index_template.safe_substitute(TargetNodeLabel=rs.target_node_label, TargetAttribute=target_key),
+            )
+
+    # Now, include extra indexes defined by the module author on the node schema's property refs.
+    node_props_as_dict: Dict[str, PropertyRef] = asdict(node_schema.properties)
+    result.extend([
+        index_template.safe_substitute(
+            TargetNodeLabel=node_schema.label,
+            TargetAttribute=prop_name,
+        ) for prop_name, prop_ref in node_props_as_dict.items() if prop_ref.extra_index
+    ])
+    return result
