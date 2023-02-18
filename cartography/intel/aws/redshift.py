@@ -115,7 +115,7 @@ def _attach_iam_roles(neo4j_session: neo4j.Session, cluster: Dict, aws_update_ta
     attach_cluster_to_role = """
     MATCH (c:RedshiftCluster{id:$ClusterArn})
     MERGE (p:AWSPrincipal{arn:$RoleArn})
-    MERGE (c)-[s:STS_ASSUMEROLE_ALLOW]->(p)
+    MERGE (c)-[s:STS_ASSUME_ROLE_ALLOW]->(p)
     ON CREATE SET s.firstseen = timestamp()
     SET s.lastupdated = $aws_update_tag
     """

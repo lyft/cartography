@@ -138,7 +138,7 @@ def test_ec2_iaminstanceprofiles(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (i:EC2Instance)-[:STS_ASSUMEROLE_ALLOW]->(r:AWSRole) return r.arn, i.id
+        MATCH (i:EC2Instance)-[:STS_ASSUME_ROLE_ALLOW]->(r:AWSRole) return r.arn, i.id
         """,
     )
     actual_nodes = {

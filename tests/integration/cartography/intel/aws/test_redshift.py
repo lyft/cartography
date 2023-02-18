@@ -97,7 +97,7 @@ def test_load_redshift_cluster_and_iam_role(neo4j_session):
     }
     result = neo4j_session.run(
         """
-        MATCH (n1:AWSPrincipal)<-[:STS_ASSUMEROLE_ALLOW]-(n2:RedshiftCluster) RETURN n1.arn, n2.id;
+        MATCH (n1:AWSPrincipal)<-[:STS_ASSUME_ROLE_ALLOW]-(n2:RedshiftCluster) RETURN n1.arn, n2.id;
         """,
     )
     actual = {

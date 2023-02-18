@@ -149,7 +149,7 @@ Representation of AWS [IAM Groups](https://docs.aws.amazon.com/IAM/latest/APIRef
 - Objects part of an AWSGroup may assume AWSRoles.
 
         ```
-        (AWSGroup)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+        (AWSGroup)-[STS_ASSUME_ROLE_ALLOW]->(AWSRole)
         ```
 
 - AWSUsers and AWSPrincipals can be members of AWSGroups.
@@ -503,7 +503,7 @@ Representation of an [AWSPrincipal](https://docs.aws.amazon.com/IAM/latest/APIRe
 - Redshift clusters may assume IAM roles. See [this article](https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html).
 
     ```
-    (RedshiftCluster)-[STS_ASSUMEROLE_ALLOW]->(AWSPrincipal)
+    (RedshiftCluster)-[STS_ASSUME_ROLE_ALLOW]->(AWSPrincipal)
     ```
 
 ### AWSPrincipal::AWSUser
@@ -530,7 +530,7 @@ Representation of an [AWSUser](https://docs.aws.amazon.com/IAM/latest/APIReferen
 - AWS Users can assume AWS Roles.
 
         ```
-        (AWSUser)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+        (AWSUser)-[STS_ASSUME_ROLE_ALLOW]->(AWSRole)
         ```
 
 - This AccountAccessKey is used to authenticate to this AWSUser
@@ -565,13 +565,13 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
 - Some AWS Groups, Users, Principals, and EC2 Instances can assume AWS Roles.
 
     ```
-    (AWSGroup, AWSUser, EC2Instance)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    (AWSGroup, AWSUser, EC2Instance)-[STS_ASSUME_ROLE_ALLOW]->(AWSRole)
     ```
 
 - Some AWS Roles can assume other AWS Roles.
 
     ```
-    (AWSRole)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+    (AWSRole)-[STS_ASSUME_ROLE_ALLOW]->(AWSRole)
     ```
 
 - Some AWS Roles trust AWS Principals.
@@ -1193,7 +1193,7 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 -  EC2 Instances can assume IAM Roles.
 
         ```
-        (EC2Instance)-[STS_ASSUMEROLE_ALLOW]->(AWSRole)
+        (EC2Instance)-[STS_ASSUME_ROLE_ALLOW]->(AWSRole)
         ```
 
 - EC2Instances can have SSMInstanceInformation
@@ -2123,7 +2123,7 @@ Representation of an AWS [RedshiftCluster](https://docs.aws.amazon.com/redshift/
 - Redshift clusters may assume IAM roles. See [this article](https://docs.aws.amazon.com/redshift/latest/mgmt/authorizing-redshift-service.html).
 
     ```
-    (RedshiftCluster)-[STS_ASSUMEROLE_ALLOW]->(AWSPrincipal)
+    (RedshiftCluster)-[STS_ASSUME_ROLE_ALLOW]->(AWSPrincipal)
     ```
 
 - Redshift clusters can be members of AWSVpcs.
