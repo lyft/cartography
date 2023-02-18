@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from typing import Any
 from typing import Dict
+from typing import Optional
 from typing import Union
 
 import neo4j
@@ -40,8 +41,13 @@ class GraphStatement:
     """
 
     def __init__(
-        self, query: str, parameters: Dict = None, iterative: bool = False, iterationsize: int = 0,
-        parent_job_name: str = None, parent_job_sequence_num: int = None,
+            self,
+            query: str,
+            parameters: Optional[Dict[Any, Any]] = None,
+            iterative: bool = False,
+            iterationsize: int = 0,
+            parent_job_name: Optional[str] = None,
+            parent_job_sequence_num: Optional[int] = None,
     ):
         self.query = query
         self.parameters = parameters or {}
@@ -121,7 +127,12 @@ class GraphStatement:
             result.consume()
 
     @classmethod
-    def create_from_json(cls, json_obj: Dict, short_job_name: str = None, job_sequence_num: int = None):
+    def create_from_json(
+            cls,
+            json_obj: Dict[str, Any],
+            short_job_name: Optional[str] = None,
+            job_sequence_num: Optional[int] = None,
+    ):
         """
         Create a statement from a JSON blob.
         """

@@ -1,6 +1,6 @@
 import logging
 import time
-from dataclasses import dataclass
+from typing import Any
 from typing import Dict
 from typing import List
 
@@ -8,19 +8,11 @@ import boto3
 import botocore.exceptions
 import neo4j
 
-from cartography.client.core.tx import load_graph_data
-from cartography.graph.model import CartographyNodeProperties
-from cartography.graph.model import CartographyNodeSchema
-from cartography.graph.model import CartographyRelProperties
-from cartography.graph.model import CartographyRelSchema
-from cartography.graph.model import LinkDirection
-from cartography.graph.model import make_target_node_matcher
-from cartography.graph.model import PropertyRef
-from cartography.graph.model import TargetNodeMatcher
-from cartography.graph.querybuilder import build_ingestion_query
+from cartography.client.core.tx import load
+from cartography.graph.job import GraphJob
 from cartography.intel.aws.ec2.util import get_botocore_config
+from cartography.models.aws.emr import EMRClusterSchema
 from cartography.util import aws_handle_regions
-from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -32,7 +24,7 @@ DESCRIBE_SLEEP = 1
 
 @timeit
 @aws_handle_regions
-def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
+def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
     clusters: List[Dict] = []
     counter = 0
@@ -48,122 +40,49 @@ def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[
 
 
 @timeit
-def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict:
-    print(f"describe for {cluster_id}")
+def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict[str, Any]:
     client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
-    cluster_details: Dict = {}
+    cluster_details: Dict[str, Any] = {}
     try:
         response = client.describe_cluster(ClusterId=cluster_id)
         cluster_details = response['Cluster']
     except botocore.exceptions.ClientError as e:
-        logger.warning(
-            "Could not run EMR describe_cluster due to boto3 error %s: %s. Skipping.",
-            e.response['Error']['Code'],
-            e.response['Error']['Message'],
-        )
+        code = e.response['Error']['Code']
+        msg = e.response['Error']['Message']
+        logger.warning(f"Could not run EMR describe_cluster due to boto3 error {code}: {msg}. Skipping.")
     return cluster_details
-
-
-@dataclass(frozen=True)
-class EMRClusterNodeProperties(CartographyNodeProperties):
-    arn: PropertyRef = PropertyRef('ClusterArn')
-    auto_terminate: PropertyRef = PropertyRef('AutoTerminate')
-    autoscaling_role: PropertyRef = PropertyRef('AutoScalingRole')
-    custom_ami_id: PropertyRef = PropertyRef('CustomAmiId')
-    id: PropertyRef = PropertyRef('Id')
-    instance_collection_type: PropertyRef = PropertyRef('InstanceCollectionType')
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    log_encryption_kms_key_id: PropertyRef = PropertyRef('LogEncryptionKmsKeyId')
-    log_uri: PropertyRef = PropertyRef('LogUri')
-    master_public_dns_name: PropertyRef = PropertyRef('MasterPublicDnsName')
-    name: PropertyRef = PropertyRef('Name')
-    outpost_arn: PropertyRef = PropertyRef('OutpostArn')
-    region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
-    release_label: PropertyRef = PropertyRef('ReleaseLabel')
-    repo_upgrade_on_boot: PropertyRef = PropertyRef('RepoUpgradeOnBoot')
-    requested_ami_version: PropertyRef = PropertyRef('RequestedAmiVersion')
-    running_ami_version: PropertyRef = PropertyRef('RunningAmiVersion')
-    scale_down_behavior: PropertyRef = PropertyRef('ScaleDownBehavior')
-    security_configuration: PropertyRef = PropertyRef('SecurityConfiguration')
-    servicerole: PropertyRef = PropertyRef('ServiceRole')
-    termination_protected: PropertyRef = PropertyRef('TerminationProtected')
-    visible_to_all_users: PropertyRef = PropertyRef('VisibleToAllUsers')
-
-
-@dataclass(frozen=True)
-class EMRClusterToAwsAccountRelProperties(CartographyRelProperties):
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-
-
-@dataclass(frozen=True)
-# (:EMRCluster)<-[:RESOURCE]-(:AWSAccount)
-class EMRClusterToAWSAccount(CartographyRelSchema):
-    target_node_label: str = 'AWSAccount'
-    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('AccountId', set_in_kwargs=True)},
-    )
-    direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "RESOURCE"
-    properties: EMRClusterToAwsAccountRelProperties = EMRClusterToAwsAccountRelProperties()
-
-
-@dataclass(frozen=True)
-class EMRClusterSchema(CartographyNodeSchema):
-    label: str = 'EMRCluster'
-    properties: EMRClusterNodeProperties = EMRClusterNodeProperties()
-    sub_resource_relationship: EMRClusterToAWSAccount = EMRClusterToAWSAccount()
 
 
 @timeit
 def load_emr_clusters(
         neo4j_session: neo4j.Session,
-        cluster_data: List[Dict],
+        cluster_data: List[Dict[str, Any]],
         region: str,
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
-    query = """
-    UNWIND $Clusters as emr_cluster
-        MERGE (cluster:EMRCluster{id: emr_cluster.Name})
-        ON CREATE SET cluster.firstseen = timestamp(),
-            cluster.arn                 = emr_cluster.ClusterArn,
-            cluster.id                  = emr_cluster.Id,
-            cluster.name                = emr_cluster.Name,
-            cluster.servicerole         = emr_cluster.ServiceRole,
-            cluster.region              = $Region
-        SET cluster.lastupdated         = $aws_update_tag
-        WITH cluster
-
-        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
-        MERGE (owner)-[r:RESOURCE]->(cluster)
-        ON CREATE SET r.firstseen       = timestamp()
-        SET r.lastupdated               = $aws_update_tag
-    """
-
-    logger.info("Loading EMR %d clusters for region '%s' into graph.", len(cluster_data), region)
-
-    ingestion_query = build_ingestion_query(EMRClusterSchema())
-
-    load_graph_data(
+    logger.info(f"Loading EMR {len(cluster_data)} clusters for region '{region}' into graph.")
+    load(
         neo4j_session,
-        ingestion_query,
+        EMRClusterSchema(),
         cluster_data,
         lastupdated=aws_update_tag,
         Region=region,
-        AccountId=current_aws_account_id,
+        AWS_ID=current_aws_account_id,
     )
 
 
 @timeit
-def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any]) -> None:
     logger.debug("Running EMR cleanup job.")
-    run_cleanup_job('aws_import_emr_cleanup.json', neo4j_session, common_job_parameters)
+    cleanup_job = GraphJob.from_node_schema(EMRClusterSchema(), common_job_parameters)
+    cleanup_job.run(neo4j_session)
 
 
 @timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+    update_tag: int, common_job_parameters: Dict[str, Any],
 ) -> None:
     tic = time.perf_counter()
 

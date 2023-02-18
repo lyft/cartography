@@ -151,7 +151,12 @@ class Authenticator:
 
             raise e
 
-    def authenticate_sp(self, tenant_id: str = None, client_id: str = None, client_secret: str = None) -> Credentials:
+    def authenticate_sp(
+            self,
+            tenant_id: Optional[str] = None,
+            client_id: Optional[str] = None,
+            client_secret: Optional[str] = None,
+    ) -> Credentials:
         """
         Implements authentication for the Azure provider
         """
@@ -236,7 +241,7 @@ class Authenticator:
 
         pload = f'grant_type={grant_type}&scope={scope}&client_id={client_id}&client_secret={client_secret}&redirect_uri={redirect_uri}&refresh_token={refresh_token}'
         r = requests.post(token_url, data=pload, headers=headers)
-        
+
         return r.json()
 
     def decode_jwt(self, id_token: str) -> Dict:
