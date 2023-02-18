@@ -183,6 +183,70 @@ def calculate_permission_relationships(
     return allowed_mappings
 
 
+def calculate_seed_high_principals(
+    iam_principals: Dict,
+) -> List[Dict]:
+    """ calculate_seed_high_principals - just adds one reason. This is a very approximate
+    calculation of high privileges where notaction and separate statements are not always
+    accounted for.
+    Arguments:
+        iam_principals {[dict]} -- The principals to check permission for
+
+    Returns:
+        [dict] -- List of seed principals marked as high
+    """
+    seed_high_principals: List[Dict] = []
+    for principal_arn, policies in iam_principals.items():
+        if not policies:
+            continue
+
+        # Check for basic administrative access.
+        if principal_allowed_on_resource(policies, "*", ["*"]):
+            seed_high_principals.append({"principal_arn": principal_arn, "high_reason": "AdministratorAccessPolicy"})
+            continue
+
+        # Check for high permission for S3 - full access.
+        if principal_allowed_on_resource(policies, "*", ["s3:*"]):
+            seed_high_principals.append({"principal_arn": principal_arn, "high_reason": "S3FullAccess"})
+            continue
+        if principal_allowed_on_resource(policies, "arn:aws:s3:::*", ["s3:*"]):
+            seed_high_principals.append({"principal_arn": principal_arn, "high_reason": "S3FullAccess"})
+            continue
+
+        # Check for high permission for RDS - full access.
+        if principal_allowed_on_resource(policies, "*", ["rds:*"]):
+            seed_high_principals.append({"principal_arn": principal_arn, "high_reason": "RDSFullAccess"})
+            continue
+        if principal_allowed_on_resource(policies, "arn:aws:rds:::*", ["rds:*"]):
+            seed_high_principals.append({"principal_arn": principal_arn, "high_reason": "RDSFullAccess"})
+            continue
+
+        # Check for high permissions for EC2 - full access
+        if principal_allowed_on_resource(policies, "*", ["ec2:*"]):
+            seed_high_principals.append({"principal_arn": principal_arn, "high_reason": "EC2FullAccess"})
+            continue
+        if principal_allowed_on_resource(policies, "arn:aws:ec2:::*", ["ec2:*"]):
+            seed_high_principals.append({"principal_arn": principal_arn, "high_reason": "EC2FullAccess"})
+            continue
+
+        # Check for high permissions for ECR - full access
+        if principal_allowed_on_resource(policies, "*", ["ecr:*"]):
+            seed_high_principals.append({"principal_arn": principal_arn, "high_reason": "ECRFullAccess"})
+            continue
+        if principal_allowed_on_resource(policies, "arn:aws:ecr:::*", ["ecr:*"]):
+            seed_high_principals.append({"principal_arn": principal_arn, "high_reason": "ECRFullAccess"})
+            continue
+
+        # Check for high permissions for ECS - full access
+        if principal_allowed_on_resource(policies, "*", ["ecs:*"]):
+            seed_high_principals.append({"principal_arn": principal_arn, "high_reason": "ECSFullAccess"})
+            continue
+        if principal_allowed_on_resource(policies, "arn:aws:ecs:::*", ["ecs:*"]):
+            seed_high_principals.append({"principal_arn": principal_arn, "high_reason": "ECSFullAccess"})
+            continue
+    return seed_high_principals
+
+
 def calculate_seed_admin_principals(
     iam_principals: Dict,
 ) -> List[Dict]:
@@ -200,6 +264,10 @@ def calculate_seed_admin_principals(
 
         principal_node_arn_str = ':'.join(principal_arn.split(':')[5:])
         principal_node_type = principal_node_arn_str.split("/")[0]
+
+        if principal_allowed_on_resource(policies, "*", ["*"]):
+            seed_admin_principals.append({"principal_arn": principal_arn, "admin_reason": "AdministratorAccessPolicy"})
+            continue
 
         # Can principal modify own inline policies to itself.
         if principal_node_type == 'user':
@@ -401,6 +469,23 @@ def cleanup_principal_admin_attributes(
     )
 
 
+def cleanup_principal_high_attributes(
+    neo4j_session: neo4j.Session,
+    current_aws_account_id: str,
+) -> None:
+    logger.info("Cleaning up high attributes")
+    admin_cleanup_query = """
+        MATCH
+        (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->
+        (principal:AWSPrincipal)
+        SET principal.is_high = NULL, principal.high_reason = NULL
+    """
+    neo4j_session.run(
+        admin_cleanup_query,
+        AccountId=current_aws_account_id,
+    )
+
+
 def cleanup_rpr(
     neo4j_session: neo4j.Session, node_label: str, relationship_name: str, update_tag: int,
     current_aws_id: str,
@@ -447,6 +532,68 @@ def is_valid_rpr(rpr: Dict) -> bool:
             return False
 
     return True
+
+
+def load_seed_high_principals(
+    neo4j_session: neo4j.Session,
+    seed_high_principals: List[Dict],
+) -> None:
+    set_seed_admin_query = """
+    UNWIND $principals as principal
+    MATCH (p:AWSPrincipal{arn:principal.principal_arn})
+    SET p.is_high = True, p.high_reason = principal.high_reason
+    """
+    neo4j_session.run(
+        set_seed_admin_query,
+        principals=seed_high_principals,
+    )
+
+
+def set_remaining_high_principals(neo4j_session: neo4j.Session, current_aws_account_id: str) -> None:
+    set_high_through_role_assumption_query = """
+        MATCH
+        (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->
+        (p:AWSPrincipal)-[:STS_ASSUMEROLE_ALLOW*..10]->
+        (high:AWSPrincipal)<-[:RESOURCE]-(acc:AWSAccount{id:$AccountId})
+        WHERE high.is_high = True
+        WITH p, COLLECT(high) as highPrincipals
+        SET p.is_high = True,
+        p.high_reason = "Role assumption chain to high privilege role " +
+        highPrincipals[0].arn
+    """
+    neo4j_session.run(
+        set_high_through_role_assumption_query,
+        AccountId=current_aws_account_id,
+    )
+
+    set_high_through_group_membership_query = """
+        MATCH
+        (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->
+        (p:AWSPrincipal)-[:MEMBER_AWS_GROUP]->
+        (highGroup:AWSGroup)<-[:RESOURCE]-(acc:AWSAccount{id:$AccountId})
+        WHERE highGroup.is_high = True
+        WITH p, COLLECT(highGroup) as highGroups
+        SET p.is_high = True,
+        p.high_reason = "Member of high privilege group " + highGroups[0].arn
+    """
+    neo4j_session.run(
+        set_high_through_group_membership_query,
+        AccountId=current_aws_account_id,
+    )
+
+    # Set high to true if admin is true.
+    set_high_through_admin_query = """
+        MATCH
+        (acc:AWSAccount{id:$AccountId})-[:RESOURCE]->
+        (p:AWSPrincipal)
+        WHERE p.is_admin = True
+        SET p.is_high = True,
+        p.high_reason = p.admin_reason
+    """
+    neo4j_session.run(
+        set_high_through_admin_query,
+        AccountId=current_aws_account_id,
+    )
 
 
 def load_seed_admin_principals(
@@ -498,16 +645,27 @@ def set_remaining_admin_principals(neo4j_session: neo4j.Session, current_aws_acc
 
 
 def sync_admin_attributes(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
-    current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
+    neo4j_session: neo4j.Session, current_aws_account_id: str,
+    iam_principals: Dict,
 ) -> None:
     logger.info("Syncing Admin Attributes for account '%s'.", current_aws_account_id)
 
     cleanup_principal_admin_attributes(neo4j_session, current_aws_account_id)
-    iam_principals = get_iam_principals_for_account(neo4j_session, current_aws_account_id)
     seed_admin_principals = calculate_seed_admin_principals(iam_principals)
     load_seed_admin_principals(neo4j_session, seed_admin_principals)
     set_remaining_admin_principals(neo4j_session, current_aws_account_id)
+
+
+def sync_high_attributes(
+    neo4j_session: neo4j.Session, current_aws_account_id: str,
+    iam_principals: Dict,
+) -> None:
+    logger.info("Syncing High Attributes for account '%s'.", current_aws_account_id)
+
+    cleanup_principal_high_attributes(neo4j_session, current_aws_account_id)
+    seed_high_principals = calculate_seed_high_principals(iam_principals)
+    load_seed_high_principals(neo4j_session, seed_high_principals)
+    set_remaining_high_principals(neo4j_session, current_aws_account_id)
 
 
 @timeit
@@ -515,13 +673,18 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
     current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    iam_principals = get_iam_principals_for_account(neo4j_session, current_aws_account_id)
+
     sync_admin_attributes(
         neo4j_session,
-        boto3_session,
-        regions,
         current_aws_account_id,
-        update_tag,
-        common_job_parameters,
+        iam_principals,
+    )
+
+    sync_high_attributes(
+        neo4j_session,
+        current_aws_account_id,
+        iam_principals,
     )
 
     logger.info("Syncing Permission Relationships for account '%s'.", current_aws_account_id)

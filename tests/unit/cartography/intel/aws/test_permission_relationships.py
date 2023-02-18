@@ -31,6 +31,181 @@ def test_admin_statements():
     )
 
 
+def test_calculate_seed_high_principals():
+    iam_principals = {
+        "arn:aws:iam::000000000000:role/non_admin_role_1": {
+            "ListAllow": [{
+                "action": [
+                    "s3:*",
+                ],
+                "resource": [
+                    "*",
+                ],
+                "effect": "Allow",
+            }],
+            "explicitallow": [{
+                "action": [
+                    "s3:getobject",
+                ],
+                "resource": [
+                    "arn:aws:s3:::testbucket",
+                ],
+                "effect": "Allow",
+            }],
+        },
+        "arn:aws:iam::000000000000:role/non_admin_role_2": {
+            "ListAllow": [{
+                "action": [
+                    "*",
+                ],
+                "resource": [
+                    "*",
+                ],
+                "effect": "Allow",
+            }],
+        },
+        "arn:aws:iam::000000000000:role/non_admin_role_3": {
+            "ListAllow": [{
+                "action": [
+                    "ec2:*",
+                ],
+                "resource": [
+                    "*",
+                ],
+                "effect": "Allow",
+            }],
+        },
+        "arn:aws:iam::000000000000:role/non_admin_role_4": {
+            "ListAllow": [{
+                "action": [
+                    "ec2:*",
+                ],
+                "resource": [
+                    "arn:aws:ec2:us-east-1:000000000000:instance/instance-134fasf",
+                ],
+                "effect": "Allow",
+            }],
+        },
+        "arn:aws:iam::000000000000:role/non_admin_role_5": {
+            "ListAllow": [{
+                "action": [
+                    "ec2:*",
+                ],
+                "resource": [
+                    "arn:aws:ec2:us-east-1:000000000000:instance/instance-134fasf",
+                ],
+                "effect": "Deny",
+            }],
+        },
+        "arn:aws:iam::000000000000:role/high_role_6": {
+            "ListAllow": [{
+                "action": [
+                    "ec2:*",
+                ],
+                "notaction":[
+                    "ec2:AllocateAddress",
+                ],
+                "resource": [
+                    "*",
+                ],
+                "effect": "Allow",
+            }],
+        },
+        "arn:aws:iam::000000000000:role/non_high_role_7": {
+            "ListAllow": [
+                {
+                    "action": [
+                        "ec2:*",
+                    ],
+                    "resource": [
+                        "*",
+                    ],
+                    "effect": "Allow",
+                }, {
+                    "action": [
+                        "ec2:*",
+                    ],
+                    "resource": [
+                        "*",
+                    ],
+                    "effect": "Deny",
+                },
+            ],
+        },
+        "arn:aws:iam::000000000000:user/high_user_7": {
+            "ListAllow": [{
+                "action": [
+                    "ecr:*",
+                ],
+                "resource": [
+                    "*",
+                ],
+                "effect": "Allow",
+            }],
+        },
+        "arn:aws:iam::000000000000:user/non_high_user_8": {
+            "ListAllow": [{
+                "action": [
+                    "ecr:*",
+                    "ec2:*",
+                ],
+                "resource": [
+                    "*",
+                ],
+                "effect": "Deny",
+            }],
+        },
+        "arn:aws:iam::000000000000:user/high_user_9": {
+            "ListDeny": [{
+                "action": [
+                    "ecr:*",
+                    "ec2:*",
+                ],
+                "resource": [
+                    "*",
+                ],
+                "effect": "Deny",
+            }],
+            "ListAllow": [{
+                "action": [
+                    "s3:*",
+                ],
+                "resource": [
+                    "*",
+                ],
+                "effect": "Allow",
+            }],
+        },
+        "arn:aws:iam::000012300000:user/not_high_user_10": {
+            "ListDeny": [{
+                "action": [
+                    "ecr:*",
+                    "ec2:*",
+                ],
+                "resource": [
+                    "*",
+                ],
+                "effect": "Deny",
+            }],
+            "ListAllow": [{
+                "action": [
+                    "ecs:*",
+                ],
+                "resource": [
+                    "arn:aws:ecs:us-east-1:000000000000:instance/instance-134fasf",
+                ],
+                "effect": "Allow",
+            }],
+        },
+    }
+
+    assert 6 == len(
+        permission_relationships.calculate_seed_high_principals(
+            iam_principals,
+        ),
+    )
+
+
 def test_calculate_seed_admin_principals():
     iam_principals = {
         "arn:aws:iam::000000000000:role/non_admin_role_1": {
