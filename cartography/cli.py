@@ -488,7 +488,9 @@ class CLI:
         else:
             logging.getLogger('cartography').setLevel(logging.INFO)
         logger.debug("Launching cartography with CLI configuration: %r", vars(config))
+
         # Neo4j config
+        config.neo4j_password = None
         if config.neo4j_user:
             config.neo4j_password = None
             if config.neo4j_password_prompt:
@@ -503,8 +505,6 @@ class CLI:
                 config.neo4j_password = os.environ.get(config.neo4j_password_env_var)
             if not config.neo4j_password:
                 logger.warning("Neo4j username was provided but a password could not be found.")
-        else:
-            config.neo4j_password = None
 
         # Selected modules
         if config.selected_modules:
@@ -516,44 +516,41 @@ class CLI:
             parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
 
         # Azure config
+        config.azure_client_secret = None
         if config.azure_sp_auth and config.azure_client_secret_env_var:
             logger.debug(
                 "Reading Client Secret for Azure Service Principal Authentication from environment variable %s",
                 config.azure_client_secret_env_var,
             )
             config.azure_client_secret = os.environ.get(config.azure_client_secret_env_var)
-        else:
-            config.azure_client_secret = None
 
         # Okta config
+        config.okta_api_key = None
         if config.okta_org_id and config.okta_api_key_env_var:
             logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
             config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
-        else:
-            config.okta_api_key = None
 
         # CRXcavator config
+        config.crxcavator_api_key = None
         if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
             logger.debug(f"Reading API key for CRXcavator from env variable {config.crxcavator_api_key_env_var}.")
             config.crxcavator_api_key = os.environ.get(config.crxcavator_api_key_env_var)
-        else:
-            config.crxcavator_api_key = None
 
         # GitHub config
+        config.github_config = None
         if config.github_config_env_var:
             logger.debug(f"Reading config string for GitHub from environment variable {config.github_config_env_var}")
             config.github_config = os.environ.get(config.github_config_env_var)
-        else:
-            config.github_config = None
 
         # DigitalOcean config
+        config.digitalocean_token = None
         if config.digitalocean_token_env_var:
             logger.debug(f"Reading token for DigitalOcean from env variable {config.digitalocean_token_env_var}")
             config.digitalocean_token = os.environ.get(config.digitalocean_token_env_var)
-        else:
-            config.digitalocean_token = None
 
         # Jamf config
+        config.jamf_user = None
+        config.jamf_password = None
         if config.jamf_base_uri:
             if config.jamf_user:
                 config.jamf_password = None
@@ -568,9 +565,6 @@ class CLI:
                 logger.warning("A Jamf base URI was provided but a user was not.")
             if not config.jamf_password:
                 logger.warning("A Jamf password could not be found.")
-        else:
-            config.jamf_user = None
-            config.jamf_password = None
 
         if config.statsd_enabled:
             logger.debug(
@@ -579,35 +573,31 @@ class CLI:
             )
 
         # Pagerduty config
+        config.pagerduty_api_key = None
         if config.pagerduty_api_key_env_var:
             logger.debug(f"Reading API key for PagerDuty from environment variable {config.pagerduty_api_key_env_var}")
             config.pagerduty_api_key = os.environ.get(config.pagerduty_api_key_env_var)
-        else:
-            config.pagerduty_api_key = None
 
         # Crowdstrike config
+        config.crowdstrike_client_id = None
         if config.crowdstrike_client_id_env_var:
             logger.debug(
                 f"Reading API key for Crowdstrike from environment variable {config.crowdstrike_client_id_env_var}",
             )
             config.crowdstrike_client_id = os.environ.get(config.crowdstrike_client_id_env_var)
-        else:
-            config.crowdstrike_client_id = None
 
+        config.crowdstrike_client_secret = None
         if config.crowdstrike_client_secret_env_var:
             logger.debug(
                 f"Reading API key for Crowdstrike from environment variable {config.crowdstrike_client_secret_env_var}",
             )
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
-        else:
-            config.crowdstrike_client_secret = None
 
         # GSuite config
+        config.github_config = None
         if config.gsuite_tokens_env_var:
             logger.debug(f"Reading config string for GSuite from environment variable {config.gsuite_tokens_env_var}")
             config.gsuite_config = os.environ.get(config.gsuite_tokens_env_var)
-        else:
-            config.github_config = None
 
         # Run cartography
         try:
