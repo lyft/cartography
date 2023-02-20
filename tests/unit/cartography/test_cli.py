@@ -1,7 +1,9 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
-from cartography.cli import CLI
 import cartography.sync
+from cartography.cli import CLI
+
 
 def test_cli_selected_modules():
     """
