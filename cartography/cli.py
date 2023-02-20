@@ -3,12 +3,13 @@ import getpass
 import logging
 import os
 import sys
+from typing import List
 from typing import Optional
 
 import cartography.config
-import cartography.sync
 import cartography.util
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
+from cartography.sync import run_with_config
 
 
 logger = logging.getLogger(__name__)
@@ -470,7 +471,7 @@ class CLI:
         )
         return parser
 
-    def main(self, argv: str) -> int:
+    def main(self, argv: List[str]) -> int:
         """
         Entrypoint for the command line interface.
 
@@ -610,12 +611,12 @@ class CLI:
 
         # Run cartography
         try:
-            return cartography.sync.run_with_config(self.sync, config)
+            return run_with_config(self.sync, config)
         except KeyboardInterrupt:
             return cartography.util.STATUS_KEYBOARD_INTERRUPT
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None):
     """
     Entrypoint for the default cartography command line interface.
 
