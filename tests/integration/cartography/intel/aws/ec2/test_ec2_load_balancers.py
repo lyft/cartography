@@ -135,10 +135,11 @@ def test_load_load_balancer_v2_listeners(neo4j_session, *args):
 def test_load_load_balancer_v2_target_groups(neo4j_session, *args):
     load_balancer_id = 'asadfmyloadbalancerid'
     ec2_instance_id = 'i-0f76fade'
+    lambda_arn = 'arn:aws:lambda:us-west-2:123456789012:function:my-function'
 
     target_groups = tests.data.aws.ec2.load_balancers.TARGET_GROUPS
 
-    # an elbv2, ec2instance, and AWSAccount must exist or nothing will match
+    # an elbv2, ec2instance, lambda, and AWSAccount must exist or nothing will match
     neo4j_session.run(
         """
         MERGE (elbv2:LoadBalancerV2{id: $load_balancer_id})
@@ -149,12 +150,17 @@ def test_load_load_balancer_v2_target_groups(neo4j_session, *args):
         ON CREATE SET ec2.firstseen = timestamp()
         SET ec2.lastupdated = $aws_update_tag
 
+        MERGE (l:AWSLambda{id: $lambda_arn})
+        ON CREATE SET l.firstseen = timestamp()
+        SET l.lastupdated = $aws_update_tag
+
         MERGE (aws:AWSAccount{id: $aws_account_id})
         ON CREATE SET aws.firstseen = timestamp()
         SET aws.lastupdated = $aws_update_tag
         """,
         load_balancer_id=load_balancer_id,
         ec2_instance_id=ec2_instance_id,
+        lambda_arn=lambda_arn,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
     )
@@ -187,6 +193,31 @@ def test_load_load_balancer_v2_target_groups(neo4j_session, *args):
         (
             n['elbv2.id'],
             n['instance.instanceid'],
+        )
+        for n in nodes
+    }
+    assert actual_nodes == expected_nodes
+
+    # verify the db has (load_balancer_id)-[r:EXPOSE]->(lambda)
+    nodes = neo4j_session.run(
+        """
+        MATCH (elbv2:LoadBalancerV2{id: $ID})-[r:EXPOSE]->(lambda:AWSLambda{id: $LAMBDA_ARN})
+        RETURN elbv2.id, lambda.id
+        """,
+        ID=load_balancer_id,
+        LAMBDA_ARN=lambda_arn,
+    )
+
+    expected_nodes = {
+        (
+            load_balancer_id,
+            lambda_arn,
+        ),
+    }
+    actual_nodes = {
+        (
+            n['elbv2.id'],
+            n['lambda.id'],
         )
         for n in nodes
     }

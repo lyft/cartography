@@ -171,20 +171,41 @@ def load_load_balancer_v2_target_groups(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """
+
+    ingest_lambdas = """
+    MATCH (elbv2:LoadBalancerV2{id: $ID}), (lambda:AWSLambda{id: $LAMBDA_ARN})
+    MERGE (elbv2)-[r:EXPOSE]->(lambda)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    WITH lambda
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
+    MERGE (aa)-[r:RESOURCE]->(lambda)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
     for target_group in target_groups:
-
-        if not target_group['TargetType'] == 'instance':
-            # Only working on EC2 Instances now. TODO: Add IP & Lambda EXPOSE.
+        if target_group['TargetType'] == 'instance':
+            for instance in target_group["Targets"]:
+                neo4j_session.run(
+                    ingest_instances,
+                    ID=load_balancer_id,
+                    INSTANCE_ID=instance,
+                    AWS_ACCOUNT_ID=current_aws_account_id,
+                    update_tag=update_tag,
+                )
+        elif target_group['TargetType'] == 'lambda':
+            for lambda_arn in target_group["Targets"]:
+                neo4j_session.run(
+                    ingest_lambdas,
+                    ID=load_balancer_id,
+                    LAMBDA_ARN=lambda_arn,
+                    AWS_ACCOUNT_ID=current_aws_account_id,
+                    update_tag=update_tag,
+                )
+        else:
+            # Only working on EC2 Instances, Lambda now. TODO: Add IP & ALB EXPOSE.
             continue
-
-        for instance in target_group["Targets"]:
-            neo4j_session.run(
-                ingest_instances,
-                ID=load_balancer_id,
-                INSTANCE_ID=instance,
-                AWS_ACCOUNT_ID=current_aws_account_id,
-                update_tag=update_tag,
-            )
 
 
 @timeit

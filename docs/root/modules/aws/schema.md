@@ -1933,10 +1933,10 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
 #### Relationships
 
 
-- LoadBalancerV2's can be connected to EC2Instances and therefore expose them.
+- LoadBalancerV2's can be connected to EC2Instance's and AWSLambda's and therefore expose them.
 
         ```
-        (LoadBalancerV2)-[EXPOSE]->(EC2Instance)
+        (LoadBalancerV2)-[EXPOSE]->(EC2Instance, AWSLambda)
         ```
 
 - LoadBalancerV2's can be part of EC2SecurityGroups but only if their `type` = "application". NLBs don't have SGs.

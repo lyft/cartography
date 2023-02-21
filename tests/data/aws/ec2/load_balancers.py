@@ -3,6 +3,10 @@ TARGET_GROUPS = [
         'TargetType': 'instance',
         'Targets': ["i-0f76fade"],
     },
+    {
+        'TargetType': 'lambda',
+        'Targets': ["arn:aws:lambda:us-west-2:123456789012:function:my-function"],
+    },
 ]
 
 # 'TargetGroups': [
