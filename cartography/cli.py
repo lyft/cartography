@@ -5,6 +5,9 @@ import os
 import sys
 from typing import List
 from typing import Optional
+from typing import Union
+
+import yaml
 
 import cartography.config
 import cartography.util
@@ -49,17 +52,30 @@ class CLI:
             ),
             epilog='For more documentation please visit: https://github.com/lyft/cartography',
         )
-        parser.add_argument(
+
+        log_level_group = parser.add_mutually_exclusive_group()
+        log_level_group.add_argument(
             '-v',
             '--verbose',
             action='store_true',
             help='Enable verbose logging for cartography.',
         )
-        parser.add_argument(
+        log_level_group.add_argument(
             '-q',
             '--quiet',
             action='store_true',
             help='Restrict cartography logging to warnings and errors only.',
+        )
+
+        parser.add_argument(
+            '-c',
+            '--config',
+            type=str,
+            default=None,
+            help=(
+                'Path to cartography config file. If specified, all other arguments below are ignored. If not '
+                'specified (default), uses only CLI args.'
+            ),
         )
 
         neo4j_arg_group = parser.add_argument_group('neo4j')
@@ -478,8 +494,29 @@ class CLI:
         :type argv: string
         :param argv: The parameters supplied to the command line program.
         """
-        # TODO support parameter lookup in environment variables if not present on command line
-        config: argparse.Namespace = self.parser.parse_args(argv)
+        config: Union[argparse.Namespace, cartography.config.Config] = self.parser.parse_args(argv)
+        # If a yaml config is specified, make sure we use only the yaml file's values. We will do no merging.
+        if config.config:
+            if not os.path.isabs(config.config):
+                config.config = os.path.join(os.getcwd(), config.config)
+            with open(config.config) as yaml_file:
+                config = cartography.config.Config(**yaml.safe_load(yaml_file))
+
+        # TODO (consider) the code would be more functional if this returned a new object instead of doing this in place
+        self._post_process_config(config)
+
+        # Run cartography
+        try:
+            return run_with_config(self.sync, config)
+        except KeyboardInterrupt:
+            return cartography.util.STATUS_KEYBOARD_INTERRUPT
+
+    def _post_process_config(self, config: Union[argparse.Namespace, cartography.config.Config]):
+        # TODO ensure that this function creates the same default values as argparse in _build_parser().
+        # TODO add tests for the expected shape of a config object.
+        """
+        Use values specified from either the cartography CLI or config file to set all other necessary config items.
+        """
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
@@ -598,12 +635,6 @@ class CLI:
         if config.gsuite_tokens_env_var:
             logger.debug(f"Reading config string for GSuite from environment variable {config.gsuite_tokens_env_var}")
             config.gsuite_config = os.environ.get(config.gsuite_tokens_env_var)
-
-        # Run cartography
-        try:
-            return run_with_config(self.sync, config)
-        except KeyboardInterrupt:
-            return cartography.util.STATUS_KEYBOARD_INTERRUPT
 
 
 def main(argv: Optional[List[str]] = None):

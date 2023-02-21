@@ -22,6 +22,13 @@ def test_cli_selected_modules():
     # Assert that the argparser created by the CLI knows that we want to run the aws module
     parsed_args = cli.parser.parse_args(argv)
     assert parsed_args.selected_modules == 'aws'
+    # TODO - remove this when ready; this is an easy way to hook in and get yaml for copy pasta
+    #
+    # args = vars(parsed_args)
+    # config = dump(args)
+    #
+    #
+    # assert False
 
 
 @patch.object(cartography.cli, 'run_with_config', return_value=0)
