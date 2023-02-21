@@ -22,7 +22,7 @@ def test_transform_and_load_hub(neo4j_session, *args):
     expected_nodes = {
         (
             "arn:aws:securityhub:us-east-1:000000000000:hub/default",
-            1606993517,
+            1607022317,
             True,
         ),
     }

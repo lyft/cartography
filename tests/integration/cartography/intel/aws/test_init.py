@@ -53,7 +53,7 @@ def test_sync_multiple_accounts(
         neo4j_uri='bolt://localhost:7687',
     )
     cartography.intel.aws._sync_multiple_accounts(
-        neo4j_session, TEST_ACCOUNTS, TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS, test_config,
+        neo4j_session, TEST_ACCOUNTS, {}, TEST_UPDATE_TAG, GRAPH_JOB_PARAMETERS, test_config,
     )
 
     # Ensure we call _sync_one_account on all accounts in our list.
