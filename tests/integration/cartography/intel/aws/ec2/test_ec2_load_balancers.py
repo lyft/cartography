@@ -24,11 +24,11 @@ def test_load_load_balancer_v2s(neo4j_session, *args):
         ON CREATE SET aws.firstseen = timestamp()
         SET aws.lastupdated = $aws_update_tag
 
-        MERGE (group:EC2SecurityGroup{groupid: $GROUP_ID_1})
+        MERGE (group:EC2SecurityGroup{id: $GROUP_ID_1})
         ON CREATE SET group.firstseen = timestamp()
         SET group.last_updated = $aws_update_tag
 
-        MERGE (group2:EC2SecurityGroup{groupid: $GROUP_ID_2})
+        MERGE (group2:EC2SecurityGroup{id: $GROUP_ID_2})
         ON CREATE SET group2.firstseen = timestamp()
         SET group2.last_updated = $aws_update_tag
         """,

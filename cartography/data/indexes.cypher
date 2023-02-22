@@ -133,7 +133,6 @@ CREATE INDEX IF NOT EXISTS FOR (n:EC2Reservation) ON (n.reservationid);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2Reservation) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2ReservedInstance) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2ReservedInstance) ON (n.lastupdated);
-CREATE INDEX IF NOT EXISTS FOR (n:EC2SecurityGroup) ON (n.groupid);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2SecurityGroup) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2SecurityGroup) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2Subnet) ON (n.id);

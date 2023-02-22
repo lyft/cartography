@@ -103,7 +103,7 @@ def load_load_balancers(
 
     ingest_load_balancer_security_group = """
     MATCH (elb:LoadBalancer{id: $ID}),
-    (group:EC2SecurityGroup{groupid: $GROUP_ID})
+    (group:EC2SecurityGroup{id: $GROUP_ID})
     MERGE (elb)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag

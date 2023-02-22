@@ -1300,7 +1300,6 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| groupid | The ID of the security group|
 | name | The name of the security group|
 | description | A description of the security group|
 | **id** | Same as `groupid` |

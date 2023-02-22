@@ -33,7 +33,7 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
     rule.protocol = $Protocol
     SET rule.lastupdated = $update_tag
     WITH rule
-    MATCH (group:EC2SecurityGroup{groupid: $GroupId})
+    MATCH (group:EC2SecurityGroup{id: $GroupId})
     MERGE (group)<-[r:MEMBER_OF_EC2_SECURITY_GROUP]-(rule)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag;
@@ -41,7 +41,7 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
 
     ingest_rule_group_pair = """
     MERGE (group:EC2SecurityGroup{id: $GroupId})
-    ON CREATE SET group.firstseen = timestamp(), group.groupid = $GroupId
+    ON CREATE SET group.firstseen = timestamp()
     SET group.lastupdated = $update_tag
     WITH group
     MATCH (inbound:IpRule{ruleid: $RuleId})
@@ -107,7 +107,7 @@ def load_ec2_security_groupinfo(
 ) -> None:
     ingest_security_group = """
     MERGE (group:EC2SecurityGroup{id: $GroupId})
-    ON CREATE SET group.firstseen = timestamp(), group.groupid = $GroupId
+    ON CREATE SET group.firstseen = timestamp()
     SET group.name = $GroupName, group.description = $Description, group.region = $Region,
     group.lastupdated = $update_tag
     WITH group

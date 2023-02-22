@@ -60,7 +60,7 @@ def _load_ec2_instance_net_if_tx(
 
         WITH nic, interface
         UNWIND interface.Groups as group
-            MATCH (ec2group:EC2SecurityGroup{groupid: group.GroupId})
+            MATCH (ec2group:EC2SecurityGroup{id: group.GroupId})
             MERGE (nic)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(ec2group)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = $update_tag
@@ -254,7 +254,7 @@ def _load_ec2_security_groups_tx(
 ) -> None:
     query = """
         MERGE (group:EC2SecurityGroup{id: $GroupId})
-        ON CREATE SET group.firstseen = timestamp(), group.groupid = $GroupId
+        ON CREATE SET group.firstseen = timestamp()
         SET group.name = $GroupName, group.region = $Region, group.lastupdated = $update_tag
         WITH group
         MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})

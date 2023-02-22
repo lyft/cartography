@@ -100,8 +100,11 @@ def load_load_balancer_v2s(
         # NLB's don't have SecurityGroups, so check for one first.
         if 'SecurityGroups' in lb and lb["SecurityGroups"]:
             ingest_load_balancer_v2_security_group = """
-            MATCH (elbv2:LoadBalancerV2{id: $ID}),
-            (group:EC2SecurityGroup{groupid: $GROUP_ID})
+            MATCH (elbv2:LoadBalancerV2{id: $ID})
+            MERGE (group:EC2SecurityGroup{id: $GROUP_ID})
+            ON CREATE SET group.firstseen = timestamp()
+            SET group.lastupdated = $update_tag
+            WITH group
             MERGE (elbv2)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = $update_tag
@@ -172,8 +175,13 @@ def load_load_balancer_v2_target_groups(
     SET r.lastupdated = $update_tag
     """
 
+    # Merging lambda node because lambda intel module runs after
+    # load_balancer_v2 intel module
     ingest_lambdas = """
-    MATCH (elbv2:LoadBalancerV2{id: $ID}), (lambda:AWSLambda{id: $LAMBDA_ARN})
+    MATCH (elbv2:LoadBalancerV2{id: $ID})
+    MERGE (lambda:AWSLambda{id: $LAMBDA_ARN})
+    ON CREATE SET lambda.firstseen = timestamp()
+    SET lambda.lastupdated = $update_tag
     MERGE (elbv2)-[r:EXPOSE]->(lambda)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
