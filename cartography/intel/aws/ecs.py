@@ -294,7 +294,8 @@ def load_ecs_task_definitions(
     UNWIND $Definitions AS def
         MERGE (d:ECSTaskDefinition{id: def.taskDefinitionArn})
         ON CREATE SET d.firstseen = timestamp()
-        SET d.arn = def.taskDefinitionArn, d.region = $Region,
+        SET d.arn = def.taskDefinitionArn,
+            d.region = $Region,
             d.family = def.family,
             d.task_role_arn = def.taskRoleArn,
             d.execution_role_arn = def.executionRoleArn,
@@ -316,6 +317,11 @@ def load_ecs_task_definitions(
             d.registered_by = def.registeredBy,
             d.ephemeral_storage_size_in_gib = def.ephemeralStorage.sizeInGiB,
             d.lastupdated = $aws_update_tag
+        WITH d
+        MATCH (task:ECSTask{task_definition_arn: d.arn})
+        MERGE (task)-[r:HAS_TASK_DEFINITION]->(d)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $aws_update_tag
         WITH d
         MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(d)
