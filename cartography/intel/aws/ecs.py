@@ -94,7 +94,7 @@ def get_ecs_services(cluster_arn: str, boto3_session: boto3.session.Session, reg
 def get_ecs_task_definitions(
     boto3_session: boto3.session.Session,
     region: str,
-    tasks: List[Dict[str, Any]]
+    tasks: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     client = boto3_session.client('ecs', region_name=region)
     task_definitions: List[Dict[str, Any]] = []
@@ -600,7 +600,7 @@ def sync(
             task_definitions = get_ecs_task_definitions(
                 boto3_session,
                 region,
-                tasks
+                tasks,
             )
             load_ecs_task_definitions(
                 neo4j_session,

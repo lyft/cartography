@@ -147,7 +147,6 @@ def test_load_ecs_services(neo4j_session, *args):
         assert n["c"] == 1
 
 
-
 def test_load_ecs_task_definitions(neo4j_session, *args):
     task_data = tests.data.aws.ecs.GET_ECS_TASKS
     cartography.intel.aws.ecs.load_ecs_tasks(
@@ -227,7 +226,7 @@ def test_load_ecs_task_definitions(neo4j_session, *args):
     )
     for n in nodes:
         assert n["c"] == 1
-    
+
     nodes = neo4j_session.run(
         """
         MATCH (:ECSTaskDefinition)<-[:HAS_TASK_DEFINITION]-(n:ECSTask)
