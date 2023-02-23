@@ -104,7 +104,7 @@ def load_load_balancer_v2s(
             MERGE (group:EC2SecurityGroup{id: $GROUP_ID})
             ON CREATE SET group.firstseen = timestamp()
             SET group.lastupdated = $update_tag
-            WITH group
+            WITH elbv2, group
             MERGE (elbv2)-[r:MEMBER_OF_EC2_SECURITY_GROUP]->(group)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = $update_tag
