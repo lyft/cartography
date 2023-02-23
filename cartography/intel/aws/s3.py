@@ -403,7 +403,9 @@ def _load_s3_public_access_block(
 def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
     MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(s:S3Bucket) where s.anonymous_actions IS NULL
-    SET s.anonymous_access = false, s.anonymous_actions = []
+    SET s.anonymous_access = false, s.anonymous_actions = [],
+    s.public_policy_access_enabled = false,
+    s.public_acl_access_enabled = false,
     """
     neo4j_session.run(
         set_defaults,
