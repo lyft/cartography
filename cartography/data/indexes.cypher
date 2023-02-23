@@ -230,6 +230,8 @@ CREATE INDEX IF NOT EXISTS FOR (n:GSuiteGroup) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:GSuiteUser) ON (n.email);
 CREATE INDEX IF NOT EXISTS FOR (n:GSuiteUser) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GSuiteUser) ON (n.lastupdated);
+CREATE INDEX IF NOT EXISTS FOR (n:InstanceProfile) ON (n.arn);
+CREATE INDEX IF NOT EXISTS FOR (n:InstanceProfile) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:Ip) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:Ip) ON (n.ip);
 CREATE INDEX IF NOT EXISTS FOR (n:Ip) ON (n.lastupdated);

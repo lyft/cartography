@@ -327,6 +327,16 @@ def get_account_password_policy(
 
 
 @timeit
+def get_instance_profiles(boto3_session: boto3.session.Session) -> Dict:
+    client = boto3_session.client('iam')
+    paginator = client.get_paginator('list_instance_profiles')
+    instance_profiles: List[Dict] = []
+    for page in paginator.paginate():
+        instance_profiles.extend(page['InstanceProfiles'])
+    return {'InstanceProfiles': instance_profiles}
+
+
+@timeit
 def load_users(
     neo4j_session: neo4j.Session, users: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
@@ -930,6 +940,48 @@ def load_account_password_policy(
     )
 
 
+def load_instance_profiles(
+    neo4j_session: neo4j.Session,
+    instance_profiles: List[Dict],
+    current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
+    logger.info(f"Loading {len(instance_profiles)} IAM instance profiles.")
+
+    ingest_instance_profile = """
+    MERGE (ip:InstanceProfile{arn: $ARN})
+    ON CREATE SET ip.firstseen = timestamp()
+    SET ip.lastupdated = $aws_update_tag
+    WITH ip
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
+    MERGE (aa)-[r:RESOURCE]->(ip)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $aws_update_tag
+    """
+
+    ingest_instance_profile_role_mapping = """
+    MATCH (role:AWSRole{arn: $ROLE_ARN}),
+    (ip:InstanceProfile{arn: $ARN})
+    MERGE (ip)-[r:ASSOCIATED_WITH]->(role)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $aws_update_tag
+    """
+    for instance_profile in instance_profiles:
+        neo4j_session.run(
+            ingest_instance_profile,
+            ARN=instance_profile["Arn"],
+            AWS_ACCOUNT_ID=current_aws_account_id,
+            aws_update_tag=aws_update_tag,
+        )
+        if "Roles" in instance_profile and len(instance_profile["Roles"]) > 0:
+            neo4j_session.run(
+                ingest_instance_profile_role_mapping,
+                ROLE_ARN=instance_profile["Roles"][0]["Arn"],
+                ARN=instance_profile["Arn"],
+                aws_update_tag=aws_update_tag,
+            )
+
+
 @timeit
 def sync_users(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
@@ -1165,6 +1217,26 @@ def sync_account_password_policy(
 
 
 @timeit
+def sync_instance_profiles(
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session,
+    current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
+) -> None:
+    logger.info("Syncing IAM instance profiles for account '%s'.", current_aws_account_id)
+    instance_profiles = get_instance_profiles(boto3_session)
+    load_instance_profiles(
+        neo4j_session,
+        instance_profiles['InstanceProfiles'],
+        current_aws_account_id,
+        aws_update_tag,
+    )
+    run_cleanup_job(
+        'aws_import_instance_profiles_cleanup.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+
+@timeit
 def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
@@ -1187,6 +1259,13 @@ def sync(
         common_job_parameters,
     )
     sync_account_password_policy(
+        neo4j_session,
+        boto3_session,
+        current_aws_account_id,
+        update_tag,
+        common_job_parameters,
+    )
+    sync_instance_profiles(
         neo4j_session,
         boto3_session,
         current_aws_account_id,

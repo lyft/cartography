@@ -1,0 +1,18 @@
+{
+    "statements": [{
+      "query": "MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:InstanceProfile)-[r:ASSOCIATED_WITH]->(:AWSRole) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n:InstanceProfile) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AWSAccount{id: $AWS_ID})-[r:RESOURCE]->(:InstanceProfile) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+      "iterative": true,
+      "iterationsize": 100
+    }],
+    "name": "cleanup InstanceProfile and ASSOCIATED_WITH"
+  }

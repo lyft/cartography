@@ -192,3 +192,41 @@ def test_load_account_password_policy(neo4j_session):
     )
     actual_nodes = {(n['id'], n['e'], n['m']) for n in nodes}
     assert actual_nodes == expected_nodes
+
+
+def test_load_instance_profiles(neo4j_session):
+    data = tests.data.aws.iam.INSTANCE_PROFILE_ROLES['Roles']
+    cartography.intel.aws.iam.load_roles(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+
+    data = copy.deepcopy(
+        tests.data.aws.iam.LIST_INSTANCE_PROFILES["InstanceProfiles"],
+    )
+    cartography.intel.aws.iam.load_instance_profiles(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+    expected_nodes = {
+        (
+            "arn:aws:iam::000000000000:instance-profile/SERVICE_NAME_2",
+            "arn:aws:iam::000000000000:role/SERVICE_NAME_2",
+        ),
+        (
+            "arn:aws:iam::000000000000:instance-profile/ANOTHER_SERVICE_NAME",
+            "arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME",
+        ),
+    }
+    nodes = neo4j_session.run(
+        """
+        MATCH (ip:InstanceProfile)-[:ASSOCIATED_WITH]->(r:AWSRole)
+        RETURN ip.arn as ip_arn, r.arn as r_arn
+        """,
+    )
+    actual_nodes = {(n['ip_arn'], n['r_arn']) for n in nodes}
+    assert actual_nodes == expected_nodes

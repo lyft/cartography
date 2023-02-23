@@ -154,6 +154,17 @@ def _load_ec2_instance_tx(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $update_tag
         WITH instance
+        MATCH (ip:InstanceProfile{arn: $IamInstanceProfile})
+        MERGE (instance)-[r:HAS_INSTANCE_PROFILE]->(ip)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $update_tag
+        WITH instance
+        MATCH (:InstanceProfile{arn: $IamInstanceProfile})-[:ASSOCIATED_WITH]->
+        (role:AWSRole)
+        MERGE (instance)-[r:STS_ASSUME_ROLE_ALLOW]->(role)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $update_tag
+        WITH instance
         MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (aa)-[r:RESOURCE]->(instance)
         ON CREATE SET r.firstseen = timestamp()

@@ -1772,6 +1772,21 @@ Representation of a [Flow Log](https://docs.aws.amazon.com/AWSEC2/latest/APIRefe
         (FlowLog)-[:MONITORS]->(AWSVpc)
         ```
 
+### InstanceProfile
+Representation of a [Instance Profile](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-instanceprofile.html).
+| Field | Description |
+|-------|-------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| arn | The arn of the instance profile |
+
+
+#### Relationships
+- An InstanceProfile can be associated with an AWSRole.
+        ```
+        (InstanceProfile)-[:ASSOCIATED_WITH]->(AWSRole)
+        ```
+
 ### Ip
 
 Represents a generic IP address.

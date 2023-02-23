@@ -143,7 +143,7 @@ LIST_ROLES = {
     ],
 }
 
-INSTACE = {
+INSTANCE_PROFILE_ROLES = {
     'Roles': [
         {
             "AssumeRolePolicyDocument": {
@@ -220,4 +220,75 @@ ACCOUNT_PASSWORD_POLICY = {
     'RequireNumbers': True,
     'RequireSymbols': True,
     'RequireUppercaseCharacters': False,
+}
+
+LIST_INSTANCE_PROFILES = {
+    "InstanceProfiles": [
+        {
+            "InstanceProfileId": "AIPAIXEU4NUHUPEXAMPLE",
+            "Roles": [
+                {
+                    "AssumeRolePolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Action": "sts:AssumeRole",
+                                "Effect": "Allow",
+                                "Principal": {
+                                    "AWS": "arn:aws:iam::000000000000:role/SERVICE_NAME_2",
+                                },
+                            },
+                        ],
+                    },
+                    "MaxSessionDuration": 3600,
+                    "RoleId": "AROA00000000000000004",
+                    "CreateDate": datetime.datetime(2019, 1, 1, 0, 0, 1),
+                    "RoleName": "SERVICE_NAME_2",
+                    "Path": "/",
+                    "Arn": "arn:aws:iam::000000000000:role/SERVICE_NAME_2",
+                },
+            ],
+            "CreateDate": datetime.datetime(2013, 5, 11, 0, 2, 27),
+            "InstanceProfileName": "ExampleInstanceProfile",
+            "Path": "/",
+            "Arn": "arn:aws:iam::000000000000:instance-profile/SERVICE_NAME_2",
+        },
+        {
+            "InstanceProfileId": "AIPAJVJVNRIQFREXAMPLE",
+            "Roles": [],
+            "CreateDate": datetime.datetime(2013, 6, 12, 23, 52, 2),
+            "InstanceProfileName": "ExampleInstanceProfile2",
+            "Path": "/",
+            "Arn": "arn:aws:iam::000000000000:instance-profile/PROFILE_NAME",
+        },
+        {
+            "InstanceProfileId": "AIPAJVABCDEFFREXAMPLE",
+            "Roles": [
+                {
+                    "AssumeRolePolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Action": "sts:AssumeRole",
+                                "Effect": "Allow",
+                                "Principal": {
+                                    "AWS": "arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME",
+                                },
+                            },
+                        ],
+                    },
+                    "MaxSessionDuration": 3600,
+                    "RoleId": "AROA00000000000000006",
+                    "CreateDate": datetime.datetime(2019, 1, 1, 0, 0, 1),
+                    "RoleName": "ANOTHER_SERVICE_NAME",
+                    "Path": "/",
+                    "Arn": "arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME",
+                },
+            ],
+            "CreateDate": datetime.datetime(2013, 6, 12, 23, 52, 2),
+            "InstanceProfileName": "ExampleInstanceProfile3",
+            "Path": "/",
+            "Arn": "arn:aws:iam::000000000000:instance-profile/ANOTHER_SERVICE_NAME",
+        },
+    ],
 }

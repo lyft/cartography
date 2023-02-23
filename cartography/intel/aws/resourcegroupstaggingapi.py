@@ -102,6 +102,7 @@ TAG_RESOURCE_TYPE_MAPPINGS: Dict = {
     'es:domain': {'label': 'ESDomain', 'property': 'arn'},
     'kms:key': {'label': 'KMSKey', 'property': 'arn'},
     'iam:group': {'label': 'AWSGroup', 'property': 'arn'},
+    'iam:instance-profile': {'label': 'InstanceProfile', 'property': 'arn'},
     'iam:role': {'label': 'AWSRole', 'property': 'arn'},
     'iam:user': {'label': 'AWSUser', 'property': 'arn'},
     'iam:server-certificate': {'label': 'ServerCertificate', 'property': 'arn'},
