@@ -34,7 +34,7 @@
       "iterative": false
     },
     {
-      "query": "MATCH (acl:S3Acl)-[:APPLIES_TO]->(bucket:S3Bucket)<-[:RESOURCE]-(aws:AWSAccount{id: {AWS_ID}})\nWHERE acl.uri IN ['http://acs.amazonaws.com/groups/global/AllUsers', 'http://acs.amazonaws.com/groups/global/AuthenticatedUsers'] AND acl.permission = 'READ_ACP'\nSET bucket.acl_access_enabled = true, bucket.anonymous_actions = coalesce(bucket.anonymous_actions, []) + ['s3:DeleteObjectVersion']",
+      "query": "MATCH (acl:S3Acl)-[:APPLIES_TO]->(bucket:S3Bucket)<-[:RESOURCE]-(aws:AWSAccount{id: {AWS_ID}})\nWHERE acl.uri IN ['http://acs.amazonaws.com/groups/global/AllUsers', 'http://acs.amazonaws.com/groups/global/AuthenticatedUsers'] AND acl.permission = 'READ_ACP'\nSET bucket.acl_access_enabled = true, bucket.anonymous_actions = coalesce(bucket.anonymous_actions, []) + ['s3:GetBucketAcl']",
       "iterative": false
     },
     {
