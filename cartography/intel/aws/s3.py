@@ -404,8 +404,7 @@ def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> No
     set_defaults = """
     MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(s:S3Bucket) where s.anonymous_actions IS NULL
     SET s.anonymous_access = false, s.anonymous_actions = [],
-    s.public_policy_access_enabled = false,
-    s.public_acl_access_enabled = false,
+    s.public_acl_access_enabled = false
     """
     neo4j_session.run(
         set_defaults,
@@ -418,6 +417,15 @@ def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> No
     """
     neo4j_session.run(
         set_encryption_defaults,
+        AWS_ID=aws_account_id,
+    )
+
+    set_public_policy_defaults = """
+    MATCH (:AWSAccount{id: {AWS_ID}})-[:RESOURCE]->(s:S3Bucket) where s.public_policy_access_enabled IS NULL
+    SET s.public_policy_access_enabled = false
+    """
+    neo4j_session.run(
+        set_public_policy_defaults,
         AWS_ID=aws_account_id,
     )
 
