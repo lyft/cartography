@@ -289,7 +289,7 @@ def _load_s3_policies(neo4j_session: neo4j.Session, policies: List[Dict], update
     MATCH (s:S3Bucket) where s.name = policy.bucket
     SET s.anonymous_access = (coalesce(s.anonymous_access, false) OR policy.internet_accessible),
     s.anonymous_actions = coalesce(s.anonymous_actions, []) + policy.accessible_actions,
-    s.public_policy_access_enabled = policy.internet_accessible,
+    s.public_policy_access_enabled = coalesce(policy.internet_accessible, false),
     s.public_acl_access_enabled = coalesce(s.public_acl_access_enabled, false),
     s.lastupdated = {UpdateTag}
     """
