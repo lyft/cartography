@@ -177,6 +177,7 @@ CREATE INDEX IF NOT EXISTS FOR (n:Ip) ON (n.ip);
 CREATE INDEX IF NOT EXISTS FOR (n:IpPermissionInbound) ON (n.ruleid);
 CREATE INDEX IF NOT EXISTS FOR (n:IpPermissionsEgress) ON (n.ruleid);
 CREATE INDEX IF NOT EXISTS FOR (n:IpRange) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:Ipv6Range) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:IpRule) ON (n.ruleid);
 CREATE INDEX IF NOT EXISTS FOR (n:JamfComputerGroup) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:KMSKey) ON (n.id);

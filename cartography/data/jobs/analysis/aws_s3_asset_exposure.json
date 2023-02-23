@@ -1,0 +1,15 @@
+{
+	"statement": [
+		{
+			"query": "MATCH (bucket:S3Bucket)<-[:RESOURCE]-(aws:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE EXISTS(bucket.exposed_internet) WITH bucket LIMIT $LIMIT_SIZE REMOVE bucket.exposed_internet return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 1000
+		},
+		{
+			"query": "MATCH (bucket:S3Bucket{is_public: true})<-[:RESOURCE]-(aws:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH bucket SET bucket.exposed_internet = true",
+			"iterative": true,
+			"iterationsize": 1000
+		}
+	],
+	"name": "AWS S3 public exposure"
+}

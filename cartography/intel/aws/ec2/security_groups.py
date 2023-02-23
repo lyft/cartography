@@ -41,6 +41,11 @@ def get_ec2_security_group_data(boto3_session: boto3.session.Session, region: st
                         if iprange.get('CidrIp') == '0.0.0.0/0':
                             group['isPublicFacing'] = True
                             break
+                if IpPermission.get('IpProtocol') == "-1" and len(IpPermission.get('Ipv6Ranges', [])) > 0:
+                    for ipv6range in IpPermission.get('Ipv6Ranges', []):
+                        if ipv6range.get('CidrIpv6') == '::/0':
+                            group['isPublicFacing'] = True
+                            break
             for IpPermission in group.get('IpPermissions', []):
                 if group['isPublicFacing']:
                     break
@@ -87,8 +92,8 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
     SET r.lastupdated = $update_tag
     """
 
-    ingest_range = """
-    MERGE (range:IpRange{id: $RangeId})
+    ingest_range = Template("""
+    MERGE (range:$range_label{id: $RangeId})
     ON CREATE SET range.firstseen = timestamp(), range.range = $RangeId
     SET range.lastupdated = $update_tag
     WITH range
@@ -96,7 +101,7 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
     MERGE (rule)<-[r:MEMBER_OF_IP_RULE]-(range)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
-    """
+    """)
 
     group_id = group["GroupId"]
     rule_type_map = {"IpPermissions": "IpPermissionInbound", "IpPermissionsEgress": "IpPermissionEgress"}
@@ -130,7 +135,16 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
             for ip_range in rule["IpRanges"]:
                 range_id = ip_range["CidrIp"]
                 neo4j_session.run(
-                    ingest_range,
+                    ingest_range.safe_substitute(range_label='IpRange'),
+                    RangeId=range_id,
+                    RuleId=ruleid,
+                    update_tag=update_tag,
+                )
+
+            for ipv6_range in rule["Ipv6Ranges"]:
+                range_id = ipv6_range["CidrIpv6"]
+                neo4j_session.run(
+                    ingest_range.safe_substitute(range_label='Ipv6Range'),
                     RangeId=range_id,
                     RuleId=ruleid,
                     update_tag=update_tag,
