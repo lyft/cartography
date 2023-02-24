@@ -47,9 +47,7 @@ def _get_okta_groups(api_client: ApiClient) -> List[str]:
 
         group_list.extend(paged_results.result)
 
-        sleep_time = check_rate_limit(paged_response)
-        if sleep_time > 0:
-            logger.warning(f"Okta rate limit threshold was reached. Waited {sleep_time} seconds before continuing")
+        check_rate_limit(paged_response)
 
         if not is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
@@ -86,9 +84,7 @@ def get_okta_group_members(api_client: ApiClient, group_id: str) -> List[Dict]:
 
         member_list.extend(json.loads(paged_response.text))
 
-        sleep_time = check_rate_limit(paged_response)
-        if sleep_time > 0:
-            logger.warning(f"Okta rate limit threshold was reached. Waited {sleep_time} seconds before continuing")
+        check_rate_limit(paged_response)
 
         if not is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")

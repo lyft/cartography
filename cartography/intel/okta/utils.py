@@ -1,8 +1,13 @@
 # Okta intel module - utility functions
+import logging
 import time
+
 from okta.framework import PagedResults
 from okta.framework.ApiClient import ApiClient
 from requests import Response
+
+logger = logging.getLogger(__name__)
+
 
 def is_last_page(response: PagedResults) -> bool:
     """
@@ -30,21 +35,22 @@ def create_api_client(okta_org: str, path_name: str, api_key: str) -> ApiClient:
 
     return api_client
 
-def check_rate_limit(response: Response) -> int:
+
+def check_rate_limit(response: Response) -> None:
     """
     Checks if we are about to hit the rate limit and waits until reset if so
     :param response: server response
-    :return: int representing time slept    
+    :return: None
     """
     sleep_time = 0
     rate_limit_threshold = 0.1
     remaining = response.headers.get('x-rate-limit-remaining')
     limit = response.headers.get('x-rate-limit-limit')
     if remaining is not None and limit is not None:
-        if  (int(remaining) / int(limit)) < rate_limit_threshold:
+        if (int(remaining) / int(limit)) < rate_limit_threshold:
             reset_time = response.headers.get('x-rate-limit-reset')
             if reset_time is not None:
                 sleep_time = int(reset_time) - int(time.time())
                 if sleep_time > 0:
+                    logger.warning(f"Okta rate limit threshold reached. Waiting {sleep_time} seconds.")
                     time.sleep(sleep_time)
-    return sleep_time
