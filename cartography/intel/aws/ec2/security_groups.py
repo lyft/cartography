@@ -41,7 +41,8 @@ def get_ec2_security_group_data(boto3_session: boto3.session.Session, region: st
                         if iprange.get('CidrIp') == '0.0.0.0/0':
                             group['isPublicFacing'] = True
                             break
-                if IpPermission.get('IpProtocol') == "-1" and len(IpPermission.get('Ipv6Ranges', [])) > 0:
+
+                if (not group['isPublicFacing']) and IpPermission.get('IpProtocol') == "-1" and len(IpPermission.get('Ipv6Ranges', [])) > 0:
                     for ipv6range in IpPermission.get('Ipv6Ranges', []):
                         if ipv6range.get('CidrIpv6') == '::/0':
                             group['isPublicFacing'] = True
@@ -53,6 +54,13 @@ def get_ec2_security_group_data(boto3_session: boto3.session.Session, region: st
                     for iprange in IpPermission.get('IpRanges', []):
                         public_ports = ['20', '21', '22', '3306', '3389', '4333']
                         if iprange.get('CidrIp') == '0.0.0.0/0' and IpPermission.get('FromPort') in public_ports and IpPermission.get('ToPort') in public_ports:
+                            group['isPublicFacing'] = True
+                            break
+
+                if (not group['isPublicFacing']) and IpPermission.get('IpProtocol') == "-1" and len(IpPermission.get('Ipv6Ranges', [])) > 0:
+                    for ipv6range in IpPermission.get('Ipv6Ranges', []):
+                        public_ports = ['20', '21', '22', '3306', '3389', '4333']
+                        if ipv6range.get('CidrIpv6') == '::/0' and IpPermission.get('FromPort') in public_ports and IpPermission.get('ToPort') in public_ports:
                             group['isPublicFacing'] = True
                             break
     except ClientError as e:

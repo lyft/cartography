@@ -256,6 +256,44 @@ def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, 
     )
 
 
+def _load_ec2_explicit_route_table_tx(tx: neo4j.Transaction, subnet_id: str, update_tag: int) -> None:
+    query = """
+        MATCH (subnet:EC2Subnet{subnetid: $SubnetId})
+        MERGE (rtab:EC2RouteTable)-[rel:HAS_ASSOCIATION]->(assoc:EC2RouteTableAssociation{subnet_id: $SubnetId})
+        WITH subnet, rtab
+        MERGE (subnet)-[r:HAS_EXPLICIT_ROUTE_TABLE]->(rtab)
+        ON CREATE SET
+            r.firstseen = timestamp()
+        SET
+            r.lastupdated = $update_tag
+    """
+    tx.run(
+        query,
+        SubnetId=subnet_id,
+        update_tag=update_tag,
+    )
+
+
+def _load_ec2_implicit_route_table_tx(tx: neo4j.Transaction, instanceid: str, vpc_id: str, update_tag: int) -> None:
+    query = """
+        MATCH (instance:EC2Instance{id: $InstanceId})
+        WHERE NOT EXISTS((instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[:HAS_EXPLICIT_ROUTE_TABLE]->(:EC2RouteTable))
+        MERGE (rtab:EC2RouteTable{vpc_id: $VpcId})-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation{main: true})
+        WITH instance, rtab
+        MERGE (instance)-[r:HAS_IMPLICIT_ROUTE_TABLE]->(rtab)
+        ON CREATE SET
+            r.firstseen = timestamp()
+        SET
+            r.lastupdated = $update_tag
+    """
+    tx.run(
+        query,
+        InstanceId=instanceid,
+        VpcId=vpc_id,
+        update_tag=update_tag,
+    )
+
+
 def _load_ec2_key_pairs(
     neo4j_session: neo4j.Session,
     key_pairs: List[Dict[str, Any]],
@@ -383,6 +421,11 @@ def load_ec2_instances(
             subnet_id = instance.get('SubnetId')
             if subnet_id:
                 neo4j_session.write_transaction(_load_ec2_subnet_tx, instanceid, subnet_id, region, update_tag)
+                neo4j_session.write_transaction(_load_ec2_explicit_route_table_tx, subnet_id, update_tag)
+
+            vpc_id = instance.get('VpcId')
+            if vpc_id:
+                neo4j_session.write_transaction(_load_ec2_implicit_route_table_tx, instanceid, vpc_id, update_tag)
 
             if instance.get("KeyName"):
                 key_name = instance["KeyName"]

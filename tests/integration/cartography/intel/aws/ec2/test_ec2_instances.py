@@ -15,7 +15,7 @@ def test_load_ec2_instances(neo4j_session, *args):
     """
     data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
     cartography.intel.aws.ec2.instances.load_ec2_instances(
-        neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+        neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -58,7 +58,7 @@ def test_ec2_reservations_to_instances(neo4j_session, *args):
     """
     data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
     cartography.intel.aws.ec2.instances.load_ec2_instances(
-        neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+        neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -113,7 +113,7 @@ def test_ec2_iaminstanceprofiles(neo4j_session):
     data_iam = tests.data.aws.iam.INSTACE['Roles']
 
     cartography.intel.aws.ec2.instances.load_ec2_instances(
-        neo4j_session, data_instances, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+        neo4j_session, data_instances, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )
 
     cartography.intel.aws.iam.load_roles(

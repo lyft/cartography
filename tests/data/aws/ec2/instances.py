@@ -128,7 +128,7 @@ DESCRIBE_INSTANCES = {
                     },
                 ],
                 'VirtualizationType': 'hvm',
-                'VpcId': 'SOME_VPC_ID',
+                'VpcId': 'vpc-025873e026b9e8ee6',
             }],
             'OwnerId': 'OWNER_ACCOUNT_ID',
             'RequesterId': 'REQUESTER_ID',
@@ -243,7 +243,7 @@ DESCRIBE_INSTANCES = {
                     'Name': 'running',
                 },
                 'StateTransitionReason': '',
-                'SubnetId': 'SOME_SUBNET_1',
+                'SubnetId': 'subnet-020b2f3928f190ce8',
                 'Tags': [
                     {
                         'Key': 'Name',
@@ -254,7 +254,7 @@ DESCRIBE_INSTANCES = {
                     },
                 ],
                 'VirtualizationType': 'hvm',
-                'VpcId': 'SOME_VPC_ID',
+                'VpcId': 'vpc-025873e026b9e8ee6',
             }],
             'OwnerId': 'OWNER_ACCOUNT_ID',
             'RequesterId': 'REQUESTER_ID',
@@ -370,7 +370,7 @@ DESCRIBE_INSTANCES = {
                         'Name': 'running',
                     },
                     'StateTransitionReason': '',
-                    'SubnetId': 'SOME_SUBNET_1',
+                    'SubnetId': 'subnet-0fa9c8fa7cb241479',
                     'Tags': [
                         {
                             'Key': 'Name',
@@ -381,7 +381,7 @@ DESCRIBE_INSTANCES = {
                         },
                     ],
                     'VirtualizationType': 'hvm',
-                    'VpcId': 'SOME_VPC_ID',
+                    'VpcId': 'vpc-025873e026b9e8ee6',
                 }, {
                     'AmiLaunchIndex': 2,
                     'Architecture': 'x86_64',
@@ -490,7 +490,7 @@ DESCRIBE_INSTANCES = {
                         'Name': 'running',
                     },
                     'StateTransitionReason': '',
-                    'SubnetId': 'SOME_SUBNET_1',
+                    'SubnetId': 'subnet-0773409557644dca4',
                     'Tags': [
                         {
                             'Key': 'aws:autoscaling:groupName',
@@ -501,7 +501,7 @@ DESCRIBE_INSTANCES = {
                         },
                     ],
                     'VirtualizationType': 'hvm',
-                    'VpcId': 'SOME_VPC_ID',
+                    'VpcId': 'vpc-025873e026b9e8ee6',
                 },
             ],
             'OwnerId': 'OWNER_ACCOUNT_ID',
