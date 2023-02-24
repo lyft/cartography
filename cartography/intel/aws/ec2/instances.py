@@ -76,7 +76,7 @@ def load_ec2_instance_network_interfaces_tx(
             nic.lastupdated = $update_tag
             
             WITH nic, interface
-            MERGE (instance:EC2Instance{instanceid: interface.InstanceId})-[r:NETWORK_INTERFACE]->(nic)
+            MERGE (instance:EC2Instance{id: interface.InstanceId})-[r:NETWORK_INTERFACE]->(nic)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = $update_tag
 
@@ -247,6 +247,8 @@ def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, 
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $update_tag
     """
+    logger.error(f"({instanceid})-[PART_OF_SUBNET]->({subnet_id})")
+
     tx.run(
         query,
         InstanceId=instanceid,
@@ -419,6 +421,7 @@ def load_ec2_instances(
 
             # SubnetId can return None intermittently so attach only if non-None.
             subnet_id = instance.get('SubnetId')
+            logger.error(f"--->{subnet_id}")
             if subnet_id:
                 neo4j_session.write_transaction(_load_ec2_subnet_tx, instanceid, subnet_id, region, update_tag)
                 neo4j_session.write_transaction(_load_ec2_explicit_route_table_tx, subnet_id, update_tag)
