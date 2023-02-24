@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import neo4j
 from neo4j import GraphDatabase
+from cartography.graph.session import Session
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.resource import ResourceManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
@@ -126,7 +127,7 @@ def concurrent_execution(config: Config, client: ResourceManagementClient, resou
         (:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})-[*]->(n)
         WHERE n.id=$resource_id return count(*)
         """
-        if neo4j_driver.session().run(query, resource_id=resource.id, WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'], AZURE_TENANT_ID=common_job_parameters['AZURE_TENANT_ID'], AZURE_SUBSCRIPTION_ID=common_job_parameters['AZURE_SUBSCRIPTION_ID']).single().value() == 1:
+        if Session(neo4j_driver).run(query, resource_id=resource.id, WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'], AZURE_TENANT_ID=common_job_parameters['AZURE_TENANT_ID'], AZURE_SUBSCRIPTION_ID=common_job_parameters['AZURE_SUBSCRIPTION_ID']).single().value() == 1:
             if resource.tags:
                 for tagname in resource.tags:
                     tags_list = tags_list + \
@@ -137,7 +138,7 @@ def concurrent_execution(config: Config, client: ResourceManagementClient, resou
                             'resource_id': resource.id, 'resource_group': resource_group['name'],
                         }]
 
-    load_tags(neo4j_driver.session(), tags_list, update_tag, common_job_parameters)
+    load_tags(Session(neo4j_driver), tags_list, update_tag, common_job_parameters)
 
     logger.info(f"END processing for resource group: {resource_group['name']}")
 
