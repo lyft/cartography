@@ -10,6 +10,8 @@ from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
+import time
+
 logger = logging.getLogger(__name__)
 
 
