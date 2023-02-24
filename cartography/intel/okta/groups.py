@@ -12,6 +12,7 @@ from okta.framework.PagedResults import PagedResults
 from okta.models.usergroup import UserGroup
 
 from cartography.intel.okta.sync_state import OktaSyncState
+from cartography.intel.okta.utils import check_rate_limit
 from cartography.intel.okta.utils import create_api_client
 from cartography.intel.okta.utils import is_last_page
 from cartography.util import timeit
@@ -45,6 +46,10 @@ def _get_okta_groups(api_client: ApiClient) -> List[str]:
         paged_results = PagedResults(paged_response, UserGroup)
 
         group_list.extend(paged_results.result)
+
+        sleep_time = check_rate_limit(paged_response)
+        if sleep_time > 0:
+            logger.warning(f"Okta rate limit threshold was reached. Waited {sleep_time} seconds before continuing")
 
         if not is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
@@ -80,6 +85,10 @@ def get_okta_group_members(api_client: ApiClient, group_id: str) -> List[Dict]:
             raise
 
         member_list.extend(json.loads(paged_response.text))
+
+        sleep_time = check_rate_limit(paged_response)
+        if sleep_time > 0:
+            logger.warning(f"Okta rate limit threshold was reached. Waited {sleep_time} seconds before continuing")
 
         if not is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
