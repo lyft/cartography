@@ -1031,6 +1031,10 @@ def sync_user_access_keys(
     )
 
 
+def set_used_state(session: neo4j.Session, project_id: str, common_job_parameters: Dict, update_tag: int) -> None:
+    session.write_transaction(_set_used_state_tx, project_id, common_job_parameters, update_tag)
+
+
 def _set_used_state_tx(
     tx: neo4j.Transaction, project_id: str, common_job_parameters: Dict, update_tag: int,
 ) -> None:

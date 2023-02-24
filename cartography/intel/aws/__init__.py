@@ -24,6 +24,7 @@ from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cartography.graph.session import Session
 
 stat_handler = get_stats_client(__name__)
 logger = logging.getLogger(__name__)
@@ -71,7 +72,7 @@ def concurrent_execution(
     )
 
     sync_args = _build_aws_sync_kwargs(
-        neo4j_driver.session(), boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+        Session(neo4j_driver), boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
     )
 
     service_func(**sync_args)
@@ -191,13 +192,13 @@ def list_all_regions(boto3_session, logger):
     try:
         client = boto3_session.client('ec2', region_name="us-east-2", config=get_botocore_config())
         regions = client.describe_regions(Filters=[
-                {
-                    'Name': 'opt-in-status',
-                    'Values': [
+            {
+                'Name': 'opt-in-status',
+                'Values': [
                         'opt-in-not-required',
-                    ]
-                },
-            ])
+                ]
+            },
+        ])
 
     except Exception as e:
         logger.error(f"Failed retrieve enabled regions. Error - {e}")
