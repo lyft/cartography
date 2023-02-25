@@ -7,7 +7,7 @@
 			"__comment__": "Delete GCP Spanner Instance Backup that no longer exist and detach them from all previously connected nodes."
 		},
 		{
-			"query": "MATCH (:GCPSpannerInstanceBackup)<-[r:HAS_BACKUP]-(:GCPSpannerInstanceDatabase)<-[r:HAS_DATABASE]-(:GCPSpannerInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:GCPSpannerInstanceBackup)<-[r:HAS_BACKUP]-(:GCPSpannerInstanceDatabase)<-[:HAS_DATABASE]-(:GCPSpannerInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100,
 			"__comment__": "Remove GCP SpannerInstanceBackup-to-SpannerInstanceDatabase relationships that are out of date."
