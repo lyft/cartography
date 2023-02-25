@@ -19,8 +19,13 @@ AUTHORITY_HOST_URI = 'https://login.microsoftonline.com'
 class Credentials:
 
     def __init__(
-        self, arm_credentials: Any, aad_graph_credentials: Any, tenant_id: str = None, subscription_id: str = None,
-        context: adal.AuthenticationContext = None, current_user: str = None,
+            self,
+            arm_credentials: Any,
+            aad_graph_credentials: Any,
+            tenant_id: Optional[str] = None,
+            subscription_id: Optional[str] = None,
+            context: Optional[adal.AuthenticationContext] = None,
+            current_user: Optional[str] = None,
     ) -> None:
         self.arm_credentials = arm_credentials  # Azure Resource Manager API credentials
         self.aad_graph_credentials = aad_graph_credentials  # Azure AD Graph API credentials
@@ -129,7 +134,12 @@ class Authenticator:
 
             raise e
 
-    def authenticate_sp(self, tenant_id: str = None, client_id: str = None, client_secret: str = None) -> Credentials:
+    def authenticate_sp(
+            self,
+            tenant_id: Optional[str] = None,
+            client_id: Optional[str] = None,
+            client_secret: Optional[str] = None,
+    ) -> Credentials:
         """
         Implements authentication for the Azure provider
         """
