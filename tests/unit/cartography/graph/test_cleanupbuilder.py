@@ -11,6 +11,7 @@ from tests.data.graph.querybuilder.sample_models.asset_with_non_kwargs_tgm impor
 from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetSchema
 from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetToHelloAssetRel
 from tests.data.graph.querybuilder.sample_models.interesting_asset import InterestingAssetToSubResourceRel
+from tests.data.graph.querybuilder.sample_models.simple_node import SimpleNodeSchema
 from tests.unit.cartography.graph.helpers import clean_query_list
 
 
@@ -84,34 +85,6 @@ def test_build_cleanup_queries():
     expected_queries = [
         """
         MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (n)-[r:ASSOCIATED_WITH]->(:HelloAsset)
-        WHERE n.lastupdated <> $UPDATE_TAG
-        WITH n LIMIT $LIMIT_SIZE
-        DETACH DELETE n;
-        """,
-        """
-        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (n)-[r:ASSOCIATED_WITH]->(:HelloAsset)
-        WHERE r.lastupdated <> $UPDATE_TAG
-        WITH r LIMIT $LIMIT_SIZE
-        DELETE r;
-        """,
-        """
-        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (n)<-[r:CONNECTED]-(:WorldAsset)
-        WHERE n.lastupdated <> $UPDATE_TAG
-        WITH n LIMIT $LIMIT_SIZE
-        DETACH DELETE n;
-        """,
-        """
-        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
-        MATCH (n)<-[r:CONNECTED]-(:WorldAsset)
-        WHERE r.lastupdated <> $UPDATE_TAG
-        WITH r LIMIT $LIMIT_SIZE
-        DELETE r;
-        """,
-        """
-        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
         WHERE n.lastupdated <> $UPDATE_TAG
         WITH n LIMIT $LIMIT_SIZE
         DETACH DELETE n;
@@ -121,6 +94,20 @@ def test_build_cleanup_queries():
         WHERE s.lastupdated <> $UPDATE_TAG
         WITH s LIMIT $LIMIT_SIZE
         DELETE s;""",
+        """
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)-[r:ASSOCIATED_WITH]->(:HelloAsset)
+        WHERE r.lastupdated <> $UPDATE_TAG
+        WITH r LIMIT $LIMIT_SIZE
+        DELETE r;
+        """,
+        """
+        MATCH (n:InterestingAsset)<-[s:RELATIONSHIP_LABEL]-(:SubResource{id: $sub_resource_id})
+        MATCH (n)<-[r:CONNECTED]-(:WorldAsset)
+        WHERE r.lastupdated <> $UPDATE_TAG
+        WITH r LIMIT $LIMIT_SIZE
+        DELETE r;
+        """,
     ]
     assert clean_query_list(actual_queries) == clean_query_list(expected_queries)
 
@@ -133,26 +120,12 @@ def test_get_params_from_queries():
     assert set(get_parameters(queries)) == {'UPDATE_TAG', 'sub_resource_id', 'LIMIT_SIZE'}
 
 
-def test_build_cleanup_queries_selected_rels():
-    """
-    Test that we are able to correctly make cleanup jobs for a subset of relationships.
-    """
-    queries: list[str] = build_cleanup_queries(
-        InterestingAssetSchema(),
-        {InterestingAssetToSubResourceRel(), InterestingAssetToHelloAssetRel()},
-    )
-    assert len(queries) == 4  # == 2 to delete nodes and rels bound to the sub resource + 2 for the HelloAsset
-
-
 def test_build_cleanup_queries_selected_rels_no_sub_res_raises_exc():
     """
     Test that not specifying the sub resource rel as a selected_relationship in build_cleanup_queries raises exception
     """
     with pytest.raises(ValueError, match='node_schema without a sub resource relationship is not supported'):
-        build_cleanup_queries(
-            InterestingAssetSchema(),
-            {InterestingAssetToHelloAssetRel()},
-        )
+        build_cleanup_queries(SimpleNodeSchema())
 
 
 def test_build_cleanup_node_and_rel_queries_sub_res_tgm_not_validated_raises_exc():
