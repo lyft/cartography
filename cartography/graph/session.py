@@ -13,17 +13,23 @@ class Session(neo4j.Session):
     def run(self, query, parameters=None, **kwparameters):
         try:
             return self.neo4j_session.run(query, parameters, **kwparameters)
+
         except (ServiceUnavailable, AuthError, SessionExpired, TransactionError, TransactionNestingError, RoutingServiceUnavailable, WriteServiceUnavailable) as e:
-            logger.warning(f"Failed run neo4j cypher query. Error - {e}")
+            logger.warning(f"Failed run neo4j cypher query. Error - {e}", exc_info=True, stack_info=True)
+
         except Exception as e:
-            logger.warning(f"Failed run neo4j cypher query. Error - {e}")
+            logger.warning(f"Failed run neo4j cypher query. Error - {e}", exc_info=True, stack_info=True)
+
         return None
 
     def write_transaction(self, transaction_function, *args, **kwargs):
         try:
             return self.neo4j_session.write_transaction(transaction_function, *args, **kwargs)
+
         except (ServiceUnavailable, AuthError, SessionExpired, TransactionError, TransactionNestingError, RoutingServiceUnavailable, WriteServiceUnavailable) as e:
-            logger.warning(f"Failed write transaction for neo4j. Error - {e}")
+            logger.warning(f"Failed write transaction for neo4j. Error - {e}", exc_info=True, stack_info=True)
+
         except Exception as e:
-            logger.warning(f"Failed write transaction for neo4j. Error - {e}")
+            logger.warning(f"Failed write transaction for neo4j. Error - {e}", exc_info=True, stack_info=True)
+
         return None

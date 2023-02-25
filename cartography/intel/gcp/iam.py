@@ -121,7 +121,7 @@ def get_organization_custom_roles(iam: Resource, crm_v1: Resource, project_id: s
         res_project = req.execute()
         if res_project.get('parent',{}).get('type','') == 'organization':
             req = iam.organizations().roles().list(
-                parent=f"organizations/{res_project.get('parent',).get('id')}", view="FULL")
+                parent=f"organizations/{res_project.get('parent',{}).get('id')}", view="FULL")
             while req is not None:
                 res = req.execute()
                 page = res.get('roles', [])
@@ -210,21 +210,21 @@ def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> 
 
         req = crm_v1.projects().get(projectId=project_id)
         res_project = req.execute()
-        if res_project.get('parent').get('type') == 'organization':
-            req = crm_v1.organizations().getIamPolicy(resource=f"organizations/{res_project.get('parent').get('id')}")
+        if res_project.get('parent', {}).get('type', '') == 'organization':
+            req = crm_v1.organizations().getIamPolicy(resource=f"organizations/{res_project.get('parent', {}).get('id','')}")
             res = req.execute()
             if res.get('bindings'):
                 for binding in res['bindings']:
                     binding['parent'] = 'organization'
-                    binding['parent_id'] = f"organizations/{res_project.get('parent').get('id')}"
+                    binding['parent_id'] = f"organizations/{res_project.get('parent', {}).get('id','')}"
                     bindings.append(binding)
-        elif res_project.get('parent').get('type') == 'folder':
-            req = crm_v2.folders().getIamPolicy(resource=f"folders/{res_project.get('parent').get('id')}")
+        elif res_project.get('parent', {}).get('type', '') == 'folder':
+            req = crm_v2.folders().getIamPolicy(resource=f"folders/{res_project.get('parent', {}).get('id','')}")
             res = req.execute()
             if res.get('bindings'):
                 for binding in res['bindings']:
                     binding['parent'] = 'folder'
-                    binding['parent_id'] = f"folders/{res_project.get('parent').get('id')}"
+                    binding['parent_id'] = f"folders/{res_project.get('parent', {}).get('id','')}"
                     bindings.append(binding)
 
         return bindings
