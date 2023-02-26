@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import neo4j
 from neo4j import GraphDatabase
+from cartography.graph.session import Session
 from azure.core.exceptions import HttpResponseError
 from azure.graphrbac import GraphRbacManagementClient
 from azure.mgmt.resource import SubscriptionClient
@@ -40,12 +41,12 @@ def concurrent_execution(
         max_connection_lifetime=config.neo4j_max_connection_lifetime,
     )
     if service == 'iam':
-        service_func(neo4j_driver.session(), credentials, credentials.tenant_id, update_tag, common_job_parameters)
+        service_func(Session(neo4j_driver), credentials, credentials.tenant_id, update_tag, common_job_parameters)
     elif service == 'key_vaults':
-        service_func(neo4j_driver.session(), credentials,
+        service_func(Session(neo4j_driver), credentials,
                      subscription_id, update_tag, common_job_parameters, regions)
     else:
-        service_func(neo4j_driver.session(), credentials.arm_credentials,
+        service_func(Session(neo4j_driver), credentials.arm_credentials,
                      subscription_id, update_tag, common_job_parameters, regions)
     logger.info(f"END processing for service: {service}")
 

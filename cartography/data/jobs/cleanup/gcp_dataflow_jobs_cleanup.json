@@ -1,31 +1,31 @@
 {
 	"statements": [
 		{
-			"query": "MATCH (:GCPBigtableTable)<-[r:REFERENCES]-(:GCPDataFlowJob)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:GCPBigtableTable)<-[r:REFERENCES]-(:GCPDataFlowJob)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100,
 			"__comment__": "remove GCP dataflow to GCP bigtable table relationships that are out of date."
 		},
 		{
-			"query": "MATCH (:GCPBigqueryTable)<-[r:REFERENCES]-(:GCPDataFlowJob)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:GCPBigqueryTable)<-[r:REFERENCES]-(:GCPDataFlowJob)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100,
 			"__comment__": "remove GCP dataflow to GCP bigquery table relationships that are out of date."
 		},
 		{
-			"query": "MATCH (:GCPPubsubTopic)<-[r:REFERENCES]-(:GCPDataFlowJob)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:GCPPubsubTopic)<-[r:REFERENCES]-(:GCPDataFlowJob)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100,
 			"__comment__": "remove GCP dataflow to GCP pubsub topic relationships that are out of date."
 		},
 		{
-			"query": "MATCH (:GCPPubsubSubscription)<-[r:REFERENCES]-(:GCPDataFlowJob)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:GCPPubsubSubscription)<-[r:REFERENCES]-(:GCPDataFlowJob)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100,
 			"__comment__": "remove GCP dataflow to GCP pubsub subscription relationships that are out of date."
 		},
 		{
-			"query": "MATCH (:GCPSpannerInstanceDatabase)<-[r:REFERENCES]-(:GCPDataFlowJob)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:GCPSpannerInstanceDatabase)<-[r:REFERENCES]-(:GCPDataFlowJob)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100,
 			"__comment__": "remove GCP dataflow to GCP spanner instance database relationships that are out of date."
@@ -37,7 +37,7 @@
 			"__comment__": "Delete GCP dataflow job that no longer exist and detach them from all previously connected nodes."
 		},
 		{
-			"query": "MATCH (:GCPDataFlowJob)<-[r:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:GCPDataFlowJob)<-[r:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100,
 			"__comment__": "remove GCP dataflow to GCP project relationships that are out of date."

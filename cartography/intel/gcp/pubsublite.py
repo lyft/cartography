@@ -29,6 +29,14 @@ def get_pubsublite_topics(pubsublite: Resource, project_id: str, regions: list, 
             req = pubsublite.admin().projects().locations().topics().list_next(previous_request=req, previous_response=res)
         return topics
     except HttpError as e:
+        if e.status_code == 404:
+            logger.warning(
+                (
+                    "Could not retrieve pubsublite topics on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, e.status_code, e.reason,
+            )
+            return []
+
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
@@ -105,6 +113,14 @@ def get_pubsublite_subscriptions(pubsublite: Resource, project_id: str, regions:
             req = pubsublite.admin().projects().locations().subscriptions().list_next(previous_request=req, previous_response=res)
         return subscriptions
     except HttpError as e:
+        if e.status_code == 404:
+            logger.warning(
+                (
+                    "Could not retrieve pubsublite topics on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, e.status_code, e.reason,
+            )
+            return []
+
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(

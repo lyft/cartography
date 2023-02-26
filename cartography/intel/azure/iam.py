@@ -22,8 +22,6 @@ def load_tenant_users(session: neo4j.Session, tenant_id: str, data_list: List[Di
     iteration_size = 500
     total_items = len(data_list)
     total_iterations = math.ceil(len(data_list) / iteration_size)
-    logging.info(f"total users: {total_items}")
-    logging.info(f"total iterations: {total_iterations}")
 
     for counter in range(0, total_iterations):
         start = iteration_size * (counter)
@@ -38,7 +36,7 @@ def load_tenant_users(session: neo4j.Session, tenant_id: str, data_list: List[Di
 
         session.write_transaction(_load_tenant_users_tx, tenant_id, paged_users, update_tag)
 
-        logging.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paged_users)}")
+        logger.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paged_users)}")
 
 
 def load_roles(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int, SUBSCRIPTION_ID: str) -> None:
@@ -89,7 +87,7 @@ def list_tenant_users(client: GraphRbacManagementClient, tenant_id: str) -> List
         return users
 
     except HttpResponseError as e:
-        logging.warning(f"Error while retrieving tenant users - {e}")
+        logger.warning(f"Error while retrieving tenant users - {e}")
         return []
 
 def transform_users(users_list: List[Dict], tenant_id:str) -> List[Dict]:
@@ -226,7 +224,7 @@ def sync_tenant_users(
     #         totalPages = totalPages + 1
     #     totalPages = int(totalPages)
     #     if pageNo < totalPages or pageNo == totalPages:
-    #         logging.info(f'pages process for iam users {pageNo}/{totalPages} pageSize is {pageSize}')
+    #         logger.info(f'pages process for iam users {pageNo}/{totalPages} pageSize is {pageSize}')
     #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
     #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
     #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -253,7 +251,7 @@ def get_tenant_groups_list(client: GraphRbacManagementClient, tenant_id: str) ->
         return tenant_groups_list
 
     except HttpResponseError as e:
-        logging.warning(f"Error while retrieving tenant groups - {e}")
+        logger.warning(f"Error while retrieving tenant groups - {e}")
         return []
 
 
@@ -312,7 +310,7 @@ def sync_tenant_groups(
     #         totalPages = totalPages + 1
     #     totalPages = int(totalPages)
     #     if pageNo < totalPages or pageNo == totalPages:
-    #         logging.info(f'pages process for iam groups {pageNo}/{totalPages} pageSize is {pageSize}')
+    #         logger.info(f'pages process for iam groups {pageNo}/{totalPages} pageSize is {pageSize}')
     #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
     #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
     #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -339,7 +337,7 @@ def get_tenant_applications_list(client: GraphRbacManagementClient, tenant_id: s
         return tenant_applications_list
 
     except HttpResponseError as e:
-        logging.warning(f"Error while retrieving tenant applications - {e}")
+        logger.warning(f"Error while retrieving tenant applications - {e}")
         return []
 
 
@@ -395,7 +393,7 @@ def sync_tenant_applications(
     #         totalPages = totalPages + 1
     #     totalPages = int(totalPages)
     #     if pageNo < totalPages or pageNo == totalPages:
-    #         logging.info(f'pages process for iam applications {pageNo}/{totalPages} pageSize is {pageSize}')
+    #         logger.info(f'pages process for iam applications {pageNo}/{totalPages} pageSize is {pageSize}')
     #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
     #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
     #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -425,7 +423,7 @@ def get_tenant_service_accounts_list(client: GraphRbacManagementClient, tenant_i
         return tenant_service_accounts_list
 
     except HttpResponseError as e:
-        logging.warning(f"Error while retrieving tenant service accounts - {e}")
+        logger.warning(f"Error while retrieving tenant service accounts - {e}")
         return []
 
 
@@ -482,7 +480,7 @@ def sync_tenant_service_accounts(
     #         totalPages = totalPages + 1
     #     totalPages = int(totalPages)
     #     if pageNo < totalPages or pageNo == totalPages:
-    #         logging.info(f'pages process for iam service_accounts {pageNo}/{totalPages} pageSize is {pageSize}')
+    #         logger.info(f'pages process for iam service_accounts {pageNo}/{totalPages} pageSize is {pageSize}')
     #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
     #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
     #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -509,7 +507,7 @@ def get_tenant_domains_list(client: GraphRbacManagementClient, tenant_id: str) -
         return tenant_domains_list
 
     except HttpResponseError as e:
-        logging.warning(f"Error while retrieving tenant domains - {e}")
+        logger.warning(f"Error while retrieving tenant domains - {e}")
         return []
 
 
@@ -566,7 +564,7 @@ def sync_tenant_domains(
     #         totalPages = totalPages + 1
     #     totalPages = int(totalPages)
     #     if pageNo < totalPages or pageNo == totalPages:
-    #         logging.info(f'pages process for iam domains {pageNo}/{totalPages} pageSize is {pageSize}')
+    #         logger.info(f'pages process for iam domains {pageNo}/{totalPages} pageSize is {pageSize}')
     #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
     #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
     #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
@@ -606,7 +604,7 @@ def get_roles_list(client: AuthorizationManagementClient, common_job_parameters:
         return roles_list
 
     except HttpResponseError as e:
-        logging.warning(f"Error while retrieving roles - {e}")
+        logger.warning(f"Error while retrieving roles - {e}")
         return []
 
 
@@ -708,7 +706,7 @@ def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    logging.info("Syncing IAM for Tenant '%s'.", tenant_id)
+    logger.info("Syncing IAM for Tenant '%s'.", tenant_id)
 
     common_job_parameters['AZURE_TENANT_ID'] = tenant_id
 
@@ -738,4 +736,4 @@ def sync(
         set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
 
     except Exception as ex:
-        logging.error(f'exception from IAM - {ex}', exc_info=True, stack_info=True)
+        logger.error(f'exception from IAM - {ex}', exc_info=True, stack_info=True)

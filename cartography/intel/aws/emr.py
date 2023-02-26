@@ -27,14 +27,10 @@ DESCRIBE_SLEEP = 1
 def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
     clusters: List[Dict] = []
-    counter = 0
     paginator = client.get_paginator('list_clusters')
     for page in paginator.paginate():
         cluster = page['Clusters']
         clusters.extend(cluster)
-        counter += 1
-        print(f"counter: {counter} - items: {len(page['Clusters'])}")
-        # time.sleep(LIST_SLEEP)
 
     return clusters
 

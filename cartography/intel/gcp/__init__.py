@@ -12,6 +12,7 @@ import googleapiclient.discovery
 import neo4j
 from googleapiclient.discovery import Resource
 from neo4j import GraphDatabase
+from cartography.graph.session import Session
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
@@ -428,10 +429,10 @@ def concurrent_execution(
 
     if service == 'iam':
 
-        service_func(neo4j_driver.session(), iam, crm_v1, crm_v2, apikey, project_id,
+        service_func(Session(neo4j_driver), iam, crm_v1, crm_v2, apikey, project_id,
                      gcp_update_tag, common_job_parameters)
     else:
-        service_func(neo4j_driver.session(), iam, project_id, gcp_update_tag,
+        service_func(Session(neo4j_driver), iam, project_id, gcp_update_tag,
                      common_job_parameters, regions)
 
     logger.info(f"END processing for service: {service}")
