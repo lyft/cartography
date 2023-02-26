@@ -247,7 +247,6 @@ def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, 
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $update_tag
     """
-    logger.error(f"({instanceid})-[PART_OF_SUBNET]->({subnet_id})")
 
     tx.run(
         query,
@@ -261,7 +260,9 @@ def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, 
 def _load_ec2_explicit_route_table_tx(tx: neo4j.Transaction, subnet_id: str, update_tag: int) -> None:
     query = """
         MATCH (subnet:EC2Subnet{subnetid: $SubnetId})
-        MERGE (rtab:EC2RouteTable)-[rel:HAS_ASSOCIATION]->(assoc:EC2RouteTableAssociation{subnet_id: $SubnetId})
+        WITH subnet
+        MATCH (assoc:EC2RouteTableAssociation{subnet_id: $SubnetId})
+        MERGE (rtab:EC2RouteTable)-[rel:HAS_ASSOCIATION]->(assoc)
         WITH subnet, rtab
         MERGE (subnet)-[r:HAS_EXPLICIT_ROUTE_TABLE]->(rtab)
         ON CREATE SET
@@ -280,7 +281,8 @@ def _load_ec2_implicit_route_table_tx(tx: neo4j.Transaction, instanceid: str, vp
     query = """
         MATCH (instance:EC2Instance{id: $InstanceId})
         WHERE NOT EXISTS((instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[:HAS_EXPLICIT_ROUTE_TABLE]->(:EC2RouteTable))
-        MERGE (rtab:EC2RouteTable{vpc_id: $VpcId})-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation{main: true})
+        WITH instance
+        MATCH (rtab:EC2RouteTable{vpc_id: $VpcId})-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation{main: true})
         WITH instance, rtab
         MERGE (instance)-[r:HAS_IMPLICIT_ROUTE_TABLE]->(rtab)
         ON CREATE SET
@@ -419,9 +421,16 @@ def load_ec2_instances(
             instance['ReservationId'] = reservation_id
             instances.append(instance)
 
-            # SubnetId can return None intermittently so attach only if non-None.
+    _load_ec2_instances(neo4j_session, instances, current_aws_account_id, update_tag)
+
+    for reservation in data:
+        region = reservation.get('region', '')
+        reservation['region'] = region
+        reservations.append(reservation)
+
+        for instance in reservation["Instances"]:
+            instanceid = instance["InstanceId"]
             subnet_id = instance.get('SubnetId')
-            logger.error(f"--->{subnet_id}")
             if subnet_id:
                 neo4j_session.write_transaction(_load_ec2_subnet_tx, instanceid, subnet_id, region, update_tag)
                 neo4j_session.write_transaction(_load_ec2_explicit_route_table_tx, subnet_id, update_tag)
@@ -477,8 +486,6 @@ def load_ec2_instances(
                         })
 
     _load_ec2_reservations(neo4j_session, reservations, current_aws_account_id, update_tag)
-
-    _load_ec2_instances(neo4j_session, instances, current_aws_account_id, update_tag)
 
     _load_ec2_key_pairs(neo4j_session, key_pairs, current_aws_account_id, update_tag)
 

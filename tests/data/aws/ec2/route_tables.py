@@ -37,7 +37,7 @@ DESCRIBE_ROUTE_TABLES = [
             {
                 'Main': True,
                 'RouteTableAssociationId': 'route_table_assoc-3',
-                'SubnetId': 'string',
+                'SubnetId': 'subnet-0773409557644dca4',
                 'GatewayId': 'string',
             },
         ],
