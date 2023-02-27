@@ -1,6 +1,10 @@
-import cartography.intel.aws.ec2
+import cartography.intel.aws.ec2.instances
+import cartography.intel.aws.ec2.route_tables
+import cartography.intel.aws.ec2.subnets
 import cartography.intel.aws.iam
 import tests.data.aws.ec2.instances
+import tests.data.aws.ec2.route_tables
+import tests.data.aws.ec2.subnets
 import tests.data.aws.iam
 from cartography.util import run_analysis_job
 
@@ -148,4 +152,73 @@ def test_ec2_iaminstanceprofiles(neo4j_session):
         )
         for n in nodes
     }
+    assert actual_nodes == expected_nodes
+
+
+def test_ec2_asset_exposure(neo4j_session):
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSAccount{id: $aws_account_id})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = $aws_update_tag
+        """,
+        aws_account_id=TEST_ACCOUNT_ID,
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+
+    data = tests.data.aws.ec2.route_tables.DESCRIBE_ROUTE_TABLES
+    cartography.intel.aws.ec2.route_tables.load_route_tables(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG
+    )
+
+    data_instances = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
+        neo4j_session, data_instances, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+    )
+
+    data = tests.data.aws.ec2.subnets.DESCRIBE_SUBNETS
+    cartography.intel.aws.ec2.subnets.load_subnets(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG + 1,
+    }
+
+    run_analysis_job(
+        'aws_ec2_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    expected_nodes = {
+        ('i-01',
+         'public_subnet_implicit'),
+        ('i-02',
+         'public_subnet_explicit'),
+        ('i-03',
+         'public_subnet_explicit'),
+        ('i-04',
+         'public_subnet_explicit'),
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (instance:EC2Instance{exposed_internet: true}) return instance.id, instance.exposed_internet_type
+        """,
+    )
+
+    actual_nodes = {
+        (
+            n['instance.id'],
+            ", ".join(n['instance.exposed_internet_type'])
+        )
+        for n in nodes
+    }
+
     assert actual_nodes == expected_nodes

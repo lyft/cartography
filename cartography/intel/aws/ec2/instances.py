@@ -76,7 +76,8 @@ def load_ec2_instance_network_interfaces_tx(
             nic.lastupdated = $update_tag
             
             WITH nic, interface
-            MERGE (instance:EC2Instance{id: interface.InstanceId})-[r:NETWORK_INTERFACE]->(nic)
+            MATCH (instance:EC2Instance{instanceid: interface.InstanceId})
+            MERGE (instance)-[r:NETWORK_INTERFACE]->(nic)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = $update_tag
 
@@ -189,9 +190,9 @@ def _load_ec2_instances_tx(
 ) -> None:
     query = """
         UNWIND $Instances as inst
-            MERGE (instance:Instance:EC2Instance{id: inst.InstanceId})
+            MERGE (instance:Instance:EC2Instance{instanceid: inst.InstanceId})
             ON CREATE SET instance.firstseen = timestamp()
-            SET instance.instanceid = inst.InstanceId,
+            SET instance.id = inst.InstanceId,
                 instance.publicdnsname = inst.PublicDnsName,
                 instance.privatednsname = inst.PrivateDnsName,
                 instance.privateipaddress = inst.PrivateIpAddress,
@@ -238,7 +239,7 @@ def _load_ec2_instances_tx(
 
 def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, region: str, update_tag: int) -> None:
     query = """
-        MATCH (instance:EC2Instance{id: $InstanceId})
+        MATCH (instance:EC2Instance{instanceid: $InstanceId})
         MERGE (subnet:EC2Subnet{subnetid: $SubnetId})
         ON CREATE SET subnet.firstseen = timestamp()
         SET subnet.region = $Region,
@@ -279,7 +280,7 @@ def _load_ec2_explicit_route_table_tx(tx: neo4j.Transaction, subnet_id: str, upd
 
 def _load_ec2_implicit_route_table_tx(tx: neo4j.Transaction, instanceid: str, vpc_id: str, update_tag: int) -> None:
     query = """
-        MATCH (instance:EC2Instance{id: $InstanceId})
+        MATCH (instance:EC2Instance{instanceid: $InstanceId})
         WHERE NOT EXISTS((instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[:HAS_EXPLICIT_ROUTE_TABLE]->(:EC2RouteTable))
         WITH instance
         MATCH (rtab:EC2RouteTable{vpc_id: $VpcId})-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation{main: true})
@@ -430,6 +431,7 @@ def load_ec2_instances(
 
         for instance in reservation["Instances"]:
             instanceid = instance["InstanceId"]
+            # SubnetId can return None intermittently so attach only if non-None.
             subnet_id = instance.get('SubnetId')
             if subnet_id:
                 neo4j_session.write_transaction(_load_ec2_subnet_tx, instanceid, subnet_id, region, update_tag)

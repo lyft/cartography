@@ -19,7 +19,7 @@ DESCRIBE_ROUTE_TABLES = [
             {
                 'DestinationCidrBlock': '0.0.0.0/0',
                 'DestinationIpv6CidrBlock': 'ff::ff/32',
-                'GatewayId': 'egw-a90d73f',
+                'GatewayId': 'igw-a90d73f',
                 'State': 'active',
             },
             {
@@ -52,7 +52,7 @@ DESCRIBE_ROUTE_TABLES = [
             {
                 'DestinationCidrBlock': '11.10.10.10/8',
                 'DestinationIpv6CidrBlock': '::/0',
-                'GatewayId': 'egw-a90d73f',
+                'GatewayId': 'igw-a90d73f',
                 'State': 'active',
             },
         ],

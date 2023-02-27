@@ -38,6 +38,7 @@ def test_load_route_tables_explicit_relationships(neo4j_session):
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG
     )
+
     data = tests.data.aws.ec2.subnets.DESCRIBE_SUBNETS
     cartography.intel.aws.ec2.subnets.load_subnets(
         neo4j_session,
