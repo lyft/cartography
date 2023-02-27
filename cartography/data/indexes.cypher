@@ -140,6 +140,7 @@ CREATE INDEX IF NOT EXISTS FOR (n:ECSContainerInstance) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:ECSService) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:ECSService) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:ECSTaskDefinition) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:ECSTaskDefinition) ON (n.arn);
 CREATE INDEX IF NOT EXISTS FOR (n:ECSTaskDefinition) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:ECSTask) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:ECSTask) ON (n.lastupdated);
