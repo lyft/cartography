@@ -100,7 +100,7 @@ def get_ecs_task_definitions(
     task_definitions: List[Dict[str, Any]] = []
     for task in tasks:
         task_definition = client.describe_task_definition(
-            taskDefinition=task.get('taskDefinitionArn'),
+            taskDefinition=task['taskDefinitionArn'],
         )
         task_definitions.append(task_definition['taskDefinition'])
     return task_definitions
