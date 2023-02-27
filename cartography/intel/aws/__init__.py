@@ -191,13 +191,13 @@ def list_all_regions(boto3_session, logger):
     try:
         client = boto3_session.client('ec2', region_name="us-east-2", config=get_botocore_config())
         regions = client.describe_regions(Filters=[
-                {
-                    'Name': 'opt-in-status',
-                    'Values': [
+            {
+                'Name': 'opt-in-status',
+                'Values': [
                         'opt-in-not-required',
-                    ]
-                },
-            ])
+                ]
+            },
+        ])
 
     except Exception as e:
         logger.error(f"Failed retrieve enabled regions. Error - {e}")
@@ -369,4 +369,11 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             neo4j_session,
             common_job_parameters,
         )
+
+        run_analysis_job(
+            'aws_s3_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters
+        )
+
     return common_job_parameters

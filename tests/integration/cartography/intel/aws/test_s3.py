@@ -1,5 +1,6 @@
 import cartography.intel.aws.s3
 import tests.data.aws.s3
+from cartography.util import run_analysis_job
 
 
 TEST_ACCOUNT_ID = '000000000000'
@@ -11,9 +12,13 @@ def test_load_s3_buckets(neo4j_session, *args):
     """
     Ensure that expected buckets get loaded with their key fields.
     """
+    neo4j_session.run(
+        """
+        MERGE (owner:AWSAccount{id: "000000000000"});
+        """
+    )
     data = tests.data.aws.s3.LIST_BUCKETS
     cartography.intel.aws.s3.load_s3_buckets(neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
-
     expected_nodes = {
         (
             "bucket-1",
@@ -164,3 +169,36 @@ def test_load_s3_policies(neo4j_session, *args):
     )
 
     assert actual_relationships.single().value() == 3
+
+
+def test_load_s3_policy_statuses(neo4j_session, *args):
+    cartography.intel.aws.s3._load_s3_policy_statuses(neo4j_session, tests.data.aws.s3.LIST_STATUSES, TEST_UPDATE_TAG)
+
+    common_job_parameters = {
+        'UPDATE_TAG': TEST_UPDATE_TAG + 1,  # Simulate a new sync run finished so the old update tag is obsolete now
+        'AWS_ID': TEST_ACCOUNT_ID,
+    }
+
+    run_analysis_job(
+        'aws_s3_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (s:S3Bucket{exposed_internet:true}) RETURN s.id;
+        """
+    )
+
+    actual_nodes = {
+        (
+            n['s.id'],
+        )
+        for n in nodes
+    }
+
+    expected_nodes = {
+        ('bucket-2',), ('bucket-1',)
+    }
+    assert actual_nodes == expected_nodes
