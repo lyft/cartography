@@ -14,6 +14,8 @@ from cloudconsolelink.clouds.aws import AWSLinker
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from policyuniverse.policy import Policy
+import json
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
@@ -35,6 +37,11 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
             each_function['isPublicFacing'] = False
             if not each_function.get('VpcConfig', {}).get('VpcId'):
                 each_function['isPublicFacing'] = True
+            policy = client.get_policy(FunctionName=each_function['FunctionArn'])
+            if policy is not None:
+                each_function['policy'] = Policy(json.loads(policy['Policy']))
+                if (each_function['policy'].is_internet_accessible()):
+                    each_function['exposed_internet'] = True
             lambda_functions.append(each_function)
     return lambda_functions
 
