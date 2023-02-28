@@ -336,14 +336,14 @@ def _load_sql_databases_tx(tx: neo4j.Transaction, sql_databases: List[Dict], pro
         d.instance = database.instance,
         d.collation=database.collation,
         d.compatibilitylevel=database.sqlserverDatabaseDetails.compatibilityLevel,
-        d.recoveryModel=database.sqlserverDatabaseDetails.recoveryModel,
+        d.recoverymodel=database.sqlserverDatabaseDetails.recoveryModel,
         d.region = $region,
         d.project = database.project,
         d.consolelink = database.consolelink,
         d.lastupdated = $gcp_update_tag
     WITH d,database
     MATCH (i:GCPSQLInstance{id:database.instance_id})
-    MERGE (i)-[r:DATABASE]->(d)
+    MERGE (i)-[r:HAS_DATABASE]->(d)
     ON CREATE SET
         r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
