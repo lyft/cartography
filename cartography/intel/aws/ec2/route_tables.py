@@ -27,7 +27,6 @@ def get_route_tables_data(boto3_session: boto3.session.Session, region: str) -> 
             route_tables.extend(page['RouteTables'])
         for route_table in route_tables:
             route_table['region'] = region
-            route_table['consolelink'] = ''  # TODO
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
             logger.warning(
@@ -44,6 +43,23 @@ def load_route_tables(
     neo4j_session: neo4j.Session, data: List[Dict], aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
+    routes: List[Dict] = []
+    associations: List[Dict] = []
+    for route_table in data:
+        route_table['arn'] = f"arn:aws:ec2:{route_table['region']}:{aws_account_id}:route-table/{route_table['RouteTableId']}"
+        route_table['consolelink'] = ''  # TODO aws_console_link.get_console_link(arn=route_table['arn'])
+        associations.extend(route_table['Associations'])
+        for route in route_table['Routes']:
+            route['RouteTableId'] = route_table['RouteTableId']
+            route['id'] = f"route_table/{route_table['RouteTableId']}/destination_cidr/{route['DestinationCidrBlock']}"
+            routes.append(route)
+    neo4j_session.write_transaction(load_route_tables_tx, data, aws_update_tag)
+    neo4j_session.write_transaction(load_routes_tx, routes, aws_update_tag)
+    neo4j_session.write_transaction(load_associations_tx, associations, aws_update_tag)
+
+
+@timeit
+def load_route_tables_tx(tx: neo4j.Transaction, data: List[Dict], aws_update_tag: int):
     ingest_route_tables = """
     UNWIND $route_tables as route_table
     MERGE (rtab: EC2RouteTable{id: route_table.RouteTableId})
@@ -51,11 +67,23 @@ def load_route_tables(
         rtab.firstseen = timestamp()
     SET
         rtab.lastupdated = $aws_update_tag,
+        rtab.consolelink = route_table.consolelink,
+        rtab.arn = route_table.arn,
         rtab.vpc_id = route_table.VpcId,
         rtab.owner_id = route_table.OwnerId
-    WITH rtab, route_table
-    UNWIND route_table.Routes as route
-    MERGE (rt: EC2Route{id: route.DestinationCidrBlock})
+    """
+    tx.run(
+        ingest_route_tables,
+        route_tables=data,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def load_routes_tx(tx: neo4j.Transaction, data: List[Dict], aws_update_tag: int):
+    ingest_routes = """
+    UNWIND $routes as route
+    MERGE (rt: EC2Route{id: route.id})
     ON CREATE SET
         rt.firstseen = timestamp()
     SET
@@ -65,14 +93,25 @@ def load_route_tables(
         rt.gateway_id = route.GatewayId,
         rt.state = route.State,
         rt.nat_gateway_id = route.NatGatewayId
-    WITH rtab, route_table, rt
+    WITH route, rt
+    MATCH (rtab:EC2RouteTable{id: route.RouteTableId})
     MERGE (rtab)-[r:MEMBER_OF_ROUTE_TABLE]->(rt)
     ON CREATE SET
         r.firstseen = timestamp()
     SET
         r.lastupdated = $aws_update_tag
-    WITH rtab, route_table
-    UNWIND route_table.Associations as assoc
+    """
+    tx.run(
+        ingest_routes,
+        routes=data,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def load_associations_tx(tx: neo4j.Transaction, data: List[Dict], aws_update_tag: int):
+    ingest_associations = """
+    UNWIND $associations as assoc
     MERGE (asc: EC2RouteTableAssociation{id: assoc.RouteTableAssociationId})
     ON CREATE SET
         asc.firstseen = timestamp()
@@ -81,16 +120,17 @@ def load_route_tables(
         asc.subnet_id = assoc.SubnetId,
         asc.main = assoc.Main,
         asc.Gateway_id = assoc.GatewayId
-    WITH asc, rtab
+    WITH assoc, asc
+    MATCH (rtab:EC2RouteTable{id: assoc.RouteTableId})
     MERGE (rtab)-[rel:HAS_ASSOCIATION]->(asc)
     ON CREATE SET 
         rel.firstseen = timestamp()
     SET
         rel.lastupdated = $aws_update_tag
     """
-    neo4j_session.run(
-        ingest_route_tables,
-        route_tables=data,
+    tx.run(
+        ingest_associations,
+        associations=data,
         aws_update_tag=aws_update_tag,
     )
 

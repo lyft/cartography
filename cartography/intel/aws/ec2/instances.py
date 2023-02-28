@@ -190,9 +190,9 @@ def _load_ec2_instances_tx(
 ) -> None:
     query = """
         UNWIND $Instances as inst
-            MERGE (instance:Instance:EC2Instance{instanceid: inst.InstanceId})
+            MERGE (instance:Instance:EC2Instance{id: inst.InstanceId})
             ON CREATE SET instance.firstseen = timestamp()
-            SET instance.id = inst.InstanceId,
+            SET instance.instanceid = inst.InstanceId,
                 instance.publicdnsname = inst.PublicDnsName,
                 instance.privatednsname = inst.PrivateDnsName,
                 instance.privateipaddress = inst.PrivateIpAddress,

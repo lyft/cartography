@@ -293,7 +293,7 @@ def _load_s3_policy_statuses(
     UNWIND $policy_statuses as policy_status
     MATCH (bucket:S3Bucket{name: policy_status.bucket})
     SET 
-        bucket.is_public = coalesce(policy_status.is_public, true),
+        bucket.is_public = coalesce(policy_status.is_public, false),
         bucket.lastupdated = $UpdateTag
     """
 

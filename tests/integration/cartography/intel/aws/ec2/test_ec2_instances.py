@@ -11,6 +11,7 @@ from cartography.util import run_analysis_job
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
+TEST_WORKSPACE_ID = '123'
 
 
 def test_load_ec2_instances(neo4j_session, *args):
@@ -105,12 +106,13 @@ def test_ec2_iaminstanceprofiles(neo4j_session):
     """
     neo4j_session.run(
         """
-        MERGE (aws:AWSAccount{id: $aws_account_id})
+        MERGE (aws:AWSAccount{id: $aws_account_id})<-[:OWNER]-(:CloudanixWorkspace{id: $workspace_id})
         ON CREATE SET aws.firstseen = timestamp()
         SET aws.lastupdated = $aws_update_tag
         """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
+        workspace_id=TEST_WORKSPACE_ID,
     )
 
     data_instances = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
@@ -126,6 +128,7 @@ def test_ec2_iaminstanceprofiles(neo4j_session):
 
     common_job_parameters = {
         "UPDATE_TAG": TEST_UPDATE_TAG,
+        "WORKSPACE_ID": TEST_WORKSPACE_ID,
     }
 
     run_analysis_job(
@@ -158,12 +161,13 @@ def test_ec2_iaminstanceprofiles(neo4j_session):
 def test_ec2_asset_exposure(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (aws:AWSAccount{id: $aws_account_id})
+        MERGE (aws:AWSAccount{id: $aws_account_id})<-[:OWNER]-(:CloudanixWorkspace{id: $workspace_id})
         ON CREATE SET aws.firstseen = timestamp()
         SET aws.lastupdated = $aws_update_tag
         """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
+        workspace_id=TEST_WORKSPACE_ID
     )
 
     data = tests.data.aws.ec2.route_tables.DESCRIBE_ROUTE_TABLES
@@ -188,6 +192,7 @@ def test_ec2_asset_exposure(neo4j_session):
     )
     common_job_parameters = {
         "UPDATE_TAG": TEST_UPDATE_TAG + 1,
+        "WORKSPACE_ID": TEST_WORKSPACE_ID,
     }
 
     run_analysis_job(
