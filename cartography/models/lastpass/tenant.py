@@ -26,7 +26,7 @@ class TenantToUserRelProperties(CartographyRelProperties):
 class LastpassTenantToUserRel(CartographyRelSchema):
     target_node_label: str = 'LastpassUser'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('tenant_id')},
+        {'tenant_id': PropertyRef('id')},
     )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RESOURCE"
