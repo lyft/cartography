@@ -26,7 +26,7 @@ class HiBobCompanyToDepartmentRelProperties(CartographyRelProperties):
 class HiBobCompanyToDepartmentRel(CartographyRelSchema):
     target_node_label: str = 'HiBobDepartment'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('company_id')},
+        {'company_id': PropertyRef('id')},
     )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RESOURCE"
