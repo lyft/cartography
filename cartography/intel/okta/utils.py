@@ -52,6 +52,9 @@ def check_rate_limit(response: Response) -> int:
             if reset_time is not None:
                 sleep_time = int(reset_time) - int(time.time())
                 if sleep_time > 0:
+                    if sleep_time > 60:
+                        logger.exception(f"Okta sleep time of {sleep_time} would exceed one minute")
+                        raise
                     logger.warning(f"Okta rate limit threshold reached. Waiting {sleep_time} seconds.")
                     time.sleep(sleep_time)
     return sleep_time
