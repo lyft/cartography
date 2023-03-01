@@ -30,7 +30,7 @@ def start_hibob_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     session = requests.Session()
     session.headers.update({'Authorization': config.hibob_api_key})
 
-    cartography.intel.hibob.employees.sync(neo4j_session, config.update_tag, session)
+    cartography.intel.hibob.employees.sync(neo4j_session, session, common_job_parameters)
 
     run_cleanup_job(
         "hibob_import_cleanup.json",

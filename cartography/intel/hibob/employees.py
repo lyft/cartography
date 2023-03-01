@@ -11,9 +11,10 @@ from requests import Session
 
 from cartography.client.core.tx import load_graph_data
 from cartography.graph.querybuilder import build_ingestion_query
-from cartography.intel.hibob.schema import HiBobDepartmentSchema
-from cartography.intel.hibob.schema import HiBobEmployeeSchema
-from cartography.intel.hibob.schema import HumanSchema
+from cartography.models.hibob.company import HiBobCompanySchema
+from cartography.models.hibob.department import HiBobDepartmentSchema
+from cartography.models.hibob.employee import HiBobEmployeeSchema
+from cartography.models.hibob.human import HumanSchema
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -24,12 +25,12 @@ _TIMEOUT = (60, 60)
 @timeit
 def sync(
     neo4j_session: neo4j.Session,
-    update_tag: int,
     api_session: Session,
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     data = get(api_session)
-    departments, employees = transform(data)
-    load(neo4j_session, departments, employees, update_tag)
+    companies, departments, employees = transform(data)
+    load(neo4j_session, companies, departments, employees, common_job_parameters)
 
 
 @timeit
@@ -40,26 +41,31 @@ def get(api_session: Session) -> Dict[str, Any]:
 
 
 @timeit
-def transform(response_objects: Dict[str, List]) -> Tuple[List[Dict], List[Dict]]:
+def transform(response_objects: Dict[str, List]) -> Tuple[List[Dict], List[Dict], List[Dict]]:
     """  Strips list of API response objects to return list of group objects only
     :param response_objects:
     :return: list of dictionary objects as defined in /docs/schema/hibob.md
     """
+    companies = {}
     departments = {}
     users: List[Dict] = []
 
     transformed_users = {}
 
     for user in response_objects['employees']:
+        # Extract company
+        if user['companyId'] not in companies:
+            companies[user['companyId']] = {'id': user['companyId']}
         # Extract department
         if user['work']['department'] not in departments:
             departments[user['work']['department']] = {
                 'id': user['work']['department'],
                 'name': user['work']['department'],
+                'company_id': user['companyId'],
             }
         # Add junk reportsTo id if needed
         if 'reportsTo' not in user['work']:
-            user['work']['reportsTo'] = "None"
+            user['work']['reportsTo'] = None
         user['work']['startDate'] = int(dt_parse.parse(user['work']['startDate']).timestamp() * 1000)
         transformed_users[user['id']] = user
 
@@ -69,7 +75,7 @@ def transform(response_objects: Dict[str, List]) -> Tuple[List[Dict], List[Dict]
     while len(transformed_users) > 0:
         for uid in list(transformed_users.keys()):
             user = transformed_users[uid]
-            if user['work']['reportsTo'] == 'None':
+            if user['work']['reportsTo'] is None:
                 users.append(user)
                 transformed_users.pop(uid)
                 seen_users.add(user['displayName'])
@@ -81,11 +87,15 @@ def transform(response_objects: Dict[str, List]) -> Tuple[List[Dict], List[Dict]
         if initial_len == len(transformed_users):
             users += transformed_users
 
-    return list(departments.values()), users
+    return list(companies.values()), list(departments.values()), users
 
 
 def load(
-    neo4j_session: neo4j.Session, departments: List[Dict], employees: List[Dict], update_tag: int,
+    neo4j_session: neo4j.Session,
+    companies: List[Dict],
+    departments: List[Dict],
+    employees: List[Dict],
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     """
     Transform and load employees information
@@ -97,19 +107,29 @@ def load(
         neo4j_session,
         query_humans,
         employees,
-        lastupdated=update_tag,
+        lastupdated=common_job_parameters['UPDATE_TAG'],
     )
-    query_departments = build_ingestion_query(HiBobDepartmentSchema())
-    load_graph_data(
-        neo4j_session,
-        query_departments,
-        departments,
-        lastupdated=update_tag,
-    )
+    # Employees
     query_employees = build_ingestion_query(HiBobEmployeeSchema())
     load_graph_data(
         neo4j_session,
         query_employees,
         employees,
-        lastupdated=update_tag,
+        lastupdated=common_job_parameters['UPDATE_TAG'],
+    )
+    # Departments
+    query_departments = build_ingestion_query(HiBobDepartmentSchema())
+    load_graph_data(
+        neo4j_session,
+        query_departments,
+        departments,
+        lastupdated=common_job_parameters['UPDATE_TAG'],
+    )
+    # Companies
+    query_companies = build_ingestion_query(HiBobCompanySchema())
+    load_graph_data(
+        neo4j_session,
+        query_companies,
+        companies,
+        lastupdated=common_job_parameters['UPDATE_TAG'],
     )

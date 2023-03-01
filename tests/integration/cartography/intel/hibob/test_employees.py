@@ -8,12 +8,16 @@ TEST_UPDATE_TAG = 123456789
 def test_load_hibob_employees(neo4j_session):
 
     data = tests.data.hibob.employees.HIBOB_EMPLOYEES_GET_DATA
-    departments, employees = cartography.intel.hibob.employees.transform(data)
+    companies, departments, employees = cartography.intel.hibob.employees.transform(data)
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG,
+    }
     cartography.intel.hibob.employees.load(
         neo4j_session,
+        companies,
         departments,
         employees,
-        TEST_UPDATE_TAG,
+        common_job_parameters,
     )
 
     # Ensure employees got loaded

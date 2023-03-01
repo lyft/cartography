@@ -25,6 +25,7 @@ HIBOB_EMPLOYEES_GET_DATA = {
             },
             "firstName": "John",
             "id": "1234",
+            "companyId": "1337",
         },
         {
             "fullName": "Jane Smith",
@@ -51,6 +52,7 @@ HIBOB_EMPLOYEES_GET_DATA = {
             },
             "firstName": "Jane",
             "id": "5678",
+            "companyId": "1337",
         },
     ],
 }
