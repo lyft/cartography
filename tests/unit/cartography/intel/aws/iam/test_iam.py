@@ -1,4 +1,6 @@
 from cartography.intel.aws import iam
+from cartography.intel.aws.iam import PolicyType
+from cartography.intel.aws.iam import transform_policy_data
 
 SINGLE_STATEMENT = {
     "Resource": "*",
@@ -39,12 +41,14 @@ def test_get_account_from_arn():
 
 def test__get_role_tags_valid_tags(mocker):
     mocker.patch(
-        'cartography.intel.aws.iam.get_role_list_data', return_value=[
-            {
-                'RoleName': 'test-role',
-                'Arn': 'test-arn',
-            },
-        ],
+        'cartography.intel.aws.iam.get_role_list_data', return_value={
+            'Roles': [
+                {
+                    'RoleName': 'test-role',
+                    'Arn': 'test-arn',
+                },
+            ],
+        },
     )
     mocker.patch('boto3.session.Session')
     mock_session = mocker.Mock()
@@ -72,12 +76,14 @@ def test__get_role_tags_valid_tags(mocker):
 
 def test__get_role_tags_no_tags(mocker):
     mocker.patch(
-        'cartography.intel.aws.iam.get_role_list_data', return_value=[
-            {
-                'RoleName': 'test-role',
-                'Arn': 'test-arn',
-            },
-        ],
+        'cartography.intel.aws.iam.get_role_list_data', return_value={
+            'Roles': [
+                {
+                    'RoleName': 'test-role',
+                    'Arn': 'test-arn',
+                },
+            ],
+        },
     )
     mocker.patch('boto3.session.Session')
     mock_session = mocker.Mock()
@@ -90,3 +96,23 @@ def test__get_role_tags_no_tags(mocker):
     result = iam.get_role_tags(mock_session)
 
     assert result == []
+
+
+def test_transform_policy_data_correctly_creates_lists_of_statements():
+    # "pol-name" is a policy containing a single statement
+    # See https://github.com/lyft/cartography/issues/1102
+    pol_statement_map = {
+        'some-arn': {
+            'pol-name': {
+                'Effect': 'Allow',
+                'Action': 'secretsmanager:GetSecretValue',
+                'Resource': 'arn:aws:secretsmanager:XXXXX:XXXXXXXX',
+            },
+        },
+    }
+
+    # Act: call transform on the object
+    transform_policy_data(pol_statement_map, PolicyType.inline.value)
+
+    # Assert that we correctly converted the statement to a list
+    assert type(pol_statement_map['some-arn']['pol-name']) == list
