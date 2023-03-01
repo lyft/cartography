@@ -9,10 +9,15 @@ def test_load_lastpass_users(neo4j_session):
 
     data = tests.data.lastpass.users.LASTPASS_USERS
     formatted_data = cartography.intel.lastpass.users.transform(data)
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG,
+        "LASTPASS_CID": '1234',
+    }
+
     cartography.intel.lastpass.users.load(
         neo4j_session,
         formatted_data,
-        TEST_UPDATE_TAG,
+        common_job_parameters,
     )
 
     # Ensure users got loaded

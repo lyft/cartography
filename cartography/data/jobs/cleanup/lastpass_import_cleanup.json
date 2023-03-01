@@ -3,6 +3,12 @@
     "query": "MATCH (n:LastpassUser) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
     "iterative": true,
     "iterationsize": 100
-  }],
-  "name": "cleanup LastpassUser"
+  },
+  {
+    "query": "MATCH (n:LastpassTenant) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+    "iterative": true,
+    "iterationsize": 100
+  }
+],
+  "name": "cleanup Lastpass"
 }

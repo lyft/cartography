@@ -9,7 +9,8 @@ from requests import Session
 
 from cartography.client.core.tx import load_graph_data
 from cartography.graph.querybuilder import build_ingestion_query
-from cartography.intel.lastpass.schema import LastpassUserSchema
+from cartography.models.lastpass.tenant import LastpassTenantSchema
+from cartography.models.lastpass.user import LastpassUserSchema
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -20,19 +21,18 @@ _TIMEOUT = (60, 60)
 @timeit
 def sync(
     neo4j_session: neo4j.Session,
-    update_tag: int,
-    lastpass_cid: str,
     lastpass_provhash: str,
+    common_job_parameters: Dict[str, Any],
 ) -> None:
-    users = get(lastpass_cid, lastpass_provhash)
+    users = get(lastpass_provhash, common_job_parameters)
     formated_users = transform(users)
-    load(neo4j_session, formated_users, update_tag)
+    load(neo4j_session, formated_users, common_job_parameters)
 
 
 @timeit
-def get(lastpass_cid: str, lastpass_provhash: str) -> Dict[str, Any]:
+def get(lastpass_provhash: str, common_job_parameters: Dict[str, Any]) -> Dict[str, Any]:
     payload = {
-        'cid': lastpass_cid,
+        'cid': common_job_parameters['LASTPASS_CID'],
         'provhash': lastpass_provhash,
         'cmd': 'getuserdata',
         'data': None,
@@ -58,14 +58,23 @@ def transform(api_result: dict) -> List[Dict]:
 def load(
     neo4j_session: neo4j.Session,
     data: List[Dict],
-    update_tag: int,
+    common_job_parameters: Dict[str, Any],
 ) -> None:
 
-    ingestion_query = build_ingestion_query(LastpassUserSchema())
+    user_query = build_ingestion_query(LastpassUserSchema())
+    tenant_query = build_ingestion_query(LastpassTenantSchema())
 
     load_graph_data(
         neo4j_session,
-        ingestion_query,
+        user_query,
         data,
-        lastupdated=update_tag,
+        lastupdated=common_job_parameters['UPDATE_TAG'],
+        tenant_id=common_job_parameters['LASTPASS_CID'],
+    )
+
+    load_graph_data(
+        neo4j_session,
+        tenant_query,
+        [{'id': common_job_parameters['LASTPASS_CID']}],
+        lastupdated=common_job_parameters['UPDATE_TAG'],
     )

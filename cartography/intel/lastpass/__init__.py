@@ -28,13 +28,13 @@ def start_lastpass_ingestion(neo4j_session: neo4j.Session, config: Config) -> No
 
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
+        "LASTPASS_CID": config.lastpass_cid,
     }
 
     cartography.intel.lastpass.users.sync(
         neo4j_session,
-        config.update_tag,
-        config.lastpass_cid,
         config.lastpass_provhash,
+        common_job_parameters,
     )
 
     run_cleanup_job(
