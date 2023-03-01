@@ -142,58 +142,46 @@ def get_sql_users(sql: Resource, sql_instances: List[Dict], project_id: str) -> 
 
 
 @timeit
-def get_sql_databases(sql: Resource, sql_instances: List[Dict], project_id: str) -> List[Dict]:
+def get_sql_databases(sql: Resource, instance: Dict, project_id: str) -> List[Dict]:
     """
-        Returns a list of sql instance database for a given project.
+        Returns a list of sql database for a given project.
 
         :type sql: Resource
         :param sql: The sql resource created by googleapiclient.discovery.build()
-
-        :type sql_instances: List
-        :type sql_instances: List of sql instances
 
         :type project_id: str
         :param project_id: Current Google Project Id
 
         :rtype: list
-        :return: List of Sql Instance Database
+        :return: List of Sql Database
     """
     sql_database = []
-    for inst in sql_instances:
-        try:
-            request = sql.databases().list(project=project_id, instance=f"{inst['name']}")
-            while request is not None:
-                response = request.execute()
-                if response.get('items', []):
-                    for item in response['items']:
-                        item['instance_id'] = inst['id']
-                        item['id'] = f"projects/{project_id}/instances/{inst['name']}/databases/{item['name']}"
-                        item['consolelink'] = gcp_console_link.get_console_link(
-                            project_id=project_id, resource_name='sql_user', sql_instance_name=inst['name'],
-                        )
-                        sql_database.append(item)
-                if 'nextPageToken' in response:
-                    request = sql.databases().list(
-                        project=f"projects/{project_id}",
-                        instance=f"{inst['name']}", pageToken=response['nextPageToken'],
-                    )
-                else:
-                    request = None
-        except HttpError as e:
-            err = json.loads(e.content.decode('utf-8'))['error']
-            if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
-                logger.warning(
-                    (
-                        "Could not retrieve Sql Instance database on project %s due to permissions issues.\
-                            Code: %s, Message: %s"
-                    ), project_id, err['code'], err['message'],
+    try:
+        request = sql.databases().list(project=project_id, instance=f"{instance['name']}")
+
+        response = request.execute()
+
+        if response.get('items', []):
+            # logger.info(f"Time to process CloudSQL======= ", response)
+            for item in response['items']:
+                item['state'] = instance['state']
+                item['region'] = instance['region']
+                item['instance_id'] = instance['id']
+                item['id'] = f"projects/{project_id}/instances/{instance['name']}/databases/{item['name']}"
+                item['consolelink'] = gcp_console_link.get_console_link(
+                    project_id=project_id, resource_name='sql_instance', sql_instance_name=instance['name'],
                 )
-                continue
-                # return []
-            else:
-                # raise
-                # return []
-                continue
+                sql_database.append(item)
+
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve Sql Instance database on project %s due to permissions issues.\
+                        Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
 
     return sql_database
 
@@ -335,9 +323,10 @@ def _load_sql_databases_tx(tx: neo4j.Transaction, sql_databases: List[Dict], pro
         d.charset = database.charset,
         d.instance = database.instance,
         d.collation=database.collation,
+        d.state = database.state,
         d.compatibilitylevel=database.sqlserverDatabaseDetails.compatibilityLevel,
         d.recoverymodel=database.sqlserverDatabaseDetails.recoveryModel,
-        d.region = $region,
+        d.region = database.region,
         d.project = database.project,
         d.consolelink = database.consolelink,
         d.lastupdated = $gcp_update_tag
@@ -352,7 +341,6 @@ def _load_sql_databases_tx(tx: neo4j.Transaction, sql_databases: List[Dict], pro
         ingest_sql_databases,
         sql_databases=sql_databases,
         ProjectId=project_id,
-        region="global",
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -418,10 +406,9 @@ def sync(
     # SQL USERS
     users = get_sql_users(sql, sqlinstances, project_id)
     load_sql_users(neo4j_session, users, project_id, gcp_update_tag)
-
-    # SQL Databases
-    databases = get_sql_databases(sql, sqlinstances, project_id)
-    load_sql_databases(neo4j_session, databases, project_id, gcp_update_tag)
+    for instance in sqlinstances:
+        database = get_sql_databases(sql, instance, project_id)
+        load_sql_databases(neo4j_session, database, project_id, gcp_update_tag)
 
     cleanup_sql(neo4j_session, common_job_parameters)
 
