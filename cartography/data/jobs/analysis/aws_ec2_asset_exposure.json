@@ -78,7 +78,8 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH instance, group WHERE (NOT (group)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(:AWSVpc)) AND ((NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'vpc_none' IN instance.exposed_internet_type)) SET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'vpc_none';",
+			"query": "MATCH (group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE (NOT (group)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(:AWSVpc)) WITH group MATCH (group)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance) WITH distinct instance WHERE ((NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'vpc_none' IN instance.exposed_internet_type)) SET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'vpc_none';",
+
 			"iterative": false
 		}
 	],
