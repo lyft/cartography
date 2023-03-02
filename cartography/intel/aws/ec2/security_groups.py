@@ -30,39 +30,6 @@ def get_ec2_security_group_data(boto3_session: boto3.session.Session, region: st
             security_groups.extend(page['SecurityGroups'])
         for group in security_groups:
             group['region'] = region
-            group['isPublicFacing'] = False
-            if not group.get('VpcId'):
-                group['isPublicFacing'] = True
-            for IpPermission in group.get('IpPermissionsEgress', []):
-                if group['isPublicFacing']:
-                    break
-                if IpPermission.get('IpProtocol') == "-1" and len(IpPermission.get('IpRanges', [])) > 0:
-                    for iprange in IpPermission.get('IpRanges', []):
-                        if iprange.get('CidrIp') == '0.0.0.0/0':
-                            group['isPublicFacing'] = True
-                            break
-
-                if (not group['isPublicFacing']) and IpPermission.get('IpProtocol') == "-1" and len(IpPermission.get('Ipv6Ranges', [])) > 0:
-                    for ipv6range in IpPermission.get('Ipv6Ranges', []):
-                        if ipv6range.get('CidrIpv6') == '::/0':
-                            group['isPublicFacing'] = True
-                            break
-            for IpPermission in group.get('IpPermissions', []):
-                if group['isPublicFacing']:
-                    break
-                if IpPermission.get('IpProtocol') == "-1" and len(IpPermission.get('IpRanges', [])) > 0:
-                    for iprange in IpPermission.get('IpRanges', []):
-                        public_ports = ['20', '21', '22', '3306', '3389', '4333']
-                        if iprange.get('CidrIp') == '0.0.0.0/0' and IpPermission.get('FromPort') in public_ports and IpPermission.get('ToPort') in public_ports:
-                            group['isPublicFacing'] = True
-                            break
-
-                if (not group['isPublicFacing']) and IpPermission.get('IpProtocol') == "-1" and len(IpPermission.get('Ipv6Ranges', [])) > 0:
-                    for ipv6range in IpPermission.get('Ipv6Ranges', []):
-                        public_ports = ['20', '21', '22', '3306', '3389', '4333']
-                        if ipv6range.get('CidrIpv6') == '::/0' and IpPermission.get('FromPort') in public_ports and IpPermission.get('ToPort') in public_ports:
-                            group['isPublicFacing'] = True
-                            break
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
             logger.warning(
@@ -170,7 +137,6 @@ def load_ec2_security_groupinfo(
     SET group.name = $GroupName, group.description = $Description,
     group.consolelink = $consolelink,
     group.region = $Region,
-    group.isPublicFacing = $isPublicFacing,
     group.lastupdated = $update_tag, group.arn = $GroupArn
     WITH group
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
@@ -198,7 +164,6 @@ def load_ec2_security_groupinfo(
             Description=group.get("Description"),
             VpcId=group.get("VpcId", None),
             Region=region,
-            isPublicFacing=group.get('isPublicFacing'),
             AWS_ACCOUNT_ID=current_aws_account_id,
             update_tag=update_tag,
         )

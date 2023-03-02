@@ -193,6 +193,8 @@ def test_ec2_asset_exposure(neo4j_session):
     common_job_parameters = {
         "UPDATE_TAG": TEST_UPDATE_TAG + 1,
         "WORKSPACE_ID": TEST_WORKSPACE_ID,
+        "AWS_ID": TEST_ACCOUNT_ID,
+        "public_ports": ['20', '21', '22', '3306', '3389', '4333'],
     }
 
     run_analysis_job(
