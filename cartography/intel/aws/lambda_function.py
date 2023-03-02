@@ -41,7 +41,9 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
             if policy is not None:
                 each_function['policy'] = Policy(json.loads(policy['Policy']))
                 if (each_function['policy'].is_internet_accessible()):
-                    each_function['exposed_internet'] = True
+                    each_function['public_policy'] = True
+                else:
+                    each_function['public_policy'] = False
             lambda_functions.append(each_function)
     return lambda_functions
 
@@ -60,6 +62,7 @@ def load_lambda_functions(
     lambda.modifieddate = lf.LastModified,
     lambda.runtime = lf.Runtime,
     lambda.isPublicFacing = lf.isPublicFacing,
+    lambda.public_policy = lf.public_policy,
     lambda.consolelink = lf.consolelink,
     lambda.description = lf.Description,
     lambda.timeout = lf.Timeout,
@@ -93,6 +96,7 @@ def load_lambda_functions(
     MERGE (lambda)-[r:STS_ASSUME_ROLE_ALLOW]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $aws_update_tag
+    WITH lambda
     """
 
     neo4j_session.run(

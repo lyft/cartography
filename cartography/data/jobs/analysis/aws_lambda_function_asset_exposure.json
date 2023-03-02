@@ -1,0 +1,17 @@
+{
+	"statements": [
+		{
+			"query": "MATCH (lf:AWSLambda)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) where EXISTS(lf.exposed_internet) WITH lf LIMIT $LIMIT_SIZE REMOVE lf.exposed_internet, lf.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 1000
+		},
+		{
+			"query": "MATCH (lf:AWSLambda{public_policy: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH lf WHERE (NOT EXISTS(lf.exposed_internet_type)) OR (NOT 'public_policy' IN lf.exposed_internet_type)\nSET lf.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'public_policy';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (lf:AWSLambda)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH lf WHERE (lf) AND (NOT EXISTS(lf.exposed_internet_type)) OR (NOT 'public_policy' IN lf.exposed_internet_type)\nSET lf.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'public_policy';"
+		}
+	],
+	"name": "aws lambda function internet exposure"
+}
