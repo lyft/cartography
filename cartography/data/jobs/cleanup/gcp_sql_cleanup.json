@@ -13,7 +13,7 @@
 			"__comment__": "Remove GCP GCPSQLUser-to-Instance relationships that are out of date."
 		},
 		{
-			"query": "MATCH (d:GCPSQLDatabase)<-[:HAS_DATABASE]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE d.lastupdated <> $UPDATE_TAG WITH d LIMIT $LIMIT_SIZE DETACH DELETE (u) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (d:GCPSQLDatabase)<-[:HAS_DATABASE]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE d.lastupdated <> $UPDATE_TAG WITH d LIMIT $LIMIT_SIZE DETACH DELETE (d) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100,
 			"__comment__": "Delete GCP Cloud SQL Database that no longer exist and detach them from all previously connected nodes."

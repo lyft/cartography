@@ -55,6 +55,31 @@ def test_load_sql_users(neo4j_session):
     assert actual_nodes == expected_nodes
 
 
+def test_load_sql_databases(neo4j_session):
+    data = tests.data.gcp.sql.CLOUD_SQL_DATABASES
+    cartography.intel.gcp.sql.load_sql_databases(
+        neo4j_session,
+        data,
+        TEST_PROJECT_NUMBER,
+        TEST_UPDATE_TAG,
+    )
+
+    expected_nodes = {
+        "database-123",
+        "database-456",
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (r:GCPSQLDatabase) RETURN r.id;
+        """,
+    )
+
+    actual_nodes = {n['r.id'] for n in nodes}
+
+    assert actual_nodes == expected_nodes
+
+
 def test_sql_instance_relationships(neo4j_session):
     # Create Test GCP Project
     neo4j_session.run(
