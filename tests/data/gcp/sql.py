@@ -53,3 +53,24 @@ CLOUD_SQL_USERS = [
         'type': 'databasewriter',
     },
 ]
+
+CLOUD_SQL_DATABASES = [
+    {
+        'name': 'database-123',
+        'id': 'database-123',
+        'instance_id': 'instance123',
+        'host': 'sqlserver123',
+        'instance': 'instance123',
+        'project': 'abcdefg4567',
+        'type': 'databasereader',
+    },
+    {
+        'name': 'database-456',
+        'id': 'database-456',
+        'instance_id': 'instance456',
+        'host': 'sqlserver456',
+        'instance': 'instance456',
+        'project': 'abcdefg4567',
+        'type': 'databasewriter',
+    },
+]
