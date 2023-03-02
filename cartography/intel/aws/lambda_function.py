@@ -34,9 +34,6 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
         for each_function in page['Functions']:
             each_function['region'] = region
             each_function['consolelink'] = aws_console_link.get_console_link(arn=each_function['FunctionArn'])
-            each_function['isPublicFacing'] = False
-            if not each_function.get('VpcConfig', {}).get('VpcId'):
-                each_function['isPublicFacing'] = True
             policy = client.get_policy(FunctionName=each_function['FunctionArn'])
             if policy is not None:
                 each_function['policy'] = Policy(json.loads(policy['Policy']))
@@ -61,7 +58,6 @@ def load_lambda_functions(
     lambda.region = lf.region,
     lambda.modifieddate = lf.LastModified,
     lambda.runtime = lf.Runtime,
-    lambda.isPublicFacing = lf.isPublicFacing,
     lambda.public_policy = lf.public_policy,
     lambda.consolelink = lf.consolelink,
     lambda.description = lf.Description,
@@ -85,7 +81,8 @@ def load_lambda_functions(
     lambda.architectures = lf.Architectures,
     lambda.masterarn = lf.MasterArn,
     lambda.kmskeyarn = lf.KMSKeyArn,
-    lambda.lastupdated = $aws_update_tag
+    lambda.lastupdated = $aws_update_tag,
+    lambda.vpc_id = CASE WHEN lf.VpcConfig.VpcId is not null then lf.VpcConfig.VpcId ELSE lambda.vpc_id END
     WITH lambda, lf
     MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(lambda)
