@@ -96,7 +96,6 @@ def load_lambda_functions(
     MERGE (lambda)-[r:STS_ASSUME_ROLE_ALLOW]->(role)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $aws_update_tag
-    WITH lambda
     """
 
     neo4j_session.run(

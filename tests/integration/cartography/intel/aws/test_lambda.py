@@ -302,3 +302,17 @@ def test_load_lambda_layers_relationships(neo4j_session):
     }
 
     assert actual == expected_nodes
+
+
+def test_lambda_exposure_analysis(neo4j_session):
+    result = neo4j_session.run(
+        """
+        MERGE (a:Hi{id: $PARAM}) return a
+        """,
+        PARAM=None,
+    )
+    actual = {
+        (r['a']) for r in result
+    }
+    print(actual)
+    assert False
