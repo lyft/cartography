@@ -165,7 +165,7 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
 
 @timeit
 def get_role_tags(boto3_session: boto3.session.Session) -> List[Dict]:
-    role_list = get_role_list_data(boto3_session)
+    role_list = get_role_list_data(boto3_session)['Roles']
     resource_client = boto3_session.resource('iam')
     role_tag_data: List[Dict] = []
     for role in role_list:
@@ -540,11 +540,12 @@ def transform_policy_data(policy_map: Dict, policy_type: str) -> None:
     for principal_arn, policy_statement_map in policy_map.items():
         logger.debug(f"Transforming IAM {policy_type} policies for principal {principal_arn}")
         for policy_key, statements in policy_statement_map.items():
-            policy_id = transform_policy_id(principal_arn, policy_type, policy_key) \
-                if policy_type == PolicyType.inline.value else policy_key
-            statements = _transform_policy_statements(
-                statements, policy_id,
-            )
+            policy_id = transform_policy_id(
+                principal_arn,
+                policy_type,
+                policy_key,
+            ) if policy_type == PolicyType.inline.value else policy_key
+            policy_statement_map[policy_key] = _transform_policy_statements(statements, policy_id)
 
 
 def transform_policy_id(principal_arn: str, policy_type: str, name: str) -> str:
