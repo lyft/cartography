@@ -41,7 +41,7 @@ Representation of a single User in Hexnode
 
 ### HexnodeDevice
 
-Representation of a single Employee in HiBob
+Representation of a single Employee in Hexnode
 
 | Field | Description |
 |-------|--------------|
