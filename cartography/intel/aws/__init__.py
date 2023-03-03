@@ -283,6 +283,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "permission_relationships_file": config.permission_relationships_file,
         "WORKSPACE_ID": config.params['workspace']['id_string'],
         "pagination": {},
+        "public_ports": ['20', '21', '22', '3306', '3389', '4333'],
     }
 
     try:
@@ -370,4 +371,11 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             neo4j_session,
             common_job_parameters,
         )
+
+        run_analysis_job(
+            'aws_s3_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters
+        )
+
     return common_job_parameters
