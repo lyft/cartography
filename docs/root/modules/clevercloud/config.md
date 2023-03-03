@@ -17,7 +17,7 @@ Follow these steps to analyze CleverCloud objects with Cartography.
                  "org_id": "orga_f3b3bb57-db31-4dff-8708-0dd91cc31826"
              }
         ]
-        ```    
+        ```
     1. Base64 encode the auth object. You can encode the above sample in Python using
         ```python
         import json
