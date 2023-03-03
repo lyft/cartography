@@ -31,22 +31,24 @@ def start_clevercloud_ingestion(neo4j_session: neo4j.Session, config: Config) ->
         return
     auth_tokens = json.loads(base64.b64decode(config.clevercloud_config).decode())
 
-    common_job_parameters = {
-        "UPDATE_TAG": config.update_tag,
-    }
-
     for organization in auth_tokens:
         logger.debug("Start ingest for %s", organization['org_id'])
+        common_job_parameters = {
+            "UPDATE_TAG": config.update_tag,
+            "ORG_ID": organization['org_id'],
+        }
         session = OAuth1Session(
             client_key=organization['consumer_key'],
             client_secret=organization['consumer_secret'],
             resource_owner_key=organization['client_key'],
             resource_owner_secret=organization['client_secret'],
             signature_method='HMAC-SHA512')
-        cartography.intel.clevercloud.organization.sync(neo4j_session, config.update_tag, session, organization['org_id'])
-        cartography.intel.clevercloud.users.sync(neo4j_session, config.update_tag, session, organization['org_id'])
-        cartography.intel.clevercloud.applications.sync(neo4j_session, config.update_tag, session, organization['org_id'])
-        cartography.intel.clevercloud.addons.sync(neo4j_session, config.update_tag, session, organization['org_id'])
+        
+        cartography.intel.clevercloud.users.sync(neo4j_session, session, common_job_parameters)
+        cartography.intel.clevercloud.organization.sync(neo4j_session, session, common_job_parameters)
+        cartography.intel.clevercloud.addons.sync(neo4j_session, session, common_job_parameters)
+        cartography.intel.clevercloud.applications.sync(neo4j_session, session, common_job_parameters)
+        
 
     # WIP: Tests
     # WIP: Doc
