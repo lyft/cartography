@@ -43,7 +43,7 @@ class OrganizationToUserRelProperties(CartographyRelProperties):
 class OrganizationToUserRel(CartographyRelSchema):
     target_node_label: str = 'CleverCloudUser'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'organization_id': PropertyRef('id', set_in_kwargs=True)},
+        {'organization_id': PropertyRef('id')},
     )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "MEMBER_OF"

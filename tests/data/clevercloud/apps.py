@@ -230,13 +230,7 @@ CLEVERCLOUD_APPS = [
         },
         "vhosts": [
             {
-                "fqdn": "dummy-api.domain.com",
-            },
-            {
-                "fqdn": "app-6cb7fded-72d8-4994-b813-c7caa2208019.cleverapps.io",
-            },
-            {
-                "fqdn": "dummy-api.cleverapps.io",
+                "fqdn": "google.com",
             },
         ],
         "creationDate": 1647960575254,

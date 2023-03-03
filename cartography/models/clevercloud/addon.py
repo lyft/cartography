@@ -32,13 +32,13 @@ class AddonToOrganizationProperties(CartographyRelProperties):
 
 
 @dataclass(frozen=True)
-# (:CleverCloudAddon)<-[:RESOURCE]-(:CleverCloudOrganization)
+# (:CleverCloudAddon)-[:RESOURCE]->(:CleverCloudOrganization)
 class AddonToOrganization(CartographyRelSchema):
     target_node_label: str = 'CleverCloudOrganization'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('ownerId')},
+        {'id': PropertyRef('org_id', set_in_kwargs=True)},
     )
-    direction: LinkDirection = LinkDirection.INWARD
+    direction: LinkDirection = LinkDirection.OUTWARD
     rel_label: str = "RESOURCE"
     properties: AddonToOrganizationProperties = AddonToOrganizationProperties()
 

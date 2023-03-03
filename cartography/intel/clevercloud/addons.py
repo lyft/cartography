@@ -45,5 +45,6 @@ def load(
         neo4j_session,
         query,
         data,
+        org_id=common_job_parameters['ORG_ID'],
         lastupdated=common_job_parameters['UPDATE_TAG'],
     )
