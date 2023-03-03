@@ -42,11 +42,11 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (route:EC2Route{destination_cidr_block: '0.0.0.0/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)<-[:HAS_EXPLICIT_ROUTE_TABLE]-(:EC2Subnet)<-[:PART_OF_SUBNET]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH route, instance WHERE route.gateway_id STARTS WITH 'igw-' AND (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'public_subnet_explicit' IN instance.exposed_internet_type) SET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'public_subnet_explicit';",
+			"query": "MATCH (route:EC2Route{destination_cidr_block: '0.0.0.0/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation)<-[:HAS_EXPLICIT_ASSOCIATION]-(:EC2Subnet)<-[:PART_OF_SUBNET]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH route, instance WHERE route.gateway_id STARTS WITH 'igw-' AND (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'public_subnet_explicit' IN instance.exposed_internet_type) SET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'public_subnet_explicit';",
 			"iterative": false
 		},
 		{
-			"query": "MATCH (route:EC2Route{destination_ipv6_cidr_block: '::/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)<-[:HAS_EXPLICIT_ROUTE_TABLE]-(:EC2Subnet)<-[:PART_OF_SUBNET]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH route, instance WHERE route.gateway_id STARTS WITH 'igw-' AND (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'public_subnet_explicit' IN instance.exposed_internet_type) SET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'public_subnet_explicit';",
+			"query": "MATCH (route:EC2Route{destination_ipv6_cidr_block: '::/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation)<-[:HAS_EXPLICIT_ASSOCIATION]-(:EC2Subnet)<-[:PART_OF_SUBNET]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH route, instance WHERE route.gateway_id STARTS WITH 'igw-' AND (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'public_subnet_explicit' IN instance.exposed_internet_type) SET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'public_subnet_explicit';",
 			"iterative": false
 		},
 		{

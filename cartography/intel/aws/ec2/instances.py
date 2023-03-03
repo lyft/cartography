@@ -281,7 +281,7 @@ def _load_ec2_explicit_route_table_tx(tx: neo4j.Transaction, subnet_id: str, upd
 def _load_ec2_implicit_route_table_tx(tx: neo4j.Transaction, instanceid: str, vpc_id: str, update_tag: int) -> None:
     query = """
         MATCH (instance:EC2Instance{instanceid: $InstanceId})
-        WHERE NOT EXISTS((instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[:HAS_EXPLICIT_ROUTE_TABLE]->(:EC2RouteTable))
+        WHERE NOT EXISTS((instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[:HAS_EXPLICIT_ASSOCIATION]->(:EC2RouteTableAssociation))
         WITH instance
         MATCH (rtab:EC2RouteTable{vpc_id: $VpcId})-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation{main: true})
         WITH instance, rtab
@@ -435,7 +435,6 @@ def load_ec2_instances(
             subnet_id = instance.get('SubnetId')
             if subnet_id:
                 neo4j_session.write_transaction(_load_ec2_subnet_tx, instanceid, subnet_id, region, update_tag)
-                neo4j_session.write_transaction(_load_ec2_explicit_route_table_tx, subnet_id, update_tag)
 
             vpc_id = instance.get('VpcId')
             if vpc_id:

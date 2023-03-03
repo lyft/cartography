@@ -117,7 +117,6 @@ def load_associations_tx(tx: neo4j.Transaction, data: List[Dict], aws_update_tag
         asc.firstseen = timestamp()
     SET
         asc.lastupdated = $aws_update_tag,
-        asc.subnet_id = assoc.SubnetId,
         asc.main = assoc.Main,
         asc.Gateway_id = assoc.GatewayId
     WITH assoc, asc
@@ -127,6 +126,12 @@ def load_associations_tx(tx: neo4j.Transaction, data: List[Dict], aws_update_tag
         rel.firstseen = timestamp()
     SET
         rel.lastupdated = $aws_update_tag
+    WITH asc, assoc
+    MERGE (subnet:EC2Subnet{subnetid: assoc.SubnetId})-[r:HAS_EXPLICIT_ASSOCIATION]->(asc)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    SET
+        r.lastupdated = $aws_update_tag
     """
     tx.run(
         ingest_associations,
