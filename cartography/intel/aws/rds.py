@@ -620,9 +620,9 @@ def load_rds_snapshot_attributes(neo4j_session: neo4j.Session, data: Dict, aws_u
         WITH result, rdsSnapshot
         UNWIND result.DBSnapshotAttributes as attribute
             MERGE (attrib:RDSSnapshotAttribute{name: attribute.AttributeName})
-            ON CREATE SET attrib.firstseen = timestamp(),
+            ON CREATE SET attrib.firstseen = timestamp()
             SET 
-                attrib.values = attribute.AttributeValues
+                attrib.values = attribute.AttributeValues,
                 attrib.lastupdated = $aws_update_tag
             WITH attrib, result, rdsSnapshot
             MERGE (rdsSnapshot)-[r:HAS_ATTRIBUTE]-(attrib)
