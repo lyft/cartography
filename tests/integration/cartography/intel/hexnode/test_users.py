@@ -2,7 +2,10 @@ import cartography.intel.hexnode.users
 import tests.data.hexnode.users
 
 
-TEST_UPDATE_TAG = 123456789
+COMMON_JOB_PARAMETERS = {
+    "UPDATE_TAG": 123456789,
+    "TENANT": 'FooBar',
+}
 
 
 def test_load_hexnode_users(neo4j_session):
@@ -10,7 +13,7 @@ def test_load_hexnode_users(neo4j_session):
     cartography.intel.hexnode.users.load(
         neo4j_session,
         tests.data.hexnode.users.HEXNODE_USERS,
-        TEST_UPDATE_TAG,
+        COMMON_JOB_PARAMETERS,
     )
 
     # Ensure users got loaded

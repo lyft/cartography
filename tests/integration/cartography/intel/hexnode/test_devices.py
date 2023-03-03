@@ -5,23 +5,27 @@ import tests.data.hexnode.device_groups
 import tests.data.hexnode.devices
 import tests.data.hexnode.users
 
-TEST_UPDATE_TAG = 123456789
+
+COMMON_JOB_PARAMETERS = {
+    "UPDATE_TAG": 123456789,
+    "TENANT": 'FooBar',
+}
 
 
 def test_load_hexnode_devices(neo4j_session):
-
-    cartography.intel.hexnode.users.load(
-        neo4j_session,
-        tests.data.hexnode.users.HEXNODE_USERS,
-        TEST_UPDATE_TAG,
-    )
 
     data = tests.data.hexnode.devices.HEXNODE_ALL_DEVICES
     formated_data = cartography.intel.hexnode.devices.transform(data)
     cartography.intel.hexnode.devices.load(
         neo4j_session,
         formated_data,
-        TEST_UPDATE_TAG,
+        COMMON_JOB_PARAMETERS,
+    )
+
+    cartography.intel.hexnode.users.load(
+        neo4j_session,
+        tests.data.hexnode.users.HEXNODE_USERS,
+        COMMON_JOB_PARAMETERS,
     )
 
     # Ensure devices got loaded
@@ -70,17 +74,15 @@ def test_load_hexnode_devicegroup(neo4j_session):
     cartography.intel.hexnode.devices.load(
         neo4j_session,
         formated_data,
-        TEST_UPDATE_TAG,
+        COMMON_JOB_PARAMETERS,
     )
 
     data = tests.data.hexnode.device_groups.HEXNODE_DEVICE_GROUPS.copy()
-    g, ms, p = cartography.intel.hexnode.device_groups.transform(data)
+    formated_data = cartography.intel.hexnode.device_groups.transform(data)
     cartography.intel.hexnode.device_groups.load(
         neo4j_session,
-        g,
-        ms,
-        p,
-        TEST_UPDATE_TAG,
+        formated_data,
+        COMMON_JOB_PARAMETERS,
     )
 
     # Ensure groups got loaded

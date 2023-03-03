@@ -1,27 +1,33 @@
+import itertools
 import logging
+from typing import Any
 from typing import Dict
 from typing import List
-from typing import Tuple
 
 import neo4j
 from dateutil import parser as dt_parse
 from requests import Session
 
+from cartography.client.core.tx import load_graph_data
+from cartography.graph.querybuilder import build_ingestion_query
+from cartography.models.hexnode.devicegroup import HexnodeDeviceGroupSchema
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+# Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
+_TIMEOUT = (60, 60)
 
 
 @timeit
 def sync(
     neo4j_session: neo4j.Session,
-    update_tag: int,
     api_session: Session,
     api_url: str,
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     groups = get(api_session, api_url)
-    formated_groups, group_membership, group_policies = transform(groups)
-    load(neo4j_session, formated_groups, group_membership, group_policies, update_tag)
+    formated_groups = transform(groups)
+    load(neo4j_session, formated_groups, common_job_parameters)
 
 
 @timeit
@@ -48,57 +54,37 @@ def get(api_session: Session, api_url: str, page: int = 1) -> List[Dict]:
 
 
 @timeit
-def transform(groups: List[Dict]) -> Tuple[List[Dict], List[Dict[str, int]], List[Dict[str, int]]]:
+def transform(groups: List[Dict]) -> List[Dict]:
     formated_groups = []
-    group_membership = []
-    group_policies = []
     for group in groups:
-        n_group = group.copy()
-        n_group['modified_date'] = dt_parse.parse(group['modified_date'])
-        formated_groups.append(n_group)
-        for d in group['devices']:
-            group_membership.append({'group': group['id'], 'device': d['id']})
-        for p in group['policy']:
-            group_policies.append({'group': group['id'], 'policy': p['id']})
-    return formated_groups, group_membership, group_policies
+        if len(group['devices']) == 0 and len(group['policy']) == 0:
+            n_group = group.copy()
+            n_group['modified_date'] = int(dt_parse.parse(group['modified_date']).timestamp() * 1000)
+            formated_groups.append(n_group)
+        else:
+            # This will duplicate group to handle high cardinality (see https://github.com/lyft/cartography/issues/1131)
+            for combination in itertools.zip_longest(group['devices'], group['policy']):
+                n_group = group.copy()
+                n_group['modified_date'] = int(dt_parse.parse(group['modified_date']).timestamp() * 1000)
+                if combination[0] is not None:
+                    n_group['device_id'] = combination[0]['id']
+                if combination[1] is not None:
+                    n_group['policy_id'] = combination[1]['id']
+                formated_groups.append(n_group)
+    return formated_groups
 
 
 def load(
     neo4j_session: neo4j.Session,
-    groups: List[Dict],
-    group_membership: List[Dict],
-    group_policies: List[Dict],
-    update_tag: int,
+    data: List[Dict],
+    common_job_parameters: Dict[str, Any],
 ) -> None:
 
-    query_groups = """
-    UNWIND $GroupData as group
-    MERGE (g:HexnodeDeviceGroup{id: group.id})
-    ON CREATE set g.firstseen = timestamp()
-    SET g.lastupdated = $UpdateTag,
-    g.id = group.id,
-    g.name = group.groupname,
-    g.description = group.description,
-    g.group_type = group.grouptype,
-    g.modified_date = group.modified_date
-    """
-
-    query_membership = """
-    UNWIND $MembershipData as ms
-    MATCH (g:HexnodeDeviceGroup{id: ms.group}), (d:HexnodeDevice{id: ms.device})
-    MERGE (d)-[r:MEMBER_OF]->(g)
-    ON CREATE set r.firstseen = timestamp()
-    SET r.lastupdated = $UpdateTag
-    """
-
-    query_policy = """
-    UNWIND $PolicyData as policy
-    MATCH (g:HexnodeDeviceGroup{id: policy.group}), (p:HexnodePolicy{id: policy.policy})
-    MERGE (g)-[r:APPLIES_POLICY]->(p)
-    ON CREATE set r.firstseen = timestamp()
-    SET r.lastupdated = $UpdateTag
-    """
-
-    neo4j_session.run(query_groups, GroupData=groups, UpdateTag=update_tag)
-    neo4j_session.run(query_membership, MembershipData=group_membership, UpdateTag=update_tag)
-    neo4j_session.run(query_policy, PolicyData=group_policies, UpdateTag=update_tag)
+    policy_query = build_ingestion_query(HexnodeDeviceGroupSchema())
+    load_graph_data(
+        neo4j_session,
+        policy_query,
+        data,
+        lastupdated=common_job_parameters['UPDATE_TAG'],
+        tenant=common_job_parameters['TENANT'],
+    )

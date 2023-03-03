@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 from typing import Dict
 from typing import List
 
@@ -6,21 +7,26 @@ import neo4j
 from dateutil import parser as dt_parse
 from requests import Session
 
+from cartography.client.core.tx import load_graph_data
+from cartography.graph.querybuilder import build_ingestion_query
+from cartography.models.hexnode.device import HexnodeDeviceSchema
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+# Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
+_TIMEOUT = (60, 60)
 
 
 @timeit
 def sync(
     neo4j_session: neo4j.Session,
-    update_tag: int,
     api_session: Session,
     api_url: str,
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     devices = get(api_session, api_url)
     formated_devices = transform(devices)
-    load(neo4j_session, formated_devices, update_tag)
+    load(neo4j_session, formated_devices, common_job_parameters)
 
 
 @timeit
@@ -47,8 +53,8 @@ def transform(devices: List[Dict]) -> List[Dict]:
     result = []
     for device in devices:
         n_device = device.copy()
-        n_device['enrolled_time'] = dt_parse.parse(device['enrolled_time'])
-        n_device['last_reported'] = dt_parse.parse(device['last_reported'])
+        n_device['enrolled_time'] = int(dt_parse.parse(device['enrolled_time']).timestamp() * 1000)
+        n_device['last_reported'] = int(dt_parse.parse(device['last_reported']).timestamp() * 1000)
         result.append(n_device)
     return result
 
@@ -56,35 +62,14 @@ def transform(devices: List[Dict]) -> List[Dict]:
 def load(
     neo4j_session: neo4j.Session,
     data: List[Dict],
-    update_tag: int,
+    common_job_parameters: Dict[str, Any],
 ) -> None:
 
-    query = """
-    UNWIND $DeviceData as device
-    MERGE (d:HexnodeDevice{id: device.id})
-    ON CREATE set d.firstseen = timestamp()
-    SET d.lastupdated = $UpdateTag,
-    d.id = device.id,
-    d.name = device.device_name,
-    d.model_name = device.model_name,
-    d.os_name = device.os_name,
-    d.os_version = device.os_version,
-    d.enrolled_time = device.enrolled_time,
-    d.last_reported = device.last_reported,
-    d.compliant = device.compliant,
-    d.serial_number = device.serial_number,
-    d.udid = device.udid,
-    d.enrollment_status = device.enrollment_status,
-    d.imei = device.imei
-
-    WITH d, device
-    MATCH (u:HexnodeUser {id: device.user.id})
-    MERGE (u)-[r:OWNS_DEVICE]->(d)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $UpdateTag
-    """
-    neo4j_session.run(
-        query,
-        DeviceData=data,
-        UpdateTag=update_tag,
+    device_query = build_ingestion_query(HexnodeDeviceSchema())
+    load_graph_data(
+        neo4j_session,
+        device_query,
+        data,
+        lastupdated=common_job_parameters['UPDATE_TAG'],
+        tenant=common_job_parameters['TENANT'],
     )

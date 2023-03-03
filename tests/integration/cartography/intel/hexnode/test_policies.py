@@ -3,7 +3,11 @@ import cartography.intel.hexnode.policies
 import tests.data.hexnode.device_groups
 import tests.data.hexnode.policies
 
-TEST_UPDATE_TAG = 123456789
+
+COMMON_JOB_PARAMETERS = {
+    "UPDATE_TAG": 123456789,
+    "TENANT": 'FooBar',
+}
 
 
 def test_load_hexnode_policies(neo4j_session):
@@ -13,17 +17,15 @@ def test_load_hexnode_policies(neo4j_session):
     cartography.intel.hexnode.policies.load(
         neo4j_session,
         formated_data,
-        TEST_UPDATE_TAG,
+        COMMON_JOB_PARAMETERS,
     )
 
     data = tests.data.hexnode.device_groups.HEXNODE_DEVICE_GROUPS.copy()
-    g, ms, p = cartography.intel.hexnode.device_groups.transform(data)
+    formated_data = cartography.intel.hexnode.device_groups.transform(data)
     cartography.intel.hexnode.device_groups.load(
         neo4j_session,
-        g,
-        ms,
-        p,
-        TEST_UPDATE_TAG,
+        formated_data,
+        COMMON_JOB_PARAMETERS,
     )
 
     # Ensure policies got loaded
