@@ -38,5 +38,5 @@ def load(
         neo4j_session,
         tenant_query,
         data,
-        lastupdated=common_job_parameters['UPDATE_TAG']
+        lastupdated=common_job_parameters['UPDATE_TAG'],
     )
