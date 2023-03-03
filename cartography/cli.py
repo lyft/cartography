@@ -426,7 +426,8 @@ class CLI:
             default=None,
             help=(
                 'Name of an environment variable containing a Base64 encoded Clevercloud config.'
-                'Required if you are using the Clevercloud intel module. Ignored otherwise.')
+                'Required if you are using the Clevercloud intel module. Ignored otherwise.'
+            ),
         )
         return parser
 

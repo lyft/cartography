@@ -1,14 +1,14 @@
-import logging
 import base64
 import json
+import logging
 
 import neo4j
 from requests_oauthlib import OAuth1Session
 
+import cartography.intel.clevercloud.addons
+import cartography.intel.clevercloud.applications
 import cartography.intel.clevercloud.organization
 import cartography.intel.clevercloud.users
-import cartography.intel.clevercloud.applications
-import cartography.intel.clevercloud.addons
 from cartography.config import Config
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -26,8 +26,10 @@ def start_clevercloud_ingestion(neo4j_session: neo4j.Session, config: Config) ->
     """
 
     if not config.clevercloud_config:
-        logger.info('Clevercloud import is not configured - skipping this module.'
-                'See docs to configure.')
+        logger.info(
+            'Clevercloud import is not configured - skipping this module.'
+            'See docs to configure.',
+        )
         return
     auth_tokens = json.loads(base64.b64decode(config.clevercloud_config).decode())
 
@@ -42,16 +44,16 @@ def start_clevercloud_ingestion(neo4j_session: neo4j.Session, config: Config) ->
             client_secret=organization['consumer_secret'],
             resource_owner_key=organization['client_key'],
             resource_owner_secret=organization['client_secret'],
-            signature_method='HMAC-SHA512')
-        
+            signature_method='HMAC-SHA512',
+        )
+
         cartography.intel.clevercloud.users.sync(neo4j_session, session, common_job_parameters)
         cartography.intel.clevercloud.organization.sync(neo4j_session, session, common_job_parameters)
         cartography.intel.clevercloud.addons.sync(neo4j_session, session, common_job_parameters)
         cartography.intel.clevercloud.applications.sync(neo4j_session, session, common_job_parameters)
-        
 
-    # WIP: Tests
-    # WIP: Doc
+    # WIP: Tests
+    # WIP: Doc
 
     run_cleanup_job(
         "clevercloud_import_cleanup.json",

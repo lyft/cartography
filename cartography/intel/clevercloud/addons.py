@@ -1,7 +1,7 @@
 import logging
+from typing import Any
 from typing import Dict
 from typing import List
-from typing import Any
 
 import neo4j
 from requests_oauthlib import OAuth1Session
@@ -24,6 +24,7 @@ def sync(
 ) -> None:
     data = get(session, common_job_parameters)
     load(neo4j_session, data, common_job_parameters)
+
 
 @timeit
 def get(session: OAuth1Session, common_job_parameters: Dict[str, Any]) -> List[dict]:

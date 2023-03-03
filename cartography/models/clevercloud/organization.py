@@ -10,7 +10,6 @@ from cartography.models.core.relationships import make_target_node_matcher
 from cartography.models.core.relationships import TargetNodeMatcher
 
 
-# Organization
 @dataclass(frozen=True)
 class CleverCloudOrganizationProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')

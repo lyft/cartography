@@ -7,8 +7,8 @@ from cartography.models.core.relationships import CartographyRelProperties
 from cartography.models.core.relationships import CartographyRelSchema
 from cartography.models.core.relationships import LinkDirection
 from cartography.models.core.relationships import make_target_node_matcher
-from cartography.models.core.relationships import TargetNodeMatcher
 from cartography.models.core.relationships import OtherRelationships
+from cartography.models.core.relationships import TargetNodeMatcher
 
 
 @dataclass(frozen=True)
@@ -65,6 +65,7 @@ class ApplicationToAddon(CartographyRelSchema):
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RESOURCE"
     properties: ApplicationToAddonProperties = ApplicationToAddonProperties()
+
 
 @dataclass(frozen=True)
 class CleverCloudApplicationSchema(CartographyNodeSchema):

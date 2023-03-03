@@ -1,6 +1,6 @@
 import logging
-from typing import Dict
 from typing import Any
+from typing import Dict
 
 import neo4j
 from requests_oauthlib import OAuth1Session
@@ -43,6 +43,6 @@ def load(
     load_graph_data(
         neo4j_session,
         query,
-        [data,],
+        [data],
         lastupdated=common_job_parameters['UPDATE_TAG'],
     )

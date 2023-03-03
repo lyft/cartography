@@ -1,16 +1,16 @@
 import logging
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
-from typing import Any
 
 import neo4j
 from requests_oauthlib import OAuth1Session
 
 from cartography.client.core.tx import load_graph_data
 from cartography.graph.querybuilder import build_ingestion_query
-from cartography.models.clevercloud.app import CleverCloudApplicationSchema
 from cartography.intel.dns import ingest_dns_record_by_fqdn
+from cartography.models.clevercloud.app import CleverCloudApplicationSchema
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -34,10 +34,16 @@ def get(session: OAuth1Session, common_job_parameters: Dict[str, Any]) -> List[d
     org_id = common_job_parameters['ORG_ID']
     result = []
 
-    req = session.get(f"https://api.clever-cloud.com/v2/organisations/{org_id}/applications", timeout=_TIMEOUT)
+    req = session.get(
+        f"https://api.clever-cloud.com/v2/organisations/{org_id}/applications",
+        timeout=_TIMEOUT,
+    )
     req.raise_for_status()
     for app in req.json():
-        sub_req = session.get(f"https://api.clever-cloud.com/v2/organisations/{org_id}/applications/{app['id']}/addons", timeout=_TIMEOUT)
+        sub_req = session.get(
+            f"https://api.clever-cloud.com/v2/organisations/{org_id}/applications/{app['id']}/addons",
+            timeout=_TIMEOUT,
+        )
         sub_req.raise_for_status()
         app['addons'] = []
         for addon in sub_req.json():
@@ -53,7 +59,7 @@ def transform(response_objects: List[dict]) -> Tuple[List[Dict], List[Dict]]:
     apps = []
 
     for app in response_objects:
-        # Duplicate app to handle high cardinality
+        # Duplicate app to handle high cardinality
         if len(app['addons']) == 0:
             apps.append(app)
         else:
@@ -72,7 +78,7 @@ def load(
     neo4j_session: neo4j.Session,
     apps: List[Dict],
     apps_vhosts: List[Dict],
-    common_job_parameters: Dict[str, Any]
+    common_job_parameters: Dict[str, Any],
 ) -> None:
 
     query = build_ingestion_query(CleverCloudApplicationSchema())
@@ -80,7 +86,7 @@ def load(
         neo4j_session,
         query,
         apps,
-        lastupdated=common_job_parameters['UPDATE_TAG']
+        lastupdated=common_job_parameters['UPDATE_TAG'],
     )
 
     # Link apps to VHosts

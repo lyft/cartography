@@ -1,7 +1,7 @@
 import logging
+from typing import Any
 from typing import Dict
 from typing import List
-from typing import Any
 
 import neo4j
 from requests_oauthlib import OAuth1Session
