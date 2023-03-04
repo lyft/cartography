@@ -152,14 +152,14 @@ DESCRIBE_DBINSTANCES_RESPONSE = {
             "PreferredBackupWindow": "03:36-04:06",
             "PreferredMaintenanceWindow": "fri:04:01-fri:04:31",
             "PromotionTier": 0,
-            "PubliclyAccessible": False,
+            "PubliclyAccessible": True,
             "ReadReplicaDBInstanceIdentifiers": [],
             "StorageEncrypted": True,
             "StorageType": "aurora",
             "VpcSecurityGroups": [
                 {
                     "Status": "active",
-                    "VpcSecurityGroupId": "sg-some-othersg",
+                    "VpcSecurityGroupId": "sg-028e2522c72719996",
                 },
                 {
                     "Status": "active",

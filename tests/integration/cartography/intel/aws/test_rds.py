@@ -7,6 +7,7 @@ from tests.data.aws.rds import DESCRIBE_DBSNAPSHOTS_RESPONSE
 from tests.data.aws.rds import DESCRIBE_DBSNAPSHOT_ATTRIBUTE_RESPONSE
 from tests.data.aws.ec2.route_tables import DESCRIBE_ROUTE_TABLES
 from tests.data.aws.ec2.subnets import DESCRIBE_SUBNETS
+from tests.data.aws.ec2.security_groups import DESCRIBE_SGS
 from cartography.util import run_analysis_job
 
 TEST_UPDATE_TAG = 123456789
@@ -261,6 +262,14 @@ def test_rds_exposure(neo4j_session):
         '1234',
         TEST_UPDATE_TAG,
     )
+
+    cartography.intel.aws.ec2.security_groups.load_ec2_security_groupinfo(
+        neo4j_session,
+        DESCRIBE_SGS,
+        '1234',
+        TEST_UPDATE_TAG,
+    )
+
     cartography.intel.aws.rds.load_rds_instances(
         neo4j_session=neo4j_session,
         data=DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
@@ -299,7 +308,7 @@ def test_rds_exposure(neo4j_session):
 
     expected_nodes = {
         ('arn:aws:rds:us-east-1:some-arn:db:some-prod-db-iad-0',
-         'public_subnet_explicit_ipv4')
+         'direct_ipv4,public_subnet_explicit_ipv4')
     }
 
     assert actual_nodes == expected_nodes
