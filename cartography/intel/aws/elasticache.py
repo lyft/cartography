@@ -66,6 +66,10 @@ def load_elasticache_clusters(
         SET cluster.lastupdated = $aws_update_tag
 
         WITH cluster, elasticache_cluster
+        UNWIND elasticache_cluster.SecurityGroups as sg
+            MERGE (:EC2SecurityGroup{id: sg.SecurityGroupId})<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(cluster)
+
+        WITH cluster, elasticache_cluster
         MATCH (owner:AWSAccount{id: $aws_account_id})
         MERGE (owner)-[r3:RESOURCE]->(cluster)
         ON CREATE SET r3.firstseen = timestamp()
@@ -142,6 +146,7 @@ def sync(
             common_job_parameters['pagination']['elasticache']['hasNextPage'] = has_next_page
 
     load_elasticache_clusters(neo4j_session, clusters, current_aws_account_id, update_tag)
+    attach_elasticache_clusters_to_security_groups(neo4j_session, clusters, update_tag)
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
