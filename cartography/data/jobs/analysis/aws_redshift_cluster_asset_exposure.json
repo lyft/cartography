@@ -1,16 +1,16 @@
 {
 	"statements": [
 		{
-			"query": "MATCH (cluster:RedshiftCluster)<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) where EXISTS(cluster.exposed_internet) WITH cluster LIMIT $LIMIT_SIZE REMOVE cluster.exposed_internet, cluster.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"query": "MATCH (cluster:RedshiftCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) where EXISTS(cluster.exposed_internet) WITH cluster LIMIT $LIMIT_SIZE REMOVE cluster.exposed_internet, cluster.exposed_internet_type return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 1000
 		},
 		{
-			"query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(cluster:RedshiftCluster{publicly_accessible: true})<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH cluster WHERE (NOT EXISTS(cluster.exposed_internet_type)) OR (NOT 'direct_ipv4' IN cluster.exposed_internet_type) SET cluster.exposed_internet = true, cluster.exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct_ipv4';",
+			"query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(cluster:RedshiftCluster{publicly_accessible: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH cluster WHERE (NOT EXISTS(cluster.exposed_internet_type)) OR (NOT 'direct_ipv4' IN cluster.exposed_internet_type) SET cluster.exposed_internet = true, cluster.exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct_ipv4';",
 			"iterative": false
 		},
 		{
-			"query": "MATCH (:Ipv6Range{id: '::/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(cluster:RedshiftCluster{publicly_accessible: true})<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH cluster WHERE (NOT EXISTS(cluster.exposed_internet_type)) OR (NOT 'direct_ipv6' IN cluster.exposed_internet_type) SET cluster.exposed_internet = true, cluster.exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct_ipv6';",
+			"query": "MATCH (:Ipv6Range{id: '::/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(cluster:RedshiftCluster{publicly_accessible: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH cluster WHERE (NOT EXISTS(cluster.exposed_internet_type)) OR (NOT 'direct_ipv6' IN cluster.exposed_internet_type) SET cluster.exposed_internet = true, cluster.exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct_ipv6';",
 			"iterative": false
 		}
 	],
