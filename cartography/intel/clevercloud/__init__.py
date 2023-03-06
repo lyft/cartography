@@ -52,8 +52,6 @@ def start_clevercloud_ingestion(neo4j_session: neo4j.Session, config: Config) ->
         cartography.intel.clevercloud.addons.sync(neo4j_session, session, common_job_parameters)
         cartography.intel.clevercloud.applications.sync(neo4j_session, session, common_job_parameters)
 
-    # WIP: Doc
-
     run_cleanup_job(
         "clevercloud_import_cleanup.json",
         neo4j_session,
