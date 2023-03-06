@@ -7,7 +7,7 @@
 		},
 		{
 			"__comment": "This sets the exposed_internet attribute",
-			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE cluster.endpoint_public_access = true SET cluster.exposed_internet = true",
+			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE cluster.endpoint_public_access = true AND '0.0.0.0/0' IN cluster.public_access_cidrs SET cluster.exposed_internet = true",
 			"iterative": false
 		}
 	],
