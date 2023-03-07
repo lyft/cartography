@@ -80,7 +80,8 @@ RESOURCE_FUNCTIONS: Dict = {
     'route53': route53.sync,
     'elasticsearch': elasticsearch.sync,
     'permission_relationships': permission_relationships.sync,
-    'resourcegroupstaggingapi': resourcegroupstaggingapi.sync,
+    # Intel module takes very long so skipping it for now
+    # 'resourcegroupstaggingapi': resourcegroupstaggingapi.sync,
     'apigateway': apigateway.sync,
     'secretsmanager': secretsmanager.sync,
     'securityhub': securityhub.sync,
