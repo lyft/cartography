@@ -51,7 +51,11 @@ def load_trails(neo4j_session: neo4j.Session, trails: List[Dict], current_aws_ac
         trail.has_custom_event_selectors = record.HasCustomEventSelectors,
         trail.has_insight_selectors = record.HasInsightSelectors
     WITH trail
-    MERGE (:S3Bucket{id: trail.s3bucket_name})<-[rel:HAS_BUCKET]-(trail)
+    MERGE (bucket:S3Bucket{id: trail.s3bucket_name})
+    ON CREATE SET bucket.firstseen = timestamp()
+    SET bucket.lastupdated = $aws_update_tag
+    WITH trail, bucket
+    MERGE (bucket)<-[rel:HAS_BUCKET]-(trail)
     ON CREATE SET rel.firstseen = timestamp()
     SET rel.lastupdated = $aws_update_tag
     WITH trail
