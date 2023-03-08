@@ -513,6 +513,7 @@ def _sync_multiple_projects(
             )
             run_analysis_job(
                 'gcp_storage_bucket_policy_analysis.json',
+                'gcp_compute_network_interface_analysis.json',
                 neo4j_session,
                 common_job_parameters,
             )

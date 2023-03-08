@@ -1,7 +1,7 @@
 import cartography.intel.gcp.compute
 import tests.data.gcp.compute
 
-TEST_PROJECT_ID = 'project123'
+TEST_PROJECT_ID = 'project-abc'
 TEST_UPDATE_TAG = 123456789
 
 
@@ -469,5 +469,50 @@ def test_proxies(neo4j_session):
     )
 
     actual_nodes = {n['r.id'] for n in nodes}
+
+    assert actual_nodes == expected_nodes
+
+
+def test_compute_network_interfaces(neo4j_session):
+
+    instance_responses = tests.data.gcp.compute.GCP_LIST_INSTANCES_RESPONSE
+    instance_list = cartography.intel.gcp.compute.transform_gcp_instances(instance_responses.get("items", []), compute=None)
+    cartography.intel.gcp.compute.load_gcp_instances(neo4j_session, instance_list, TEST_UPDATE_TAG)
+    instance_id1 = 'projects/project-abc/zones/europe-west2-b/instances/instance-1'
+    instance_id2 = 'projects/project-abc/zones/europe-west2-b/instances/instance-1-test'
+
+    nat_ip_query = """
+    MATCH (i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID}) \nWHERE i.nat_ip IS NOT NULL AND i.ipv6_nat_ip IS NOT NULL \n 
+    RETURN i.id, i.zone_name, i.project_id, i.nat_ip, i.ipv6_nat_ip
+    """
+
+    objects = neo4j_session.run(nat_ip_query, GCP_PROJECT_ID=TEST_PROJECT_ID)
+    #print(objects)
+    actual_nodes = {
+        (
+            o['i.id'],
+            o['i.zone_name'],
+            o['i.project_id'],
+            o['i.nat_ip'],
+            o['i.ipv6_nat_ip'],
+        ) for o in objects
+    }
+
+    expected_nodes = {
+        (
+            instance_id1,
+            'europe-west2-b',
+            'project-abc',
+            '1.2.3.4',
+            '6.7.8.9'
+        ),
+        (
+            instance_id2,
+            'europe-west2-b',
+            'project-abc',
+            '1.3.4.5',
+            '6.7.8.9'
+        ),
+    }
 
     assert actual_nodes == expected_nodes
