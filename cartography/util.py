@@ -271,7 +271,7 @@ def aws_handle_regions(func: AWSGetFunc) -> AWSGetFunc:
     @backoff.on_exception(
         backoff.expo,
         botocore.exceptions.ClientError,
-        max_time=600,
+        max_time=120, # reduce the max time after which function gives up 
         on_backoff=backoff_handler,
     )
     def inner_function(*args, **kwargs):  # type: ignore
