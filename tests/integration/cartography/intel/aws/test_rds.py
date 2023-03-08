@@ -308,7 +308,7 @@ def test_rds_exposure(neo4j_session):
 
     expected_nodes = {
         ('arn:aws:rds:us-east-1:some-arn:db:some-prod-db-iad-0',
-         'direct_ipv4,public_subnet_explicit_ipv4')
+         'direct_ipv4,public_subnet_ipv4')
     }
 
     assert actual_nodes == expected_nodes
