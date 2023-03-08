@@ -61,13 +61,9 @@ def load_elasticache_clusters(
         ON CREATE SET cluster.firstseen = timestamp(),
             cluster.arn = elasticache_cluster.ARN,
             cluster.topic_arn = elasticache_cluster.NotificationConfiguration.TopicArn,
-            cluster.id = elasticache_cluster.CacheClusterId,
+            cluster.cache_cluster_id = elasticache_cluster.CacheClusterId,
             cluster.region = elasticache_cluster.region
         SET cluster.lastupdated = $aws_update_tag
-
-        WITH cluster, elasticache_cluster
-        UNWIND elasticache_cluster.SecurityGroups as sg
-            MERGE (:EC2SecurityGroup{id: sg.SecurityGroupId})<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(cluster)
 
         WITH cluster, elasticache_cluster
         MATCH (owner:AWSAccount{id: $aws_account_id})
@@ -98,6 +94,27 @@ def load_elasticache_clusters(
         clusters=clusters,
         aws_update_tag=update_tag,
         aws_account_id=aws_account_id,
+    )
+
+
+@timeit
+def attach_elasticache_clusters_to_security_groups(neo4j_session: neo4j.Session, clusters: List[Dict], update_tag: int) -> None:
+    query = """
+    UNWIND $clusters as elasticache_cluster
+        MATCH (cluster:ElasticacheCluster{id:elasticache_cluster.ARN})
+        UNWIND elasticache_cluster.SecurityGroups as sg
+            MERGE (security_group:EC2SecurityGroup{id: sg.SecurityGroupId})
+            ON CREATE SET security_group.firstseen = timestamp()
+            SET security_group.lastupdated = $aws_update_tag
+            WITH security_group, cluster
+            MERGE (security_group)<-[r:MEMBER_OF_EC2_SECURITY_GROUP]-(cluster)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = $aws_update_tag
+    """
+    neo4j_session.run(
+        query,
+        clusters=clusters,
+        aws_update_tag=update_tag,
     )
 
 

@@ -90,6 +90,7 @@ def test_elasticache_cluster_analysis(neo4j_session):
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
+    cartography.intel.aws.elasticache.attach_elasticache_clusters_to_security_groups(neo4j_session, clusters, TEST_UPDATE_TAG)
 
     common_job_parameters = {
         "UPDATE_TAG": TEST_UPDATE_TAG + 1,
