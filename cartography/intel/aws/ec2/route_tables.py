@@ -53,13 +53,13 @@ def load_route_tables(
             route['RouteTableId'] = route_table['RouteTableId']
             route['id'] = f"route_table/{route_table['RouteTableId']}/destination_cidr/{route['DestinationCidrBlock']}"
             routes.append(route)
-    neo4j_session.write_transaction(load_route_tables_tx, data, aws_update_tag)
+    neo4j_session.write_transaction(load_route_tables_tx, data, aws_account_id, aws_update_tag)
     neo4j_session.write_transaction(load_routes_tx, routes, aws_update_tag)
     neo4j_session.write_transaction(load_associations_tx, associations, aws_update_tag)
 
 
 @timeit
-def load_route_tables_tx(tx: neo4j.Transaction, data: List[Dict], aws_update_tag: int):
+def load_route_tables_tx(tx: neo4j.Transaction, data: List[Dict], aws_account_id: str, aws_update_tag: int):
     ingest_route_tables = """
     UNWIND $route_tables as route_table
     MERGE (rtab: EC2RouteTable{id: route_table.RouteTableId})
@@ -69,12 +69,24 @@ def load_route_tables_tx(tx: neo4j.Transaction, data: List[Dict], aws_update_tag
         rtab.lastupdated = $aws_update_tag,
         rtab.consolelink = route_table.consolelink,
         rtab.arn = route_table.arn,
-        rtab.vpc_id = route_table.VpcId,
         rtab.owner_id = route_table.OwnerId
+        
+    WITH route_table, rtab
+    MATCH (vpc:AWSVpc{id: route_table.VpcId})
+    MERGE (rtab)-[r:MEMBER_OF_AWS_VPC]->(vpc)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $aws_update_tag
+
+    WITH rtab
+    MATCH (aws:AWSAccount{id: $aws_account_id})
+    MERGE (aws)-[rel:RESOURCE]->(rtab)
+    ON CREATE SET rel.firstseen = timestamp()
+    SET rel.lastupdated = $aws_update_tag
     """
     tx.run(
         ingest_route_tables,
         route_tables=data,
+        aws_account_id=aws_account_id,
         aws_update_tag=aws_update_tag,
     )
 
@@ -112,7 +124,7 @@ def load_routes_tx(tx: neo4j.Transaction, data: List[Dict], aws_update_tag: int)
 def load_associations_tx(tx: neo4j.Transaction, data: List[Dict], aws_update_tag: int):
     ingest_associations = """
     UNWIND $associations as assoc
-    MERGE (asc: EC2RouteTableAssociation{id: assoc.RouteTableAssociationId})
+    MERGE (asc:EC2RouteTableAssociation{id: assoc.RouteTableAssociationId})
     ON CREATE SET
         asc.firstseen = timestamp()
     SET
@@ -127,7 +139,14 @@ def load_associations_tx(tx: neo4j.Transaction, data: List[Dict], aws_update_tag
     SET
         rel.lastupdated = $aws_update_tag
     WITH asc, assoc
-    MERGE (subnet:EC2Subnet{subnetid: assoc.SubnetId})-[r:HAS_EXPLICIT_ASSOCIATION]->(asc)
+    WHERE assoc.SubnetId IS NOT NULL
+    MERGE (subnet:EC2Subnet{subnetid: assoc.SubnetId})
+    ON CREATE SET 
+        subnet.firstseen = timestamp()
+    SET 
+        subnet.lastupdated = $aws_update_tag
+    WITH subnet, asc
+    MERGE (subnet)-[r:HAS_EXPLICIT_ASSOCIATION]->(asc)
     ON CREATE SET
         r.firstseen = timestamp()
     SET
