@@ -215,7 +215,7 @@ def test_snapshot_attributes(neo4j_session):
         aws_update_tag=TEST_UPDATE_TAG,
     )
 
-    query = """MATCH (attr:RDSSnapshotAttribute)-[:HAS_ATTRIBUTE]-(rds:RDSSnapshot) RETURN attr.name, rds.id"""
+    query = """MATCH (attr:RDSSnapshotAttribute)<-[:HAS_ATTRIBUTE]-(rds:RDSSnapshot) RETURN attr.name, rds.id"""
     snapshots_attribs = neo4j_session.run(query)
 
     actual_nodes = {

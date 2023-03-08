@@ -22,7 +22,7 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (attrib:RDSSnapshotAttribute{name: 'restore'})-[HAS_ATTRIBUTE]-(snapshot:RDSSnapshot)<-[:IS_SNAPSHOT_SOURCE]-(rds:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'all' IN attrib.values WITH snapshot WHERE (NOT EXISTS(snapshot.exposed_internet_type)) OR (NOT 'restore_all_attrib' IN snapshot.exposed_internet_type) SET snapshot.exposed_internet = true, snapshot.exposed_internet_type = coalesce(snapshot.exposed_internet_type , []) + 'restore_all_attrib';",
+			"query": "MATCH (attrib:RDSSnapshotAttribute{name: 'restore'})<-[HAS_ATTRIBUTE]-(snapshot:RDSSnapshot)<-[:IS_SNAPSHOT_SOURCE]-(rds:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'all' IN attrib.values WITH snapshot WHERE (NOT EXISTS(snapshot.exposed_internet_type)) OR (NOT 'restore_all_attrib' IN snapshot.exposed_internet_type) SET snapshot.exposed_internet = true, snapshot.exposed_internet_type = coalesce(snapshot.exposed_internet_type , []) + 'restore_all_attrib';",
 			"iterative": false
 		}
 	],

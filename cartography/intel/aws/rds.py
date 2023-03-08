@@ -625,7 +625,7 @@ def load_rds_snapshot_attributes(neo4j_session: neo4j.Session, data: Dict, aws_u
                 attrib.values = attribute.AttributeValues,
                 attrib.lastupdated = $aws_update_tag
             WITH attrib, result, rdsSnapshot
-            MERGE (rdsSnapshot)-[r:HAS_ATTRIBUTE]-(attrib)
+            MERGE (rdsSnapshot)-[r:HAS_ATTRIBUTE]->(attrib)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = $aws_update_tag
     """
