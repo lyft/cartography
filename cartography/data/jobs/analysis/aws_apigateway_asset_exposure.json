@@ -7,11 +7,13 @@
 		},
 		{
 			"query": "MATCH (rest_api:APIGatewayRestAPI)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'REGIONAL' in rest_api.endpoint_conf_types OR 'EDGE' in rest_api.endpoint_conf_types WITH rest_api WHERE (NOT EXISTS(rest_api.exposed_internet_type)) OR (NOT 'endpoint_type' IN rest_api.exposed_internet_type) SET rest_api.exposed_internet = true, rest_api.exposed_internet_type = coalesce(rest_api.exposed_internet_type , []) + 'endpoint_type';",
-			"iterative": false
+			"iterative": true,
+			"iterationsize": 1000
 		},
 		{
 			"query": "MATCH (rest_api:APIGatewayRestAPI{anonymous_access: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH rest_api WHERE (NOT EXISTS(rest_api.exposed_internet_type)) OR (NOT 'public_policy' IN rest_api.exposed_internet_type) SET rest_api.exposed_internet = true, rest_api.exposed_internet_type = coalesce(rest_api.exposed_internet_type , []) + 'public_policy';",
-			"iterative": false
+			"iterative": true,
+			"iterationsize": 1000
 		}
 	],
 	"name": "AWS apigateway asset internet exposure"
