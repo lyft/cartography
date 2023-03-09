@@ -170,6 +170,16 @@ def test_ec2_asset_exposure(neo4j_session):
         workspace_id=TEST_WORKSPACE_ID
     )
 
+    neo4j_session.run(
+        """
+        MERGE (:AWSVpc{id : 'vpc-025873e026b9e8ee6'})
+        """
+    )
+    data_instances = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
+        neo4j_session, data_instances, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+    )
+
     data = tests.data.aws.ec2.route_tables.DESCRIBE_ROUTE_TABLES
     cartography.intel.aws.ec2.route_tables.load_route_tables(
         neo4j_session,
@@ -177,12 +187,6 @@ def test_ec2_asset_exposure(neo4j_session):
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG
     )
-
-    data_instances = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
-    cartography.intel.aws.ec2.instances.load_ec2_instances(
-        neo4j_session, data_instances, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
-    )
-
     data = tests.data.aws.ec2.subnets.DESCRIBE_SUBNETS
     cartography.intel.aws.ec2.subnets.load_subnets(
         neo4j_session,
@@ -198,20 +202,32 @@ def test_ec2_asset_exposure(neo4j_session):
     }
 
     run_analysis_job(
-        'aws_ec2_asset_exposure.json',
+        'implicit_relationship_creation.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    run_analysis_job(
+        'aws_ec2_subnet_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'aws_ec2_instance_asset_exposure.json',
         neo4j_session,
         common_job_parameters,
     )
 
     expected_nodes = {
         ('i-01',
-         'public_subnet_implicit, vpc_none'),
+         'subnet, vpc_none'),
         ('i-02',
-         'public_subnet_explicit, vpc_none'),
+         'subnet, vpc_none'),
         ('i-03',
-         'public_subnet_explicit, vpc_none'),
+         'subnet, vpc_none'),
         ('i-04',
-         'public_subnet_explicit, vpc_none'),
+         'subnet, vpc_none'),
     }
 
     nodes = neo4j_session.run(

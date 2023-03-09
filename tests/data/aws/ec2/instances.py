@@ -118,7 +118,7 @@ DESCRIBE_INSTANCES = {
                     },
                     'StateTransitionReason': '',
                     # SubnetId is set to None intentionally on this instance.
-                    'SubnetId': None,
+                    'SubnetId': 'SOME_SUBNET_1',
                     'Tags': [
                         {
                             'Key': 'aws:autoscaling:groupName',
