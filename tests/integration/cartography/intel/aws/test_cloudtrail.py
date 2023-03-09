@@ -64,7 +64,7 @@ def test_cloudtrails_analysis(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (n:AWSCloudTrailTrail{exposed_internet: true}) RETURN n.id
+        MATCH (n:AWSCloudTrailTrail{anonymous_access: true}) RETURN n.id
         """
     )
 

@@ -90,15 +90,15 @@ def test_eks_analysis(neo4j_session):
 
     run_analysis_job('aws_eks_asset_exposure.json', neo4j_session, common_job_parameters)
 
-    expected = {'arn:aws:eks:eu-west-2:222222222222:cluster/cluster_2'}
+    expected = {('arn:aws:eks:eu-west-2:222222222222:cluster/cluster_2', 'direct')}
 
     result = neo4j_session.run(
         """
-        MATCH (n:EKSCluster{exposed_internet: true}) RETURN n.arn;
+        MATCH (n:EKSCluster{exposed_internet: true}) RETURN n.arn, n.exposed_internet_type;
         """,
     )
     actual = {
-        r['n.arn'] for r in result
+        (r['n.arn'], ",".join(r['n.exposed_internet_type'])) for r in result
     }
 
     assert actual == expected

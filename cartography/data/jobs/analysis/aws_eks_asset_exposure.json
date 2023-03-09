@@ -4,13 +4,13 @@
 			"__comment": "This is a clean-up statement to remove custom attributes",
 			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE EXISTS(cluster.exposed_internet) REMOVE cluster.exposed_internet return COUNT(*) as TotalCompleted",
 			"iterative": true,
-			"iterationsize": 1000
+			"iterationsize": 100
 		},
 		{
 			"__comment": "This sets the exposed_internet attribute",
-			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE cluster.endpoint_public_access = true AND '0.0.0.0/0' IN cluster.public_access_cidrs SET cluster.exposed_internet = true",
+			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE cluster.endpoint_public_access = true AND '0.0.0.0/0' IN cluster.public_access_cidrs WITH cluster WHERE (NOT EXISTS(cluster.exposed_internet_type)) OR (NOT 'direct' IN cluster.exposed_internet_type) SET cluster.exposed_internet = true, cluster.exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct';",
 			"iterative": true,
-			"iterationsize": 1000
+			"iterationsize": 100
 		}
 	],
 	"name": "AWS EKS internet exposure"
