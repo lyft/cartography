@@ -7,11 +7,13 @@
 		},
 		{
 			"query": "MATCH (lf:AWSLambda{public_policy: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH lf WHERE (NOT EXISTS(lf.exposed_internet_type)) OR (NOT 'public_policy' IN lf.exposed_internet_type)\nSET lf.exposed_internet = true, lf.exposed_internet_type = coalesce(lf.exposed_internet_type , []) + 'public_policy';",
-			"iterative": false
+			"iterative": true,
+			"iterationsize": 1000
 		},
 		{
 			"query": "MATCH (lf:AWSLambda)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH lf WHERE ((NOT EXISTS(lf.vpc_id)) OR (lf.vpc_id = '')) AND (NOT EXISTS(lf.exposed_internet_type)) OR (NOT 'vpc_none' IN lf.exposed_internet_type)\nSET lf.exposed_internet = true, lf.exposed_internet_type = coalesce(lf.exposed_internet_type , []) + 'vpc_none';",
-			"iterative": false
+			"iterative": true,
+			"iterationsize": 1000
 		}
 	],
 	"name": "aws lambda function internet exposure"
