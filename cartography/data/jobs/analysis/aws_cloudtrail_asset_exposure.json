@@ -7,7 +7,8 @@
 		},
 		{
 			"query": "MATCH (:S3Bucket{anonymous_access: true})-[:HAS_BUCKET]-(trail:AWSCloudTrailTrail)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH trail WHERE (NOT EXISTS(trail.exposed_internet_type)) OR (NOT 'public_bucket' IN trail.exposed_internet_type) SET trail.exposed_internet = true, trail.exposed_internet_type = coalesce(trail.exposed_internet_type , []) + 'public_bucket';",
-			"iterative": false
+			"iterative": true,
+			"iterationsize": 1000
 		}
 	],
 	"name": "aws cloudtrail asset internet exposure"
