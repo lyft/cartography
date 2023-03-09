@@ -18,7 +18,6 @@ from . import lambda_function
 from . import permission_relationships
 from . import rds
 from . import redshift
-from . import resourcegroupstaggingapi
 from . import route53
 from . import s3
 from . import secretsmanager
@@ -43,6 +42,7 @@ from .ec2.tgw import sync_transit_gateways
 from .ec2.volumes import sync_ebs_volumes
 from .ec2.vpc import sync_vpc
 from .ec2.vpc_peerings import sync_vpc_peerings
+# from . import resourcegroupstaggingapi
 
 RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,

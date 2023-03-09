@@ -10,11 +10,13 @@ from flask_executor import Executor
 import cartography.cli
 import cartography.config
 import cartography.sync
+import cartography.timer
 from cartography.intel.aws.util.common import parse_and_validate_aws_custom_sync_profile
 
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
 executor = Executor(app)
+timerObj = cartography.timer.Timer()
 
 
 @app.get('/get_status')
@@ -25,7 +27,7 @@ def get_status():
     done_status = executor.futures.done('cartography_job')
     if done_status is None or done_status:
         return jsonify({'status': 'READY'})
-    return jsonify({'status': 'RUNNING'})
+    return jsonify({'status': 'RUNNING', 'running_time': timerObj.check()})
 
 
 def run_cartography_job(aws_custom_sync_profile: str):
@@ -69,14 +71,16 @@ def start_job():
     done_status = executor.futures.done('cartography_job')
     if done_status:
         executor.futures.pop('cartography_job')
+        timerObj.reset()
     if done_status is None or done_status:
         executor.submit_stored(
             'cartography_job',
             run_cartography_job,
             request_text,
         )
+        timerObj.start()
         return jsonify({'status': 'STARTED'})
-    return jsonify({'status': 'RUNNING'})
+    return jsonify({'status': 'RUNNING', 'running_time': timerObj.check()})
 
 
 def main(argv=None):
