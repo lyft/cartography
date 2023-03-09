@@ -254,11 +254,6 @@ def _load_s3_acls(neo4j_session: neo4j.Session, acls: Dict, aws_account_id: str,
 
     # implement the acl permission
     # https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#permissions
-    run_analysis_job(
-        'aws_s3acl_analysis.json',
-        neo4j_session,
-        common_job_parameters,
-    )
 
 
 @timeit
