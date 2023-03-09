@@ -36,11 +36,9 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
             each_function['consolelink'] = aws_console_link.get_console_link(arn=each_function['FunctionArn'])
             policy = client.get_policy(FunctionName=each_function['FunctionArn'])
             if policy is not None:
-                each_function['policy'] = Policy(json.loads(policy['Policy']))
-                if (each_function['policy'].is_internet_accessible()):
-                    each_function['public_policy'] = True
-                else:
-                    each_function['public_policy'] = False
+                parsed_policy = Policy(json.loads(policy['Policy']))
+                each_function['anonymous_access'] = parsed_policy.is_internet_accessible()
+                each_function['anonymous_actions'] = list(parsed_policy.internet_accessible_actions())
             lambda_functions.append(each_function)
     return lambda_functions
 
@@ -58,7 +56,8 @@ def load_lambda_functions(
     lambda.region = lf.region,
     lambda.modifieddate = lf.LastModified,
     lambda.runtime = lf.Runtime,
-    lambda.public_policy = lf.public_policy,
+    lambda.anonymous_access = lf.anonymous_access,
+    lambda.anonymous_actions = lf.anonymous_actions,
     lambda.consolelink = lf.consolelink,
     lambda.description = lf.Description,
     lambda.timeout = lf.Timeout,
