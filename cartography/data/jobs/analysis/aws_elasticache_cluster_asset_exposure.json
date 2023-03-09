@@ -7,11 +7,13 @@
 		},
 		{
 			"query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(cluster:ElasticacheCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH cluster WHERE (NOT EXISTS(cluster.exposed_internet_type)) OR (NOT 'direct_ipv4' IN cluster.exposed_internet_type) SET cluster.exposed_internet = true, cluster.exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct_ipv4';",
-			"iterative": false
+			"iterative": true,
+			"iterationsize": 1000
 		},
 		{
 			"query": "MATCH (:Ipv6Range{id: '::/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(cluster:ElasticacheCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH cluster WHERE (NOT EXISTS(cluster.exposed_internet_type)) OR (NOT 'direct_ipv6' IN cluster.exposed_internet_type) SET cluster.exposed_internet = true, cluster.exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct_ipv6';",
-			"iterative": false
+			"iterative": true,
+			"iterationsize": 1000
 		}
 	],
 	"name": "aws elasticache cluster internet exposure"
