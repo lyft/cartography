@@ -72,7 +72,7 @@ def _get_principal_role_nodes(neo4j_session):
     return {
         (roleid, arn)
         for (roleid, arn) in check_nodes(neo4j_session, 'AWSPrincipal', ['roleid', 'arn'])
-        if ':role/' in arn # filter out other Principals nodes, like the ec2 service princiapl
+        if ':role/' in arn  # filter out other Principals nodes, like the ec2 service princiapl
     }
 
 
@@ -83,7 +83,7 @@ def test_load_roles(neo4j_session):
     assert set() == _get_principal_role_nodes(neo4j_session)
     data = tests.data.aws.iam.LIST_ROLES['Roles']
     expected_principals = {
-        (None, item['Arn'], )
+        (None, item['Arn'])
         for item in data
     }
     # Load a the roles as Principals, initially.
@@ -92,7 +92,7 @@ def test_load_roles(neo4j_session):
         UNWIND $data as item
             MERGE (p:AWSPrincipal{arn: item.Arn})
         ''',
-        data=data
+        data=data,
     )
     actual_principals = _get_principal_role_nodes(neo4j_session)
     assert expected_principals == actual_principals
