@@ -36,27 +36,7 @@
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(ip_perm:IpPermissionInbound{protocol: '-1'})-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH instance WHERE (ip_perm.fromport in $public_ports) AND (ip_perm.toport in $public_ports) AND (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'inbound_security_group_ipv4' IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'inbound_security_group_ipv4';",
-			"iterative": true,
-			"iterationsize": 100
-		},
-		{
-			"query": "MATCH (:Ipv6Range{id: '::/0'})-[:MEMBER_OF_IP_RULE]->(ip_perm:IpPermissionInbound{protocol: '-1'})-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH instance WHERE (ip_perm.fromport in $public_ports) AND (ip_perm.toport in $public_ports) AND (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'inbound_security_group_ipv6' IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'inbound_security_group_ipv6';",
-			"iterative": true,
-			"iterationsize": 100
-		},
-		{
-			"query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionEgress{protocol: '-1'})-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH instance WHERE (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'egress_security_group_ipv4' IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'egress_security_group_ipv4';",
-			"iterative": true,
-			"iterationsize": 100
-		},
-		{
-			"query": "MATCH (:Ipv6Range{id: '::/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionEgress{protocol: '-1'})-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH instance WHERE (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'egress_security_group_ipv6' IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'egress_security_group_ipv6';",
-			"iterative": true,
-			"iterationsize": 100
-		},
-		{
-			"query": "MATCH (group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE (NOT (group)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(:AWSVpc)) WITH group MATCH (group)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance) WITH distinct instance WHERE ((NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'vpc_none' IN instance.exposed_internet_type)) SET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'vpc_none';",
+			"query": "MATCH (group:EC2SecurityGroup{exposed_internet: true})<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH distinct group.exposed_internet_type as types, instance\nUNWIND types as type\nWITH type, instance\nWHERE NOT EXISTS(instance.exposed_internet_type) OR (NOT type IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type, []) + type;",
 			"iterative": true,
 			"iterationsize": 100
 		}
