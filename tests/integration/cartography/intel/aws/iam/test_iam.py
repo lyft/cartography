@@ -6,6 +6,7 @@ import tests.data.aws.iam
 from cartography.cli import CLI
 from cartography.config import Config
 from cartography.sync import build_default_sync
+from tests.integration.util import check_nodes
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
@@ -64,15 +65,50 @@ def test_load_groups(neo4j_session):
     )
 
 
-def test_load_roles(neo4j_session):
-    data = tests.data.aws.iam.LIST_ROLES['Roles']
+def _get_principal_role_nodes(neo4j_session):
+    '''
+    Get AWSPrincipal node tuples (rolearn, arn) that have arns with substring `:role/`
+    '''
+    return {
+        (roleid, arn)
+        for (roleid, arn) in check_nodes(neo4j_session, 'AWSPrincipal', ['roleid', 'arn'])
+        if ':role/' in arn # filter out other Principals nodes, like the ec2 service princiapl
+    }
 
+
+def test_load_roles(neo4j_session):
+    '''
+    Ensures that we load AWSRoles without duplicating against AWSPrincipal nodes
+    '''
+    assert set() == _get_principal_role_nodes(neo4j_session)
+    data = tests.data.aws.iam.LIST_ROLES['Roles']
+    expected_principals = {
+        (None, item['Arn'], )
+        for item in data
+    }
+    # Load a the roles as Principals, initially.
+    neo4j_session.run(
+        '''
+        UNWIND $data as item
+            MERGE (p:AWSPrincipal{arn: item.Arn})
+        ''',
+        data=data
+    )
+    actual_principals = _get_principal_role_nodes(neo4j_session)
+    assert expected_principals == actual_principals
+    assert set() == check_nodes(neo4j_session, 'AWSRole', ['arn'])
+    # Load the roles normally
     cartography.intel.aws.iam.load_roles(
         neo4j_session,
         data,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
+    # Ensure that the new AWSRoles are merged into pre-existing AWSPrincipal nodes,
+    # and we do not have duplicate AWSPrincipal nodes.
+    role_nodes = check_nodes(neo4j_session, 'AWSRole', ['roleid', 'arn'])
+    principal_nodes = _get_principal_role_nodes(neo4j_session)
+    assert role_nodes == principal_nodes
 
 
 def test_load_roles_creates_trust_relationships(neo4j_session):
