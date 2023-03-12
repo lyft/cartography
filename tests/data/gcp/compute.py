@@ -214,6 +214,7 @@ GCP_LIST_INSTANCES_RESPONSE = {
             'status': 'RUNNING',
             'tags': {
                 'fingerprint': 'fingerprint1234=',
+                'items': ["test1"]
             },
             'zone': 'https://www.googleapis.com/compute/v1/projects/project-abc/zones/europe-west2-b',
         },
@@ -424,6 +425,7 @@ LIST_FIREWALLS_RESPONSE = {
             'priority': 65534,
             'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-icmp',
             'sourceRanges': ['0.0.0.0/0'],
+            'targetTags': ["test"],
         }, {
             'allowed': [
                 {
@@ -450,6 +452,7 @@ LIST_FIREWALLS_RESPONSE = {
             'priority': 65534,
             'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-internal',
             'sourceRanges': ['10.128.0.0/9'],
+            'targetTags': ["test"],
         }, {
             'allowed': [{
                 'IPProtocol': 'tcp',
@@ -469,6 +472,7 @@ LIST_FIREWALLS_RESPONSE = {
             'priority': 65534,
             'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-rdp',
             'sourceRanges': ['0.0.0.0/0'],
+            'targetTags': ["test1"],
         }, {
             'allowed': [{
                 'IPProtocol': 'tcp',
@@ -488,6 +492,7 @@ LIST_FIREWALLS_RESPONSE = {
             'priority': 65534,
             'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-ssh',
             'sourceRanges': ['0.0.0.0/0'],
+            'targetTags': ["test1"],
         }, {
             'allowed': [{
                 'IPProtocol': 'tcp',

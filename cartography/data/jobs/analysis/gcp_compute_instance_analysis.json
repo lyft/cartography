@@ -1,0 +1,22 @@
+{
+    "statements": [
+        {
+            "query": "MATCH (i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH i LIMIT $LIMIT_SIZE REMOVE i.exposed_internet, i.exposed_internet_type return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 1000
+        },
+        {
+            "query": "MATCH (i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.nat_ip IS NOT NULL \nSET i.exposed_internet = true, i.exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'nat_ip' ",
+            "iterative": false
+        },
+        {
+            "query": "MATCH (i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.ipv6_nat_ip IS NOT NULL \nSET i.exposed_internet = true, i.exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'ipv6_nat_ip' ",
+            "iterative": false
+        },
+        {
+            "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:GCPProject{id: $GCP_PROJECT_ID})-[:RESOURCE]->(vpc:GCPVpc)-[:RESOURCE]->(fw:GCPFirewall)-[h:TARGET_TAG]->(t:GCPNetworkTag)<-[ht:TAGGED]-(i:Instance:GCPInstance)  \nWHERE fw.unrestricted_access = true \nSET i.exposed_internet = true, i.exposed_internet_type = coalesce(i.exposed_internet_type, []) + ('unrestricted_access_on_firewall_name:' + fw.name) ",
+            "iterative": false
+        }
+    ],
+    "name": "GCP Compute public/external IP addresses configuration Check analysis"
+}

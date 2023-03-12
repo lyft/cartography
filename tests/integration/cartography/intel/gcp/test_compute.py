@@ -1,8 +1,16 @@
 import cartography.intel.gcp.compute
 import tests.data.gcp.compute
+from cartography.util import run_analysis_job
 
+TEST_WORKSPACE_ID = '1223344'
 TEST_PROJECT_ID = 'project-abc'
 TEST_UPDATE_TAG = 123456789
+
+common_job_parameters = {
+    "UPDATE_TAG": TEST_UPDATE_TAG,
+    "WORKSPACE_ID": '1223344',
+    "GCP_PROJECT_ID": TEST_PROJECT_ID,
+}
 
 
 def _ensure_local_neo4j_has_test_instance_data(neo4j_session):
@@ -10,6 +18,19 @@ def _ensure_local_neo4j_has_test_instance_data(neo4j_session):
         neo4j_session,
         tests.data.gcp.compute.TRANSFORMED_GCP_INSTANCES,
         TEST_UPDATE_TAG,
+    )
+
+
+def cloudanix_workspace_to_gcp_project(neo4j_session):
+    query = """
+    MERGE (w:CloudanixWorkspace{id: $WorkspaceId})
+    MERGE (project:GCPProject{id: $ProjectId})
+    MERGE (w)-[:OWNER]->(project)
+    """
+    nodes = neo4j_session.run(
+        query,
+        WorkspaceId=TEST_WORKSPACE_ID,
+        ProjectId=TEST_PROJECT_ID,
     )
 
 
@@ -513,6 +534,52 @@ def test_compute_network_interfaces(neo4j_session):
             '1.3.4.5',
             '6.7.8.9'
         ),
+    }
+
+    assert actual_nodes == expected_nodes
+
+
+def test_compute_firewalls(neo4j_session):
+    
+    instance_responses = tests.data.gcp.compute.GCP_LIST_INSTANCES_RESPONSE
+    instance_list = cartography.intel.gcp.compute.transform_gcp_instances(instance_responses.get("items", []), compute=None)
+    cartography.intel.gcp.compute.load_gcp_instances(neo4j_session, instance_list, TEST_UPDATE_TAG)
+    cloudanix_workspace_to_gcp_project(neo4j_session)
+    fw_responses = tests.data.gcp.compute.LIST_FIREWALLS_RESPONSE
+    fw_list = cartography.intel.gcp.compute.transform_gcp_firewall(fw_responses)
+    cartography.intel.gcp.compute.load_gcp_ingress_firewalls(neo4j_session, fw_list, TEST_UPDATE_TAG)
+    
+
+    firewall_query = """
+    MATCH (rng:IpRange)-[m:MEMBER_OF_IP_RULE]->(rule:IpRule:IpPermissionInbound:GCPIpRule)-[r:ALLOWED_BY]->(fw:GCPFirewall)<-[:RESOURCE]-(vpc:GCPVpc)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE fw.direction='INGRESS' AND fw.disabled=FALSE AND rng.id='0.0.0.0/0' AND rule.protocol IN ['tcp','udp'] AND rule.fromport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,0,53,20,21,22] AND rule.toport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,53,20,21,22,65535]
+    RETURN fw.id
+    """
+    query1 = """
+    MATCH (i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.exposed_internet=true
+    RETURN i.id,i.exposed_internet_type
+    """
+
+    run_analysis_job('gcp_compute_firewall_analysis.json',neo4j_session,common_job_parameters)
+    run_analysis_job('gcp_compute_instance_analysis.json',neo4j_session,common_job_parameters)
+
+    objects1 = neo4j_session.run(query1, GCP_PROJECT_ID=TEST_PROJECT_ID, WORKSPACE_ID=TEST_WORKSPACE_ID)
+    # checked the query1 output by printing the output due to unhashable type list error
+    for k in objects1:
+        print(k)
+
+    actual_nodes = {
+        (
+            o['i.id'],
+            o['i.exposed_internet_type'],
+
+        ) for o in objects1
+        
+    }
+
+    expected_nodes = {
+        (
+        
+        )
     }
 
     assert actual_nodes == expected_nodes
