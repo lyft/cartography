@@ -89,7 +89,8 @@ def test_load_roles(neo4j_session):
         (None, 'arn:aws:iam::000000000000:role/example-role-2'),
         (None, 'arn:aws:iam::000000000000:role/example-role-3'),
     }
-    # Act: Load a the roles as Principals, initially.
+    # Act: Load the roles as bare Principals without other labels. This replicates the case where we discover a
+    # role from another account via an AssumeRolePolicy document or similar ways. See #1133.
     neo4j_session.run(
         '''
         UNWIND $data as item
