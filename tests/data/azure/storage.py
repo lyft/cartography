@@ -13,6 +13,10 @@ DESCRIBE_STORAGE_ACCOUNTS = [
         "status_of_secondary": "available",
         "enable_https_traffic_only": False,
         "type": "Microsoft.Storage/storageAccounts",
+        "allowBlobPublicAccess": True,
+        "network_rule_set": {
+            "default_action": "Deny"
+        }
     },
     {
         "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2",
@@ -28,6 +32,10 @@ DESCRIBE_STORAGE_ACCOUNTS = [
         "status_of_secondary": "available",
         "enable_https_traffic_only": False,
         "type": "Microsoft.Storage/storageAccounts",
+        "allowBlobPublicAccess": False,
+        "network_rule_set": {
+            "default_action": "Allow"
+        }
     },
 ]
 
@@ -165,7 +173,7 @@ DESCRIBE_BLOB_CONTAINERS = [
         "name": "container1",
         "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
         "etag": "\"0x8D589847D51C7DE\"",
-        "public_access": "Container",
+        "public_access": "container",
         "lease_status": "Unlocked",
         "lease_state": "Available",
         "last_modified_time": "2018-03-14T08:20:47Z",
@@ -178,7 +186,7 @@ DESCRIBE_BLOB_CONTAINERS = [
         "name": "container2",
         "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
         "etag": "\"0x8D589847D51C7DE\"",
-        "public_access": "Container",
+        "public_access": "container",
         "lease_status": "Unlocked",
         "lease_state": "Available",
         "last_modified_time": "2018-03-14T08:20:47Z",
