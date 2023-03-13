@@ -83,7 +83,7 @@ def test_load_roles(neo4j_session):
     # Arrange
     assert set() == _get_principal_role_nodes(neo4j_session)
     data = tests.data.aws.iam.LIST_ROLES['Roles']
-    expected_principals = { #  (roleid, arn)
+    expected_principals = {  # (roleid, arn)
         (None, 'arn:aws:iam::000000000000:role/example-role-0'),
         (None, 'arn:aws:iam::000000000000:role/example-role-1'),
         (None, 'arn:aws:iam::000000000000:role/example-role-2'),
@@ -103,7 +103,7 @@ def test_load_roles(neo4j_session):
     assert expected_principals == actual_principals
     assert set() == check_nodes(neo4j_session, 'AWSRole', ['arn'])
     # Arrange
-    expected_nodes = { #  (roleid, arn)
+    expected_nodes = {  # (roleid, arn)
         ('AROA00000000000000000', 'arn:aws:iam::000000000000:role/example-role-0'),
         ('AROA00000000000000001', 'arn:aws:iam::000000000000:role/example-role-1'),
         ('AROA00000000000000002', 'arn:aws:iam::000000000000:role/example-role-2'),
