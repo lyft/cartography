@@ -362,6 +362,12 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         )  # NOTE temp solution (query has to be only executed after both subnet & route table is loaded)
 
         run_analysis_job(
+            'aws_ec2_security_group_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters
+        )
+
+        run_analysis_job(
             'aws_ec2_subnet_asset_exposure.json',
             neo4j_session,
             common_job_parameters,

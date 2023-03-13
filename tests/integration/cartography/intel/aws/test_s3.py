@@ -6,6 +6,7 @@ from cartography.util import run_analysis_job
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
+TEST_WORKSPACE_ID = '123'
 
 
 def test_load_s3_buckets(neo4j_session, *args):
@@ -14,8 +15,13 @@ def test_load_s3_buckets(neo4j_session, *args):
     """
     neo4j_session.run(
         """
-        MERGE (owner:AWSAccount{id: "000000000000"});
-        """
+            MERGE (aws:AWSAccount{id: $aws_account_id})<-[:OWNER]-(:CloudanixWorkspace{id: $workspace_id})
+            ON CREATE SET aws.firstseen = timestamp()
+            SET aws.lastupdated = $aws_update_tag
+            """,
+        aws_account_id=TEST_ACCOUNT_ID,
+        aws_update_tag=TEST_UPDATE_TAG,
+        workspace_id=TEST_WORKSPACE_ID
     )
     data = tests.data.aws.s3.LIST_BUCKETS
     cartography.intel.aws.s3.load_s3_buckets(neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
@@ -177,6 +183,7 @@ def test_load_s3_policy_statuses(neo4j_session, *args):
     common_job_parameters = {
         'UPDATE_TAG': TEST_UPDATE_TAG + 1,  # Simulate a new sync run finished so the old update tag is obsolete now
         'AWS_ID': TEST_ACCOUNT_ID,
+        'WORKSPACE_ID': TEST_WORKSPACE_ID,
     }
 
     run_analysis_job(
@@ -187,7 +194,7 @@ def test_load_s3_policy_statuses(neo4j_session, *args):
 
     nodes = neo4j_session.run(
         """
-        MATCH (s:S3Bucket{exposed_internet:true}) RETURN s.id;
+        MATCH (s:S3Bucket{anonymous_access:true}) RETURN s.id;
         """
     )
 

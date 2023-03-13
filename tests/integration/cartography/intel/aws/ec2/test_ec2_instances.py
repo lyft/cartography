@@ -214,6 +214,12 @@ def test_ec2_asset_exposure(neo4j_session):
     )
 
     run_analysis_job(
+        'aws_ec2_security_group_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    run_analysis_job(
         'aws_ec2_instance_asset_exposure.json',
         neo4j_session,
         common_job_parameters,
