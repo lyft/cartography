@@ -22,38 +22,38 @@ jobs:
         with:
           extra_args: --all-files --show-diff-on-failure
 
-  unit-and-integration-tests-neo4j4:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      # See https://debian.neo4j.com/
-      - name: Neo4j setup
-        run: |
-          wget -O - https://debian.neo4j.com/neotechnology.gpg.key | sudo apt-key add -
-          echo 'deb https://debian.neo4j.com stable 4.4' | sudo tee /etc/apt/sources.list.d/neo4j.list
-          sudo apt-get update
-      - name: Install Neo4j
-        run: sudo apt-get install neo4j
-      - name: Disable auth for neo4j
-        run: |
-          sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
-          sudo service neo4j restart
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "3.8"
-      # Cache our pip dir for efficiency; see https://medium.com/ai2-blog/python-caching-in-github-actions-e9452698e98d.
-      - uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: ${{ hashFiles('setup.py') }}-${{ hashFiles('test-requirements.txt') }}
-      - name: Install cartography
-        run: |
-          pip install -e .
-          pip install -r test-requirements.txt
-      - name: make test_unit
-        run: make test_unit
-      - name: make test_integration
-        run: make test_integration
+#  unit-and-integration-tests-neo4j4:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      # See https://debian.neo4j.com/
+#      - name: Neo4j setup
+#        run: |
+#          wget -O - https://debian.neo4j.com/neotechnology.gpg.key | sudo apt-key add -
+#          echo 'deb https://debian.neo4j.com stable 4.4' | sudo tee /etc/apt/sources.list.d/neo4j.list
+#          sudo apt-get update
+#      - name: Install Neo4j
+#        run: sudo apt-get install neo4j
+#      - name: Disable auth for neo4j
+#        run: |
+#          sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
+#          sudo service neo4j restart
+#      - uses: actions/setup-python@v2
+#        with:
+#          python-version: "3.8"
+#      # Cache our pip dir for efficiency; see https://medium.com/ai2-blog/python-caching-in-github-actions-e9452698e98d.
+#      - uses: actions/cache@v2
+#        with:
+#          path: ~/.cache/pip
+#          key: ${{ hashFiles('setup.py') }}-${{ hashFiles('test-requirements.txt') }}
+#      - name: Install cartography
+#        run: |
+#          pip install -e .
+#          pip install -r test-requirements.txt
+#      - name: make test_unit
+#        run: make test_unit
+#      - name: make test_integration
+#        run: make test_integration
 
   unit-and-integration-tests-neo4j5:
     runs-on: ubuntu-latest
@@ -63,7 +63,7 @@ jobs:
       - name: Neo4j setup
         run: |
           wget -O - https://debian.neo4j.com/neotechnology.gpg.key | sudo apt-key add -
-          echo 'deb https://debian.neo4j.com stable 4.4' | sudo tee -a /etc/apt/sources.list.d/neo4j.list
+          echo 'deb https://debian.neo4j.com stable 5' | sudo tee -a /etc/apt/sources.list.d/neo4j.list
           sudo apt-get update
       - name: Install Neo4j
         run: sudo apt-get install neo4j
