@@ -80,13 +80,16 @@ def test_load_roles(neo4j_session):
     '''
     Ensures that we load AWSRoles without duplicating against AWSPrincipal nodes
     '''
+    # Arrange
     assert set() == _get_principal_role_nodes(neo4j_session)
     data = tests.data.aws.iam.LIST_ROLES['Roles']
-    expected_principals = {
-        (None, item['Arn'])
-        for item in data
+    expected_principals = { #  (roleid, arn)
+        (None, 'arn:aws:iam::000000000000:role/example-role-0'),
+        (None, 'arn:aws:iam::000000000000:role/example-role-1'),
+        (None, 'arn:aws:iam::000000000000:role/example-role-2'),
+        (None, 'arn:aws:iam::000000000000:role/example-role-3'),
     }
-    # Load a the roles as Principals, initially.
+    # Act: Load a the roles as Principals, initially.
     neo4j_session.run(
         '''
         UNWIND $data as item
@@ -95,9 +98,17 @@ def test_load_roles(neo4j_session):
         data=data,
     )
     actual_principals = _get_principal_role_nodes(neo4j_session)
+    # Assert
     assert expected_principals == actual_principals
     assert set() == check_nodes(neo4j_session, 'AWSRole', ['arn'])
-    # Load the roles normally
+    # Arrange
+    expected_nodes = { #  (roleid, arn)
+        ('AROA00000000000000000', 'arn:aws:iam::000000000000:role/example-role-0'),
+        ('AROA00000000000000001', 'arn:aws:iam::000000000000:role/example-role-1'),
+        ('AROA00000000000000002', 'arn:aws:iam::000000000000:role/example-role-2'),
+        ('AROA00000000000000003', 'arn:aws:iam::000000000000:role/example-role-3'),
+    }
+    # Act: Load the roles normally
     cartography.intel.aws.iam.load_roles(
         neo4j_session,
         data,
@@ -108,7 +119,8 @@ def test_load_roles(neo4j_session):
     # and we do not have duplicate AWSPrincipal nodes.
     role_nodes = check_nodes(neo4j_session, 'AWSRole', ['roleid', 'arn'])
     principal_nodes = _get_principal_role_nodes(neo4j_session)
-    assert role_nodes == principal_nodes
+    assert expected_nodes == role_nodes
+    assert expected_nodes == principal_nodes
 
 
 def test_load_roles_creates_trust_relationships(neo4j_session):
