@@ -3,7 +3,7 @@ import re
 import sys
 from functools import wraps
 from string import Template
-from typing import Any
+from typing import Any, Set
 from typing import BinaryIO
 from typing import Callable
 from typing import cast
@@ -52,6 +52,36 @@ def run_analysis_job(
         ),
         common_job_parameters,
         get_job_shortname(filename),
+    )
+
+
+def run_analysis_and_ensure_deps(
+        analysis_job_name: str,
+        resource_dependencies: Set[str],
+        requested_syncs: Set[str],
+        common_job_parameters: Dict[str, Any],
+        neo4j_session: neo4j.Session,
+) -> None:
+    """
+    Runs analysis job only if the given set of resource dependencies was included in the requested_syncs.
+    :param analysis_job_name: The name of the analysis job to run e.g. "aws_foreign_accounts.json"
+    :param resource_dependencies: Set of resource sync names that must succeed in order to run the given analysis job.
+    If there are no requirements, specify the empty set.
+    :param requested_syncs: The value passed to cartography.config requested syncs as a set of strings.
+    :param common_job_parameters: The common job params dict used in cartography.
+    :param neo4j_session: The neo4j session object.
+    """
+    if not resource_dependencies.issubset(requested_syncs):
+        logger.warning(
+            f"Did not run {analysis_job_name} because it needs {resource_dependencies} to be included in the"
+            f"as a requested sync. You specified: {requested_syncs}. Please check your CLI args/cartography config."
+        )
+        return
+
+    run_analysis_job(
+        analysis_job_name,
+        neo4j_session,
+        common_job_parameters,
     )
 
 
