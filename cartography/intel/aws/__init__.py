@@ -212,13 +212,13 @@ def _perform_aws_analysis(
         common_job_parameters: Dict[str, Any],
 ) -> None:
     requested_syncs_as_set = set(requested_syncs)
+
     ec2_asset_exposure_requirements = {
         'ec2:instance',
         'ec2:security_group',
         'ec2:load_balancer',
         'ec2:load_balancer_v2',
     }
-
     run_analysis_and_ensure_deps(
         'aws_ec2_asset_exposure.json',
         ec2_asset_exposure_requirements,
