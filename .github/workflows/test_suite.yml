@@ -67,13 +67,10 @@ jobs:
           sudo apt-get update
       - name: Install Neo4j
         run: sudo apt-get install neo4j
-      - name: Turn on neo4j
+      - name: Disable auth for neo4j
         run: |
-          sudo systemctl start neo4j
-#      - name: Disable auth for neo4j
-#        run: |
-#          sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
-#          sudo service neo4j restart
+          sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
+          sudo service neo4j restart
       - uses: actions/setup-python@v2
         with:
           python-version: "3.8"
@@ -89,7 +86,9 @@ jobs:
       - name: make test_unit
         run: make test_unit
       - name: make test_integration
-        run: if ((echo >/dev/tcp/localhost/7687) &>/dev/null); then echo "found neo4j" && make test_integration; else echo "did not find neo4j" && exit 1; fi
+        run: |
+          sleep 30
+          if ((echo >/dev/tcp/localhost/7687) &>/dev/null); then echo "found neo4j" && make test_integration; else echo "did not find neo4j" && exit 1; fi
 
   build-dist-docker-image:
     runs-on: ubuntu-latest
