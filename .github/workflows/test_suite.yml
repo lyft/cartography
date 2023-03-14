@@ -67,10 +67,13 @@ jobs:
           sudo apt-get update
       - name: Install Neo4j
         run: sudo apt-get install neo4j
-      - name: Disable auth for neo4j
+      - name: Turn on neo4j
         run: |
-          sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
-          sudo service neo4j restart
+          sudo service neo4j start
+#      - name: Disable auth for neo4j
+#        run: |
+#          sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
+#          sudo service neo4j restart
       - uses: actions/setup-python@v2
         with:
           python-version: "3.8"
