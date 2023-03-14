@@ -59,20 +59,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      # See https://debian.neo4j.com/
-      - name: Neo4j setup
+      # https://stackoverflow.com/a/64592785
+      - name: neo4j v5 instance setup
         run: |
-          sudo add-apt-repository -y ppa:openjdk-r/ppa
-          sudo add-apt-repository universe
-          wget -O - https://debian.neo4j.com/neotechnology.gpg.key | sudo apt-key add -
-          echo 'deb https://debian.neo4j.com stable 5' | sudo tee -a /etc/apt/sources.list.d/neo4j.list
-          sudo apt-get update
-      - name: Install Neo4j
-        run: sudo apt-get install neo4j
-      - name: Disable auth for neo4j
-        run: |
-          sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
-          sudo service neo4j restart
+          docker run --detach \
+            --name neo4j-5 \
+            --env NEO4J_AUTH=none \
+            --publish 7474:7474 \
+            --publish 7473:7473 \
+            --publish 7687:7687 \
+            neo4j:5.5
       - uses: actions/setup-python@v2
         with:
           python-version: "3.8"
@@ -85,6 +81,11 @@ jobs:
         run: |
           pip install -e .
           pip install -r test-requirements.txt
+      - name: Wait for neo4j-5 to be ready
+        timeout-minutes: 1
+        run: (docker logs -f neo4j-5 & ) | grep -q Started
+      - name: Verify HTTP connectivity
+        run: curl -sI http://localhost:7474
       - name: make test_unit
         run: make test_unit
       - name: make test_integration
