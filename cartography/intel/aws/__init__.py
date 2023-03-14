@@ -198,8 +198,10 @@ def _sync_multiple_accounts(
     exception_tracebacks = []
 
     num_accounts = len(accounts)
+    num_threads = cpu_count()
 
-    with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+    logger.info(f"AWS: Using {num_threads} threads.")
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
         for profile_name, account_id in accounts.items():
             if num_accounts == 1:
                 # Use the default boto3 session because boto3 gets confused if you give it a profile name with 1 account
