@@ -70,6 +70,10 @@ jobs:
       - name: Disable auth for neo4j
         run: |
           sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
+          sudo sed -i 's/#server.default_listen_address=0.0.0.0/server.default_listen_address=0.0.0.0/g' /etc/neo4j/neo4j.conf
+          sudo sed -i 's/#server.bolt.listen_address=:7687/server.bolt.listen_address=:7687/g' /etc/neo4j/neo4j.conf
+          sudo sed -i 's/#server.bolt.advertised_address=:7687/server.bolt.advertised_address=:7687/g' /etc/neo4j/neo4j.conf
+          sudo sed -i 's/#server.default_advertised_address=localhost/server.default_advertised_address=localhost/g' /etc/neo4j/neo4j.conf
           sudo service neo4j restart
       - uses: actions/setup-python@v2
         with:
