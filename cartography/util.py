@@ -3,7 +3,7 @@ import re
 import sys
 from functools import wraps
 from string import Template
-from typing import Any, Set
+from typing import Any
 from typing import BinaryIO
 from typing import Callable
 from typing import cast
@@ -11,6 +11,7 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import TypeVar
 from typing import Union
 
@@ -74,7 +75,7 @@ def run_analysis_and_ensure_deps(
     if not resource_dependencies.issubset(requested_syncs):
         logger.warning(
             f"Did not run {analysis_job_name} because it needs {resource_dependencies} to be included in the"
-            f"as a requested sync. You specified: {requested_syncs}. Please check your CLI args/cartography config."
+            f"as a requested sync. You specified: {requested_syncs}. Please check your CLI args/cartography config.",
         )
         return
 

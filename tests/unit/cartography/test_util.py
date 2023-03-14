@@ -1,3 +1,4 @@
+from unittest import mock
 from unittest.mock import Mock
 from unittest.mock import patch
 
@@ -9,8 +10,6 @@ from cartography import util
 from cartography.util import aws_handle_regions
 from cartography.util import batch
 from cartography.util import run_analysis_and_ensure_deps
-
-from unittest import mock
 
 
 def test_run_analysis_job_default_package(mocker):
@@ -97,6 +96,7 @@ def test_batch(mocker):
     # Also check for empty input
     assert batch([], 3) == []
 
+
 @mock.patch.object(cartography.util, 'run_analysis_job', return_value=None)
 def test_run_analysis_and_ensure_deps(mock_run_analysis_job: mock.MagicMock):
     # Arrange
@@ -107,7 +107,7 @@ def test_run_analysis_and_ensure_deps(mock_run_analysis_job: mock.MagicMock):
     requested_syncs = {
         'ec2:instance',
         'iam',
-        'resourcegroupstaggingapi'
+        'resourcegroupstaggingapi',
     }
 
     # Act
@@ -139,7 +139,7 @@ def test_run_analysis_and_ensure_deps_no_requirements(mock_run_analysis_job: moc
     requested_syncs = {
         'ec2:instance',
         'iam',
-        'resourcegroupstaggingapi'
+        'resourcegroupstaggingapi',
     }
 
     # Act
