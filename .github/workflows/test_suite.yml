@@ -22,7 +22,7 @@ jobs:
         with:
           extra_args: --all-files --show-diff-on-failure
 
-  unit-and-integration-tests-neo4j4:
+  unit-and-integration-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
