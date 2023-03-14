@@ -74,7 +74,7 @@ def run_analysis_and_ensure_deps(
     """
     if not resource_dependencies.issubset(requested_syncs):
         logger.info(
-            f"Did not run {analysis_job_name} because it needs {resource_dependencies} to be included in the"
+            f"Did not run {analysis_job_name} because it needs {resource_dependencies} to be included "
             f"as a requested sync. You specified: {requested_syncs}. If you want this job to run, please change your "
             f"CLI args/cartography config so that all required resources are included.",
         )
