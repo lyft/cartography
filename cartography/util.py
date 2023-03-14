@@ -73,9 +73,10 @@ def run_analysis_and_ensure_deps(
     :param neo4j_session: The neo4j session object.
     """
     if not resource_dependencies.issubset(requested_syncs):
-        logger.warning(
+        logger.info(
             f"Did not run {analysis_job_name} because it needs {resource_dependencies} to be included in the"
-            f"as a requested sync. You specified: {requested_syncs}. Please check your CLI args/cartography config.",
+            f"as a requested sync. You specified: {requested_syncs}. If you want this job to run, please change your "
+            f"CLI args/cartography config so that all required resources are included.",
         )
         return
 
