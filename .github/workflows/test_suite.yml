@@ -69,7 +69,7 @@ jobs:
         run: sudo apt-get install neo4j
       - name: Turn on neo4j
         run: |
-          sudo service neo4j start
+          sudo systemctl start neo4j
 #      - name: Disable auth for neo4j
 #        run: |
 #          sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
