@@ -40,9 +40,6 @@ GKE_CLUSTERS = [{
     'defaultMaxPodsConstraint': {
         'maxPodsPerNode': '10',
     },
-    'masterAuthorizedNetworksConfig': {
-        'enabled': True,
-    },
     'networkConfig': {
         'network': 'projects/test-cluster/global/networks/test-cluster',
         'subnetwork': 'projects/test-cluster/regions/europe-west2/subnetworks/test-cluster',
