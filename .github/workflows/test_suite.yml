@@ -62,6 +62,8 @@ jobs:
       # See https://debian.neo4j.com/
       - name: Neo4j setup
         run: |
+          sudo add-apt-repository -y ppa:openjdk-r/ppa
+          sudo add-apt-repository universe
           wget -O - https://debian.neo4j.com/neotechnology.gpg.key | sudo apt-key add -
           echo 'deb https://debian.neo4j.com stable 5' | sudo tee -a /etc/apt/sources.list.d/neo4j.list
           sudo apt-get update
@@ -70,10 +72,6 @@ jobs:
       - name: Disable auth for neo4j
         run: |
           sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/g' /etc/neo4j/neo4j.conf
-          sudo sed -i 's/#server.default_listen_address=0.0.0.0/server.default_listen_address=0.0.0.0/g' /etc/neo4j/neo4j.conf
-          sudo sed -i 's/#server.bolt.listen_address=:7687/server.bolt.listen_address=:7687/g' /etc/neo4j/neo4j.conf
-          sudo sed -i 's/#server.bolt.advertised_address=:7687/server.bolt.advertised_address=:7687/g' /etc/neo4j/neo4j.conf
-          sudo sed -i 's/#server.default_advertised_address=localhost/server.default_advertised_address=localhost/g' /etc/neo4j/neo4j.conf
           sudo service neo4j restart
       - uses: actions/setup-python@v2
         with:
@@ -91,8 +89,6 @@ jobs:
         run: make test_unit
       - name: make test_integration
         run: |
-          sudo service neo4j start
-          sleep 60
           if ((echo >/dev/tcp/localhost/7687) &>/dev/null); then echo "found neo4j" && make test_integration; else echo "did not find neo4j" && exit 1; fi
 
   build-dist-docker-image:
