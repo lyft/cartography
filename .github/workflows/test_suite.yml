@@ -87,7 +87,8 @@ jobs:
         run: make test_unit
       - name: make test_integration
         run: |
-          sleep 30
+          sudo service neo4j start
+          sleep 60
           if ((echo >/dev/tcp/localhost/7687) &>/dev/null); then echo "found neo4j" && make test_integration; else echo "did not find neo4j" && exit 1; fi
 
   build-dist-docker-image:
