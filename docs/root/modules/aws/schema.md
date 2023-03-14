@@ -973,7 +973,7 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 - AWS EBS Volumes are attached to an EC2 Instance
 
         ```
-        (EBSVolume)-[ATTACHED_TO]->(EC2Instance)
+        (EBSVolume)-[ATTACHED_TO_EC2_INSTANCE]->(EC2Instance)
         ```
 
 -  EC2 Instances can assume IAM Roles.
