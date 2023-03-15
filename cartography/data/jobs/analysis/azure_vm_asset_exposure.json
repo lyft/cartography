@@ -6,6 +6,11 @@
 			"iterationsize": 100
 		},
 		{
+			"query": "MATCH ((rule:AzureNetworkSecurityRule)<-[:CONTAIN]-(group:AzureNetworkSecurityGroup)<-[:MEMBER_NETWORK_SECURITY_GROUP]-(interface:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) WHERE rule.access='Allow' AND rule.source_port_range='*' OR rule.protocol='*' OR rule.source_address_prefix='0.0.0.0/0' WITH vm WHERE (NOT EXISTS(vm.exposed_internet_type)) OR (NOT 'direct_ipv4' IN vm.exposed_internet_type) SET vm.exposed_internet = true, vm.exposed_internet_type = coalesce(vm.exposed_internet_type , []) + 'direct_ipv4';",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
 			"query": "MATCH (:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(interface:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH vm WHERE (NOT EXISTS(vm.exposed_internet_type)) OR (NOT 'public_ip' IN vm.exposed_internet_type) SET vm.exposed_internet = true, vm.exposed_internet_type = coalesce(vm.exposed_internet_type , []) + 'public_ip';",
 			"iterative": true,
 			"iterationsize": 100
