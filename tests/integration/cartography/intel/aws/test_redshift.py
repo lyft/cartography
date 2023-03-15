@@ -1,9 +1,13 @@
 import cartography.intel.aws.redshift
 import tests.data.aws.redshift
+import tests.data.aws.ec2.security_groups
+import cartography.intel.aws.ec2.security_groups
+from cartography.util import run_analysis_job
 
 TEST_ACCOUNT_ID = '1111'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
+TEST_WORKSPACE_ID = '1234'
 
 
 def test_load_redshift_cluster_data(neo4j_session):
@@ -72,14 +76,14 @@ def test_load_redshift_cluster_and_security_group(neo4j_session):
         ON CREATE SET aws.firstseen = timestamp()
         SET aws.lastupdated = $aws_update_tag
         """,
-        GroupId='my-vpc-sg',
+        GroupId='sg-028e2522c72719996',
         aws_update_tag=TEST_UPDATE_TAG,
     )
     _ensure_local_neo4j_has_test_cluster_data(neo4j_session)
 
     # Test that RedshiftCluster-to-EC2SecurityGroup relationships exist
     expected = {
-        ('my-vpc-sg', 'arn:aws:redshift:us-east-1:1111:cluster:my-cluster'),
+        ('sg-028e2522c72719996', 'arn:aws:redshift:us-east-1:1111:cluster:my-cluster'),
     }
     result = neo4j_session.run(
         """
@@ -171,3 +175,52 @@ def _ensure_local_neo4j_has_test_redshift_reserved_node_data(neo4j_session):
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
+
+
+def test_redshift_cluster_analysis(neo4j_session):
+    neo4j_session.run(
+        """
+            MERGE (aws:AWSAccount{id: $aws_account_id})<-[:OWNER]-(:CloudanixWorkspace{id: $workspace_id})
+            ON CREATE SET aws.firstseen = timestamp()
+            SET aws.lastupdated = $aws_update_tag
+            """,
+        aws_account_id=TEST_ACCOUNT_ID,
+        aws_update_tag=TEST_UPDATE_TAG,
+        workspace_id=TEST_WORKSPACE_ID
+    )
+
+    data = tests.data.aws.ec2.security_groups.DESCRIBE_SGS
+    cartography.intel.aws.ec2.security_groups.load_ec2_security_groupinfo(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+
+    _ensure_local_neo4j_has_test_cluster_data(neo4j_session)
+
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG + 1,
+        "WORKSPACE_ID": TEST_WORKSPACE_ID,
+        "AWS_ID": TEST_ACCOUNT_ID,
+    }
+
+    run_analysis_job(
+        'aws_redshift_cluster_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (n:RedshiftCluster{exposed_internet: true}) return n.id, n.exposed_internet_type;
+        """
+    )
+
+    actual_nodes = {(n['n.id'], ",".join(n['n.exposed_internet_type'])) for n in nodes}
+
+    expected_nodes = {
+        ('arn:aws:redshift:us-east-1:1111:cluster:my-cluster', 'direct_ipv4')
+    }
+
+    assert actual_nodes == expected_nodes
