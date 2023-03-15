@@ -511,6 +511,11 @@ def _sync_multiple_projects(
                 neo4j_session, resources, requested_syncs,
                 common_job_parameters["GCP_PROJECT_ID"], gcp_update_tag, common_job_parameters, config,
             )
+            run_analysis_job(
+                'gcp_storage_bucket_policy_analysis.json',
+                neo4j_session,
+                common_job_parameters,
+            )
 
     del common_job_parameters["GCP_PROJECT_ID"]
 

@@ -19,3 +19,4 @@ generated
 env.dev.json
 env.prod.json
 dist/
+local_tests/
