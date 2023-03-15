@@ -16,6 +16,7 @@ from cartography.util import batch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 from cartography.config import Config
+from cartography.graph.session import Session
 
 logger = logging.getLogger(__name__)
 
@@ -269,20 +270,6 @@ def sync(
         for future in as_completed(futures):
             logger.info(f'Result from Future - Tags Processing: {future.result()}')
 
-    for region in regions:
-        logger.info(f"Syncing AWS tags for account {current_aws_account_id} and region {region}")
-        for resource_type in tag_resource_type_mappings.keys():
-            tag_data = get_tags(boto3_session, resource_type, region)
-            transform_tags(tag_data, resource_type)  # type: ignore
-            logger.info(f"Loading {len(tag_data)} tags for resource type {resource_type}")
-            load_tags(
-                neo4j_session=neo4j_session,
-                tag_data=tag_data,  # type: ignore
-                resource_type=resource_type,
-                region=region,
-                current_aws_account_id=current_aws_account_id,
-                aws_update_tag=update_tag,
-            )
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
@@ -318,9 +305,9 @@ def concurrent_execution(
         max_connection_lifetime=config.neo4j_max_connection_lifetime,
     )
 
-    tag_data = get_tags(boto3_session, [resource_type], region)
+    tag_data = get_tags(boto3_session, resource_type, region)
 
     transform_tags(tag_data, resource_type)
-    load_tags(neo4j_session=neo4j_driver.session(), tag_data=tag_data, resource_type=resource_type, region=region, current_aws_account_id=current_aws_account_id, aws_update_tag=update_tag)
+    load_tags(neo4j_session=Session(neo4j_driver), tag_data=tag_data, resource_type=resource_type, region=region, current_aws_account_id=current_aws_account_id, aws_update_tag=update_tag)
 
     logger.info(f"END processing tags for {region} & {resource_type}")

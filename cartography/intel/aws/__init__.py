@@ -24,6 +24,7 @@ from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cartography.graph.session import Session
 
 stat_handler = get_stats_client(__name__)
 logger = logging.getLogger(__name__)
@@ -71,7 +72,7 @@ def concurrent_execution(
     )
 
     sync_args = _build_aws_sync_kwargs(
-        neo4j_driver.session(), boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+        Session(neo4j_driver), boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
     )
 
     service_func(**sync_args)
@@ -408,4 +409,27 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             common_job_parameters
         )
 
+        run_analysis_job(
+            'aws_cloudtrail_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters
+        )
+
+        run_analysis_job(
+            'aws_apigateway_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters
+        )
+
+        run_analysis_job(
+            'aws_elasticache_cluster_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+
+        run_analysis_job(
+            'aws_redshift_cluster_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
     return common_job_parameters

@@ -571,7 +571,8 @@ def _load_policy_tx(
     """
 
     policy_arn = f"arn:aws:iam::{current_aws_account_id}:policy/{policy_name}"
-    consolelink = aws_console_link.get_console_link(arn=policy_arn)
+    # consolelink = aws_console_link.get_console_link(arn=policy_arn)
+    consolelink=''
 
     tx.run(
         ingest_policy,
@@ -639,7 +640,8 @@ def load_policy_data(
     for principal_arn, policy_list in policy_map.items():
         logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
         for policy_name, statements in policy_list.items():
-            consolelink = aws_console_link.get_console_link(arn=f"arn:aws:iam::{current_aws_account_id}:policy_statement/{policy_name}")
+            # consolelink = aws_console_link.get_console_link(arn=f"arn:aws:iam::{current_aws_account_id}:policy_statement/{policy_name}")
+            consolelink = ''
             policy_id = transform_policy_id(principal_arn, policy_type, policy_name)
             load_policy(
                 neo4j_session, policy_id, policy_name, policy_type, principal_arn, current_aws_account_id, aws_update_tag
@@ -1029,6 +1031,10 @@ def sync_user_access_keys(
         neo4j_session,
         common_job_parameters,
     )
+
+
+def set_used_state(session: neo4j.Session, project_id: str, common_job_parameters: Dict, update_tag: int) -> None:
+    session.write_transaction(_set_used_state_tx, project_id, common_job_parameters, update_tag)
 
 
 def _set_used_state_tx(

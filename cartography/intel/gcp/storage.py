@@ -32,15 +32,13 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
     :return: Storage response object
     """
     try:
+        buckets_list = []
         req = storage.buckets().list(project=project_id)
-        res = req.execute()
-        for item in res.get('items', []):
-            acl = item.get('acl', [])
-            for item2 in acl:
-                item['entity'] = item2.get('entity', None)
-            defaultObjectAcl = item.get('defaultObjectAcl', [])
-            for item3 in defaultObjectAcl:
-                item['defaultentity'] = item3.get('entity', None)
+        while req is not None:
+            res = req.execute()
+            if res.get('items', []):
+                buckets_list.extend(res.get('items', []))
+            req = storage.buckets().list_next(previous_request=req, previous_response=res)
         if common_job_parameters.get('pagination', {}).get('storage', None):
             pageNo = common_job_parameters.get("pagination", {}).get("storage", None)["pageNo"]
             pageSize = common_job_parameters.get("pagination", {}).get("storage", None)["pageSize"]
@@ -62,7 +60,7 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
                 has_next_page = True
                 res['items'] = res.get('items', [])[page_start:page_end]
                 common_job_parameters['pagination']['storage']['hasNextPage'] = has_next_page
-        return res
+        return buckets_list
     except HttpError as e:
         reason = compute._get_error_reason(e)
         if reason == 'invalid':
@@ -74,14 +72,14 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
                 project_id,
                 e,
             )
-            return {}
+            return buckets_list
         elif reason == 'forbidden':
             logger.warning(
                 (
                     "You do not have storage.bucket.list access to the project %s. "
                     "Full details: %s"
                 ), project_id, e, )
-            return {}
+            return buckets_list
         else:
             raise
 
@@ -99,7 +97,7 @@ def transform_gcp_buckets(bucket_res: Dict, project_id: str, regions: list) -> L
     '''
 
     bucket_list = []
-    for b in bucket_res.get('items', []):
+    for b in bucket_res:
         bucket = {}
         bucket['etag'] = b.get('etag')
         bucket['iam_config_bucket_policy_only'] = \
@@ -134,8 +132,7 @@ def transform_gcp_buckets(bucket_res: Dict, project_id: str, regions: list) -> L
         bucket['log_bucket'] = b.get('logging', {}).get('logBucket')
         bucket['requester_pays'] = b.get('billing', {}).get('requesterPays', None)
         bucket['consolelink'] = gcp_console_link.get_console_link(resource_name='storage_bucket', bucket_name=b['name'])
-
-        if regions is None:
+        if not regions:
             bucket_list.append(bucket)
 
         else:
@@ -248,6 +245,73 @@ def cleanup_gcp_buckets(neo4j_session: neo4j.Session, common_job_parameters: Dic
 
 
 @timeit
+def get_gcp_bucket_iam_policy(storage: Resource, bucket: str) -> Dict:
+    try:
+        req = storage.buckets().getIamPolicy(bucket=bucket)
+        res = req.execute()
+        return res
+    except HttpError as e:
+        reason = compute._get_error_reason(e)
+        if reason == 'invalid':
+            logger.warning(
+                (
+                    "The bucket %s is invalid - returned a 400 invalid error."
+                    "Full details: %s"
+                ),
+                bucket,
+                e,
+            )
+            return {}
+        elif reason == 'forbidden':
+            logger.warning(
+                (
+                    "You do not have storage.bucket.getIamPolicy access to the bucket %s. "
+                    "Full details: %s"
+                ), bucket, e, )
+            return {}
+        else:
+            raise
+
+
+@timeit
+def transform_gcp_bucket_iam_policy_bindings(bindings: Dict, project_id: str, bucket_id: str) -> List[Dict]:
+    for binding in bindings:
+        binding['id'] = f"projects/{project_id}/buckets/{bucket_id}/role/{binding['role']}"
+    return bindings
+
+
+@timeit
+def load_bucket_iam_policy_bindings(session: neo4j.Session, data_list: List[Dict], bucket_id: str, update_tag: int) -> None:
+    session.write_transaction(_load_bucket_iam_policy_bindings_tx, data_list, bucket_id, update_tag)
+
+
+@timeit
+def _load_bucket_iam_policy_bindings_tx(tx: neo4j.Transaction, data_list: List[Dict], bucket_id: str, gcp_update_tag: int) -> None:
+    ingest_bucket_iam_policy_bindings = """
+    UNWIND $policy_bindings as binding
+    MERGE (u:GCPBucketPolicyBinding{id:binding.id})
+    ON CREATE SET
+        u.firstseen = timestamp()
+    SET
+        u.members = binding.members,
+        u.role = binding.role,
+        u.lastupdated = $gcp_update_tag
+    WITH u
+    MATCH (i:GCPBucket{id:$bucket_id})
+    MERGE (i)-[r:ATTACHED_BINDING]->(u)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    SET r.lastupdated = $gcp_update_tag
+    """
+    tx.run(
+        ingest_bucket_iam_policy_bindings,
+        policy_bindings=data_list,
+        bucket_id=bucket_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
 def sync(
     neo4j_session: neo4j.Session, storage: Resource, project_id: str, gcp_update_tag: int,
     common_job_parameters: Dict, regions: list,
@@ -281,6 +345,12 @@ def sync(
     storage_res = get_gcp_buckets(storage, project_id, common_job_parameters)
     bucket_list = transform_gcp_buckets(storage_res, project_id, regions)
     load_gcp_buckets(neo4j_session, bucket_list, project_id, gcp_update_tag)
+
+    for bucket in bucket_list:
+        bucket_iam_policy = get_gcp_bucket_iam_policy(storage, bucket['name'])
+        bindings = transform_gcp_bucket_iam_policy_bindings(bucket_iam_policy['bindings'], project_id, bucket['id'])
+        load_bucket_iam_policy_bindings(neo4j_session, bindings, bucket['id'], gcp_update_tag)
+
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_buckets(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, bucket_list, gcp_update_tag, common_job_parameters, 'buckets', 'GCPBucket')
