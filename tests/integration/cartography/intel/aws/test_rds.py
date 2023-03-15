@@ -4,6 +4,12 @@ from tests.data.aws.rds import DESCRIBE_DBINSTANCES_RESPONSE
 from tests.data.aws.rds import DESCRIBE_SECURITY_GROUPS_RESPONSE
 from tests.data.aws.rds import DESCRIBE_SNAPSHOTS_RESPONSE
 from tests.data.aws.rds import DESCRIBE_DBSNAPSHOTS_RESPONSE
+from tests.data.aws.rds import DESCRIBE_DBSNAPSHOT_ATTRIBUTE_RESPONSE
+from tests.data.aws.ec2.route_tables import DESCRIBE_ROUTE_TABLES
+from tests.data.aws.ec2.subnets import DESCRIBE_SUBNETS
+from tests.data.aws.ec2.security_groups import DESCRIBE_SGS
+from cartography.util import run_analysis_job
+
 TEST_UPDATE_TAG = 123456789
 
 
@@ -113,6 +119,7 @@ def test_load_rds_snapshots_data(neo4j_session):
     _ensure_local_neo4j_has_test_rds_snapshots_data(neo4j_session)
     expected_nodes = {
         'arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
+        'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0'
     }
     nodes = neo4j_session.run(
         """
@@ -160,6 +167,12 @@ def test_load_rds_snapshots_basic(neo4j_session):
             'some-db-snapshot-identifier',
             'some-prod-db-iad-0',
         ),
+        (
+            'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
+            'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
+            'some-other-db-snapshot-identifier',
+            'some-prod-db-iad-0'
+        ),
     }
     assert actual_snapshots == expected_snapshots
 
@@ -175,5 +188,141 @@ def test_load_rds_snapshots_basic(neo4j_session):
             'arn:aws:rds:us-east-1:some-arn:db:some-prod-db-iad-0',
             'arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
         ),
+        (
+            'arn:aws:rds:us-east-1:some-arn:db:some-prod-db-iad-0',
+            'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0'
+        ),
     }
     assert actual_results == expected_results
+
+
+def test_snapshot_attributes(neo4j_session):
+    cartography.intel.aws.rds.load_rds_instances(
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
+        current_aws_account_id='1234',
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+    cartography.intel.aws.rds.load_rds_snapshots(
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBSNAPSHOTS_RESPONSE['DBSnapshots'],
+        current_aws_account_id='1234',
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+    cartography.intel.aws.rds.load_rds_snapshot_attributes(
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBSNAPSHOT_ATTRIBUTE_RESPONSE,
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+
+    query = """MATCH (attr:RDSSnapshotAttribute)<-[:HAS_ATTRIBUTE]-(rds:RDSSnapshot) RETURN attr.name, rds.id"""
+    snapshots_attribs = neo4j_session.run(query)
+
+    actual_nodes = {
+        (n['rds.id'], n['attr.name']) for n in snapshots_attribs
+    }
+
+    expected_nodes = {
+        ('arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
+         'attrib-1'),
+        ('arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
+         'backup'),
+        ('arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
+         'attrib-1'),
+        ('arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
+         'backup'),
+        ('arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
+         'restore'),
+    }
+
+    assert actual_nodes == expected_nodes
+
+
+def test_rds_exposure(neo4j_session):
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSAccount{id: $aws_account_id})<-[:OWNER]-(:CloudanixWorkspace{id: $workspace_id})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = $aws_update_tag
+        """,
+        aws_account_id='1234',
+        aws_update_tag=TEST_UPDATE_TAG,
+        workspace_id='1234',
+    )
+
+    cartography.intel.aws.ec2.route_tables.load_route_tables(
+        neo4j_session,
+        DESCRIBE_ROUTE_TABLES,
+        '1234',
+        TEST_UPDATE_TAG
+    )
+    cartography.intel.aws.ec2.subnets.load_subnets(
+        neo4j_session,
+        DESCRIBE_SUBNETS,
+        '1234',
+        TEST_UPDATE_TAG,
+    )
+
+    cartography.intel.aws.ec2.security_groups.load_ec2_security_groupinfo(
+        neo4j_session,
+        DESCRIBE_SGS,
+        '1234',
+        TEST_UPDATE_TAG,
+    )
+
+    cartography.intel.aws.rds.load_rds_instances(
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
+        current_aws_account_id='1234',
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+    cartography.intel.aws.rds.load_rds_snapshots(
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBSNAPSHOTS_RESPONSE['DBSnapshots'],
+        current_aws_account_id='1234',
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+    cartography.intel.aws.rds.load_rds_snapshot_attributes(
+        neo4j_session=neo4j_session,
+        data=DESCRIBE_DBSNAPSHOT_ATTRIBUTE_RESPONSE,
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG + 1,
+        "WORKSPACE_ID": '1234',
+        "AWS_ID": '1234',
+    }
+
+    run_analysis_job(
+        'aws_rds_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    query = """MATCH (rds:RDSInstance{exposed_internet: true}) RETURN rds.id, rds.exposed_internet_type"""
+    rds = neo4j_session.run(query)
+
+    actual_nodes = {
+        (n['rds.id'], ",".join(n['rds.exposed_internet_type'])) for n in rds
+    }
+
+    expected_nodes = {
+        ('arn:aws:rds:us-east-1:some-arn:db:some-prod-db-iad-0',
+         'direct_ipv4,public_subnet_ipv4')
+    }
+
+    assert actual_nodes == expected_nodes
+
+    query = """MATCH (rds:RDSSnapshot{exposed_internet: true}) RETURN rds.id, rds.exposed_internet_type"""
+    rds = neo4j_session.run(query)
+
+    actual_nodes = {
+        (n['rds.id'], ",".join(n['rds.exposed_internet_type'])) for n in rds
+    }
+
+    expected_nodes = {
+        ('arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
+         'restore_all_attrib'),
+    }
+
+    assert actual_nodes == expected_nodes
