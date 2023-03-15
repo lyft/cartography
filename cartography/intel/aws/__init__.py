@@ -377,4 +377,15 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             common_job_parameters
         )
 
+        run_analysis_job(
+            'aws_elasticache_cluster_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+
+        run_analysis_job(
+            'aws_redshift_cluster_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
     return common_job_parameters
