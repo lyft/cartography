@@ -145,7 +145,7 @@ def test_run_analysis_and_ensure_deps_no_requirements(mock_run_analysis_job: moc
     # Act
     run_analysis_and_ensure_deps(
         'aws_foreign_accounts.json',
-        set(),  # This job has no requirements
+        {'iam'},
         requested_syncs,
         common_job_parameters,
         neo4j_session,
