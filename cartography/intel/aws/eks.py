@@ -59,6 +59,7 @@ def load_eks_clusters(
     SET cluster.lastupdated = $aws_update_tag,
         cluster.endpoint = $ClusterEndpoint,
         cluster.endpoint_public_access = $ClusterEndointPublic,
+        cluster.public_access_cidrs = $ClusterPublicAccessCidrs,
         cluster.rolearn = $ClusterRoleArn,
         cluster.version = $ClusterVersion,
         cluster.platform_version = $ClusterPlatformVersion,
@@ -80,6 +81,7 @@ def load_eks_clusters(
             consolelink=cluster.get('consolelink'),
             ClusterEndpoint=cluster.get('endpoint'),
             ClusterEndointPublic=cluster.get('resourcesVpcConfig', {}).get('endpointPublicAccess'),
+            ClusterPublicAccessCidrs=cluster.get('resourcesVpcConfig', {}).get('publicAccessCidrs'),
             ClusterRoleArn=cluster.get('roleArn'),
             ClusterVersion=cluster.get('version'),
             ClusterPlatformVersion=cluster.get('platformVersion'),
@@ -136,7 +138,7 @@ def sync(
         if pageNo < totalPages or pageNo == totalPages:
             logger.info(f'pages process for eks clusters {pageNo}/{totalPages} pageSize is {pageSize}')
         page_start = (common_job_parameters.get('pagination', {}).get('eks', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('eks', {})['pageSize']
+            'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('eks', {})['pageSize']
         page_end = page_start + common_job_parameters.get('pagination', {}).get('eks', {})['pageSize']
         if page_end > len(clusters) or page_end == len(clusters):
             clusters = clusters[page_start:]

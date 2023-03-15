@@ -50,9 +50,9 @@ DESCRIBE_CLUSTERS = {
             "securityGroupIds": ["sg-1111"],
             "clusterSecurityGroupId": "sg-1111",
             "vpcId": "vpc-1111",
-            "endpointPublicAccess": False,
+            "endpointPublicAccess": True,
             "endpointPrivateAccess": True,
-            "publicAccessCidrs": [],
+            "publicAccessCidrs": ['0.0.0.0/0'],
         },
         "logging": {
             "clusterLogging": [{

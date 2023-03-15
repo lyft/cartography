@@ -372,6 +372,12 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         )
 
         run_analysis_job(
+            'aws_cloudtrail_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters
+        )
+
+        run_analysis_job(
             'aws_apigateway_asset_exposure.json',
             neo4j_session,
             common_job_parameters
