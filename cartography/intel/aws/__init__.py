@@ -19,13 +19,13 @@ from . import organizations
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
+from cartography.neo4j_session_factory import neo4j_session_factory
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_and_ensure_deps
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-
 
 stat_handler = get_stats_client(__name__)
 logger = logging.getLogger(__name__)
@@ -203,26 +203,27 @@ def _sync_multiple_accounts(
     logger.info(f"AWS: Using {num_threads} threads.")
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         for profile_name, account_id in accounts.items():
-            if num_accounts == 1:
-                # Use the default boto3 session because boto3 gets confused if you give it a profile name with 1 account
-                boto3_session = boto3.Session()
-            else:
-                boto3_session = boto3.Session(profile_name=profile_name)
+            with neo4j_session_factory.get_new_session() as neo4j_thread_session:
+                if num_accounts == 1:
+                    # Use the default boto3 session because boto3 gets confused if you give it a profile name w/ 1 acc.
+                    boto3_session = boto3.Session()
+                else:
+                    boto3_session = boto3.Session(profile_name=profile_name)
 
-            failure: Optional[Tuple[str, str]] = executor.submit(
-                sync_one_account_runner,
-                profile_name,
-                account_id,
-                boto3_session,
-                neo4j_session,
-                sync_tag,
-                common_job_parameters,
-                aws_requested_syncs,
-                aws_best_effort_mode,
-            ).result()
-            if failure:
-                failed_account_ids.append(failure[0])
-                exception_tracebacks.append(failure[1])
+                failure: Optional[Tuple[str, str]] = executor.submit(
+                    sync_one_account_runner,
+                    profile_name,
+                    account_id,
+                    boto3_session,
+                    neo4j_thread_session,
+                    sync_tag,
+                    common_job_parameters,
+                    aws_requested_syncs,
+                    aws_best_effort_mode,
+                ).result()
+                if failure:
+                    failed_account_ids.append(failure[0])
+                    exception_tracebacks.append(failure[1])
 
     if failed_account_ids:
         logger.error(f'AWS sync failed for accounts {failed_account_ids}')

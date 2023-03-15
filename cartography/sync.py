@@ -9,6 +9,7 @@ from typing import Union
 
 import neo4j.exceptions
 from neo4j import GraphDatabase
+from neo4j_session_factory import neo4j_session_factory
 from statsd import StatsClient
 
 import cartography.intel.analysis
@@ -25,7 +26,6 @@ import cartography.intel.gsuite
 import cartography.intel.kubernetes
 import cartography.intel.oci
 import cartography.intel.okta
-from . import neo4jSessionFactory
 from cartography.config import Config
 from cartography.stats import set_stats_client
 from cartography.util import STATUS_FAILURE
@@ -80,7 +80,7 @@ class Sync:
         """
         logger.info("Starting sync with update tag '%d'", config.update_tag)
 
-        neo4jSessionFactory.factory.initialize(neo4j_driver=neo4j_driver, neo4j_database=config.neo4j_database)
+        neo4j_session_factory.initialize(neo4j_driver=neo4j_driver, neo4j_database=config.neo4j_database)
 
         with neo4j_driver.session(database=config.neo4j_database) as neo4j_session:
             for stage_name, stage_func in self._stages.items():
