@@ -9,7 +9,6 @@ from typing import Union
 
 import neo4j.exceptions
 from neo4j import GraphDatabase
-from cartography.neo4j_session_factory import neo4j_session_factory
 from statsd import StatsClient
 
 import cartography.intel.analysis
@@ -27,6 +26,7 @@ import cartography.intel.kubernetes
 import cartography.intel.oci
 import cartography.intel.okta
 from cartography.config import Config
+from cartography.neo4j_session_factory import neo4j_session_factory
 from cartography.stats import set_stats_client
 from cartography.util import STATUS_FAILURE
 from cartography.util import STATUS_SUCCESS
