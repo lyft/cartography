@@ -9,7 +9,7 @@ from typing import Union
 
 import neo4j.exceptions
 from neo4j import GraphDatabase
-from neo4j_session_factory import neo4j_session_factory
+from cartography.neo4j_session_factory import neo4j_session_factory
 from statsd import StatsClient
 
 import cartography.intel.analysis
