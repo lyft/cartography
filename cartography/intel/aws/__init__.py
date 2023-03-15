@@ -283,6 +283,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "permission_relationships_file": config.permission_relationships_file,
         "WORKSPACE_ID": config.params['workspace']['id_string'],
         "pagination": {},
+        "public_ports": ['20', '21', '22', '3306', '3389', '4333'],
     }
 
     try:
@@ -353,8 +354,39 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     )
 
     if sync_successful:
+
         run_analysis_job(
-            'aws_ec2_asset_exposure.json',
+            'implicit_relationship_creation.json',
+            neo4j_session,
+            common_job_parameters
+        )  # NOTE temp solution (query has to be only executed after both subnet & route table is loaded)
+
+        run_analysis_job(
+            'aws_ec2_security_group_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters
+        )
+
+        run_analysis_job(
+            'aws_ec2_subnet_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+
+        run_analysis_job(
+            'aws_ec2_elb_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+
+        run_analysis_job(
+            'aws_ec2_instance_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+
+        run_analysis_job(
+            'aws_ec2_asg_asset_exposure.json',
             neo4j_session,
             common_job_parameters,
         )
@@ -369,6 +401,12 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             'aws_eks_asset_exposure.json',
             neo4j_session,
             common_job_parameters,
+        )
+
+        run_analysis_job(
+            'aws_s3_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters
         )
 
         run_analysis_job(
