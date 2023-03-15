@@ -28,7 +28,7 @@ class Neo4jSessionFactory:
         if not self._setup or not self._driver:
             raise RuntimeError(
                 "Neo4j session factory is not initialized. "
-                "Make sure that initialize() is called before get_new_session()."
+                "Make sure that initialize() is called before get_new_session().",
             )
 
         new_session = self._driver.session(database=self._database)
