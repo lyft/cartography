@@ -534,8 +534,9 @@ def parse_policy(bucket: str, policyDict: Optional[Dict]) -> Optional[Dict]:
 @timeit
 def parse_policy_status(bucket: str, policyStatusDict: Optional[Dict]) -> Optional[Dict]:
     if policyStatusDict is None:
-        return None
-    is_public = policyStatusDict.get('PolicyStatus', {}).get('IsPublic')
+        is_public = False
+    else:
+        is_public = policyStatusDict.get('PolicyStatus', {}).get('IsPublic', False)
     return {
         "bucket": bucket,
         "is_public": is_public,
@@ -779,11 +780,11 @@ def sync(
     bucket_data = get_s3_bucket_list(boto3_session)
 
     load_s3_buckets(neo4j_session, bucket_data, current_aws_account_id, update_tag)
-    cleanup_s3_buckets(neo4j_session, common_job_parameters)
 
     acl_and_policy_data_iter = get_s3_bucket_details(boto3_session, bucket_data)
     load_s3_details(neo4j_session, acl_and_policy_data_iter, current_aws_account_id, update_tag, common_job_parameters)
     cleanup_s3_bucket_acl_and_policy(neo4j_session, common_job_parameters)
+    cleanup_s3_buckets(neo4j_session, common_job_parameters)
 
     merge_module_sync_metadata(
         neo4j_session,
