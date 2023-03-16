@@ -663,7 +663,7 @@ def load_seed_high_principals(
     set_seed_admin_query = """
     UNWIND $principals as principal
     MATCH (p:AWSPrincipal{arn:principal.principal_arn})
-    SET p.is_high = True, p.high_reason = principal.high_reason
+    SET p.is_seed_high = True, p.is_high = True, p.high_reason = principal.high_reason
     """
     neo4j_session.run(
         set_seed_admin_query,
@@ -725,7 +725,7 @@ def load_seed_admin_principals(
     set_seed_admin_query = """
     UNWIND $principals as principal
     MATCH (p:AWSPrincipal{arn:principal.principal_arn})
-    SET p.is_admin = True, p.admin_reason = principal.admin_reason
+    SET p.is_seed_admin = True, p.is_admin = True, p.admin_reason = principal.admin_reason
     """
     neo4j_session.run(
         set_seed_admin_query,
