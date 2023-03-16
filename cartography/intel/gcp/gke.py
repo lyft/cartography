@@ -164,7 +164,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
             ClusterServicesIPv4Cidr=cluster.get('servicesIpv4Cidr'),
             ClusterDatabaseEncryption=cluster.get('databaseEncryption', {}).get('state'),
             ClusterNetworkPolicy=_process_network_policy(cluster),
-            ClusterMasterAuthorizedNetworks=cluster.get('masterAuthorizedNetworksConfig', {}).get('enabled'),
+            ClusterMasterAuthorizedNetworks=cluster.get('masterAuthorizedNetworksConfig', {}),
             ClusterAbac=cluster.get('legacyAbac', {}).get('enabled'),
             ClusterShieldedNodes=cluster.get('shieldedNodes', {}).get('enabled'),
             ClusterPrivateNodes=cluster.get('privateClusterConfig', {}).get('enablePrivateNodes'),
