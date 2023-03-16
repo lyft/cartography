@@ -333,6 +333,39 @@ def attach_compute_disks_to_instance_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
+@timeit
+def attach_compute_networks_to_instance(session: neo4j.Session, data_list: List[Dict], instance_id: str, update_tag: int) -> None:
+    session.write_transaction(attach_compute_networks_to_instance_tx, data_list, instance_id, update_tag)
+
+
+@timeit
+def attach_compute_networks_to_instance_tx(
+    tx: neo4j.Transaction, data: List[Dict],
+    instance_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND $Records as record
+    MERGE (network:GCPNetwork{network: record.network})
+    ON CREATE SET
+        network.firstseen = timestamp()
+    SET
+        network.lastupdated = $gcp_update_tag
+    WITH network
+    MATCH (i:GCPInstance{id: $InstanceId})
+    MERGE (i)-[c:CONNECTED]->(network)
+    ON CREATE SET
+        c.firstseen = timestamp()
+    SET c.lastupdated = $gcp_update_tag
+    """
+    tx.run(
+        query,
+        Records=data,
+        InstanceId=instance_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
 
 def _get_error_reason(http_error: HttpError) -> str:
     """
@@ -561,7 +594,10 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
         )
         x = res['zone_name'].split('-')
         res['region'] = f"{x[0]}-{x[1]}"
-
+        res['network_list']=[]
+        for network in res.get('networkInterfaces',[]):
+            res['network_list'].append(network['network'])
+        
         for nic in res.get('networkInterfaces', []):
             nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
             nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
@@ -920,6 +956,14 @@ def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_u
         _attach_gcp_nics(session, instance, gcp_update_tag)
         _attach_gcp_vpc(session, instance['partial_uri'], gcp_update_tag)
         _attach_instance_service_account(session, instance, gcp_update_tag)
+        networks=[]
+        for n in instance.get('networkInterfaces',[]):
+            n['network'] = n.get('network', None)
+            networks.append(n)
+        attach_compute_networks_to_instance(session, networks, instance['partial_uri'], gcp_update_tag)
+
+        #_attach_compute_networks_to_instance(session, instance, gcp_update_tag)
+        
 
 
 @timeit
@@ -952,6 +996,7 @@ def load_gcp_instances_tx(tx: neo4j.Transaction, instances: Dict, gcp_update_tag
     i.accessConfig = instance.accessConfig,
     i.status = instance.status,
     i.consolelink = instance.consolelink,
+    i.network_list = instance.network_list,
     i.lastupdated = $gcp_update_tag
     WITH i, p
 
@@ -1371,6 +1416,7 @@ def _attach_gcp_vpc(neo4j_session: neo4j.Session, instance_id: str, gcp_update_t
     )
 
 
+
 @timeit
 def _attach_instance_service_account(neo4j_session: neo4j.Session, instance: Resource, gcp_update_tag: int) -> None:
     """
@@ -1415,6 +1461,7 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     fw.self_link = $SelfLink,
     fw.has_target_service_accounts = $HasTargetServiceAccounts,
     fw.consolelink = $consolelink,
+    fw.network = $Network,
     fw.lastupdated = $gcp_update_tag
 
     MERGE (vpc:GCPVpc{id: $VpcPartialUri})
@@ -1425,6 +1472,14 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     MERGE (vpc)-[r:RESOURCE]->(fw)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
+    
+    MERGE (network:GCPNetwork{network: fw.network})
+    ON CREATE SET network.firstseen = timestamp()
+    SET network.lastupdated = $gcp_update_tag
+    
+    MERGE (fw)-[c:ATTACH_TO]->(network)
+    ON CREATE SET c.firstseen = timestamp()
+    SET c.lastupdated = $gcp_update_tag
     """
     for fw in fw_list:
         neo4j_session.run(
@@ -1439,6 +1494,7 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
             VpcPartialUri=fw['vpc_partial_uri'],
             HasTargetServiceAccounts=fw['has_target_service_accounts'],
             consolelink=fw['consolelink'],
+            Network=fw['network'],
             gcp_update_tag=gcp_update_tag,
         )
         _attach_firewall_rules(neo4j_session, fw, gcp_update_tag)
@@ -1763,6 +1819,7 @@ def sync_gcp_instances(
             disk['id'] = f"projects/{project_id}/disks/{disk.get('initializeParams', {}).get('diskName', '')}"
             disks.append(disk)
         attach_compute_disks_to_instance(neo4j_session, disks, instance['partial_uri'], gcp_update_tag)
+
 
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)

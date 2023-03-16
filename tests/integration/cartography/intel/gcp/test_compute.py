@@ -541,13 +541,15 @@ def test_compute_network_interfaces(neo4j_session):
 
 def test_compute_firewalls(neo4j_session):
     
-    instance_responses = tests.data.gcp.compute.GCP_LIST_INSTANCES_RESPONSE
-    instance_list = cartography.intel.gcp.compute.transform_gcp_instances(instance_responses.get("items", []), compute=None)
-    cartography.intel.gcp.compute.load_gcp_instances(neo4j_session, instance_list, TEST_UPDATE_TAG)
     cloudanix_workspace_to_gcp_project(neo4j_session)
     fw_responses = tests.data.gcp.compute.LIST_FIREWALLS_RESPONSE
     fw_list = cartography.intel.gcp.compute.transform_gcp_firewall(fw_responses)
     cartography.intel.gcp.compute.load_gcp_ingress_firewalls(neo4j_session, fw_list, TEST_UPDATE_TAG)
+    instance_responses = tests.data.gcp.compute.GCP_LIST_INSTANCES_RESPONSE
+    instance_list = cartography.intel.gcp.compute.transform_gcp_instances(instance_responses.get("items", []), compute=None)
+    cartography.intel.gcp.compute.load_gcp_instances(neo4j_session, instance_list, TEST_UPDATE_TAG)
+    
+    
     
 
     firewall_query = """
@@ -559,27 +561,37 @@ def test_compute_firewalls(neo4j_session):
     RETURN i.id,i.exposed_internet_type
     """
 
+    query2 = """
+    MATCH (fw:GCPFirewall)-[:CONNECTION]->(network:GCPNetwork)<-[:CONNECTION]-(i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) 
+    RETURN fw.id,fw.unrestricted_access
+    """
     run_analysis_job('gcp_compute_firewall_analysis.json',neo4j_session,common_job_parameters)
     run_analysis_job('gcp_compute_instance_analysis.json',neo4j_session,common_job_parameters)
 
     objects1 = neo4j_session.run(query1, GCP_PROJECT_ID=TEST_PROJECT_ID, WORKSPACE_ID=TEST_WORKSPACE_ID)
     # checked the query1 output by printing the output due to unhashable type list error
-    for k in objects1:
-        print(k)
+
 
     actual_nodes = {
         (
             o['i.id'],
-            o['i.exposed_internet_type'],
+            ",".join(o['i.exposed_internet_type'])
 
         ) for o in objects1
         
     }
 
     expected_nodes = {
-        (
         
-        )
+        (
+            'projects/project-abc/zones/europe-west2-b/instances/instance-1',
+            'nat_ip,ipv6_nat_ip,unrestricted_access_from_firewall'
+        ),
+        (
+            'projects/project-abc/zones/europe-west2-b/instances/instance-1-test',
+            'nat_ip,ipv6_nat_ip,unrestricted_access_from_firewall'
+        ),
+        
     }
 
     assert actual_nodes == expected_nodes
