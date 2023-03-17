@@ -1,4 +1,6 @@
 class Config:
+    # TODO reorder the params
+    # TODO add comments for the new attributes
     """
     A common interface for cartography configuration.
 
@@ -19,6 +21,8 @@ class Config:
     :param neo4j_database: The name of the database in Neo4j to connect to. If not specified, uses your Neo4j database
     settings to infer which database is set to default.
     See https://neo4j.com/docs/api/python-driver/4.4/api.html#database. Optional.
+    :type selected_modules: str
+    :param selected_modules: Comma-separated list of cartography top-level modules to sync. Optional.
     :type update_tag: int
     :param update_tag: Update tag for a cartography sync run. Optional.
     :type aws_sync_all_profiles: bool
@@ -85,6 +89,8 @@ class Config:
     :param gsuite_auth_method: Auth method (delegated, oauth) used for Google Workspace. Optional.
     :type gsuite_config: str
     :param gsuite_config: Base64 encoded config object or config file path for Google Workspace. Optional.
+    :type config: str
+    :param gsuite_config: Path to cartography.yaml config file. Optional.
     """
 
     def __init__(
@@ -94,6 +100,7 @@ class Config:
         neo4j_password=None,
         neo4j_max_connection_lifetime=None,
         neo4j_database=None,
+        selected_modules=None,
         update_tag=None,
         aws_sync_all_profiles=False,
         aws_best_effort_mode=False,
@@ -102,20 +109,26 @@ class Config:
         azure_tenant_id=None,
         azure_client_id=None,
         azure_client_secret=None,
+        azure_client_secret_env_var=None,
         aws_requested_syncs=None,
         analysis_job_directory=None,
         crxcavator_api_base_uri=None,
         crxcavator_api_key=None,
+        crxcavator_api_key_env_var=None,
         oci_sync_all_profiles=None,
         okta_org_id=None,
         okta_api_key=None,
         okta_saml_role_regex=None,
+        okta_api_key_env_var=None,
         github_config=None,
+        github_config_env_var=None,
         digitalocean_token=None,
+        digitalocean_token_env_var=None,
         permission_relationships_file=None,
         jamf_base_uri=None,
         jamf_user=None,
         jamf_password=None,
+        jamf_password_env_var=None,
         k8s_kubeconfig=None,
         statsd_enabled=False,
         statsd_prefix=None,
@@ -123,19 +136,31 @@ class Config:
         statsd_port=None,
         pagerduty_api_key=None,
         pagerduty_request_timeout=None,
+        pagerduty_api_key_env_var=None,
         nist_cve_url=None,
         cve_enabled=False,
         crowdstrike_client_id=None,
         crowdstrike_client_secret=None,
         crowdstrike_api_url=None,
+        crowdstrike_client_id_env_var=None,
+        crowdstrike_client_secret_env_var=None,
         gsuite_auth_method=None,
         gsuite_config=None,
+        gsuite_tokens_env_var=None,
+        config=None,
+        verbose=None,
+        quiet=None,
+        neo4j_password_prompt=None,
+        neo4j_password_env_var=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
+        self.neo4j_password_prompt = neo4j_password_prompt
+        self.neo4j_password_env_var = neo4j_password_env_var
         self.neo4j_max_connection_lifetime = neo4j_max_connection_lifetime
         self.neo4j_database = neo4j_database
+        self.selected_modules = selected_modules
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.aws_best_effort_mode = aws_best_effort_mode
@@ -144,20 +169,26 @@ class Config:
         self.azure_tenant_id = azure_tenant_id
         self.azure_client_id = azure_client_id
         self.azure_client_secret = azure_client_secret
+        self.azure_client_secret_env_var = azure_client_secret_env_var
         self.aws_requested_syncs = aws_requested_syncs
         self.analysis_job_directory = analysis_job_directory
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
         self.crxcavator_api_key = crxcavator_api_key
+        self.crxcavator_api_key_env_var = crxcavator_api_key_env_var
         self.oci_sync_all_profiles = oci_sync_all_profiles
         self.okta_org_id = okta_org_id
         self.okta_api_key = okta_api_key
+        self.okta_api_key_env_var = okta_api_key_env_var,
         self.okta_saml_role_regex = okta_saml_role_regex
         self.github_config = github_config
+        self.github_config_env_var = github_config_env_var
         self.digitalocean_token = digitalocean_token
+        self.digitalocean_token_env_var = digitalocean_token_env_var
         self.permission_relationships_file = permission_relationships_file
         self.jamf_base_uri = jamf_base_uri
         self.jamf_user = jamf_user
         self.jamf_password = jamf_password
+        self.jamf_password_env_var = jamf_password_env_var
         self.k8s_kubeconfig = k8s_kubeconfig
         self.statsd_enabled = statsd_enabled
         self.statsd_prefix = statsd_prefix
@@ -165,10 +196,17 @@ class Config:
         self.statsd_port = statsd_port
         self.pagerduty_api_key = pagerduty_api_key
         self.pagerduty_request_timeout = pagerduty_request_timeout
+        self.pagerduty_api_key_env_var = pagerduty_api_key_env_var
         self.nist_cve_url = nist_cve_url
         self.cve_enabled = cve_enabled
         self.crowdstrike_client_id = crowdstrike_client_id
         self.crowdstrike_client_secret = crowdstrike_client_secret
         self.crowdstrike_api_url = crowdstrike_api_url
+        self.crowdstrike_client_id_env_var = crowdstrike_client_id_env_var
+        self.crowdstrike_client_secret_env_var = crowdstrike_client_secret_env_var
         self.gsuite_auth_method = gsuite_auth_method
         self.gsuite_config = gsuite_config
+        self.gsuite_tokens_env_var = gsuite_tokens_env_var
+        self.config = config
+        self.verbose = verbose
+        self.quiet = quiet
