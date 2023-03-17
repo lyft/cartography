@@ -88,4 +88,20 @@ DESCRIBE_SUBNETS = [
         "Ipv6CidrBlockAssociationSet": [],
         "SubnetArn": "arn:aws:ec2:eu-north-1:000000000000:subnet/subnet-0fa9c8fa7cb241479",
     },
+    {
+        "AvailabilityZone": "eu-north-1a",
+        "AvailabilityZoneId": "eun1-az1",
+        "AvailableIpAddressCount": 251,
+        "CidrBlock": "10.2.1.0/24",
+        "DefaultForAz": False,
+        "MapPublicIpOnLaunch": False,
+        "MapCustomerOwnedIpOnLaunch": False,
+        "State": "available",
+        "SubnetId": "SOME_SUBNET_1",
+        "VpcId": "vpc-025873e026b9e8ee6",
+        "OwnerId": "000000000000",
+        "AssignIpv6AddressOnCreation": False,
+        "Ipv6CidrBlockAssociationSet": [],
+        "SubnetArn": "arn:aws:ec2:eu-north-1:000000000000:subnet/subnet-0fa9c8fa7cb241479",
+    }
 ]

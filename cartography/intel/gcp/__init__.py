@@ -521,6 +521,11 @@ def _sync_multiple_projects(
                 neo4j_session,
                 common_job_parameters,
             )
+            run_analysis_job(
+                 'gcp_kubernetes_engine_analysis.json',
+                neo4j_session,
+                common_job_parameters,
+            )
 
     del common_job_parameters["GCP_PROJECT_ID"]
 
