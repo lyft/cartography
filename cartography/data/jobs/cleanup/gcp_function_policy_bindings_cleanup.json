@@ -1,0 +1,17 @@
+{
+	"statements": [
+		{
+			"query": "MATCH (b:GCPBinding)<-[:ATTACHED_BINDING]-(:GCPFunction)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE b.lastupdated <> $UPDATE_TAG WITH b LIMIT $LIMIT_SIZE DETACH DELETE (b) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP Cloud Function Bindings that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPBinding)<-[a:ATTACHED_BINDING]-(:GCPFunction)<-[r:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE a.lastupdated <> $UPDATE_TAG WITH a LIMIT $LIMIT_SIZE DELETE (a) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP GCPBinding-to-Function relationships that are out of date."
+		}
+	],
+	"name": "Cleanup GCP Function Bindings."
+}
