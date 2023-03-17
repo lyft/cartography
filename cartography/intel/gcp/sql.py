@@ -39,6 +39,8 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
             if response.get('items', []):
                 for item in response['items']:
                     item['id'] = f"projects/{project_id}/instances/{item['name']}"
+                    for network in item.get('settings', {}).get('ipConfiguration', {}).get('authorizedNetworks',[]):
+                        item['authorizedNetworksList'].append(network['value'])
                     item['ipV4Enabled'] = item.get('settings', {}).get('ipConfiguration', {}).get('ipV4Enabled', False)
                     item['consolelink'] = gcp_console_link.get_console_link(
                         resource_name='sql_instance', project_id=project_id, sql_instance_name=item['name'],
@@ -227,6 +229,7 @@ def _load_sql_instances_tx(tx: neo4j.Transaction, instances: List[Dict], project
         i.satisfiesPzs = instance.satisfiesPzs,
         i.createTime = instance.createTime,
         i.consolelink = instance.consolelink,
+        i.authorized_networks = instance.authorizedNetworksList,
         i.lastupdated = $gcp_update_tag
     WITH i
     MATCH (owner:GCPProject{id: $ProjectId})
