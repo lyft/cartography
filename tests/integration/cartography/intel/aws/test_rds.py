@@ -294,6 +294,12 @@ def test_rds_exposure(neo4j_session):
     }
 
     run_analysis_job(
+        'aws_ec2_subnet_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    run_analysis_job(
         'aws_rds_asset_exposure.json',
         neo4j_session,
         common_job_parameters,
@@ -308,7 +314,7 @@ def test_rds_exposure(neo4j_session):
 
     expected_nodes = {
         ('arn:aws:rds:us-east-1:some-arn:db:some-prod-db-iad-0',
-         'direct_ipv4,public_subnet_ipv4')
+         'direct_ipv4,public_subnet')
     }
 
     assert actual_nodes == expected_nodes
