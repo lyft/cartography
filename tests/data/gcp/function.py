@@ -44,3 +44,16 @@ CLOUD_FUNCTION = [
         "sourceArchiveUrl": "function123archive.cloud.google.com",
     },
 ]
+
+FUNCTION_POLICY_BINDINGS = [
+
+    {
+        'id': 'projects/abcd12345/function/function123/role/viewer',
+        'members': [
+            'allUsers',
+            'allAuthenticatedUsers',
+        ],
+        'role': 'viewer'
+
+    },
+]

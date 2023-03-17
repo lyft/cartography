@@ -1,0 +1,18 @@
+{
+    "statements": [
+        {
+            "query": "MATCH (function:GCPFunction{exposed_internet:true})<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH function LIMIT $LIMIT_SIZE REMOVE function.exposed_internet, function.exposed_internet_type return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 1000
+        },
+        {
+            "query": "MATCH (binding:GCPBinding)<-[a:ATTACHED_BINDING]-(function:GCPFunction)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWHERE 'allUsers' IN binding.members \nSET function.exposed_internet = true, function.exposed_internet_type = coalesce(function.exposed_internet_type, []) + 'allUsers'",
+            "iterative": false
+        },
+        {
+            "query": "MATCH (binding:GCPBinding)<-[a:ATTACHED_BINDING]-(function:GCPFunction)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWHERE 'allAuthenticatedUsers' IN binding.members \nSET function.exposed_internet = true, function.exposed_internet_type = coalesce(function.exposed_internet_type, []) + 'allAuthenticatedUsers'",
+            "iterative": false
+        }
+    ],
+    "name": "GCP Storage Bucket public policy exposure analysis"
+}
