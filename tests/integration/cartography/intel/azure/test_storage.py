@@ -8,8 +8,11 @@ from tests.data.azure.storage import DESCRIBE_QUEUE_SERVICES
 from tests.data.azure.storage import DESCRIBE_STORAGE_ACCOUNTS
 from tests.data.azure.storage import DESCRIBE_TABLE_SERVICES
 from tests.data.azure.storage import DESCRIBE_TABLES
+from cartography.util import run_analysis_job
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
+TEST_WORKSPACE_ID = '1234'
+TEST_TENANT_ID = '1234'
 TEST_RESOURCE_GROUP = 'TestRG'
 TEST_UPDATE_TAG = 123456789
 sa1 = "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1"
@@ -42,11 +45,13 @@ def test_load_storage_account_data_relationships(neo4j_session):
     # Create Test Azure Subscription
     neo4j_session.run(
         """
-        MERGE (as:AzureSubscription{id: $subscription_id})
+        MERGE (as:AzureSubscription{id: $subscription_id})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
         ON CREATE SET as.firstseen = timestamp()
         SET as.lastupdated = $update_tag
         """,
         subscription_id=TEST_SUBSCRIPTION_ID,
+        AZURE_TENANT_ID=TEST_TENANT_ID,
+        WORKSPACE_ID=TEST_WORKSPACE_ID,
         update_tag=TEST_UPDATE_TAG,
     )
 
@@ -570,3 +575,67 @@ def test_load_blob_containers_relationships(neo4j_session):
     }
 
     assert actual == expected
+
+
+def test_storage_public_facing_analysis(neo4j_session):
+    storage.load_storage_account_data(
+        neo4j_session,
+        TEST_SUBSCRIPTION_ID,
+        DESCRIBE_STORAGE_ACCOUNTS,
+        TEST_UPDATE_TAG,
+    )
+    storage._load_blob_services(
+        neo4j_session,
+        DESCRIBE_BLOB_SERVICES,
+        TEST_UPDATE_TAG,
+    )
+
+    storage._load_blob_containers(
+        neo4j_session,
+        DESCRIBE_BLOB_CONTAINERS,
+        TEST_UPDATE_TAG,
+    )
+
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG + 1,
+        "WORKSPACE_ID": TEST_WORKSPACE_ID,
+        "AZURE_SUBSCRIPTION_ID": TEST_SUBSCRIPTION_ID,
+        "AZURE_TENANT_ID": TEST_TENANT_ID
+    }
+
+    run_analysis_job(
+        'azure_storage_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    result = neo4j_session.run(
+        """
+        MATCH (n:AzureStorageBlobContainer{anonymous_access: true}) return n.id, n.anonymous_access_type
+        """
+    )
+
+    expected_nodes = {
+        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG1/blobServices/BS1/containers/container1', 'public_container,public_blob_container'),
+        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2/blobServices/BS2/containers/container2', 'public_container'),
+    }
+
+    actual = {
+        (n['n.id'], ",".join(n['n.anonymous_access_type'])) for n in result
+    }
+
+    assert actual == expected_nodes
+
+    result = neo4j_session.run(
+        """
+        MATCH (n:AzureStorageAccount{exposed_internet: true}) return n.id, n.exposed_internet_type
+        """
+    )
+
+    expected_nodes = {('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2', 'default_allow_action')}
+
+    actual = {
+        (n['n.id'], ",".join(n['n.exposed_internet_type'])) for n in result
+    }
+
+    assert actual == expected_nodes

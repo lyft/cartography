@@ -260,7 +260,7 @@ LIST_LAMBDA_FUNCTIONS = [
         "VpcConfig": {
             "SubnetIds": [],
             "SecurityGroupIds": [],
-            "VpcId": "",
+            "VpcId": "123456",
         },
         "Environment": {
             "Variables": {
