@@ -16,6 +16,7 @@ from cloudconsolelink.clouds.aws import AWSLinker
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
 
+
 @timeit
 @aws_handle_regions
 def get_elastic_ip_addresses(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
@@ -50,10 +51,10 @@ def load_elastic_ip_addresses(
     current_aws_account_id: str, update_tag: int,
 ) -> None:
     """
-    Creates (:ElasticIpAddress)
-    (:ElasticIpAddress)-[:RESOURCE]->(:AWSAccount),
-    (:EC2Instance)-[:ELASTIC_IP_ADDRESS]->(:ElasticIpAddress),
-    (:NetworkInterface)-[:ELASTIC_IP_ADDRESS]->(:ElasticIpAddress),
+    Creates (:ElasticIPAddress)
+    (:ElasticIPAddress)-[:RESOURCE]->(:AWSAccount),
+    (:EC2Instance)-[:ELASTIC_IP_ADDRESS]->(:ElasticIPAddress),
+    (:NetworkInterface)-[:ELASTIC_IP_ADDRESS]->(:ElasticIPAddress),
     """
     logger.info(f"Loading {len(elastic_ip_addresses)} Elastic IP Addresses")
     ingest_addresses = """

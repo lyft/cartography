@@ -265,6 +265,16 @@ def get_rds_snapshots(boto3_session: boto3.session.Session, region: str) -> List
 
 
 @timeit
+@aws_handle_regions
+def get_rds_snapshot_attributes(boto3_session: boto3.session.Session, snapshot_id: str, region: str) -> List[Any]:
+    client = boto3_session.client('rds', region_name=region)
+    response = client.describe_db_snapshot_attributes(
+        DBSnapshotIdentifier=snapshot_id,
+    )
+    return response['DBSnapshotAttributesResult']
+
+
+@timeit
 def transform_snapshots(snps: List[Dict], region: str) -> List[Dict]:
     snapshots = []
     for snapshot in snps:
@@ -287,9 +297,13 @@ def sync_rds_snapshots(
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
     data = []
+    attributes = []
     for region in regions:
         logger.info("Syncing RDS snapshots for region '%s' in account '%s'.", region, current_aws_account_id)
         snps = get_rds_snapshots(boto3_session, region)
+        for snp in snps:
+            attrib = get_rds_snapshot_attributes(boto3_session, snp['DBSnapshotIdentifier'], region)
+            attributes.append(attrib)
         data = transform_snapshots(snps, region)
 
     logger.info(f"Total RDS Snapshots: {len(data)}")
@@ -314,6 +328,7 @@ def sync_rds_snapshots(
             common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
 
     load_rds_snapshots(neo4j_session, data, current_aws_account_id, update_tag)
+    load_rds_snapshot_attributes(neo4j_session, attributes, current_aws_account_id, update_tag)
     cleanup_rds_snapshots(neo4j_session, common_job_parameters)
 
 
@@ -592,6 +607,34 @@ def load_rds_snapshots(
         aws_update_tag=aws_update_tag,
     )
     _attach_snapshots(neo4j_session, snapshots, aws_update_tag)
+
+
+@timeit
+def load_rds_snapshot_attributes(neo4j_session: neo4j.Session, data: Dict, aws_update_tag: int,) -> None:
+    """
+    Ingest the RDS snapshot attributes to neo4j and link them to RDS snapshot.
+    """
+    ingest_rds_snapshot_attributes = """
+    UNWIND $snapshotAttributes as result
+        MATCH (rdsSnapshot:RDSSnapshot{db_snapshot_identifier: result.DBSnapshotIdentifier})
+        WITH result, rdsSnapshot
+        UNWIND result.DBSnapshotAttributes as attribute
+            MERGE (attrib:RDSSnapshotAttribute{name: attribute.AttributeName})
+            ON CREATE SET attrib.firstseen = timestamp()
+            SET 
+                attrib.values = attribute.AttributeValues,
+                attrib.lastupdated = $aws_update_tag
+            WITH attrib, result, rdsSnapshot
+            MERGE (rdsSnapshot)-[r:HAS_ATTRIBUTE]->(attrib)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = $aws_update_tag
+    """
+
+    neo4j_session.run(
+        ingest_rds_snapshot_attributes,
+        snapshotAttributes=data,
+        aws_update_tag=aws_update_tag,
+    )
 
 
 @timeit
