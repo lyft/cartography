@@ -6,9 +6,8 @@
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (instance:EC2Instance{exposed_internet: true})-[:MEMBER_AUTO_SCALE_GROUP]->(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWITH distinct instance.exposed_internet_type as types, asg\nUNWIND types as type\nWITH type, asg\nWHERE NOT EXISTS(asg.exposed_internet_type) OR (NOT type IN asg.exposed_internet_type)\nSET asg.exposed_internet = true, asg.exposed_internet_type = coalesce(asg.exposed_internet_type, []) + type;",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (instance:EC2Instance{exposed_internet: true})-[:MEMBER_AUTO_SCALE_GROUP]->(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET asg.exposed_internet = true,asg.exposed_internet_type = coalesce(instance.exposed_internet_type , [])",
+			"iterative": false
 		}
 	],
 	"name": "AWS auto scale group asset internet exposure"
