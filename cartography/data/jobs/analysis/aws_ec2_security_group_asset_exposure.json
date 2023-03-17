@@ -1,35 +1,30 @@
 {
-    "statements": [
-        {
-            "query": "MATCH ((n:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) where EXISTS(n.exposed_internet) WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100
-        },
-        {
-			"query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(ip_perm:IpPermissionInbound{protocol: '-1'})-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH group WHERE (ip_perm.fromport in $public_ports) AND (ip_perm.toport in $public_ports) AND (NOT EXISTS(group.exposed_internet_type)) OR (NOT 'inbound_security_group_ipv4' IN group.exposed_internet_type)\nSET group.exposed_internet = true, group.exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'inbound_security_group_ipv4';",
+	"statements": [
+		{
+			"query": "MATCH ((n:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) where EXISTS(n.exposed_internet) WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:Ipv6Range{id: '::/0'})-[:MEMBER_OF_IP_RULE]->(ip_perm:IpPermissionInbound{protocol: '-1'})-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH group WHERE (ip_perm.fromport in $public_ports) AND (ip_perm.toport in $public_ports) AND (NOT EXISTS(group.exposed_internet_type)) OR (NOT 'inbound_security_group_ipv6' IN group.exposed_internet_type)\nSET group.exposed_internet = true, group.exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'inbound_security_group_ipv6';",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(ip_perm:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE (ip_perm.fromport in $PUBLIC_PORTS) AND (ip_perm.toport in $PUBLIC_PORTS) SET group.exposed_internet = true,(CASE WHEN NOT 'unrestricted_inbound_traffic_ipv4' IN  coalesce(group.exposed_internet_type , []) THEN group END).exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'unrestricted_inbound_traffic_ipv4';",
+			"iterative": false
 		},
 		{
-			"query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionEgress{protocol: '-1'})-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH group WHERE (NOT EXISTS(group.exposed_internet_type)) OR (NOT 'egress_security_group_ipv4' IN group.exposed_internet_type)\nSET group.exposed_internet = true, group.exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'egress_security_group_ipv4';",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (:Ipv6Range{id: '::/0'})-[:MEMBER_OF_IP_RULE]->(ip_perm:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE (ip_perm.fromport in $PUBLIC_PORTS) AND (ip_perm.toport in $PUBLIC_PORTS) SET group.exposed_internet = true,(CASE WHEN NOT 'unrestricted_inbound_traffic_ipv6' IN  coalesce(group.exposed_internet_type , []) THEN group END).exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'unrestricted_inbound_traffic_ipv6';",
+			"iterative": false
 		},
 		{
-			"query": "MATCH (:Ipv6Range{id: '::/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionEgress{protocol: '-1'})-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH group WHERE (NOT EXISTS(group.exposed_internet_type)) OR (NOT 'egress_security_group_ipv6' IN group.exposed_internet_type)\nSET group.exposed_internet = true, group.exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'egress_security_group_ipv6';",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionEgress)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET group.exposed_internet = true,(CASE WHEN NOT 'egress_security_group_ipv4' IN  coalesce(group.exposed_internet_type , []) THEN group END).exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'egress_security_group_ipv4';",
+			"iterative": false
 		},
-		{   
-			"query": "MATCH (group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE (NOT (group)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(:AWSVpc)) WITH distinct group WHERE ((NOT EXISTS(group.exposed_internet_type)) OR (NOT 'vpc_none' IN group.exposed_internet_type)) SET group.exposed_internet = true, group.exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'vpc_none';",
-			"iterative": true,
-			"iterationsize": 100
+		{
+			"query": "MATCH (:Ipv6Range{id: '::/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionEgress)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET group.exposed_internet = true,(CASE WHEN NOT 'egress_security_group_ipv6' IN  coalesce(group.exposed_internet_type , []) THEN group END).exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'egress_security_group_ipv6';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE NOT EXISTS ((group)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(:AWSVpc)) SET group.exposed_internet = true,(CASE WHEN NOT 'vpc_none' IN  coalesce(group.exposed_internet_type , []) THEN group END).exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'vpc_none';",
+			"iterative": false
 		}
-    ],
-    "name": "aws ec2 security group internet exposure"
+	],
+	"name": "aws ec2 security group internet exposure"
 }

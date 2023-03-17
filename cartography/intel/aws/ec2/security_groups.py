@@ -69,7 +69,7 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
 
     ingest_range = Template("""
     MERGE (range:$range_label{id: $RangeId})
-    ON CREATE SET range.firstseen = timestamp(), range.range = $RangeId
+    ON CREATE SET range.firstseen = timestamp(), range.range = $Range
     SET range.lastupdated = $update_tag
     WITH range
     MATCH (rule:IpRule{ruleid: $RuleId})
@@ -108,19 +108,21 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
             )
 
             for ip_range in rule["IpRanges"]:
-                range_id = ip_range["CidrIp"]
+                range_id = f"IpRule/{ruleid}/ipRange/{ip_range['CidrIp']}"
                 neo4j_session.run(
                     ingest_range.safe_substitute(range_label='IpRange'),
                     RangeId=range_id,
+                    Range=ip_range['CidrIp'],
                     RuleId=ruleid,
                     update_tag=update_tag,
                 )
 
             for ipv6_range in rule["Ipv6Ranges"]:
-                range_id = ipv6_range["CidrIpv6"]
+                range_id = f"IpRule/{ruleid}/ipv6Range/{ipv6_range['CidrIpv6']}"
                 neo4j_session.run(
                     ingest_range.safe_substitute(range_label='Ipv6Range'),
                     RangeId=range_id,
+                    Range=ipv6_range['CidrIpv6'],
                     RuleId=ruleid,
                     update_tag=update_tag,
                 )

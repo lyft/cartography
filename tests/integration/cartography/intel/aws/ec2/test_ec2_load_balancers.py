@@ -272,7 +272,7 @@ def test_ec2_load_balancer_analysis(neo4j_session):
         "UPDATE_TAG": TEST_UPDATE_TAG + 1,
         "WORKSPACE_ID": TEST_WORKSPACE_ID,
         "AWS_ID": TEST_ACCOUNT_ID,
-        "public_ports": ['20', '21', '22', '3306', '3389', '4333'],
+        "PUBLIC_PORTS": ['20', '21', '22', '3306', '3389', '4333'],
     }
 
     run_analysis_job(

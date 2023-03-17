@@ -6,39 +6,44 @@
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:IpRange{id: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWITH instance\nWHERE (EXISTS(instance.publicipaddress)) AND (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'direct_ipv4' IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct_ipv4';",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE instance.publicipaddress IS NOT NULL SET instance.exposed_internet = true,(CASE WHEN NOT 'public_ip' IN  coalesce(instance.exposed_internet_type , []) THEN instance END).exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'public_ip';",
+			"iterative": false
 		},
 		{
-			"query": "MATCH (:Ipv6Range{id: '::/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWITH instance\nWHERE (EXISTS(instance.publicipaddress)) AND (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'direct_ipv6' IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'direct_ipv6';",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (:ElasticIPAddress)<-[:ELASTIC_IP_ADDRESS]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET instance.exposed_internet = true,(CASE WHEN NOT 'public_elastic_ip' IN  coalesce(instance.exposed_internet_type , []) THEN instance END).exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'public_elastic_ip';",
+			"iterative": false
 		},
 		{
-			"query": "MATCH (subnet:EC2Subnet{exposed_internet: true})<-[:PART_OF_SUBNET]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH instance WHERE (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'subnet' IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type, []) + 'subnet'",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (:IpRange{range: '0.0.0.0/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET instance.exposed_internet = true,(CASE WHEN NOT 'unrestricted_inbound_traffic_ipv4' IN  coalesce(instance.exposed_internet_type , []) THEN instance END).exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'unrestricted_inbound_traffic_ipv4';",
+			"iterative": false
 		},
 		{
-			"query": "MATCH (elb:LoadBalancer{exposed_internet: true})-[:EXPOSE]->(e:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWITH e\nWHERE (NOT EXISTS(e.exposed_internet_type)) OR (NOT 'elb' IN e.exposed_internet_type)\nSET e.exposed_internet = true, e.exposed_internet_type = coalesce(e.exposed_internet_type, []) + 'elb'",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (:Ipv6Range{range: '::/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP|NETWORK_INTERFACE*..2]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET instance.exposed_internet = true,(CASE WHEN NOT 'unrestricted_inbound_traffic_ipv6' IN  coalesce(instance.exposed_internet_type , []) THEN instance END).exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'unrestricted_inbound_traffic_ipv6';",
+			"iterative": false
 		},
 		{
-			"query": "MATCH (elbv2:LoadBalancerV2{exposed_internet: true})-[:EXPOSE]->(e:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWITH e\nWHERE (NOT EXISTS(e.exposed_internet_type)) OR (NOT 'elbv2' IN e.exposed_internet_type)\nSET e.exposed_internet = true, e.exposed_internet_type = coalesce(e.exposed_internet_type, []) + 'elbv2'",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (route:EC2Route{destination_cidr_block: '0.0.0.0/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation)<-[:HAS_EXPLICIT_ASSOCIATION|:HAS_IMPLICIT_ASSOCIATION]-(subnet:EC2Subnet{exposed_internet: true})<-[:PART_OF_SUBNET]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE route.gateway_id STARTS WITH 'igw-' SET instance.exposed_internet = true,(CASE WHEN NOT 'public_subnet_ipv4' IN  coalesce(instance.exposed_internet_type , []) THEN instance END).exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'public_subnet_ipv4'",
+			"iterative": false
 		},
 		{
-			"query": "MATCH (address)<-[:ELASTIC_IP_ADDRESS]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH instance WHERE (NOT EXISTS(instance.exposed_internet_type)) OR (NOT 'public_elastic_ip' IN instance.exposed_internet_type) SET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'public_elastic_ip';",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (route:EC2Route{destination_ipv6_cidr_block: '::/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation)<-[:HAS_EXPLICIT_ASSOCIATION|:HAS_IMPLICIT_ASSOCIATION]-(subnet:EC2Subnet{exposed_internet: true})<-[:PART_OF_SUBNET]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE route.gateway_id STARTS WITH 'igw-' SET instance.exposed_internet = true,(CASE WHEN NOT 'public_subnet_ipv6' IN  coalesce(instance.exposed_internet_type , []) THEN instance END).exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'public_subnet_ipv6'",
+			"iterative": false
 		},
 		{
-			"query": "MATCH (group:EC2SecurityGroup{exposed_internet: true})<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH distinct group.exposed_internet_type as types, instance\nUNWIND types as type\nWITH type, instance\nWHERE NOT EXISTS(instance.exposed_internet_type) OR (NOT type IN instance.exposed_internet_type)\nSET instance.exposed_internet = true, instance.exposed_internet_type = coalesce(instance.exposed_internet_type, []) + type;",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (cidr:IpRange{range:'0.0.0.0/0'})—[:MEMBER_OF_IP_RULE]->(perm:IpPermissionInbound)—[:MEMBER_OF_EC2_SECURITY_GROUP]->(sg:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(elb:LoadBalancer{scheme: 'internet-facing'})-[:EXPOSE]->(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\n SET instance.exposed_internet = true,(CASE WHEN NOT 'unrestricted_inbound_traffic_ipv4' IN  coalesce(instance.exposed_internet_type , []) THEN instance END).exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'unrestricted_inbound_traffic_ipv4'",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (cidr:Ipv6Range{range:'::/0'})—[:MEMBER_OF_IP_RULE]->(perm:IpPermissionInbound)—[:MEMBER_OF_EC2_SECURITY_GROUP]->(sg:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(elb:LoadBalancer{scheme: 'internet-facing'})-[:EXPOSE]->(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nSET instance.exposed_internet = true,(CASE WHEN NOT 'unrestricted_inbound_traffic_ipv6' IN  coalesce(instance.exposed_internet_type , []) THEN instance END).exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'unrestricted_inbound_traffic_ipv6'",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (cidr:IpRange{range:'0.0.0.0/0'})—[:MEMBER_OF_IP_RULE]->(perm:IpPermissionInbound)—[:MEMBER_OF_EC2_SECURITY_GROUP]->(sg:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(elbv2:LoadBalancerV2{scheme: 'internet-facing'})-[:EXPOSE]->(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nSET instance.exposed_internet = true,(CASE WHEN NOT 'unrestricted_inbound_traffic_ipv4' IN  coalesce(instance.exposed_internet_type , []) THEN instance END).exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'unrestricted_inbound_traffic_ipv4'",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (cidr:Ipv6Range{range:'::/0'})—[:MEMBER_OF_IP_RULE]->(perm:IpPermissionInbound)—[:MEMBER_OF_EC2_SECURITY_GROUP]->(sg:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(elbv2:LoadBalancerV2{scheme: 'internet-facing'})-[:EXPOSE]->(instance:EC2Instance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nSET instance.exposed_internet = true,(CASE WHEN NOT 'unrestricted_inbound_traffic_ipv6' IN  coalesce(instance.exposed_internet_type , []) THEN instance END).exposed_internet_type = coalesce(instance.exposed_internet_type , []) + 'unrestricted_inbound_traffic_ipv6'",
+			"iterative": false
 		}
 	],
 	"name": "AWS ec2 instance internet exposure"
