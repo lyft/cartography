@@ -333,38 +333,6 @@ def attach_compute_disks_to_instance_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
-@timeit
-def attach_compute_networks_to_instance(session: neo4j.Session, data_list: List[Dict], instance_id: str, update_tag: int) -> None:
-    session.write_transaction(attach_compute_networks_to_instance_tx, data_list, instance_id, update_tag)
-
-
-@timeit
-def attach_compute_networks_to_instance_tx(
-    tx: neo4j.Transaction, data: List[Dict],
-    instance_id: str, gcp_update_tag: int,
-) -> None:
-
-    query = """
-    UNWIND $Records as record
-    MERGE (network:GCPNetwork{network: record.network})
-    ON CREATE SET
-        network.firstseen = timestamp()
-    SET
-        network.lastupdated = $gcp_update_tag
-    WITH network
-    MATCH (i:GCPInstance{id: $InstanceId})
-    MERGE (i)-[c:CONNECTED]->(network)
-    ON CREATE SET
-        c.firstseen = timestamp()
-    SET c.lastupdated = $gcp_update_tag
-    """
-    tx.run(
-        query,
-        Records=data,
-        InstanceId=instance_id,
-        gcp_update_tag=gcp_update_tag,
-    )
-
 
 
 def _get_error_reason(http_error: HttpError) -> str:
@@ -956,13 +924,6 @@ def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_u
         _attach_gcp_nics(session, instance, gcp_update_tag)
         _attach_gcp_vpc(session, instance['partial_uri'], gcp_update_tag)
         _attach_instance_service_account(session, instance, gcp_update_tag)
-        networks=[]
-        for n in instance.get('networkInterfaces',[]):
-            n['network'] = n.get('network', None)
-            networks.append(n)
-        attach_compute_networks_to_instance(session, networks, instance['partial_uri'], gcp_update_tag)
-
-        #_attach_compute_networks_to_instance(session, instance, gcp_update_tag)
         
 
 
@@ -1316,6 +1277,7 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
     ON CREATE SET nic.firstseen = timestamp(),
     nic.nic_id = $NicId
     SET nic.private_ip = $NetworkIP,
+    nic.network = $Network,
     nic.name = $NicName,
     nic.lastupdated = $gcp_update_tag
     MERGE (i)-[r:NETWORK_INTERFACE]->(nic)
@@ -1339,6 +1301,7 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
             InstanceId=instance['partial_uri'],
             NicId=nic_id,
             NetworkIP=nic.get('networkIP'),
+            Network=nic.get('network'),
             NicName=nic['name'],
             ConsoleLink=nic.get('consolelink'),
             gcp_update_tag=gcp_update_tag,
@@ -1473,11 +1436,11 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     
-    MERGE (network:GCPNetwork{network: fw.network})
-    ON CREATE SET network.firstseen = timestamp()
-    SET network.lastupdated = $gcp_update_tag
+    MERGE (nic:GCPNetworkInterface{network: fw.network})
+    ON CREATE SET nic.firstseen = timestamp()
+    SET nic.lastupdated = $gcp_update_tag
     
-    MERGE (fw)-[c:ATTACH_TO]->(network)
+    MERGE (fw)-[c:ATTACH_TO]->(nic)
     ON CREATE SET c.firstseen = timestamp()
     SET c.lastupdated = $gcp_update_tag
     """

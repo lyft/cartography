@@ -6,15 +6,15 @@
             "iterationsize": 1000
         },
         {
-            "query": "MATCH (i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.nat_ip IS NOT NULL \nSET i.exposed_internet = true, i.exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'nat_ip' ",
+            "query": "MATCH (i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.nat_ip IS NOT NULL \nSET i.exposed_internet = true, (CASE WHEN NOT 'nat_ip' IN  coalesce(i.exposed_internet_type , []) THEN i END).exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'nat_ip' ",
             "iterative": false
         },
         {
-            "query": "MATCH (i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.ipv6_nat_ip IS NOT NULL \nSET i.exposed_internet = true, i.exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'ipv6_nat_ip' ",
+            "query": "MATCH (i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.ipv6_nat_ip IS NOT NULL \nSET i.exposed_internet = true, (CASE WHEN NOT 'ipv6_nat_ip' IN  coalesce(i.exposed_internet_type , []) THEN i END).exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'ipv6_nat_ip' ",
             "iterative": false
         },
         {
-            "query": "MATCH (rng:IpRange)-[m:MEMBER_OF_IP_RULE]->(rule:IpRule:IpPermissionInbound:GCPIpRule)-[r:ALLOWED_BY]->(fw:GCPFirewall)-[:ATTACH_TO]->(network:GCPNetwork)<-[:CONNECTED]-(i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE fw.direction='INGRESS' AND fw.disabled=FALSE AND rng.id='0.0.0.0/0' AND rule.protocol IN ['tcp','udp'] AND rule.fromport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,0,53,20,21,22] AND rule.toport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,53,20,21,22,65535] \nSET i.exposed_internet = true, (CASE WHEN NOT 'unrestricted_access_from_firewall' IN  coalesce(i.exposed_internet_type , []) THEN i END).exposed_internet_type = coalesce(i.exposed_internet_type, []) + ('unrestricted_access_from_firewall') ",
+            "query": "MATCH (rng:IpRange)-[m:MEMBER_OF_IP_RULE]->(rule:IpRule:IpPermissionInbound:GCPIpRule)-[:ALLOWED_BY]->(fw:GCPFirewall)-[:ATTACH_TO]->(nic:GCPNetworkInterface)<-[r:NETWORK_INTERFACE]-(i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE fw.direction='INGRESS' AND fw.disabled=FALSE AND rng.id='0.0.0.0/0' AND rule.protocol IN ['tcp','udp'] AND rule.fromport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,0,53,20,21,22] AND rule.toport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,53,20,21,22,65535] \nSET i.exposed_internet = true, (CASE WHEN NOT 'unrestricted_access_from_firewall' IN  coalesce(i.exposed_internet_type , []) THEN i END).exposed_internet_type = coalesce(i.exposed_internet_type, []) + ('unrestricted_access_from_firewall') ",
             "iterative": false
         }
     ],
