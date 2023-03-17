@@ -8,9 +8,8 @@
 		},
 		{
 			"__comment": "This sets the exposed_internet attribute",
-			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE cluster.endpoint_public_access = true AND '0.0.0.0/0' IN cluster.public_access_cidrs WITH cluster WHERE (NOT EXISTS(cluster.exposed_internet_type)) OR (NOT 'direct' IN cluster.exposed_internet_type) SET cluster.exposed_internet = true, cluster.exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct';",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE cluster.endpoint_public_access = true AND '0.0.0.0/0' IN cluster.public_access_cidrs SET cluster.exposed_internet = true,(CASE WHEN NOT 'direct' IN coalesce(cluster.exposed_internet_type , []) THEN cluster END).exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct';",
+			"iterative": false
 		}
 	],
 	"name": "AWS EKS internet exposure"

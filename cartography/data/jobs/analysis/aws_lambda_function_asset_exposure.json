@@ -11,14 +11,13 @@
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (lf:AWSLambda{anonymous_access: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH lf WHERE (NOT EXISTS(lf.anonymous_access_type)) OR (NOT 'policy' IN lf.anonymous_access_type)\nSET lf.anonymous_access_type = coalesce(lf.anonymous_access_type , []) + 'policy';",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (lf:AWSLambda{anonymous_access: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET (CASE WHEN NOT 'policy' IN coalesce(lf.anonymous_access_type , []) THEN lf END).anonymous_access_type = coalesce(lf.anonymous_access_type , []) + 'policy';",
+
+			"iterative": false
 		},
 		{
-			"query": "MATCH (lf:AWSLambda)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH lf WHERE ((NOT EXISTS(lf.vpc_id)) OR (lf.vpc_id = '')) AND (NOT EXISTS(lf.exposed_internet_type)) OR (NOT 'vpc_none' IN lf.exposed_internet_type)\nSET lf.exposed_internet = true, lf.exposed_internet_type = coalesce(lf.exposed_internet_type , []) + 'vpc_none';",
-			"iterative": true,
-			"iterationsize": 100
+			"query": "MATCH (lf:AWSLambda)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH lf WHERE ((NOT EXISTS(lf.vpc_id)) OR (lf.vpc_id = '')) SET lf.exposed_internet = true,(CASE WHEN NOT 'vpc_none' IN coalesce(lf.exposed_internet_type , []) THEN lf END).exposed_internet_type = coalesce(lf.exposed_internet_type , []) + 'vpc_none';",
+			"iterative": false
 		}
 	],
 	"name": "aws lambda function internet exposure"
