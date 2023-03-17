@@ -15,7 +15,7 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (rest_api:APIGatewayRestAPI{anonymous_access: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET rest_api.anonymous_access = true, (CASE WHEN NOT 'policy' IN  coalesce(rest_api.anonymous_access_type , []) THEN rest_api END).anonymous_access_type = coalesce(rest_api.anonymous_access_type , []) + 'policy';",
+			"query": "MATCH (rest_api:APIGatewayRestAPI{anonymous_access: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET (CASE WHEN NOT 'policy' IN  coalesce(rest_api.anonymous_access_type , []) THEN rest_api END).anonymous_access_type = coalesce(rest_api.anonymous_access_type , []) + 'policy';",
 			"iterative": false
 		}
 	],
