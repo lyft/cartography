@@ -36,25 +36,27 @@ def create_api_client(okta_org: str, path_name: str, api_key: str) -> ApiClient:
     return api_client
 
 
-def check_rate_limit(response: Response) -> int:
+def check_rate_limit(response: Response) -> None:
     """
     Checks if we are about to hit the rate limit and waits until reset if so
     :param response: server response
-    :return: int - time waited
     """
-    sleep_time = 0
     rate_limit_threshold = 0.1
+
     remaining = response.headers.get('x-rate-limit-remaining')
     limit = response.headers.get('x-rate-limit-limit')
-    if remaining is not None and limit is not None:
+    reset_time = response.headers.get('x-rate-limit-reset')
+
+    if remaining and limit and reset_time:
         if (int(remaining) / int(limit)) < rate_limit_threshold:
-            reset_time = response.headers.get('x-rate-limit-reset')
-            if reset_time is not None:
-                sleep_time = int(reset_time) - int(time.time())
-                if sleep_time > 0:
-                    if sleep_time > 60:
-                        logger.exception(f"Okta sleep time of {sleep_time} would exceed one minute")
-                        raise
-                    logger.warning(f"Okta rate limit threshold reached. Waiting {sleep_time} seconds.")
-                    time.sleep(sleep_time)
-    return sleep_time
+            sleep_time_seconds = int(reset_time) - int(time.time())
+            if sleep_time_seconds <= 0:
+                # A negative sleep time does not make sense so treat it the same as a 0 sleep time
+                return
+            if sleep_time_seconds > 60:
+                raise ValueError(
+                    f"Okta API limit exceeded. Sleep time of {sleep_time_seconds} would exceed one minute. Crashing "
+                    f"Okta sync to avoid blocking.",
+                )
+            logger.warning(f"Okta rate limit threshold reached. Waiting {sleep_time_seconds} seconds.")
+            time.sleep(sleep_time_seconds)
