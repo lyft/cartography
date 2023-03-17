@@ -3,11 +3,13 @@ import getpass
 import logging
 import os
 import sys
+from typing import List
+from typing import Optional
 
 import cartography.config
-import cartography.sync
 import cartography.util
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
+from cartography.sync import run_with_config
 
 
 logger = logging.getLogger(__name__)
@@ -21,12 +23,12 @@ class CLI:
     :param prog: The name of the command line program. This will be displayed in usage and help output.
     """
 
-    def __init__(self, sync, prog=None):
+    def __init__(self, sync: Optional[cartography.sync.Sync] = None, prog: Optional[str] = None):
+        self.sync = sync if sync else cartography.sync.build_default_sync()
         self.prog = prog
-        self.sync = sync
         self.parser = self._build_parser()
 
-    def _build_parser(self):
+    def _build_parser(self) -> argparse.ArgumentParser:
         """
         :rtype: argparse.ArgumentParser
         :return: A cartography argument parser. Calling parse_args on the argument parser will return an object which
@@ -59,7 +61,9 @@ class CLI:
             action='store_true',
             help='Restrict cartography logging to warnings and errors only.',
         )
-        parser.add_argument(
+
+        neo4j_arg_group = parser.add_argument_group('neo4j')
+        neo4j_arg_group.add_argument(
             '--neo4j-uri',
             type=str,
             default='bolt://localhost:7687',
@@ -69,19 +73,19 @@ class CLI:
                 'structure of a Neo4j URI.'
             ),
         )
-        parser.add_argument(
+        neo4j_arg_group.add_argument(
             '--neo4j-user',
             type=str,
             default=None,
             help='A username with which to authenticate to Neo4j.',
         )
-        parser.add_argument(
+        neo4j_arg_group.add_argument(
             '--neo4j-password-env-var',
             type=str,
             default=None,
             help='The name of an environment variable containing a password with which to authenticate to Neo4j.',
         )
-        parser.add_argument(
+        neo4j_arg_group.add_argument(
             '--neo4j-password-prompt',
             action='store_true',
             help=(
@@ -89,7 +93,7 @@ class CLI:
                 'supersedes other methods of supplying a Neo4j password.'
             ),
         )
-        parser.add_argument(
+        neo4j_arg_group.add_argument(
             '--neo4j-max-connection-lifetime',
             type=int,
             default=3600,
@@ -100,7 +104,7 @@ class CLI:
                 '.'
             ),
         )
-        parser.add_argument(
+        neo4j_arg_group.add_argument(
             '--neo4j-database',
             type=str,
             default=None,
@@ -110,8 +114,59 @@ class CLI:
                 'See https://neo4j.com/docs/api/python-driver/4.4/api.html#database.'
             ),
         )
-        # TODO add the below parameters to a 'sync' subparser
-        parser.add_argument(
+
+        statsd_arg_group = parser.add_argument_group('statsd')
+        statsd_arg_group.add_argument(
+            '--statsd-enabled',
+            action='store_true',
+            help=(
+                'If set, enables sending metrics using statsd to a server of your choice.'
+            ),
+        )
+        statsd_arg_group.add_argument(
+            '--statsd-prefix',
+            type=str,
+            default='',
+            help=(
+                'The string to prefix statsd metrics with. Only used if --statsd-enabled is on. Default = empty string.'
+            ),
+        )
+        statsd_arg_group.add_argument(
+            '--statsd-host',
+            type=str,
+            default='127.0.0.1',
+            help=(
+                'The IP address of your statsd server. Only used if --statsd-enabled is on. Default = 127.0.0.1.'
+            ),
+        )
+        statsd_arg_group.add_argument(
+            '--statsd-port',
+            type=int,
+            default=8125,
+            help=(
+                'The port of your statsd server. Only used if --statsd-enabled is on. Default = UDP 8125.'
+            ),
+        )
+
+        # 'sync' subparser
+        subparsers = parser.add_subparsers()
+        sync_subparser = subparsers.add_parser('sync')
+        sync_subparser.add_argument(
+            '--selected-modules',
+            type=str,
+            default=None,
+            help=(
+                'Comma-separated list of cartography top-level modules to sync. Example 1: "aws,gcp" to run AWS and GCP'
+                'modules. See the full list available in source code at cartography.sync. '
+                'If not specified, cartography by default will run all modules available and log warnings when it '
+                'does not find credentials configured for them. '
+                # TODO remove this mention about the create-indexes module when everything is using auto-indexes.
+                'We recommend that you always specify the `create-indexes` module first in this list. '
+                'If you specify the `analysis` module, we recommend that you include it as the LAST item of this list, '
+                '(because it does not make sense to perform analysis on an empty/out-of-date graph).'
+            ),
+        )
+        sync_subparser.add_argument(
             '--update-tag',
             type=int,
             default=None,
@@ -121,7 +176,9 @@ class CLI:
                 'removed from the graph. By default, cartography will use a UNIX timestamp as the update tag.'
             ),
         )
-        parser.add_argument(
+
+        aws_arg_group = sync_subparser.add_argument_group('aws')
+        aws_arg_group.add_argument(
             '--aws-sync-all-profiles',
             action='store_true',
             help=(
@@ -136,7 +193,7 @@ class CLI:
                 'respects the AWS CLI/SDK environment variables and does not override them.'
             ),
         )
-        parser.add_argument(
+        aws_arg_group.add_argument(
             '--aws-best-effort-mode',
             action='store_true',
             help=(
@@ -144,7 +201,28 @@ class CLI:
                 'syncing other accounts and delay raising an exception until the very end.'
             ),
         )
-        parser.add_argument(
+        aws_arg_group.add_argument(
+            '--aws-requested-syncs',
+            type=str,
+            default=None,
+            help=(
+                'Comma-separated list of AWS resources to sync. Example 1: "ecr,s3,ec2:instance" for ECR, S3, and all '
+                'EC2 instance resources. See the full list available in source code at cartography.intel.aws.resources.'
+                ' If not specified, cartography by default will run all AWS sync modules available.'
+            ),
+        )
+        aws_arg_group.add_argument(
+            '--permission-relationships-file',
+            type=str,
+            default="cartography/data/permission_relationships.yaml",
+            help=(
+                'The path to the permission relationships mapping file.'
+                'If omitted the default permission relationships will be created'
+            ),
+        )
+
+        oci_arg_group = sync_subparser.add_argument_group('oci')
+        oci_arg_group.add_argument(
             '--oci-sync-all-profiles',
             action='store_true',
             help=(
@@ -155,7 +233,8 @@ class CLI:
                 'default OCI credentials available in your environment to run the OCI sync once.'
             ),
         )
-        parser.add_argument(
+        azure_arg_group = sync_subparser.add_argument_group('azure')
+        azure_arg_group.add_argument(
             '--azure-sync-all-subscriptions',
             action='store_true',
             help=(
@@ -163,14 +242,14 @@ class CLI:
                 'discover all configured Azure subscriptions.'
             ),
         )
-        parser.add_argument(
+        azure_arg_group.add_argument(
             '--azure-sp-auth',
             action='store_true',
             help=(
                 'Use Service Principal authentication for Azure sync.'
             ),
         )
-        parser.add_argument(
+        azure_arg_group.add_argument(
             '--azure-tenant-id',
             type=str,
             default=None,
@@ -178,7 +257,7 @@ class CLI:
                 'Azure Tenant Id for Service Principal Authentication.'
             ),
         )
-        parser.add_argument(
+        azure_arg_group.add_argument(
             '--azure-client-id',
             type=str,
             default=None,
@@ -186,7 +265,7 @@ class CLI:
                 'Azure Client Id for Service Principal Authentication.'
             ),
         )
-        parser.add_argument(
+        azure_arg_group.add_argument(
             '--azure-client-secret-env-var',
             type=str,
             default=None,
@@ -194,17 +273,9 @@ class CLI:
                 'The name of environment variable containing Azure Client Secret for Service Principal Authentication.'
             ),
         )
-        parser.add_argument(
-            '--aws-requested-syncs',
-            type=str,
-            default=None,
-            help=(
-                'Comma-separated list of AWS resources to sync. Example 1: "ecr,s3,ec2:instance" for ECR, S3, and all '
-                'EC2 instance resources. See the full list available in source code at cartography.intel.aws.resources.'
-                ' If not specified, cartography by default will run all AWS sync modules available.'
-            ),
-        )
-        parser.add_argument(
+
+        crxcavator_arg_group = sync_subparser.add_argument_group('crxcavator')
+        crxcavator_arg_group.add_argument(
             '--crxcavator-api-base-uri',
             type=str,
             default='https://api.crxcavator.io/v1',
@@ -212,7 +283,7 @@ class CLI:
                 'Base URI for the CRXcavator API. Defaults to public API endpoint.'
             ),
         )
-        parser.add_argument(
+        crxcavator_arg_group.add_argument(
             '--crxcavator-api-key-env-var',
             type=str,
             default=None,
@@ -221,7 +292,7 @@ class CLI:
                 'Required if you are using the CRXcavator intel module. Ignored otherwise.'
             ),
         )
-        parser.add_argument(
+        sync_subparser.add_argument(
             '--analysis-job-directory',
             type=str,
             default=None,
@@ -233,7 +304,9 @@ class CLI:
                 'jobs are executed.'
             ),
         )
-        parser.add_argument(
+
+        okta_arg_group = sync_subparser.add_argument_group('okta')
+        okta_arg_group.add_argument(
             '--okta-org-id',
             type=str,
             default=None,
@@ -241,7 +314,7 @@ class CLI:
                 'Okta organizational id to sync. Required if you are using the Okta intel module. Ignored otherwise.'
             ),
         )
-        parser.add_argument(
+        okta_arg_group.add_argument(
             '--okta-api-key-env-var',
             type=str,
             default=None,
@@ -250,7 +323,7 @@ class CLI:
                 'Required if you are using the Okta intel module. Ignored otherwise.'
             ),
         )
-        parser.add_argument(
+        okta_arg_group.add_argument(
             '--okta-saml-role-regex',
             type=str,
             default=r"^aws\#\S+\#(?{{role}}[\w\-]+)\#(?{{accountid}}\d+)$",
@@ -261,7 +334,9 @@ class CLI:
                 'The regex must contain the {{role}} and {{accountid}} tags'
             ),
         )
-        parser.add_argument(
+
+        github_arg_group = sync_subparser.add_argument_group('github')
+        github_arg_group.add_argument(
             '--github-config-env-var',
             type=str,
             default=None,
@@ -270,7 +345,9 @@ class CLI:
                 'Required if you are using the GitHub intel module. Ignored otherwise.'
             ),
         )
-        parser.add_argument(
+
+        digitalocean_arg_group = sync_subparser.add_argument_group('digitalocean')
+        digitalocean_arg_group.add_argument(
             '--digitalocean-token-env-var',
             type=str,
             default=None,
@@ -279,16 +356,9 @@ class CLI:
                 'Required if you are using the DigitalOcean intel module. Ignored otherwise.'
             ),
         )
-        parser.add_argument(
-            '--permission-relationships-file',
-            type=str,
-            default="cartography/data/permission_relationships.yaml",
-            help=(
-                'The path to the permission relationships mapping file.'
-                'If omitted the default permission relationships will be created'
-            ),
-        )
-        parser.add_argument(
+
+        jamf_arg_group = sync_subparser.add_argument_group('jamf')
+        jamf_arg_group.add_argument(
             '--jamf-base-uri',
             type=str,
             default=None,
@@ -297,19 +367,21 @@ class CLI:
                 'Required if you are using the Jamf intel module. Ignored otherwise.'
             ),
         )
-        parser.add_argument(
+        jamf_arg_group.add_argument(
             '--jamf-user',
             type=str,
             default=None,
             help='A username with which to authenticate to Jamf.',
         )
-        parser.add_argument(
+        jamf_arg_group.add_argument(
             '--jamf-password-env-var',
             type=str,
             default=None,
             help='The name of an environment variable containing a password with which to authenticate to Jamf.',
         )
-        parser.add_argument(
+
+        k8s_arg_group = sync_subparser.add_argument_group('k8s')
+        k8s_arg_group.add_argument(
             '--k8s-kubeconfig',
             default=None,
             type=str,
@@ -317,7 +389,9 @@ class CLI:
                 'The path to kubeconfig file specifying context to access K8s cluster(s).'
             ),
         )
-        parser.add_argument(
+
+        cve_arg_group = sync_subparser.add_argument_group('cve')
+        cve_arg_group.add_argument(
             '--nist-cve-url',
             type=str,
             default='https://nvd.nist.gov/feeds/json/cve/1.1',
@@ -325,45 +399,16 @@ class CLI:
                 'The base url for the NIST CVE data. Default = https://nvd.nist.gov/feeds/json/cve/1.1'
             ),
         )
-        parser.add_argument(
+        cve_arg_group.add_argument(
             '--cve-enabled',
             action='store_true',
             help=(
                 'If set, CVE data will be synced from NIST.'
             ),
         )
-        parser.add_argument(
-            '--statsd-enabled',
-            action='store_true',
-            help=(
-                'If set, enables sending metrics using statsd to a server of your choice.'
-            ),
-        )
-        parser.add_argument(
-            '--statsd-prefix',
-            type=str,
-            default='',
-            help=(
-                'The string to prefix statsd metrics with. Only used if --statsd-enabled is on. Default = empty string.'
-            ),
-        )
-        parser.add_argument(
-            '--statsd-host',
-            type=str,
-            default='127.0.0.1',
-            help=(
-                'The IP address of your statsd server. Only used if --statsd-enabled is on. Default = 127.0.0.1.'
-            ),
-        )
-        parser.add_argument(
-            '--statsd-port',
-            type=int,
-            default=8125,
-            help=(
-                'The port of your statsd server. Only used if --statsd-enabled is on. Default = UDP 8125.'
-            ),
-        )
-        parser.add_argument(
+
+        pagerduty_arg_group = sync_subparser.add_argument_group('pagerduty')
+        pagerduty_arg_group.add_argument(
             '--pagerduty-api-key-env-var',
             type=str,
             default=None,
@@ -371,7 +416,7 @@ class CLI:
                 'The name of environment variable containing the pagerduty API key for authentication.'
             ),
         )
-        parser.add_argument(
+        pagerduty_arg_group.add_argument(
             '--pagerduty-request-timeout',
             type=int,
             default=None,
@@ -379,7 +424,9 @@ class CLI:
                 'Seconds to timeout for pagerduty API sessions.'
             ),
         )
-        parser.add_argument(
+
+        crowdstrike_arg_group = sync_subparser.add_argument_group('crowdstrike')
+        crowdstrike_arg_group.add_argument(
             '--crowdstrike-client-id-env-var',
             type=str,
             default=None,
@@ -387,7 +434,7 @@ class CLI:
                 'The name of environment variable containing the crowdstrike client id for authentication.'
             ),
         )
-        parser.add_argument(
+        crowdstrike_arg_group.add_argument(
             '--crowdstrike-client-secret-env-var',
             type=str,
             default=None,
@@ -395,7 +442,7 @@ class CLI:
                 'The name of environment variable containing the crowdstrike secret key for authentication.'
             ),
         )
-        parser.add_argument(
+        crowdstrike_arg_group.add_argument(
             '--crowdstrike-api-url',
             type=str,
             default=None,
@@ -403,7 +450,9 @@ class CLI:
                 'The crowdstrike URL, if using self-hosted. Defaults to the public crowdstrike API URL otherwise.'
             ),
         )
-        parser.add_argument(
+
+        gsuite_arg_group = sync_subparser.add_argument_group('gsuite')
+        gsuite_arg_group.add_argument(
             '--gsuite-auth-method',
             type=str,
             default='delegated',
@@ -412,7 +461,7 @@ class CLI:
                 'The method used by GSuite to authenticate. delegated is the legacy one.'
             ),
         )
-        parser.add_argument(
+        gsuite_arg_group.add_argument(
             '--gsuite-tokens-env-var',
             type=str,
             default='GSUITE_GOOGLE_APPLICATION_CREDENTIALS',
@@ -422,7 +471,7 @@ class CLI:
         )
         return parser
 
-    def main(self, argv: str) -> int:
+    def main(self, argv: List[str]) -> int:
         """
         Entrypoint for the command line interface.
 
@@ -439,7 +488,9 @@ class CLI:
         else:
             logging.getLogger('cartography').setLevel(logging.INFO)
         logger.debug("Launching cartography with CLI configuration: %r", vars(config))
+
         # Neo4j config
+        config.neo4j_password = None
         if config.neo4j_user:
             config.neo4j_password = None
             if config.neo4j_password_prompt:
@@ -454,8 +505,10 @@ class CLI:
                 config.neo4j_password = os.environ.get(config.neo4j_password_env_var)
             if not config.neo4j_password:
                 logger.warning("Neo4j username was provided but a password could not be found.")
-        else:
-            config.neo4j_password = None
+
+        # Selected modules
+        if config.selected_modules:
+            self.sync = cartography.sync.build_sync(config.selected_modules)
 
         # AWS config
         if config.aws_requested_syncs:
@@ -463,44 +516,41 @@ class CLI:
             parse_and_validate_aws_requested_syncs(config.aws_requested_syncs)
 
         # Azure config
+        config.azure_client_secret = None
         if config.azure_sp_auth and config.azure_client_secret_env_var:
             logger.debug(
                 "Reading Client Secret for Azure Service Principal Authentication from environment variable %s",
                 config.azure_client_secret_env_var,
             )
             config.azure_client_secret = os.environ.get(config.azure_client_secret_env_var)
-        else:
-            config.azure_client_secret = None
 
         # Okta config
+        config.okta_api_key = None
         if config.okta_org_id and config.okta_api_key_env_var:
             logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
             config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
-        else:
-            config.okta_api_key = None
 
         # CRXcavator config
+        config.crxcavator_api_key = None
         if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
             logger.debug(f"Reading API key for CRXcavator from env variable {config.crxcavator_api_key_env_var}.")
             config.crxcavator_api_key = os.environ.get(config.crxcavator_api_key_env_var)
-        else:
-            config.crxcavator_api_key = None
 
         # GitHub config
+        config.github_config = None
         if config.github_config_env_var:
             logger.debug(f"Reading config string for GitHub from environment variable {config.github_config_env_var}")
             config.github_config = os.environ.get(config.github_config_env_var)
-        else:
-            config.github_config = None
 
         # DigitalOcean config
+        config.digitalocean_token = None
         if config.digitalocean_token_env_var:
             logger.debug(f"Reading token for DigitalOcean from env variable {config.digitalocean_token_env_var}")
             config.digitalocean_token = os.environ.get(config.digitalocean_token_env_var)
-        else:
-            config.digitalocean_token = None
 
         # Jamf config
+        config.jamf_user = None
+        config.jamf_password = None
         if config.jamf_base_uri:
             if config.jamf_user:
                 config.jamf_password = None
@@ -515,9 +565,6 @@ class CLI:
                 logger.warning("A Jamf base URI was provided but a user was not.")
             if not config.jamf_password:
                 logger.warning("A Jamf password could not be found.")
-        else:
-            config.jamf_user = None
-            config.jamf_password = None
 
         if config.statsd_enabled:
             logger.debug(
@@ -526,44 +573,40 @@ class CLI:
             )
 
         # Pagerduty config
+        config.pagerduty_api_key = None
         if config.pagerduty_api_key_env_var:
             logger.debug(f"Reading API key for PagerDuty from environment variable {config.pagerduty_api_key_env_var}")
             config.pagerduty_api_key = os.environ.get(config.pagerduty_api_key_env_var)
-        else:
-            config.pagerduty_api_key = None
 
         # Crowdstrike config
+        config.crowdstrike_client_id = None
         if config.crowdstrike_client_id_env_var:
             logger.debug(
                 f"Reading API key for Crowdstrike from environment variable {config.crowdstrike_client_id_env_var}",
             )
             config.crowdstrike_client_id = os.environ.get(config.crowdstrike_client_id_env_var)
-        else:
-            config.crowdstrike_client_id = None
 
+        config.crowdstrike_client_secret = None
         if config.crowdstrike_client_secret_env_var:
             logger.debug(
                 f"Reading API key for Crowdstrike from environment variable {config.crowdstrike_client_secret_env_var}",
             )
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
-        else:
-            config.crowdstrike_client_secret = None
 
         # GSuite config
+        config.github_config = None
         if config.gsuite_tokens_env_var:
             logger.debug(f"Reading config string for GSuite from environment variable {config.gsuite_tokens_env_var}")
             config.gsuite_config = os.environ.get(config.gsuite_tokens_env_var)
-        else:
-            config.github_config = None
 
         # Run cartography
         try:
-            return cartography.sync.run_with_config(self.sync, config)
+            return run_with_config(self.sync, config)
         except KeyboardInterrupt:
             return cartography.util.STATUS_KEYBOARD_INTERRUPT
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None):
     """
     Entrypoint for the default cartography command line interface.
 
@@ -577,5 +620,4 @@ def main(argv=None):
     logging.getLogger('googleapiclient').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
-    default_sync = cartography.sync.build_default_sync()
-    sys.exit(CLI(default_sync, prog='cartography').main(argv))
+    sys.exit(CLI(prog='cartography').main(argv))
