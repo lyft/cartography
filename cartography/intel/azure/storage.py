@@ -91,7 +91,8 @@ def load_storage_account_data(
     s.provisioningstate = account.provisioning_state,
     s.statusofprimary = account.status_of_primary,
     s.statusofsecondary = account.status_of_secondary,
-    s.supportshttpstrafficonly = account.enable_https_traffic_only
+    s.supportshttpstrafficonly = account.enable_https_traffic_only,
+    s.networkRuleDefaultAction = account.network_rule_set.default_action
     WITH s
     MATCH (owner:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(s)
@@ -788,6 +789,7 @@ def load_blob_services_details(
                 c['service_id'] = blob_service_id
                 c['consolelink'] = azure_console_link.get_console_link(id=c['id'],
                                                                        primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                c['public_access'] = c['public_access'].lower()
             blob_containers.extend(container)
 
     _load_blob_containers(neo4j_session, blob_containers, update_tag)
