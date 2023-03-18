@@ -32,3 +32,9 @@ def test_parse_and_validate_aws_custom_sync_profile():
         'aws_secret_access_key': '2',
         'default_region': '3',
     }
+
+    profile_based = '{"account_name": "0", "profile": "zeus"}'
+    assert parse_and_validate_aws_custom_sync_profile(profile_based) == {
+        "account_name": "0",
+        'profile': 'zeus',
+    }
