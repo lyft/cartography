@@ -108,6 +108,75 @@ def get_dataset_info(bigquery, dataset_id, project_id):
 
     return response
 
+@timeit
+def get_dataset_access_info(bigquery, dataset_id, project_id):
+    response = {}
+    try:
+        response = bigquery.datasets().get(projectId=project_id, datasetId=dataset_id).execute()
+        accesses = response.get('access',[]) 
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve Bigquery dataset info on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return {}
+        else:
+            raise
+
+    return accesses
+
+@timeit
+def transform_dataset_accesses(response_objects: List[Dict], dataset_id: str,project_id: str) -> List[Dict]:
+    """
+    Process the GCP dataset access objects and return a flattened list of GCP accesses with all the necessary fields
+    we need to load it into Neo4j
+    :param response_objects: The return data from get_dataset_access_info()
+    :return: A list of GCP GCP accesses
+    """
+    accesses_list = []
+    for res in response_objects:
+        res['id'] = f"projects/{project_id}/bigquery/{dataset_id}/role/{res['role']}"
+        accesses_list.append(res)
+    return accesses_list
+
+
+@timeit
+def attach_dataset_to_accesses(session: neo4j.Session, dataset_id: str, accesses: List[Dict], gcp_update_tag: int) -> None:
+    session.write_transaction(attach_dataset_to_accesses_tx, accesses, dataset_id, gcp_update_tag)
+
+
+@timeit
+def attach_dataset_to_accesses_tx(
+    tx: neo4j.Transaction, accesses: List[Dict],
+    dataset_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND $Records as record
+    MERGE (access:GCPAccess{id: record.id})
+    ON CREATE SET
+        access.firstseen = timestamp()
+    SET
+        access.lastupdated = $gcp_update_tag,
+        access.special_group = record.specialGroup,
+        access.role = record.role
+    WITH access
+    MATCH (dataset:GCPBigqueryDataset{id:$DatasetId})
+    MERGE (dataset)<-[a:ACCESS_TO]-(access)
+    ON CREATE SET
+        a.firstseen = timestamp()
+    SET a.lastupdated = $gcp_update_tag
+    """
+    tx.run(
+        query,
+        Records=accesses,
+        DatasetId=dataset_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
 
 @timeit
 def get_bigquery_tables(bigquery: Resource, dataset: Dict, project_id: str, common_job_parameters) -> List[Resource]:
@@ -277,6 +346,22 @@ def cleanup_gcp_bigquery(neo4j_session: neo4j.Session, common_job_parameters: Di
     """
     run_cleanup_job('gcp_bigquery_cleanup.json', neo4j_session, common_job_parameters)
 
+@timeit
+def cleanup_gcp_bigquery_accesses(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+    Delete out-of-date GCP Bigquery access and relationships
+
+    :type neo4j_session: The Neo4j session object
+    :param neo4j_session: The Neo4j session
+
+    :type common_job_parameters: dict
+    :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
+
+    :rtype: NoneType
+    :return: Nothing
+    """
+    run_cleanup_job('gcp_bigquery_access_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync(
@@ -315,10 +400,14 @@ def sync(
     label.sync_labels(neo4j_session, bigquery_datasets, gcp_update_tag, common_job_parameters, 'bigquerydataset', 'GCPBigqueryDataset')
     # BIGQUERY TABLES
     for dataset in bigquery_datasets:
+        accesses = get_dataset_access_info(bigquery, dataset['id'], project_id)
+        accesses_list = transform_dataset_accesses(accesses,dataset['id'], project_id)
+        attach_dataset_to_accesses(neo4j_session,dataset['id'],accesses_list,gcp_update_tag)
         tables = get_bigquery_tables(bigquery, dataset, project_id, common_job_parameters)
         bigquery_tables = transform_bigquery_tables(bigquery, dataset, tables, project_id)
         load_bigquery_tables(neo4j_session, bigquery_tables, project_id, gcp_update_tag)
         label.sync_labels(neo4j_session, bigquery_tables, gcp_update_tag, common_job_parameters, 'bigquerytables', 'GCPBigqueryTables')
+    cleanup_gcp_bigquery_accesses(neo4j_session, common_job_parameters)
     cleanup_gcp_bigquery(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

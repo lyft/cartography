@@ -1,7 +1,7 @@
 TEST_DATASET = [
     {
         'id': 'dataset1',
-        'details' : {
+        'details': {
             'friendlyName': 'dataset123',
             'defaultTableExpirationMs': '23',
             'defaultPartitionExpirationMs': '20',
@@ -12,7 +12,7 @@ TEST_DATASET = [
     },
     {
         'id': 'dataset2',
-        'details' : {
+        'details': {
             'friendlyName': 'dataset1234',
             'defaultTableExpirationMs': '25',
             'defaultPartitionExpirationMs': '26',
@@ -20,7 +20,7 @@ TEST_DATASET = [
             'defaultCollation': 'und:ci',
             'maxTimeTravelHours': '2'
         }
-    }   
+    }
 ]
 
 TEST_TABLE = [
@@ -45,5 +45,13 @@ TEST_TABLE = [
             'numLongTermBytes': '256',
             'numRows': '3'
         }
+    }
+]
+
+TEST_ACCESSES = [
+    {
+        'id':"projects/000000000000/bigquery/dataset1/role/WRITER",
+        'specialGroup': 'allAuthenticatedUsers',
+        'role': 'WRITER',
     }
 ]
