@@ -1,0 +1,38 @@
+DESCRIBE_TRAILS = [
+    {
+        'Name': 'trail1',
+        'S3BucketName': 'bucket-1',
+        'S3KeyPrefix': 's3_key_prefix_1',
+        'SnsTopicName': 'topic1',
+        'SnsTopicARN': 'snstopic-arn',
+        'IncludeGlobalServiceEvents': True,
+        'IsMultiRegionTrail': True,
+        'HomeRegion': 'us-central1',
+        'TrailARN': 'trail1_arn',
+        'LogFileValidationEnabled': True,
+        'CloudWatchLogsLogGroupArn': 'cloud_watch_logs_log_group_arn',
+        'CloudWatchLogsRoleArn': 'cloud_watch_logs_role_arn',
+        'KmsKeyId': 'kmskey',
+        'HasCustomEventSelectors': True,
+        'HasInsightSelectors': True,
+        'IsOrganizationTrail': True
+    },
+    {
+        'Name': 'trail2',
+        'S3BucketName': 'bucket-2',
+        'S3KeyPrefix': 's3_key_prefix_2',
+        'SnsTopicName': 'topic2',
+        'SnsTopicARN': 'snstopic-arn',
+        'IncludeGlobalServiceEvents': True,
+        'IsMultiRegionTrail': True,
+        'HomeRegion': 'us-central2',
+        'TrailARN': 'trail2_arn',
+        'LogFileValidationEnabled': True,
+        'CloudWatchLogsLogGroupArn': 'cloud_watch_logs_log_group_arn',
+        'CloudWatchLogsRoleArn': 'cloud_watch_logs_role_arn',
+        'KmsKeyId': 'kmskey',
+        'HasCustomEventSelectors': True,
+        'HasInsightSelectors': True,
+        'IsOrganizationTrail': True
+    },
+]

@@ -75,9 +75,6 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list, common
                     func['id'] = func['name']
                     func['function_name'] = func['name'].split('/')[-1]
                     func['region'] = region.get('locationId', 'global')
-                    function_entities, public_access = get_function_policy_entities(function, func, project_id)
-                    func['entities'] = function_entities
-                    func['public_access'] = public_access
                     func['consolelink'] = gcp_console_link.get_console_link(
                         resource_name='cloud_function', project_id=project_id, cloud_function_name=func['name'].split('/')[-1], region=func['region'],
                     )
@@ -113,9 +110,9 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list, common
             raise
 
 
-def get_function_policy_entities(function: Resource, fns: Dict, project_id: str) -> List[Dict]:
+def get_function_policy_bindings(function: Resource, fns: Dict, project_id: str) -> List[Dict]:
     """
-        Returns a list of users attached to IAM policy of a Function within the given project.
+        Returns a list of bindings attached to IAM policy of a Function within the given project.
 
         :type function: The GCP function resource object
         :param function: The functions resource object created by googleapiclient.discovery.build()
@@ -127,13 +124,12 @@ def get_function_policy_entities(function: Resource, fns: Dict, project_id: str)
         :param project_id: Current Google Project Id
 
         :rtype: list
-        :return: List of gcp function iam policy users
+        :return: List of gcp function iam policy bindings
     """
     try:
         iam_policy = function.projects().locations().functions().getIamPolicy(resource=fns['name']).execute()
         bindings = iam_policy.get('bindings', [])
-        entity_list, public_access = iam.transform_bindings(bindings, project_id)
-        return entity_list, public_access
+        return bindings
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
@@ -145,6 +141,20 @@ def get_function_policy_entities(function: Resource, fns: Dict, project_id: str)
             return []
         else:
             raise
+
+@timeit
+def transform_function_policy_bindings(response_objects: List[Dict], function_id: str,project_id: str) -> List[Dict]:
+    """
+    Process the GCP function_policy_binding objects and return a flattened list of GCP bindings with all the necessary fields
+    we need to load it into Neo4j
+    :param response_objects: The return data from get_gcp_function_policy_bindings()
+    :return: A list of GCP GCP bindings
+    """
+    binding_list = []
+    for res in response_objects:
+        res['id'] = f"projects/{project_id}/function/{function_id}/role/{res['role']}"
+        binding_list.append(res)
+    return binding_list
 
 
 @timeit
@@ -181,7 +191,6 @@ def _load_functions_tx(tx: neo4j.Transaction, functions: List[Resource], project
         function.entryPoint = func.entryPoint,
         function.runtime = func.runtime,
         function.timeout = func.timeout,
-        function.public_access = func.public_access,
         function.availableMemoryMb = func.availableMemoryMb,
         function.serviceAccountEmail = func.serviceAccountEmail,
         function.updateTime = func.updateTime,
@@ -251,6 +260,40 @@ def load_function_entity_relation_tx(tx: neo4j.Transaction, function: Dict, gcp_
         gcp_update_tag=gcp_update_tag,
     )
 
+@timeit
+def attach_function_to_binding(session: neo4j.Session, function_id: str, bindings: List[Dict], gcp_update_tag: int) -> None:
+    session.write_transaction(attach_function_to_bindings_tx, bindings, function_id, gcp_update_tag)
+
+
+@timeit
+def attach_function_to_bindings_tx(
+    tx: neo4j.Transaction, bindings: List[Dict],
+    function_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND $Records as record
+    MERGE (binding:GCPBinding{id: record.id})
+    ON CREATE SET
+        binding.firstseen = timestamp()
+    SET
+        binding.lastupdated = $gcp_update_tag,
+        binding.members = record.members,
+        binding.role = record.role
+    WITH binding
+    MATCH (function:GCPFunction{id: $FunctionId})
+    MERGE (function)-[a:ATTACHED_BINDING]->(binding)
+    ON CREATE SET
+        a.firstseen = timestamp()
+    SET a.lastupdated = $gcp_update_tag
+    """
+    tx.run(
+        query,
+        Records=bindings,
+        FunctionId=function_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
 
 @timeit
 def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
@@ -268,6 +311,22 @@ def cleanup_gcp_functions(neo4j_session: neo4j.Session, common_job_parameters: D
     """
     run_cleanup_job('gcp_function_cleanup.json', neo4j_session, common_job_parameters)
 
+
+@timeit
+def cleanup_function_policy_bindings(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+    Delete out-of-date GCP Bindings and relationships
+
+    :type neo4j_session: The Neo4j session object
+    :param neo4j_session: The Neo4j session
+
+    :type common_job_parameters: dict
+    :param common_job_parameters: Dictionary of other job parameters to pass to Neo4j
+
+    :rtype: NoneType
+    :return: Nothing
+    """
+    run_cleanup_job('gcp_function_policy_bindings_cleanup.json', neo4j_session, common_job_parameters)
 
 @timeit
 def sync(
@@ -301,9 +360,15 @@ def sync(
 
     # FUNCTIONS
     functions = get_gcp_functions(function, project_id, regions, common_job_parameters)
+    
     load_functions(neo4j_session, functions, project_id, gcp_update_tag)
-    for function in functions:
-        load_function_entity_relation(neo4j_session, function, gcp_update_tag)
+    for func in functions:
+        load_function_entity_relation(neo4j_session, func, gcp_update_tag)
+        bindings = get_function_policy_bindings(function,func,project_id)
+        bindings_list = transform_function_policy_bindings(bindings,func['id'],project_id)
+        attach_function_to_binding(neo4j_session, func['id'],bindings_list, gcp_update_tag)
+
+    cleanup_function_policy_bindings(neo4j_session, common_job_parameters)
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, functions, gcp_update_tag, common_job_parameters, 'functions', 'GCPFunction')
 
