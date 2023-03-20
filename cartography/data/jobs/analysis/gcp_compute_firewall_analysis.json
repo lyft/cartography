@@ -1,12 +1,12 @@
 {
     "statements": [
         {
-            "query": "MATCH (fw:GCPFirewall{unrestricted_access:true})<-[:RESOURCE]-(vpc:GCPVpc)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH fw LIMIT $LIMIT_SIZE REMOVE fw.unrestricted_access return COUNT(*) as TotalCompleted",
+            "query": "MATCH (fw:GCPFirewall{exposed_internet:true})<-[:RESOURCE]-(vpc:GCPVpc)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH fw LIMIT $LIMIT_SIZE REMOVE fw.unrestricted_access, fw.exposed_internet_type return COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 1000
         },
         {
-            "query": "MATCH (rng:IpRange)-[m:MEMBER_OF_IP_RULE]->(rule:IpRule:IpPermissionInbound:GCPIpRule)-[r:ALLOWED_BY]->(fw:GCPFirewall)<-[:RESOURCE]-(vpc:GCPVpc)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE fw.direction='INGRESS' AND fw.disabled=FALSE AND rng.id='0.0.0.0/0' AND rule.protocol IN ['tcp','udp'] AND rule.fromport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,0,53,20,21,22] AND rule.toport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,53,20,21,22,65535] \nSET fw.exposed_internet_type = coalesce(fw.exposed_internet_type, []) + ('unrestricted_inbound_traffic_ipv4') ",
+            "query": "MATCH (rng:IpRange)-[m:MEMBER_OF_IP_RULE]->(rule:IpRule:IpPermissionInbound:GCPIpRule)-[r:ALLOWED_BY]->(fw:GCPFirewall)<-[:RESOURCE]-(vpc:GCPVpc)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE fw.direction='INGRESS' AND fw.disabled=FALSE AND rng.id='0.0.0.0/0' AND rule.protocol IN ['tcp','udp'] AND rule.fromport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,0,53,20,21,22] AND rule.toport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,53,20,21,22,65535] \nSET fw.exposed_internet=true, fw.exposed_internet_type = coalesce(fw.exposed_internet_type, []) + ('unrestricted_inbound_traffic_ipv4') ",
             "iterative": false
         }
 
