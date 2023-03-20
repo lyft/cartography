@@ -1,9 +1,12 @@
 from cartography.intel.azure import key_vaults
 from tests.data.azure.key_vaults import DESCRIBE_KEYVAULTS, DESCRIBE_KEYS, DESCRIBE_SECRETS, DESCRIBE_CERTIFICATES
+from cartography.util import run_analysis_job
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
 TEST_UPDATE_TAG = 123456789
+TEST_WORKSPACE_ID = '1234'
+TEST_TENANT_ID = '1234'
 
 
 def test_load_key_vaults(neo4j_session):
@@ -31,11 +34,13 @@ def test_load_key_vaults(neo4j_session):
 def test_load_key_vaults_relationships(neo4j_session):
     neo4j_session.run(
         """
-        MERGE (as:AzureSubscription{id: $subscription_id})
+        MERGE (as:AzureSubscription{id: $subscription_id})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
         ON CREATE SET as.firstseen = timestamp()
         SET as.lastupdated = $update_tag
         """,
         subscription_id=TEST_SUBSCRIPTION_ID,
+        AZURE_TENANT_ID=TEST_TENANT_ID,
+        WORKSPACE_ID=TEST_WORKSPACE_ID,
         update_tag=TEST_UPDATE_TAG,
     )
 
@@ -215,5 +220,53 @@ def test_key_vault_certificates_relationship(neo4j_session):
         """, )
 
     actual_nodes = {(r['n1.id'], r['n2.id']) for r in result}
+
+    assert actual_nodes == expected_nodes
+
+
+def test_key_vaults_public_exposure_analysis(neo4j_session):
+    neo4j_session.run(
+        """
+        MERGE (as:AzureSubscription{id: $subscription_id})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
+        ON CREATE SET as.firstseen = timestamp()
+        SET as.lastupdated = $update_tag
+        """,
+        subscription_id=TEST_SUBSCRIPTION_ID,
+        AZURE_TENANT_ID=TEST_TENANT_ID,
+        WORKSPACE_ID=TEST_WORKSPACE_ID,
+        update_tag=TEST_UPDATE_TAG,
+    )
+
+    key_vaults.load_key_vaults(
+        neo4j_session,
+        TEST_SUBSCRIPTION_ID,
+        DESCRIBE_KEYVAULTS,
+        TEST_UPDATE_TAG,
+    )
+
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG + 1,
+        "WORKSPACE_ID": TEST_WORKSPACE_ID,
+        "AZURE_SUBSCRIPTION_ID": TEST_SUBSCRIPTION_ID,
+        "AZURE_TENANT_ID": TEST_TENANT_ID
+    }
+
+    run_analysis_job(
+        'azure_keyvault_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    expected_nodes = {
+        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2',
+         'default_network_access'),
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (r:AzureKeyVault{exposed_internet: true}) RETURN r.id, r.exposed_internet_type;
+        """,
+    )
+    actual_nodes = {(n['r.id'], ",".join(n['r.exposed_internet_type'])) for n in nodes}
 
     assert actual_nodes == expected_nodes
