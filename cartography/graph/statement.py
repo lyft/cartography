@@ -117,7 +117,7 @@ class GraphStatement:
         """
         self.parameters["LIMIT_SIZE"] = self.iterationsize
 
-        while True:
+        while True:  # TODO if there are 0 things to clean up, then we will hang forever
             result: neo4j.Result = session.write_transaction(self._run_noniterative)
 
             # Exit if we have finished processing all items
