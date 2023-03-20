@@ -124,7 +124,7 @@ DESCRIBE_DATABASE_ACCOUNTS = [
         "tags": {},
         "provisioning_state": "Succeeded",
         "document_endpoint": "https://ddb1.documents.azure.com:444/",
-        "is_virtual_network_filter_enabled": True,
+        "is_virtual_network_filter_enabled": False,
         "enable_automatic_failover": True,
         "enable_multiple_write_locations": True,
         "database_account_offer_type": "Standard",
