@@ -854,7 +854,7 @@ def get_transparent_data_encryptions(credentials: Credentials, subscription_id: 
 
 
 @timeit
-def get_firewall_rules(credentials: Credentials, subscription_id: str, server: List[Dict],) -> List[Dict]:
+def get_firewall_rules(credentials: Credentials, subscription_id: str, server: Dict,) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         firewall_rules = list(
