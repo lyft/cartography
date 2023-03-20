@@ -1,4 +1,5 @@
 from cartography.intel.azure import compute
+from cartography.intel.azure import network
 from tests.data.azure.compute import DESCRIBE_DISKS
 from tests.data.azure.compute import DESCRIBE_SNAPSHOTS
 from tests.data.azure.compute import DESCRIBE_VM_DATA_DISKS
@@ -7,10 +8,22 @@ from tests.data.azure.compute import DESCRIBE_VMEXTENSIONS
 from tests.data.azure.compute import DESCRIBE_VMS
 from tests.data.azure.compute import DESCRIBE_VMSCALESETEXTENSIONS
 from tests.data.azure.compute import DESCRIBE_VMSCALESETS
+from tests.data.azure.network import DESCRIBE_NETWORKSECURITYGROUPS
+from tests.data.azure.network import DESCRIBE_NETWORKSECURITYRULES
+from tests.data.azure.network import DESCRIBE_NETWORKINTERFACES
+from tests.data.azure.network import DESCRIBE_PUBLICIPADDRESSES
+from tests.data.azure.network import DESCRIBE_PUBLICIPADDRESSES_REFERENCE
+from tests.data.azure.network import DESCRIBE_NETWORKSUBNETS
+from tests.data.azure.network import DESCRIBE_ROUTETABLE
+from tests.data.azure.network import DESCRIBE_NETWORKROUTE
+from tests.data.azure.network import DESCRIBE_NETWORKS
+from cartography.util import run_analysis_job
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
 TEST_UPDATE_TAG = 123456789
+TEST_WORKSPACE_ID = '123'
+TEST_TENANT_ID = '123'
 
 
 def test_load_vms(neo4j_session):
@@ -527,3 +540,119 @@ def test_load_vm_scale_set_extensions_relationships(neo4j_session):
     actual = {(r['n1.id'], r['n2.id']) for r in result}
 
     assert actual == expected
+
+
+def test_vm_public_exposure_analysis(neo4j_session):
+    neo4j_session.run(
+        """
+        MERGE (as:AzureSubscription{id: $subscription_id})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
+        ON CREATE SET as.firstseen = timestamp()
+        SET as.lastupdated = $update_tag
+        """,
+        subscription_id=TEST_SUBSCRIPTION_ID,
+        AZURE_TENANT_ID=TEST_TENANT_ID,
+        WORKSPACE_ID=TEST_WORKSPACE_ID,
+        update_tag=TEST_UPDATE_TAG,
+    )
+
+    network.load_network_security_groups(
+        neo4j_session,
+        TEST_SUBSCRIPTION_ID,
+        DESCRIBE_NETWORKSECURITYGROUPS,
+        TEST_UPDATE_TAG,
+    )
+
+    network.load_network_security_rules(
+        neo4j_session,
+        DESCRIBE_NETWORKSECURITYRULES,
+        TEST_UPDATE_TAG,
+    )
+
+    network.load_network_interfaces(
+        neo4j_session,
+        TEST_SUBSCRIPTION_ID,
+        DESCRIBE_NETWORKINTERFACES,
+        TEST_UPDATE_TAG
+    )
+
+    network.load_public_ip_addresses(
+        neo4j_session,
+        TEST_SUBSCRIPTION_ID,
+        DESCRIBE_PUBLICIPADDRESSES,
+        TEST_UPDATE_TAG
+    )
+
+    network.load_public_ip_network_interfaces_relationship(
+        neo4j_session,
+        "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic",
+        DESCRIBE_PUBLICIPADDRESSES_REFERENCE,
+        TEST_UPDATE_TAG
+    )
+
+    network.load_networks(
+        neo4j_session,
+        TEST_SUBSCRIPTION_ID,
+        DESCRIBE_NETWORKS,
+        TEST_UPDATE_TAG,
+    )
+
+    network.load_networks_subnets(
+        neo4j_session,
+        DESCRIBE_NETWORKSUBNETS,
+        TEST_UPDATE_TAG
+    )
+
+    network.load_network_routetables(
+        neo4j_session,
+        TEST_SUBSCRIPTION_ID,
+        DESCRIBE_ROUTETABLE,
+        TEST_UPDATE_TAG
+    )
+
+    network.attach_network_routetables_to_subnet(
+        neo4j_session,
+        DESCRIBE_ROUTETABLE,
+        TEST_UPDATE_TAG
+    )
+
+    network.load_network_routes(
+        neo4j_session,
+        DESCRIBE_NETWORKROUTE,
+        TEST_UPDATE_TAG
+    )
+
+    compute.load_vms(
+        neo4j_session,
+        TEST_SUBSCRIPTION_ID,
+        DESCRIBE_VMS,
+        TEST_UPDATE_TAG,
+    )
+
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG + 1,
+        "WORKSPACE_ID": TEST_WORKSPACE_ID,
+        "AZURE_SUBSCRIPTION_ID": TEST_SUBSCRIPTION_ID,
+        "AZURE_TENANT_ID": TEST_TENANT_ID
+    }
+
+    run_analysis_job(
+        'azure_vm_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    expected_nodes = {
+        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM',
+         'direct_ipv4,public_ip,inbound_public_ports,public_icmp,public_subnet'),
+        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1',
+            'direct_ipv4,inbound_public_ports,public_icmp,public_subnet'),
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (r:AzureVirtualMachine{exposed_internet: true}) RETURN r.id, r.exposed_internet_type;
+        """,
+    )
+    actual_nodes = {(n['r.id'], ",".join(n['r.exposed_internet_type'])) for n in nodes}
+
+    assert actual_nodes == expected_nodes

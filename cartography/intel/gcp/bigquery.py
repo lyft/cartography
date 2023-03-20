@@ -313,12 +313,14 @@ def sync(
     bigquery_datasets = transform_bigquery_dataset(bigquery, datasets, project_id)
     load_bigquery_datasets(neo4j_session, bigquery_datasets, project_id, gcp_update_tag)
     label.sync_labels(neo4j_session, bigquery_datasets, gcp_update_tag, common_job_parameters, 'bigquerydataset', 'GCPBigqueryDataset')
+
     # BIGQUERY TABLES
     for dataset in bigquery_datasets:
         tables = get_bigquery_tables(bigquery, dataset, project_id, common_job_parameters)
         bigquery_tables = transform_bigquery_tables(bigquery, dataset, tables, project_id)
         load_bigquery_tables(neo4j_session, bigquery_tables, project_id, gcp_update_tag)
-        label.sync_labels(neo4j_session, bigquery_tables, gcp_update_tag, common_job_parameters, 'bigquerytables', 'GCPBigqueryTables')
+        label.sync_labels(neo4j_session, bigquery_tables, gcp_update_tag, common_job_parameters, 'bigquerytable', 'GCPBigqueryTable')
+
     cleanup_gcp_bigquery(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

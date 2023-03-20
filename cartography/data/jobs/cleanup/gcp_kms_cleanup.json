@@ -13,6 +13,18 @@
 			"__comment__": "Remove GCP GCPKMSCryptoKey-to-Keyrings relationships that are out of date."
 		},
 		{
+			"query": "MATCH (n:GCPBinding)<-[:ATTACHED_BINDING]-(:GCPKMSKeyRing)<-[:RESOURCE]-(:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP KMS Keyring Bindings that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPBinding)<-[a:ATTACHED_BINDING]-(:GCPKMSKeyRing)<-[:RESOURCE]-(:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE a.lastupdated <> $UPDATE_TAG WITH a LIMIT $LIMIT_SIZE DELETE (a) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP KMS Keyring to Binding relationships  that are out of date."
+		},
+		{
 			"query": "MATCH (n:GCPKMSKeyRing)<-[:RESOURCE]-(:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100,
