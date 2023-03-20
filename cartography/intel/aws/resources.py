@@ -47,6 +47,7 @@ from .ec2.tgw import sync_transit_gateways
 from .ec2.volumes import sync_ebs_volumes
 from .ec2.vpc import sync_vpc
 from .ec2.vpc_peerings import sync_vpc_peerings
+from .ec2.route_tables import sync_route_tables
 
 RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,
@@ -64,7 +65,8 @@ RESOURCE_FUNCTIONS: Dict = {
 
     'ssm': ssm.sync,
     'inspector': inspector.sync,
-
+    'ec2:route_table': sync_route_tables,
+    'ec2:subnet': sync_subnets,
     'ec2:instance': sync_ec2_instances,
     'ec2:images': sync_ec2_images,
     'ec2:keypair': sync_ec2_key_pairs,
@@ -72,7 +74,6 @@ RESOURCE_FUNCTIONS: Dict = {
     'ec2:load_balancer_v2': sync_load_balancer_v2s,
     'ec2:network_interface': sync_network_interfaces,
     'ec2:security_group': sync_ec2_security_groupinfo,
-    'ec2:subnet': sync_subnets,
     'ec2:tgw': sync_transit_gateways,
     'ec2:vpc': sync_vpc,
     'ec2:vpc_peering': sync_vpc_peerings,

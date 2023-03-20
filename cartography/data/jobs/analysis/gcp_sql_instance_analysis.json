@@ -1,0 +1,14 @@
+{
+    "statements": [
+        {
+            "query": "MATCH (i:GCPSQLInstance{exposed_internet:true})<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH i LIMIT $LIMIT_SIZE REMOVE i.exposed_internet, i.exposed_internet_type return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 1000
+        },
+        {
+            "query": "MATCH (i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE '0.0.0.0/0' IN i.authorized_networks \nSET i.exposed_internet = true, i.exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'unrestricted_access'",
+            "iterative": false
+        }
+    ],
+    "name": "GCP SQL Instance unrestricted access analysis"
+}
