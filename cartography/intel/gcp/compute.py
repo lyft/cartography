@@ -562,9 +562,6 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
         )
         x = res['zone_name'].split('-')
         res['region'] = f"{x[0]}-{x[1]}"
-        res['network_list']=[]
-        for network in res.get('networkInterfaces',[]):
-            res['network_list'].append(network['network'])
         
         for nic in res.get('networkInterfaces', []):
             nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
@@ -957,7 +954,6 @@ def load_gcp_instances_tx(tx: neo4j.Transaction, instances: Dict, gcp_update_tag
     i.accessConfig = instance.accessConfig,
     i.status = instance.status,
     i.consolelink = instance.consolelink,
-    i.network_list = instance.network_list,
     i.lastupdated = $gcp_update_tag
     WITH i, p
 
