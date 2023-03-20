@@ -1,7 +1,7 @@
 {
     "statements": [
         {
-            "query": "MATCH (fw:GCPFirewall{exposed_internet:true})<-[:RESOURCE]-(vpc:GCPVpc)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH fw LIMIT $LIMIT_SIZE REMOVE fw.unrestricted_access, fw.exposed_internet_type return COUNT(*) as TotalCompleted",
+            "query": "MATCH (fw:GCPFirewall{exposed_internet:true})<-[:RESOURCE]-(vpc:GCPVpc)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH fw LIMIT $LIMIT_SIZE REMOVE fw.exposed_internet, fw.exposed_internet_type return COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 1000
         },
