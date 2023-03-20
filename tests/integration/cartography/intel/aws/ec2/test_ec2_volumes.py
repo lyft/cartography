@@ -1,7 +1,13 @@
+from unittest.mock import MagicMock
+from unittest.mock import patch
+
 import cartography.intel.aws.ec2.instances
 import cartography.intel.aws.ec2.volumes
 import tests.data.aws.ec2.instances
 import tests.data.aws.ec2.volumes
+from cartography.intel.aws.ec2.instances import sync_ec2_instances
+from tests.data.aws.ec2.instances import DESCRIBE_INSTANCES
+
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'eu-west-1'
@@ -80,11 +86,17 @@ def test_load_volume_to_account_rels(neo4j_session):
     assert actual == expected
 
 
-def test_load_volume_to_instance_rels(neo4j_session):
+@patch.object(cartography.intel.aws.ec2.instances, 'get_ec2_instances', return_value=DESCRIBE_INSTANCES['Reservations'])
+def test_load_volume_to_instance_rels(mock_get_instances, neo4j_session):
     # Arrange: Load in ec2 instances first
-    instance_data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
-    cartography.intel.aws.ec2.instances.load_ec2_instances(
-        neo4j_session, instance_data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+    boto3_session = MagicMock()
+    sync_ec2_instances(
+        neo4j_session,
+        boto3_session,
+        [TEST_REGION],
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+        {'UPDATE_TAG': TEST_UPDATE_TAG, 'AWS_ID': TEST_ACCOUNT_ID},
     )
     # Prep the volume data
     raw_volumes = tests.data.aws.ec2.volumes.DESCRIBE_VOLUMES
