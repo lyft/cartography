@@ -455,13 +455,13 @@ def get_regional_url_maps(compute: Resource, project_id: str, region: Dict) -> L
 
 
 @timeit
-def transform_regional_url_maps(url_maps: List[Dict], region: Dict, project_id: str) -> List[Dict]:
+def transform_regional_url_maps(url_maps: List[Dict], region: str, project_id: str) -> List[Dict]:
     regional_url_maps = []
     for url_map in url_maps:
         url_map['region'] = region
         url_map['type'] = 'regional'
         url_map['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cdn_home')
-        url_map['id'] = f"projects/{project_id}/regions/{region['name']}/urlmaps/{url_map['name']}"
+        url_map['id'] = f"projects/{project_id}/regions/{region}/urlmaps/{url_map['name']}"
         regional_url_maps.append(url_map)
 
     return regional_url_maps
