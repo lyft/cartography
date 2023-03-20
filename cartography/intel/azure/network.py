@@ -32,6 +32,10 @@ def load_network_routetables(
     session.write_transaction(_load_network_routetables_tx, subscription_id, data_list, update_tag)
 
 
+def attach_network_routetables_to_subnet(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_attach_network_routetables_to_subnet_tx, data_list, update_tag)
+
+
 def load_network_routes(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_network_routes_tx, data_list, update_tag)
 
@@ -304,6 +308,26 @@ def _load_network_routetables_tx(
     )
 
 
+def _attach_network_routetables_to_subnet_tx(
+    tx: neo4j.Transaction, network_routetables_list: List[Dict], update_tag: int,
+) -> None:
+    attach_routetables_subnet = """
+    UNWIND $network_routetables_list AS routetable
+    MATCH (n:AzureRouteTable{id: routetable.id})
+    UNWIND routetable.subnets as subnet
+    MATCH (snet:AzureNetworkSubnet{id: subnet.id})
+    MERGE (snet)-[r:CONTAIN]->(n)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        attach_routetables_subnet,
+        network_routetables_list=network_routetables_list,
+        update_tag=update_tag
+    )
+
+
 def cleanup_network_routetables(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_network_routetables_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -314,6 +338,7 @@ def sync_network_routetables(
 ) -> None:
     network_routetables_list = get_network_routetables_list(client, regions, common_job_parameters)
     load_network_routetables(neo4j_session, subscription_id, network_routetables_list, update_tag)
+    attach_network_routetables_to_subnet(neo4j_session, network_routetables_list, update_tag)
     cleanup_network_routetables(neo4j_session, common_job_parameters)
     sync_network_routes(neo4j_session, network_routetables_list, client, update_tag, common_job_parameters)
 
@@ -357,7 +382,9 @@ def _load_network_routes_tx(
     ON CREATE SET n.firstseen = timestamp(),
     n.type = route.type
     SET n.name = route.name,
-    n.region= route.location,
+    n.region = route.location,
+    n.address_prefix = route.address_prefix,
+    n.next_hop_type = route.next_hop_type,
     n.consolelink = route.consolelink,
     n.lastupdated = $azure_update_tag,
     n.etag=route.etag
@@ -489,6 +516,7 @@ def get_network_security_rules_list(
                 rule['location'] = rule.get('location', 'global')
                 rule['access'] = rule.get('access', 'Deny')
                 rule['source_port_range'] = rule.get('source_port_range', None)
+                rule['destination_port_range'] = rule.get('destination_port_range', None)
                 rule['source_address_prefix'] = rule.get('source_address_prefix', None)
                 rule['protocol'] = rule.get('protocol', None)
                 rule['direction'] = rule.get('direction', None)
@@ -522,6 +550,7 @@ def _load_network_security_rules_tx(
     n.destination_address_prefix = rule.destination_address_prefix,
     n.source_address_prefix = rule.source_address_prefix,
     n.destination_port_ranges = rule.destination_port_ranges,
+    n.destination_port_range = rule.destination_port_range,
     n.type = rule.type
     SET n.name = rule.name,
     n.region= rule.location,
