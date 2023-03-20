@@ -13,6 +13,9 @@ CLOUD_SQL_INSTANCES = [
         'gceZone': 'us-west-1a',
         'secondaryGceZone': 'us-west-1b',
         'satisfiesPzs': True,
+        'authorizedNetworksList': [
+            '0.0.0.0/0', '192.168.10.1',
+        ],
         'createTime': '2021-10-15T16:19:00.094Z',
     },
     {
@@ -29,6 +32,9 @@ CLOUD_SQL_INSTANCES = [
         'gceZone': 'us-east-1a',
         'secondaryGceZone': 'us-east-1b',
         'satisfiesPzs': True,
+        'authorizedNetworksList': [
+            '192.168.10.1',
+        ],
         'createTime': '2021-9-9T16:19:00.094Z',
     },
 ]

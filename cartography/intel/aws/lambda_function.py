@@ -14,6 +14,8 @@ from cloudconsolelink.clouds.aws import AWSLinker
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from policyuniverse.policy import Policy
+import json
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
@@ -32,9 +34,11 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
         for each_function in page['Functions']:
             each_function['region'] = region
             each_function['consolelink'] = aws_console_link.get_console_link(arn=each_function['FunctionArn'])
-            each_function['isPublicFacing'] = False
-            if not each_function.get('VpcConfig', {}).get('VpcId'):
-                each_function['isPublicFacing'] = True
+            policy = client.get_policy(FunctionName=each_function['FunctionArn'])
+            if policy is not None:
+                parsed_policy = Policy(json.loads(policy['Policy']))
+                each_function['anonymous_access'] = parsed_policy.is_internet_accessible()
+                each_function['anonymous_actions'] = list(parsed_policy.internet_accessible_actions())
             lambda_functions.append(each_function)
     return lambda_functions
 
@@ -52,7 +56,8 @@ def load_lambda_functions(
     lambda.region = lf.region,
     lambda.modifieddate = lf.LastModified,
     lambda.runtime = lf.Runtime,
-    lambda.isPublicFacing = lf.isPublicFacing,
+    lambda.anonymous_access = lf.anonymous_access,
+    lambda.anonymous_actions = lf.anonymous_actions,
     lambda.consolelink = lf.consolelink,
     lambda.description = lf.Description,
     lambda.timeout = lf.Timeout,
@@ -75,7 +80,8 @@ def load_lambda_functions(
     lambda.architectures = lf.Architectures,
     lambda.masterarn = lf.MasterArn,
     lambda.kmskeyarn = lf.KMSKeyArn,
-    lambda.lastupdated = $aws_update_tag
+    lambda.lastupdated = $aws_update_tag,
+    lambda.vpc_id = CASE WHEN lf.VpcConfig.VpcId is not null then lf.VpcConfig.VpcId ELSE lambda.vpc_id END
     WITH lambda, lf
     MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(lambda)
