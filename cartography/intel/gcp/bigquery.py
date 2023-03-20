@@ -122,7 +122,7 @@ def get_dataset_access_info(bigquery, dataset_id, project_id):
                     "Could not retrieve Bigquery dataset info on project %s due to permissions issues. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
-            return {}
+            return []
         else:
             raise
 
@@ -156,7 +156,7 @@ def attach_dataset_to_accesses_tx(
 
     query = """
     UNWIND $Records as record
-    MERGE (access:GCPAccess{id: record.id})
+    MERGE (access:GCPAcl{id: record.id})
     ON CREATE SET
         access.firstseen = timestamp()
     SET
@@ -165,7 +165,7 @@ def attach_dataset_to_accesses_tx(
         access.role = record.role
     WITH access
     MATCH (dataset:GCPBigqueryDataset{id:$DatasetId})
-    MERGE (dataset)<-[a:ACCESS_TO]-(access)
+    MERGE (dataset)<-[a:APPLIES_TO]-(access)
     ON CREATE SET
         a.firstseen = timestamp()
     SET a.lastupdated = $gcp_update_tag
@@ -407,7 +407,7 @@ def sync(
         bigquery_tables = transform_bigquery_tables(bigquery, dataset, tables, project_id)
         load_bigquery_tables(neo4j_session, bigquery_tables, project_id, gcp_update_tag)
         label.sync_labels(neo4j_session, bigquery_tables, gcp_update_tag, common_job_parameters, 'bigquerytables', 'GCPBigqueryTables')
-    cleanup_gcp_bigquery_accesses(neo4j_session, common_job_parameters)
+
     cleanup_gcp_bigquery(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

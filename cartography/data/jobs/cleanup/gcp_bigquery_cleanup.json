@@ -13,6 +13,12 @@
 			"__comment__": "Remove GCP GCPBigqueryTable-to-GCPBigqueryDataset relationships that are out of date."
 		},
 		{
+			"query": "MATCH (n:GCPAcl)-[:APPLIES_TO]->(:GCPBigqueryDataset)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP Access that no longer exist and detach them from all previously connected nodes."
+		},
+		{
 			"query": "MATCH (n:GCPBigqueryDataset)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100,
