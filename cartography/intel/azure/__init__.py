@@ -145,7 +145,13 @@ def _sync_multiple_subscriptions(
         )
 
         run_analysis_job(
-            'azure_vm_public_facing_asset_exposure.json',
+            'azure_network_security_group_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters
+        )
+
+        run_analysis_job(
+            'azure_vm_asset_exposure.json',
             neo4j_session,
             common_job_parameters,
         )
@@ -163,6 +169,12 @@ def _sync_multiple_subscriptions(
 
         run_analysis_job(
             'azure_cosmosdb_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters
+        )
+
+        run_analysis_job(
+            'azure_keyvault_asset_exposure.json',
             neo4j_session,
             common_job_parameters
         )

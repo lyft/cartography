@@ -226,14 +226,10 @@ def test_ec2_asset_exposure(neo4j_session):
     )
 
     expected_nodes = {
-        ('i-01',
-         'subnet, vpc_none'),
-        ('i-02',
-         'subnet, vpc_none'),
-        ('i-03',
-         'subnet, vpc_none'),
-        ('i-04',
-         'subnet, vpc_none'),
+        ('i-03', 'public_ip, public_subnet_ipv4'),
+        ('i-04', 'public_ip, public_subnet_ipv6'),
+        ('i-02', 'public_ip, public_subnet_ipv4'),
+        ('i-01', 'public_ip, public_subnet_ipv6'),
     }
 
     nodes = neo4j_session.run(

@@ -517,6 +517,11 @@ def _sync_multiple_projects(
                 common_job_parameters,
             )
             run_analysis_job(
+                'gcp_kms_keyring_analysis.json',
+                neo4j_session,
+                common_job_parameters,
+            )
+            run_analysis_job(
                 'gcp_cloud_function_analysis.json',
                 neo4j_session,
                 common_job_parameters,

@@ -22,11 +22,11 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (elbv2:LoadBalancerV2{scheme: 'internet-facing'})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) with elbv2 WHERE (NOT EXISTS(elbv2.exposed_internet_type)) OR (NOT 'scheme' IN elbv2.exposed_internet_type) SET elbv2.exposed_internet = true, elbv2.exposed_internet_type = coalesce(elbv2.exposed_internet_type, []) + 'scheme'",
+			"query": "MATCH (elbv2:LoadBalancerV2{scheme: 'internet-facing'})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET elbv2.exposed_internet = true,(CASE WHEN NOT 'scheme' IN coalesce(elbv2.exposed_internet_type , []) THEN elbv2 END).exposed_internet_type = coalesce(elbv2.exposed_internet_type , []) + 'scheme';",
 			"iterative": false
 		},
 		{
-			"query": "MATCH (elb:LoadBalancer{scheme: 'internet-facing'})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) with elb WHERE (NOT EXISTS(elb.exposed_internet_type)) OR (NOT 'scheme' IN elb.exposed_internet_type) SET elb.exposed_internet = true, elb.exposed_internet_type = coalesce(elb.exposed_internet_type, []) + 'scheme'",
+			"query": "MATCH (elb:LoadBalancer{scheme: 'internet-facing'})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET elb.exposed_internet = true,(CASE WHEN NOT 'scheme' IN coalesce(elb.exposed_internet_type , []) THEN elb END).exposed_internet_type = coalesce(elb.exposed_internet_type , []) + 'scheme';",
 			"iterative": false
 		}
 	],
