@@ -350,12 +350,13 @@ def get_cloudrun_routes(cloudrun: Resource, project_id: str, common_job_paramete
 
 @timeit
 def transform_routes(routes: List[Dict], project_id: str) -> List[Dict]:
+    items = []
     for item in routes:
         item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloudrun_home')
         item['id'] = f"projects/{project_id}/routes/{item.get('metadata').get('name')}"
-        routes.append(item)
+        items.append(item)
 
-    return routes
+    return items
 
 
 @timeit
@@ -702,7 +703,7 @@ def _load_cloudrun_routes_tx(
         route.firstseen = timestamp()
     SET
         route.name = rt.metadata.name,
-        route.namspace = rt.metadata.namespace,
+        route.namespace = rt.metadata.namespace,
         route.selfLink = rt.metadata.selfLink,
         route.uid = rt.metadata.uid,
         route.region = $region,
@@ -842,6 +843,7 @@ def sync(
         neo4j_session, domains, gcp_update_tag, common_job_parameters,
         'cloudrun authorized domains', 'GCPCloudRunAuthorizedDomain',
     )
+
     # CLOUDRUN CONFIGURATIONS
     configs = get_cloudrun_configurations(cloudrun, project_id, common_job_parameters)
     configurations = transform_configurations(configs, project_id)
@@ -850,6 +852,7 @@ def sync(
         neo4j_session, configurations, gcp_update_tag, common_job_parameters,
         'cloudrun configurations', 'GCPCloudRunConfiguration',
     )
+
     # CLOUDRUN DOMAIN MAPPINGS
     domainmappings = get_cloudrun_domainmappings(cloudrun, project_id, common_job_parameters)
     mappings = transform_mappings(domainmappings, project_id)
@@ -858,6 +861,7 @@ def sync(
         neo4j_session, domainmappings, gcp_update_tag, common_job_parameters,
         'cloudrun domainmappings', 'GCPCloudRunDomainMap',
     )
+
     # CLOUDRUN REVISIONS
     revs = get_cloudrun_revisions(cloudrun, project_id, common_job_parameters)
     revisions = transform_revisions(revs, project_id)
@@ -866,6 +870,7 @@ def sync(
         neo4j_session, revisions, gcp_update_tag, common_job_parameters,
         'cloudrun revisions', 'GCPCloudRunRevision',
     )
+
     # CLOUDRUN ROUTES
     rts = get_cloudrun_routes(cloudrun, project_id, common_job_parameters)
     routes = transform_routes(rts, project_id)
@@ -874,6 +879,7 @@ def sync(
         neo4j_session, routes, gcp_update_tag,
         common_job_parameters, 'cloudrun routes', 'GCPCloudRunRoute',
     )
+
     # CLOUDRUN SERVICES
     svcs = get_cloudrun_services(cloudrun, project_id, common_job_parameters)
     services = transform_services(svcs, project_id)

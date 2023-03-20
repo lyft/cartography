@@ -96,7 +96,7 @@ DESCRIBE_DBINSTANCES_RESPONSE = {
                         "SubnetAvailabilityZone": {
                             "Name": "us-east-1a",
                         },
-                        "SubnetIdentifier": "subnet-abcd",
+                        "SubnetIdentifier": "subnet-020b2f3928f190ce8",
                         "SubnetStatus": "Active",
                     },
                     {
@@ -152,14 +152,14 @@ DESCRIBE_DBINSTANCES_RESPONSE = {
             "PreferredBackupWindow": "03:36-04:06",
             "PreferredMaintenanceWindow": "fri:04:01-fri:04:31",
             "PromotionTier": 0,
-            "PubliclyAccessible": False,
+            "PubliclyAccessible": True,
             "ReadReplicaDBInstanceIdentifiers": [],
             "StorageEncrypted": True,
             "StorageType": "aurora",
             "VpcSecurityGroups": [
                 {
                     "Status": "active",
-                    "VpcSecurityGroupId": "sg-some-othersg",
+                    "VpcSecurityGroupId": "sg-028e2522c72719996",
                 },
                 {
                     "Status": "active",
@@ -251,5 +251,84 @@ DESCRIBE_DBSNAPSHOTS_RESPONSE = {
             "SnapshotTarget": "some-snapshot-target",
             "StorageThroughput": 1234,
         },
+        {
+            "DBSnapshotIdentifier": "some-other-db-snapshot-identifier",
+            "DBInstanceIdentifier": "some-prod-db-iad-0",
+            "SnapshotCreateTime": datetime.datetime(2022, 8, 15, 1, 58, 59, 852000),
+            "Engine": "aurora-postgresql",
+            "AllocatedStorage": 1,
+            "Status": "available",
+            "Port": 27017,
+            "AvailabilityZone": "us-east-1e",
+            "VpcId": "vpc-some-vpc",
+            "InstanceCreateTime": datetime.datetime(2021, 8, 15, 1, 58, 59, 852000),
+            "MasterUsername": "test_user",
+            "EngineVersion": "3.6.0",
+            "LicenseModel": "postgresql-license",
+            "SnapshotType": "automated",
+            "Iops": 1234,
+            "OptionGroupName": "default:aurora-postgresql-9-6",
+            "PercentProgress": 10,
+            "SourceRegion": "us-eat-1",
+            "SourceDBSnapshotIdentifier": "some-other-source-db-snapshot-identifier",
+            "StorageType": "aurora",
+            "TdeCredentialArn": "some-tde-credential-arn",
+            "Encrypted": True,
+            "KmsKeyId": "arn:aws:kms:us-east-2:some-arn:key/some-guid",
+            "DBSnapshotArn": "arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0",
+            "Timezone": "utc",
+            "IAMDatabaseAuthenticationEnabled": True,
+            "ProcessorFeatures": [],
+            "DbiResourceId": "some-dbi-resource-id",
+            "TagList": [],
+            "OriginalSnapshotCreateTime": datetime.datetime(2022, 1, 1),
+            "SnapshotDatabaseTime": datetime.datetime(2022, 1, 1),
+            "SnapshotTarget": "some-snapshot-target",
+            "StorageThroughput": 1234,
+        },
     ],
 }
+
+
+DESCRIBE_DBSNAPSHOT_ATTRIBUTE_RESPONSE = [
+    {
+        'DBSnapshotIdentifier': 'some-db-snapshot-identifier',
+        'DBSnapshotAttributes': [
+            {
+                'AttributeName': 'backup',
+                'AttributeValues': [
+                    'all',
+                ]
+            },
+            {
+                'AttributeName': 'attrib-1',
+                'AttributeValues': [
+                    'all',
+                ]
+            }
+        ]
+    },
+    {
+        'DBSnapshotIdentifier': 'some-other-db-snapshot-identifier',
+        'DBSnapshotAttributes': [
+            {
+                'AttributeName': 'backup',
+                'AttributeValues': [
+                    'all',
+                ]
+            },
+            {
+                'AttributeName': 'attrib-1',
+                'AttributeValues': [
+                    'all',
+                ]
+            },
+            {
+                'AttributeName': 'restore',
+                'AttributeValues': [
+                    'all',
+                ]
+            }
+        ]
+    }
+]

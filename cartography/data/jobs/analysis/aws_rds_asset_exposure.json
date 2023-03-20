@@ -1,0 +1,30 @@
+{
+	"statements": [
+		{
+			"query": "MATCH (n)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) where EXISTS(n.exposed_internet) AND labels(n) IN ['RDSInstance', 'RDSSnapshot'] WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (cidr:IpRange{range:'0.0.0.0/0'})—[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)—[:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(rds:RDSInstance{publicly_accessible: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET rds.exposed_internet = true,(CASE WHEN NOT 'direct_ipv4' IN coalesce(rds.exposed_internet_type , []) THEN rds END).exposed_internet_type = coalesce(rds.exposed_internet_type , []) + 'direct_ipv4';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (cidr:Ipv6Range{range:'::/0'})—[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)—[:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(rds:RDSInstance{publicly_accessible: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET rds.exposed_internet = true,(CASE WHEN NOT 'direct_ipv6' IN coalesce(rds.exposed_internet_type , []) THEN rds END).exposed_internet_type = coalesce(rds.exposed_internet_type , []) + 'direct_ipv6';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (route:EC2Route{destination_cidr_block: '0.0.0.0/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation)<-[:HAS_EXPLICIT_ASSOCIATION|:HAS_IMPLICIT_ASSOCIATION]-(:EC2Subnet)<-[:RESOURCE]-(:DBSubnetGroup)<-[:MEMBER_OF_DB_SUBNET_GROUP]-(rds:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE route.gateway_id STARTS WITH 'igw-' SET rds.exposed_internet = true,(CASE WHEN NOT 'public_subnet_ipv4' IN coalesce(rds.exposed_internet_type , []) THEN rds END).exposed_internet_type = coalesce(rds.exposed_internet_type , []) + 'public_subnet_ipv4';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (route:EC2Route{destination_ipv6_cidr_block: '::/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation)<-[:HAS_EXPLICIT_ASSOCIATION|:HAS_IMPLICIT_ASSOCIATION]-(:EC2Subnet)<-[:RESOURCE]-(:DBSubnetGroup)<-[:MEMBER_OF_DB_SUBNET_GROUP]-(rds:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE route.gateway_id STARTS WITH 'igw-' SET rds.exposed_internet = true,(CASE WHEN NOT 'public_subnet_ipv6' IN coalesce(rds.exposed_internet_type , []) THEN rds END).exposed_internet_type = coalesce(rds.exposed_internet_type , []) + 'public_subnet_ipv6';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (attrib:RDSSnapshotAttribute{name: 'restore'})<-[HAS_ATTRIBUTE]-(snapshot:RDSSnapshot)<-[:IS_SNAPSHOT_SOURCE]-(rds:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'all' IN attrib.values SET snapshot.exposed_internet = true,(CASE WHEN NOT 'restore_all_attrib' IN coalesce(snapshot.exposed_internet_type , []) THEN snapshot END).exposed_internet_type = coalesce(snapshot.exposed_internet_type , []) + 'restore_all_attrib';",
+			"iterative": false
+		}
+	],
+	"name": "aws rds asset internet exposure"
+}
