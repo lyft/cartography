@@ -111,9 +111,6 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                         key_ring['id'] = key_ring['name']
                         key_ring['key_ring_name'] = key_ring['name'].split('/')[-1]
                         key_ring['region'] = loc.get("locationId", "global")
-                        #key_ring_entities, public_access = get_keyring_policy_entities(kms, key_ring, project_id)
-                        # key_ring['entities'] = key_ring_entities
-                        # key_ring['public_access'] = public_access
                         key_ring['consolelink'] = gcp_console_link.get_console_link(
                             resource_name='kms_key_ring', project_id=project_id, kms_key_ring_name=key_ring['name'].split('/')[-1], region=key_ring['region'],
                         )
@@ -157,8 +154,6 @@ def get_keyring_policy_bindings(kms: Resource, keyring: Dict, project_id: str) -
     try:
         iam_policy = kms.projects().locations().keyRings().getIamPolicy(resource=keyring['id']).execute()
         bindings = iam_policy.get('bindings', [])
-        #entity_list, public_access = iam.transform_bindings(bindings, project_id)
-        #return entity_list, public_access
         return bindings
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -173,7 +168,7 @@ def get_keyring_policy_bindings(kms: Resource, keyring: Dict, project_id: str) -
             raise
 
 @timeit
-def transform_keryring_policy_bindings(response_objects: List[Dict], function_id: str,project_id: str) -> List[Dict]:
+def transform_keryring_policy_bindings(response_objects: List[Dict], keyring_id: str,project_id: str) -> List[Dict]:
     """
     Process the GCP kms_policy_binding objects and return a flattened list of GCP bindings with all the necessary fields
     we need to load it into Neo4j
@@ -182,7 +177,7 @@ def transform_keryring_policy_bindings(response_objects: List[Dict], function_id
     """
     binding_list = []
     for res in response_objects:
-        res['id'] = f"projects/{project_id}/function/{function_id}/role/{res['role']}"
+        res['id'] = f"projects/{project_id}/keyring/{keyring_id}/role/{res['role']}"
         binding_list.append(res)
     return binding_list
 
