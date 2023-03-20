@@ -111,9 +111,6 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
                         key_ring['id'] = key_ring['name']
                         key_ring['key_ring_name'] = key_ring['name'].split('/')[-1]
                         key_ring['region'] = loc.get("locationId", "global")
-                        key_ring_entities, public_access = get_keyring_policy_entities(kms, key_ring, project_id)
-                        key_ring['entities'] = key_ring_entities
-                        key_ring['public_access'] = public_access
                         key_ring['consolelink'] = gcp_console_link.get_console_link(
                             resource_name='kms_key_ring', project_id=project_id, kms_key_ring_name=key_ring['name'].split('/')[-1], region=key_ring['region'],
                         )
@@ -138,7 +135,7 @@ def get_kms_keyrings(kms: Resource, kms_locations: List[Dict], project_id: str) 
 
 
 @timeit
-def get_keyring_policy_entities(kms: Resource, keyring: Dict, project_id: str) -> List[Dict]:
+def get_keyring_policy_bindings(kms: Resource, keyring: Dict, project_id: str) -> List[Dict]:
     """
         Returns a list of users attached to IAM policy of a keyring within the given project.
 
@@ -157,8 +154,7 @@ def get_keyring_policy_entities(kms: Resource, keyring: Dict, project_id: str) -
     try:
         iam_policy = kms.projects().locations().keyRings().getIamPolicy(resource=keyring['id']).execute()
         bindings = iam_policy.get('bindings', [])
-        entity_list, public_access = iam.transform_bindings(bindings, project_id)
-        return entity_list, public_access
+        return bindings
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
@@ -171,7 +167,53 @@ def get_keyring_policy_entities(kms: Resource, keyring: Dict, project_id: str) -
         else:
             raise
 
+@timeit
+def transform_keryring_policy_bindings(response_objects: List[Dict], keyring_id: str,project_id: str) -> List[Dict]:
+    """
+    Process the GCP kms_policy_binding objects and return a flattened list of GCP bindings with all the necessary fields
+    we need to load it into Neo4j
+    :param response_objects: The return data from get_gcp_function_policy_bindings()
+    :return: A list of GCP GCP bindings
+    """
+    binding_list = []
+    for res in response_objects:
+        res['id'] = f"projects/{project_id}/keyring/{keyring_id}/role/{res['role']}"
+        binding_list.append(res)
+    return binding_list
 
+@timeit
+def attach_keyring_to_binding(session: neo4j.Session, keyring_id: str,bindings: List[Dict], gcp_update_tag: int) -> None:
+    session.write_transaction(attach_keyring_to_bindings_tx, bindings, keyring_id, gcp_update_tag)
+
+
+@timeit
+def attach_keyring_to_bindings_tx(
+    tx: neo4j.Transaction, bindings: List[Dict],
+    keyring_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND $Records as record
+    MERGE (binding:GCPBinding{id: record.id})
+    ON CREATE SET
+        binding.firstseen = timestamp()
+    SET
+        binding.lastupdated = $gcp_update_tag,
+        binding.members = record.members,
+        binding.role = record.role
+    WITH binding
+    MATCH (keyring:GCPKMSKeyRing{id: $KeyringId})
+    MERGE (keyring)-[a:ATTACHED_BINDING]->(binding)
+    ON CREATE SET
+        a.firstseen = timestamp()
+    SET a.lastupdated = $gcp_update_tag
+    """
+    tx.run(
+        query,
+        Records=bindings,
+        KeyringId=keyring_id,
+        gcp_update_tag=gcp_update_tag,
+    )
 @timeit
 def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -> List[Dict]:
     """
@@ -469,6 +511,9 @@ def sync(
     load_kms_key_rings(neo4j_session, key_rings, project_id, gcp_update_tag)
     for key_ring in key_rings:
         load_keyring_entity_relation(neo4j_session, key_ring, gcp_update_tag)
+        bindings = get_keyring_policy_bindings(kms,key_ring,project_id)
+        bindings_list = transform_keryring_policy_bindings(bindings,key_ring['id'],project_id)
+        attach_keyring_to_binding(neo4j_session, key_ring['id'],bindings_list, gcp_update_tag)
     label.sync_labels(neo4j_session, key_rings, gcp_update_tag, common_job_parameters, 'keyrings', 'GCPKMSKeyRing')
     crypto_keys = get_kms_crypto_keys(kms, key_rings, project_id)
     load_kms_crypto_keys(neo4j_session, crypto_keys, project_id, gcp_update_tag)
