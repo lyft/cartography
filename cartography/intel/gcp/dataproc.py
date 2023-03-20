@@ -31,7 +31,7 @@ def get_dataproc_clusters(dataproc: Resource, project_id: str, regions: list) ->
                             cluster['region'] = region
                             cluster['id'] = f"projects/{project_id}/clusters/{cluster['clusterName']}"
                             cluster['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
-                                dataproc_clusters_name=cluster['clusterName'],region=cluster['region'], resource_name='dataproc_cluster')
+                                dataproc_cluster_name=cluster['clusterName'],region=cluster['region'], resource_name='dataproc_cluster')
                             clusters.append(cluster)
                     req = dataproc.projects().regions().clusters().list_next(previous_request=req, previous_response=res)
 
