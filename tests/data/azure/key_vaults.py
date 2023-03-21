@@ -6,7 +6,10 @@ DESCRIBE_KEYVAULTS = [
         "resource_group": "TestRG",
         "name": "vault1",
         "properties": {
-            "vault_uri": "https://vault1.vault.azure.net/"
+            "vault_uri": "https://vault1.vault.azure.net/",
+            "network_acls": {
+                "default_action": "Deny"
+            }
         }
     },
     {

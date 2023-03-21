@@ -328,7 +328,7 @@ def sync_rds_snapshots(
             common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
 
     load_rds_snapshots(neo4j_session, data, current_aws_account_id, update_tag)
-    load_rds_snapshot_attributes(neo4j_session, attributes, current_aws_account_id, update_tag)
+    load_rds_snapshot_attributes(neo4j_session, attributes, update_tag)
     cleanup_rds_snapshots(neo4j_session, common_job_parameters)
 
 
