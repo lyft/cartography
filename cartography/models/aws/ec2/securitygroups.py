@@ -13,8 +13,8 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 @dataclass(frozen=True)
 class EC2SecurityGroupNodeProperties(CartographyNodeProperties):
-    # arn: PropertyRef = PropertyRef('Arn', extra_index=True) # TODO decide on this
-    id: PropertyRef = PropertyRef('GroupId')
+    id: PropertyRef = PropertyRef('Arn')
+    arn: PropertyRef = PropertyRef('Arn', extra_index=True)
     groupid: PropertyRef = PropertyRef('GroupId', extra_index=True)
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
@@ -45,7 +45,7 @@ class EC2SubnetToEC2InstanceRelProperties(CartographyRelProperties):
 class EC2SecurityGroupToEC2Instance(CartographyRelSchema):
     target_node_label: str = 'EC2Instance'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('InstanceId')},
+        {'id': PropertyRef('InstanceArn')},
     )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "MEMBER_OF_EC2_SECURITY_GROUP"

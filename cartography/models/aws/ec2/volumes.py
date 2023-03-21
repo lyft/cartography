@@ -13,10 +13,24 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 @dataclass(frozen=True)
 class EBSVolumeNodeProperties(CartographyNodeProperties):
-    id: PropertyRef = PropertyRef('VolumeId')
+    arn: PropertyRef = PropertyRef('Arn', extra_index=True)
+    id: PropertyRef = PropertyRef('Arn')
+    volumeid: PropertyRef = PropertyRef('VolumeId', extra_index=True)
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     deleteontermination: PropertyRef = PropertyRef('DeleteOnTermination')
+    availabilityzone: PropertyRef = PropertyRef('AvailabilityZone')
+    createtime: PropertyRef = PropertyRef('CreateTime')
+    encrypted: PropertyRef = PropertyRef('Encrypted')
+    size: PropertyRef = PropertyRef('Size')
+    state: PropertyRef = PropertyRef('State')
+    outpostarn: PropertyRef = PropertyRef('OutpostArn')
+    snapshotid: PropertyRef = PropertyRef('SnapshotId')
+    iops: PropertyRef = PropertyRef('Iops')
+    fastrestored: PropertyRef = PropertyRef('FastRestored')
+    multiattachenabled: PropertyRef = PropertyRef('MultiAttachEnabled')
+    type: PropertyRef = PropertyRef('VolumeType')
+    kmskeyid: PropertyRef = PropertyRef('KmsKeyId')
 
 
 @dataclass(frozen=True)
@@ -44,7 +58,7 @@ class EBSVolumeToEC2InstanceRelProperties(CartographyRelProperties):
 class EBSVolumeToEC2Instance(CartographyRelSchema):
     target_node_label: str = 'EC2Instance'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('InstanceId')},
+        {'id': PropertyRef('InstanceArn')},
     )
     direction: LinkDirection = LinkDirection.OUTWARD
     rel_label: str = "ATTACHED_TO"

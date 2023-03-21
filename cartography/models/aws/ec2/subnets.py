@@ -13,9 +13,9 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 @dataclass(frozen=True)
 class EC2SubnetNodeProperties(CartographyNodeProperties):
-    # arn: PropertyRef = PropertyRef('Arn', extra_index=True) TODO decide this
-    id: PropertyRef = PropertyRef('SubnetId')
-    subnet_id: PropertyRef = PropertyRef('SubnetId', extra_index=True)
+    arn: PropertyRef = PropertyRef('Arn', extra_index=True)
+    id: PropertyRef = PropertyRef('Arn')
+    subnetid: PropertyRef = PropertyRef('SubnetId', extra_index=True)
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
@@ -45,7 +45,7 @@ class EC2SubnetToEC2InstanceRelProperties(CartographyRelProperties):
 class EC2SubnetToEC2Instance(CartographyRelSchema):
     target_node_label: str = 'EC2Instance'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('InstanceId')},
+        {'id': PropertyRef('InstanceArn')},
     )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "PART_OF_SUBNET"

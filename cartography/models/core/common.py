@@ -34,10 +34,10 @@ class PropertyRef:
             that points to the GitHubUser node's name field, otherwise if one of your employees' GitHub usernames
             contains capital letters, you would not be able to map them properly to a GitHubUser node in your graph.
         """
-        self.name = name
-        self.set_in_kwargs = set_in_kwargs
-        self.extra_index = extra_index
-        self.ignore_case = ignore_case
+        self.name: str = name
+        self.set_in_kwargs: bool = set_in_kwargs
+        self.extra_index: bool = extra_index
+        self.ignore_case: bool = ignore_case
 
     def _parameterize_name(self) -> str:
         return f"${self.name}"
@@ -55,4 +55,6 @@ class PropertyRef:
         querybuilder.build_ingestion_query(). This is used for things like applying the same update tag to all nodes of
         a given run.
         """
-        return f"item.{self.name}" if not self.set_in_kwargs else self._parameterize_name()
+        # TODO add doc on why we do the self.name.lower() and the assumed convention of lowercase for the node
+        return f"COALESCE(item.{self.name}, i.{self.name.lower()})" if not self.set_in_kwargs else \
+            self._parameterize_name()
