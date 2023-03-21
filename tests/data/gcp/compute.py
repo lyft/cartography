@@ -101,6 +101,13 @@ GCP_LIST_INSTANCES_RESPONSE = {
                     'networkTier': 'PREMIUM',
                     'type': 'ONE_TO_ONE_NAT',
                 }],
+                'ipv6AccessConfigs': [{
+                    'kind': 'compute#accessConfig',
+                    'name': 'External NAT',
+                    'natIP': '6.7.8.9',
+                    'networkTier': 'PREMIUM',
+                    'type': 'ONE_TO_ONE_NAT',
+                }],
                 'fingerprint': 'fingerprint-3456',
                 'kind': 'compute#networkInterface',
                 'name': 'nic0',
@@ -172,6 +179,13 @@ GCP_LIST_INSTANCES_RESPONSE = {
                     'networkTier': 'PREMIUM',
                     'type': 'ONE_TO_ONE_NAT',
                 }],
+                'ipv6AccessConfigs': [{
+                    'kind': 'compute#accessConfig',
+                    'name': 'External NAT',
+                    'natIP': '6.7.8.9',
+                    'networkTier': 'PREMIUM',
+                    'type': 'ONE_TO_ONE_NAT',
+                }],
                 'fingerprint': 'fingerprint4567',
                 'kind': 'compute#networkInterface',
                 'name': 'nic0',
@@ -200,6 +214,7 @@ GCP_LIST_INSTANCES_RESPONSE = {
             'status': 'RUNNING',
             'tags': {
                 'fingerprint': 'fingerprint1234=',
+                'items': ["test1"]
             },
             'zone': 'https://www.googleapis.com/compute/v1/projects/project-abc/zones/europe-west2-b',
         },
@@ -410,6 +425,7 @@ LIST_FIREWALLS_RESPONSE = {
             'priority': 65534,
             'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-icmp',
             'sourceRanges': ['0.0.0.0/0'],
+            'targetTags': ["test"],
         }, {
             'allowed': [
                 {
@@ -436,6 +452,7 @@ LIST_FIREWALLS_RESPONSE = {
             'priority': 65534,
             'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-internal',
             'sourceRanges': ['10.128.0.0/9'],
+            'targetTags': ["test"],
         }, {
             'allowed': [{
                 'IPProtocol': 'tcp',
@@ -455,6 +472,7 @@ LIST_FIREWALLS_RESPONSE = {
             'priority': 65534,
             'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-rdp',
             'sourceRanges': ['0.0.0.0/0'],
+            'targetTags': ["test1"],
         }, {
             'allowed': [{
                 'IPProtocol': 'tcp',
@@ -474,6 +492,7 @@ LIST_FIREWALLS_RESPONSE = {
             'priority': 65534,
             'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-ssh',
             'sourceRanges': ['0.0.0.0/0'],
+            'targetTags': ["test1"],
         }, {
             'allowed': [{
                 'IPProtocol': 'tcp',

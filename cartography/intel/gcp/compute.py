@@ -334,6 +334,7 @@ def attach_compute_disks_to_instance_tx(
     )
 
 
+
 def _get_error_reason(http_error: HttpError) -> str:
     """
     Helper function to get an error reason out of the googleapiclient's HttpError object
@@ -561,7 +562,7 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
         )
         x = res['zone_name'].split('-')
         res['region'] = f"{x[0]}-{x[1]}"
-
+        
         for nic in res.get('networkInterfaces', []):
             nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
             nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
@@ -920,6 +921,7 @@ def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_u
         _attach_gcp_nics(session, instance, gcp_update_tag)
         _attach_gcp_vpc(session, instance['partial_uri'], gcp_update_tag)
         _attach_instance_service_account(session, instance, gcp_update_tag)
+        
 
 
 @timeit
@@ -1271,6 +1273,7 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
     ON CREATE SET nic.firstseen = timestamp(),
     nic.nic_id = $NicId
     SET nic.private_ip = $NetworkIP,
+    nic.network = $Network,
     nic.name = $NicName,
     nic.lastupdated = $gcp_update_tag
     MERGE (i)-[r:NETWORK_INTERFACE]->(nic)
@@ -1294,6 +1297,7 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
             InstanceId=instance['partial_uri'],
             NicId=nic_id,
             NetworkIP=nic.get('networkIP'),
+            Network=nic.get('network'),
             NicName=nic['name'],
             ConsoleLink=nic.get('consolelink'),
             gcp_update_tag=gcp_update_tag,
@@ -1371,6 +1375,7 @@ def _attach_gcp_vpc(neo4j_session: neo4j.Session, instance_id: str, gcp_update_t
     )
 
 
+
 @timeit
 def _attach_instance_service_account(neo4j_session: neo4j.Session, instance: Resource, gcp_update_tag: int) -> None:
     """
@@ -1415,6 +1420,7 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     fw.self_link = $SelfLink,
     fw.has_target_service_accounts = $HasTargetServiceAccounts,
     fw.consolelink = $consolelink,
+    fw.network = $Network,
     fw.lastupdated = $gcp_update_tag
 
     MERGE (vpc:GCPVpc{id: $VpcPartialUri})
@@ -1425,6 +1431,14 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     MERGE (vpc)-[r:RESOURCE]->(fw)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
+    
+    MERGE (nic:GCPNetworkInterface{network: fw.network})
+    ON CREATE SET nic.firstseen = timestamp()
+    SET nic.lastupdated = $gcp_update_tag
+    
+    MERGE (fw)-[c:ATTACH_TO]->(nic)
+    ON CREATE SET c.firstseen = timestamp()
+    SET c.lastupdated = $gcp_update_tag
     """
     for fw in fw_list:
         neo4j_session.run(
@@ -1439,6 +1453,7 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
             VpcPartialUri=fw['vpc_partial_uri'],
             HasTargetServiceAccounts=fw['has_target_service_accounts'],
             consolelink=fw['consolelink'],
+            Network=fw['network'],
             gcp_update_tag=gcp_update_tag,
         )
         _attach_firewall_rules(neo4j_session, fw, gcp_update_tag)
@@ -1763,6 +1778,7 @@ def sync_gcp_instances(
             disk['id'] = f"projects/{project_id}/disks/{disk.get('initializeParams', {}).get('diskName', '')}"
             disks.append(disk)
         attach_compute_disks_to_instance(neo4j_session, disks, instance['partial_uri'], gcp_update_tag)
+
 
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
