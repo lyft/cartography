@@ -11,6 +11,7 @@ import neo4j
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
 from cartography.intel.aws.ec2.util import get_botocore_config
+from cartography.intel.aws.util.arns import build_arn
 from cartography.models.aws.ec2.instances import EC2InstanceSchema
 from cartography.models.aws.ec2.keypairs import EC2KeyPairSchema
 from cartography.models.aws.ec2.networkinterfaces import EC2NetworkInterfaceSchema
@@ -65,10 +66,12 @@ def transform_ec2_instances(
         })
         for instance in reservation['Instances']:
             instance_id = instance['InstanceId']
+            instance_arn = build_arn('ec2', current_aws_account_id, 'instance', instance_id, region)
             launch_time = instance.get("LaunchTime")
             launch_time_unix = str(time.mktime(launch_time.timetuple())) if launch_time else None
             instance_list.append(
                 {
+                    'Arn': instance_arn,
                     'InstanceId': instance_id,
                     'ReservationId': reservation_id,
                     'PublicDnsName': instance.get("PublicDnsName"),
@@ -97,51 +100,63 @@ def transform_ec2_instances(
             if subnet_id:
                 subnet_list.append(
                     {
+                        'Arn': build_arn('ec2', current_aws_account_id, 'subnet', subnet_id, region),
                         'SubnetId': subnet_id,
-                        'InstanceId': instance_id,
+                        'InstanceArn': instance_arn,
                     },
                 )
 
-            if instance.get("KeyName"):
-                key_name = instance["KeyName"]
-                key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
-                keypair_list.append({
-                    'KeyPairArn': key_pair_arn,
-                    'KeyName': key_name,
-                    'InstanceId': instance_id,
-                })
-
-            if instance.get("SecurityGroups"):
-                for group in instance["SecurityGroups"]:
-                    sg_list.append(
-                        {
-                            'GroupId': group['GroupId'],
-                            'InstanceId': instance_id,
-                        },
-                    )
-
             for network_interface in instance['NetworkInterfaces']:
                 for security_group in network_interface['Groups']:
+                    network_interface_id = network_interface['NetworkInterfaceId']
                     network_interface_list.append({
-                        'NetworkInterfaceId': network_interface['NetworkInterfaceId'],
+                        'Arn': build_arn(
+                            'ec2',
+                            current_aws_account_id,
+                            'network-interface',
+                            network_interface_id,
+                            region,
+                        ),
+                        'NetworkInterfaceId': network_interface_id,
                         'Status': network_interface['Status'],
                         'MacAddress': network_interface['MacAddress'],
                         'Description': network_interface['Description'],
                         'PrivateDnsName': network_interface['PrivateDnsName'],
                         'PrivateIpAddress': network_interface['PrivateIpAddress'],
-                        'InstanceId': instance_id,
+                        'InstanceArn': instance_arn,
+                        # Match using the subnet_id and not the arn so that we allow for subnet_id to be None.
                         'SubnetId': subnet_id,
                         'GroupId': security_group['GroupId'],
                     })
 
+            if instance.get("SecurityGroups"):
+                for group in instance["SecurityGroups"]:
+                    group_id = group['GroupId']
+                    sg_list.append(
+                        {
+                            'Arn': build_arn('ec2', current_aws_account_id, 'security-group', group_id, region),
+                            'GroupId': group_id,
+                            'InstanceArn': instance_arn,
+                        },
+                    )
+
+            if instance.get("KeyName"):
+                key_name = instance["KeyName"]
+                keypair_list.append({
+                    'Arn': build_arn('ec2', current_aws_account_id, 'key-pair', key_name, region),
+                    'KeyName': key_name,
+                    'InstanceArn': instance_arn,
+                })
+
             if 'BlockDeviceMappings' in instance and len(instance['BlockDeviceMappings']) > 0:
                 for mapping in instance['BlockDeviceMappings']:
                     if 'VolumeId' in mapping['Ebs']:
+                        volume_id = mapping['Ebs']['VolumeId']
                         instance_ebs_volumes_list.append({
-                            'InstanceId': instance_id,
-                            'VolumeId': mapping['Ebs']['VolumeId'],
+                            'Arn': build_arn('ec2', current_aws_account_id, 'volume', volume_id, region),
+                            'InstanceArn': instance_arn,
+                            'VolumeId': volume_id,
                             'DeleteOnTermination': mapping['Ebs']['DeleteOnTermination'],
-                            # 'SnapshotId': mapping['Ebs']['SnapshotId'],  # TODO check on this
                         })
 
     return (

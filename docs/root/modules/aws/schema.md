@@ -894,7 +894,8 @@ Our representation of an AWS [EC2 Instance](https://docs.aws.amazon.com/AWSEC2/l
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| **id** | Same as `instanceid` below. |
+| **id** | Same as `arn` below. |
+| **arn** | The AWS resource name. |
 | instanceid | The instance id provided by AWS.  This is [globally unique](https://forums.aws.amazon.com/thread.jspa?threadID=137203) |
 | publicdnsname | The public DNS name assigned to the instance |
 | publicipaddress | The public IPv4 address assigned to the instance if applicable |
@@ -1089,7 +1090,8 @@ Representation of an AWS EC2 [Security Group](https://docs.aws.amazon.com/AWSEC2
 | groupid | The ID of the security group|
 | name | The name of the security group|
 | description | A description of the security group|
-| **id** | Same as `groupid` |
+| **arn** | The AWS resource name that uniquely identifies this object. |
+| **id** | Same as `arn` |
 | region | The AWS region this security group is installed in|
 
 
@@ -1142,7 +1144,8 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 | **subnetid** | The ID of the subnet|
-| **id** | same as subnetid |
+| **arn** | The AWS resource name that uniquely identifies this object. |
+| **id** | same as arn |
 | region| The AWS region the subnet is installed on|
 | name | The IPv4 CIDR block assigned to the subnet|
 | cidr_block | The IPv4 CIDR block assigned to the subnet|
@@ -1757,7 +1760,9 @@ Representation of a generic Network Interface.  Currently however, we only creat
 | mac\_address| The MAC address of the network interface|
 | description |  Description of the network interface|
 | private\_ip\_address| The primary IPv4 address of the network interface within the subnet |
-| **id** | The ID of the network interface.  (known as `networkInterfaceId` in EC2) |
+| **id** | same as arn below |
+| **arn** | The AWS resource name that uniquely identifies this object |
+| networkinterfaceid | The ID of the network interface.  (known as `networkInterfaceId` in EC2) |
 | private\_dns\_name| The private DNS name |
 | status | Status of the network interface.  Valid Values: ``available \| associated \| attaching \| in-use \| detaching `` |
 | subnetid | The ID of the subnet |
@@ -2543,7 +2548,9 @@ Representation of an AWS [EBS Volume](https://docs.aws.amazon.com/AWSEC2/latest/
 |-------|-------------|
 | firstseen| Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
-| **id** | The ID of the EBS Volume.|
+| **arn** | The AWS resource name that uniquely identifies this object. |
+| **id** | Same as `arn`. |
+| volumeid | The ID of the EBS Volume.|
 | availabilityzone | The Availability Zone for the volume. |
 | createtime | The time stamp when volume creation was initiated. |
 | encrypted | Indicates whether the volume is encrypted. |

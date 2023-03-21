@@ -9,12 +9,12 @@ def test_build_ingestion_query_complex():
 
     expected = """
         UNWIND $DictList AS item
-            MERGE (i:InterestingAsset{id: item.Id})
+            MERGE (i:InterestingAsset{id: COALESCE(item.Id, i.id)})
             ON CREATE SET i.firstseen = timestamp()
             SET
                 i.lastupdated = $lastupdated,
-                i.property1 = item.property1,
-                i.property2 = item.property2,
+                i.property1 = COALESCE(item.property1, i.property1),
+                i.property2 = COALESCE(item.property2, i.property2),
                 i:AnotherNodeLabel:YetAnotherNodeLabel
 
             WITH i, item
@@ -26,14 +26,14 @@ def test_build_ingestion_query_complex():
                 ON CREATE SET r.firstseen = timestamp()
                 SET
                     r.lastupdated = $lastupdated,
-                    r.another_rel_field = item.AnotherField,
-                    r.yet_another_rel_field = item.YetAnotherRelField
+                    r.another_rel_field = COALESCE(item.AnotherField, i.anotherfield),
+                    r.yet_another_rel_field = COALESCE(item.YetAnotherRelField, i.yetanotherrelfield)
 
                 UNION
                 WITH i, item
                 OPTIONAL MATCH (n0:HelloAsset)
                 WHERE
-                    n0.id = item.hello_asset_id
+                    n0.id = COALESCE(item.hello_asset_id, i.hello_asset_id)
                 WITH i, item, n0 WHERE n0 IS NOT NULL
                 MERGE (i)-[r0:ASSOCIATED_WITH]->(n0)
                 ON CREATE SET r0.firstseen = timestamp()
@@ -44,7 +44,7 @@ def test_build_ingestion_query_complex():
                 WITH i, item
                 OPTIONAL MATCH (n1:WorldAsset)
                 WHERE
-                    n1.id = item.world_asset_id
+                    n1.id = COALESCE(item.world_asset_id, i.world_asset_id)
                 WITH i, item, n1 WHERE n1 IS NOT NULL
                 MERGE (i)<-[r1:CONNECTED]-(n1)
                 ON CREATE SET r1.firstseen = timestamp()

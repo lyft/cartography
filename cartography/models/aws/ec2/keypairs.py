@@ -13,9 +13,9 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 @dataclass(frozen=True)
 class EC2KeyPairNodeProperties(CartographyNodeProperties):
-    id: PropertyRef = PropertyRef('KeyPairArn')
-    arn: PropertyRef = PropertyRef('KeyPairArn', extra_index=True)
-    keyname: PropertyRef = PropertyRef('KeyName')
+    id: PropertyRef = PropertyRef('Arn')
+    arn: PropertyRef = PropertyRef('Arn', extra_index=True)
+    keyname: PropertyRef = PropertyRef('KeyName', extra_index=True)
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
@@ -45,7 +45,7 @@ class EC2KeyPairToEC2InstanceRelProperties(CartographyRelProperties):
 class EC2KeyPairToEC2Instance(CartographyRelSchema):
     target_node_label: str = 'EC2Instance'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('InstanceId')},
+        {'id': PropertyRef('InstanceArn')},
     )
     direction: LinkDirection = LinkDirection.OUTWARD
     rel_label: str = "SSH_LOGIN_TO"
