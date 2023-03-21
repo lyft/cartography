@@ -1,0 +1,13 @@
+{
+	"statements": [
+		{
+			"query": "MATCH ((n:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) WHERE EXISTS(n.exposed_internet) WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type RETURN COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (kv:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE kv.network_acl_default_action = 'Allow' OR kv.network_acl_default_action IS NULL SET kv.exposed_internet = true, (CASE WHEN NOT 'default_network_access' IN  coalesce(kv.exposed_internet_type , []) THEN kv END).exposed_internet_type = coalesce(kv.exposed_internet_type , []) + 'default_network_access';"
+		}
+	],
+	"name": "Azure keyvault asset internet exposure"
+}

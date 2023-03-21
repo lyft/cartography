@@ -103,6 +103,31 @@ def load_server_data(
     )
 
 
+def load_server_private_endpoint_connection(neo4j_session: neo4j.Session, server_list: List[Dict], azure_update_tag: int) -> None:
+    """
+    Ingest & attach server private endpoint connection
+    """
+    ingest_attach_private_endpoint_connection = """
+    MATCH (s:AzureSQLServer{id: $server_id})
+    UNWIND $private_endpoint_connections as pec
+    MERGE (aspec:AzureServerPrivateEndpointConnection{id: pec.id})
+    ON CREATE SET aspec.firstseen = timestamp()
+    SET aspec.provisioning_state = pec.properties.provisioning_state,
+    aspec.private_endpoint = pec.properties.private_endpoint.id,
+    aspec.lastupdated = $azure_update_tag
+    MERGE (s)-[r:HAS]->(aspec)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    for server in server_list:
+        neo4j_session.run(
+            ingest_attach_private_endpoint_connection,
+            server_id=server.get('id'),
+            private_endpoint_connections=server.get('private_endpoint_connections', []),
+            azure_update_tag=azure_update_tag,
+        )
+
+
 @timeit
 def sync_server_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
@@ -127,9 +152,10 @@ def get_server_details(
         fgs = get_failover_groups(credentials, subscription_id, server)
         elastic_pools = get_elastic_pools(credentials, subscription_id, server)
         databases = get_databases(credentials, subscription_id, server)
+        firewall_rules = get_firewall_rules(credentials, subscription_id, server)
         yield server['id'], server['name'], server[
             'resourceGroup'
-        ], dns_alias, ad_admins, r_databases, rd_databases, fgs, elastic_pools, databases
+        ], dns_alias, ad_admins, r_databases, rd_databases, fgs, elastic_pools, databases, firewall_rules
 
 
 @timeit
@@ -329,7 +355,7 @@ def get_databases(credentials: Credentials, subscription_id: str, server: Dict) 
 @timeit
 def load_server_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict
+        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict
 ) -> None:
     """
     Create dictionaries for every resource in the server so we can import them in a single query
@@ -341,8 +367,9 @@ def load_server_details(
     failover_groups = []
     elastic_pools = []
     databases = []
+    fw_rules = []
 
-    for server_id, name, rg, dns_alias, ad_admin, r_database, rd_database, fg, elastic_pool, database in details:
+    for server_id, name, rg, dns_alias, ad_admin, r_database, rd_database, fg, elastic_pool, database, firewall_rules in details:
         if len(dns_alias) > 0:
             for alias in dns_alias:
                 alias['server_name'] = name
@@ -400,6 +427,14 @@ def load_server_details(
                     id=db['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
                 databases.append(db)
 
+        if len(firewall_rules) > 0:
+            for rules in firewall_rules:
+                rules['server_name'] = name
+                rules['server_id'] = server_id
+                rules['resource_group_name'] = rg
+                rules['consolelink'] = ''  # TODO: implement for firewall rules
+                fw_rules.append(rules)
+
     _load_server_dns_aliases(neo4j_session, dns_aliases, update_tag)
     _load_server_ad_admins(neo4j_session, ad_admins, update_tag)
     _load_recoverable_databases(neo4j_session, recoverable_databases, update_tag)
@@ -407,6 +442,7 @@ def load_server_details(
     _load_failover_groups(neo4j_session, failover_groups, update_tag)
     _load_elastic_pools(neo4j_session, elastic_pools, update_tag)
     _load_databases(neo4j_session, databases, update_tag)
+    _load_firewall_rules(neo4j_session, fw_rules, update_tag)
 
     sync_database_details(neo4j_session, credentials, subscription_id, databases, update_tag, common_job_parameters)
 
@@ -438,6 +474,34 @@ def _load_server_dns_aliases(
     neo4j_session.run(
         ingest_dns_aliases,
         dns_aliases_list=dns_aliases,
+        azure_update_tag=update_tag,
+    )
+
+
+@timeit
+def _load_firewall_rules(neo4j_session: neo4j.Session, fw_rules: List[Dict], update_tag: int) -> None:
+    """
+    Ingest the firewall rules into neo4j.
+    """
+    ingest_firewall_rules = """
+    UNWIND $fw_rules as fw_rule
+    MERGE (rule:AzureFirewallRule{id: fw_rule.id})
+    ON CREATE SET rule.firstseen = timestamp()
+    SET rule.name = fw_rule.name,
+    rule.region = fw_rule.location,
+    rule.start_ip_address = fw_rule.start_ip_address,
+    rule.end_ip_address = fw_rule.end_ip_address,
+    rule.lastupdated = $azure_update_tag
+    WITH rule, fw_rule
+    MATCH (s: AzureSQLServer{id: fw_rule.server_id})
+    MERGE (s)-[r:HAS]->(rule)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+
+    neo4j_session.run(
+        ingest_firewall_rules,
+        fw_rules=fw_rules,
         azure_update_tag=update_tag,
     )
 
@@ -790,6 +854,28 @@ def get_transparent_data_encryptions(credentials: Credentials, subscription_id: 
 
 
 @timeit
+def get_firewall_rules(credentials: Credentials, subscription_id: str, server: Dict,) -> List[Dict]:
+    try:
+        client = get_client(credentials, subscription_id)
+        firewall_rules = list(
+            map(
+                lambda x: x.as_dict(),
+                client.firewall_rules.list_by_server(server['resourceGroup'], server['name']),
+            ),
+        )
+    except ClientAuthenticationError as e:
+        logger.warning(f"Client Authentication Error while retrieving Firewall Rules - {e}")
+        return []
+    except ResourceNotFoundError as e:
+        logger.warning(f"Firewall Rules resource not found error - {e}")
+        return []
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving Azure Server Firewall Rules - {e}")
+        return []
+    return firewall_rules
+
+
+@timeit
 def load_database_details(
         neo4j_session: neo4j.Session, details: List[Tuple[Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict,
 ) -> None:
@@ -1012,5 +1098,6 @@ def sync(
             common_job_parameters['pagination']['sql']['hasNextPage'] = has_next_page
 
     load_server_data(neo4j_session, subscription_id, server_list, sync_tag)
+    load_server_private_endpoint_connection(neo4j_session, server_list, sync_tag)
     sync_server_details(neo4j_session, credentials, subscription_id, server_list, sync_tag, common_job_parameters)
     cleanup_azure_sql_servers(neo4j_session, common_job_parameters)
