@@ -20,7 +20,7 @@ class Session(neo4j.Session):
         except Exception as e:
             logger.warning(f"Failed run neo4j cypher query. Error - {e}", exc_info=True, stack_info=True)
 
-        return None
+        return self
 
     def write_transaction(self, transaction_function, *args, **kwargs):
         try:
@@ -32,4 +32,7 @@ class Session(neo4j.Session):
         except Exception as e:
             logger.warning(f"Failed write transaction for neo4j. Error - {e}", exc_info=True, stack_info=True)
 
+        return self
+
+    def consume(self):
         return None
