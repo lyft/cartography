@@ -196,7 +196,7 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
     assert check_rels(
         neo4j_session,
         'EC2Subnet',
-        'subnet_id',
+        'subnetid',
         'EC2Instance',
         'instanceid',
         'PART_OF_SUBNET',
@@ -211,7 +211,7 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
     assert check_rels(
         neo4j_session,
         'EC2Subnet',
-        'subnet_id',
+        'subnetid',
         'AWSAccount',
         'id',
         'RESOURCE',

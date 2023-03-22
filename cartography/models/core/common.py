@@ -55,6 +55,9 @@ class PropertyRef:
         querybuilder.build_ingestion_query(). This is used for things like applying the same update tag to all nodes of
         a given run.
         """
+        if self.set_in_kwargs:
+            return self._parameterize_name()
+        if self.name.lower() == 'id' or self.ignore_case:  # Don't do coalesce() on caseinsensitive attr match.
+            return f"item.{self.name}"
         # TODO add doc on why we do the self.name.lower() and the assumed convention of lowercase for the node
-        return f"COALESCE(item.{self.name}, i.{self.name.lower()})" if not self.set_in_kwargs else \
-            self._parameterize_name()
+        return f"COALESCE(item.{self.name}, i.{self.name.lower()})"

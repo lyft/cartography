@@ -69,8 +69,8 @@ def test_build_ingestion_query_case_insensitive_match():
             ON CREATE SET i.firstseen = timestamp()
             SET
                 i.lastupdated = $lastupdated,
-                i.email = item.email,
-                i.github_username = item.github_username
+                i.email = COALESCE(item.email, i.email),
+                i.github_username = COALESCE(item.github_username, i.github_username)
 
             WITH i, item
             CALL {

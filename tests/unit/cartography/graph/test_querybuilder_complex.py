@@ -9,7 +9,7 @@ def test_build_ingestion_query_complex():
 
     expected = """
         UNWIND $DictList AS item
-            MERGE (i:InterestingAsset{id: COALESCE(item.Id, i.id)})
+            MERGE (i:InterestingAsset{id: item.Id})
             ON CREATE SET i.firstseen = timestamp()
             SET
                 i.lastupdated = $lastupdated,
