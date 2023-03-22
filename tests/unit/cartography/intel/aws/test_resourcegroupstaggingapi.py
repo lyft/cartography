@@ -6,17 +6,17 @@ import tests.data.aws.resourcegroupstaggingapi as test_data
 
 def test_compute_resource_id():
     """
-    Test that the id_func function pointer behaves as expected and returns the instanceid from an EC2Instance's ARN.
+    Test that the id_func function pointer behaves as expected and returns the vpcid from a VPC's ARN.
     """
     tag_mapping = {
-        'ResourceARN': 'arn:aws:ec2:us-east-1:1234:instance/i-abcd',
+        'ResourceARN': 'arn:aws:ec2:us-east-1:1234:vpc/vpc-123',
         'Tags': [{
             'Key': 'my_key',
             'Value': 'my_value',
         }],
     }
-    ec2_short_id = 'i-abcd'
-    assert ec2_short_id == rgta.compute_resource_id(tag_mapping, 'ec2:instance')
+    ec2_short_id = 'vpc-123'
+    assert ec2_short_id == rgta.compute_resource_id(tag_mapping, 'ec2:vpc')
 
 
 def test_get_bucket_name_from_arn():
