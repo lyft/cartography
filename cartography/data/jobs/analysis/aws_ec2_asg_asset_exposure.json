@@ -1,12 +1,20 @@
 {
 	"statements": [
 		{
-			"query": "MATCH ((n:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) where EXISTS(n.exposed_internet) WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"query": "MATCH ((n)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) where EXISTS(n.exposed_internet) AND n:AutoScalingGroup OR n:LaunchTemplate OR n::LaunchConfiguration WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
 			"query": "MATCH (instance:EC2Instance{exposed_internet: true})-[:MEMBER_AUTO_SCALE_GROUP]->(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET asg.exposed_internet = true,asg.exposed_internet_type = coalesce(instance.exposed_internet_type , [])",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (:EC2Instance{exposed_internet: true})-[:MEMBER_AUTO_SCALE_GROUP]->(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH asg MATCH (template:LaunchTemplate)<-[:HAS_LAUNCH_TEMPLATE]-(asg) SET template.exposed_internet = true,template.exposed_internet_type = coalesce(asg.exposed_internet_type , [])",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (:EC2Instance{exposed_internet: true})-[:MEMBER_AUTO_SCALE_GROUP]->(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH asg MATCH (config:LaunchConfiguration)<-[:HAS_LAUNCH_CONFIG]-(asg) SET config.exposed_internet = true,config.exposed_internet_type = coalesce(asg.exposed_internet_type , [])",
 			"iterative": false
 		}
 	],
