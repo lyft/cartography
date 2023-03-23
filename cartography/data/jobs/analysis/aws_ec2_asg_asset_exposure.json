@@ -10,11 +10,11 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (:EC2Instance{exposed_internet: true})-[:MEMBER_AUTO_SCALE_GROUP]->(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH asg MATCH (template:LaunchTemplate)<-[:HAS_LAUNCH_TEMPLATE]-(asg) SET template.exposed_internet = true,template.exposed_internet_type = coalesce(asg.exposed_internet_type , [])",
+			"query": "MATCH (template:LaunchTemplate)<-[:HAS_LAUNCH_TEMPLATE]-(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE (:EC2Instance{exposed_internet: true})-[:MEMBER_AUTO_SCALE_GROUP]->(asg) SET template.exposed_internet = true,template.exposed_internet_type = coalesce(asg.exposed_internet_type , [])",
 			"iterative": false
 		},
 		{
-			"query": "MATCH (:EC2Instance{exposed_internet: true})-[:MEMBER_AUTO_SCALE_GROUP]->(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH asg MATCH (config:LaunchConfiguration)<-[:HAS_LAUNCH_CONFIG]-(asg) SET config.exposed_internet = true,config.exposed_internet_type = coalesce(asg.exposed_internet_type , [])",
+			"query": "MATCH (config:LaunchConfiguration)<-[:HAS_LAUNCH_CONFIG]-(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE (:EC2Instance{exposed_internet: true})-[:MEMBER_AUTO_SCALE_GROUP]->(asg) SET config.exposed_internet = true,config.exposed_internet_type = coalesce(asg.exposed_internet_type , [])",
 			"iterative": false
 		}
 	],
