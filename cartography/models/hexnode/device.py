@@ -11,7 +11,7 @@ class HexnodeDeviceNodeProperties(CartographyNodeProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     tenant: PropertyRef = PropertyRef('tenant', set_in_kwargs=True)
     user_id: PropertyRef = PropertyRef('user.id')
-    name: PropertyRef = PropertyRef('name')
+    name: PropertyRef = PropertyRef('device_name')
     model_name: PropertyRef = PropertyRef('model_name')
     os_name: PropertyRef = PropertyRef('os_name')
     os_version: PropertyRef = PropertyRef('os_version')
