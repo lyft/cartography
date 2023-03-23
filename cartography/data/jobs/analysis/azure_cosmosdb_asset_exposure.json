@@ -15,19 +15,19 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (sql:AzureCosmosDBSqlDatabase)<-[:CONTAINS]-(acc:AzureCosmosDBAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET sql.exposed_internet = coalesce(acc.exposed_internet, false), sql.exposed_internet_type = coalesce(acc.exposed_internet_type , []);",
+			"query": "MATCH (sql:AzureCosmosDBSqlDatabase)<-[:CONTAINS]-(acc:AzureCosmosDBAccount{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET sql.exposed_internet = true, sql.exposed_internet_type = acc.exposed_internet_type;",
 			"iterative": false
 		},
 		{
-			"query": "MATCH (cassandra:AzureCosmosDBCassandraKeySpace)<-[:CONTAINS]-(acc:AzureCosmosDBAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET cassandra.exposed_internet = coalesce(acc.exposed_internet, false), cassandra.exposed_internet_type = coalesce(acc.exposed_internet_type , []);",
+			"query": "MATCH (cassandra:AzureCosmosDBCassandraKeySpace)<-[:CONTAINS]-(acc:AzureCosmosDBAccount{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET cassandra.exposed_internet = true, cassandra.exposed_internet_type = acc.exposed_internet_type;",
 			"iterative": false
 		},
 		{
-			"query": "MATCH (mongo:AzureCosmosDBMongoDBDatabase)<-[:CONTAINS]-(acc:AzureCosmosDBAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET mongo.exposed_internet = coalesce(acc.exposed_internet, false), mongo.exposed_internet_type = coalesce(acc.exposed_internet_type , []);",
+			"query": "MATCH (mongo:AzureCosmosDBMongoDBDatabase)<-[:CONTAINS]-(acc:AzureCosmosDBAccount{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET mongo.exposed_internet = true, mongo.exposed_internet_type = acc.exposed_internet_type;",
 			"iterative": false
 		},
 		{
-			"query": "MATCH (tr:AzureCosmosDBTableResource)<-[:CONTAINS]-(acc:AzureCosmosDBAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET tr.exposed_internet = coalesce(acc.exposed_internet, false), tr.exposed_internet_type = coalesce(acc.exposed_internet_type , []);",
+			"query": "MATCH (tr:AzureCosmosDBTableResource)<-[:CONTAINS]-(acc:AzureCosmosDBAccount{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET tr.exposed_internet = true, tr.exposed_internet_type = acc.exposed_internet_type;",
 			"iterative": false
 		}
 	],
