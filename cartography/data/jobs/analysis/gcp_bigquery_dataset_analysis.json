@@ -10,7 +10,7 @@
             "iterative": false
         },
         {
-            "query": "MATCH (access:GCPAcl)-[a:APPLIES_TO]->(dataset:GCPBigqueryDataset)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWHERE 'allAuthenticatedUsers' IN access.special_group \nSET dataset.exposed_internet = true, (CASE WHEN NOT 'allAuthenticatedUsers' IN  coalesce(access.exposed_internet_type , []) THEN dataset END).exposed_internet_type = coalesce(dataset.exposed_internet_type, []) + 'allAuthenticatedUsers'",
+            "query": "MATCH (access:GCPAcl)-[a:APPLIES_TO]->(dataset:GCPBigqueryDataset)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWHERE 'allAuthenticatedUsers' IN access.special_group \nSET dataset.exposed_internet = true, (CASE WHEN NOT 'allAuthenticatedUsers' IN  coalesce(dataset.exposed_internet_type , []) THEN dataset END).exposed_internet_type = coalesce(dataset.exposed_internet_type, []) + 'allAuthenticatedUsers'",
             "iterative": false
         }
     ],
