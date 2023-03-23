@@ -12,6 +12,14 @@
         {
             "query": "MATCH (access:GCPAcl)-[a:APPLIES_TO]->(dataset:GCPBigqueryDataset)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWHERE 'allAuthenticatedUsers' IN access.special_group \nSET dataset.exposed_internet = true, (CASE WHEN NOT 'allAuthenticatedUsers' IN  coalesce(dataset.exposed_internet_type , []) THEN dataset END).exposed_internet_type = coalesce(dataset.exposed_internet_type, []) + 'allAuthenticatedUsers'",
             "iterative": false
+        },
+        {
+            "query": "MATCH (table:GCPBigqueryTable)<-[r:HAS_TABLE]-(dataset:GCPBigqueryDataset)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWHERE dataset.exposed_internet = true AND 'allUsers' IN dataset.exposed_internet_type \nSET table.exposed_internet = true, (CASE WHEN NOT 'allUsers' IN  coalesce(table.exposed_internet_type , []) THEN table END).exposed_internet_type = coalesce(table.exposed_internet_type, []) + 'allUsers'",
+            "iterative": false
+        },
+        {
+            "query": "MATCH (table:GCPBigqueryTable)<-[r:HAS_TABLE]-(dataset:GCPBigqueryDataset)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWHERE dataset.exposed_internet = true AND 'allAuthenticatedUsers' IN dataset.exposed_internet_type \nSET table.exposed_internet = true, (CASE WHEN NOT 'allAuthenticatedUsers' IN  coalesce(table.exposed_internet_type , []) THEN table END).exposed_internet_type = coalesce(table.exposed_internet_type, []) + 'allAuthenticatedUsers'",
+            "iterative": false
         }
     ],
     "name": "GCP BigQuery public policy exposure analysis"
