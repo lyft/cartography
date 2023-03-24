@@ -39,6 +39,7 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
             if response.get('items', []):
                 for item in response['items']:
                     item['id'] = f"projects/{project_id}/instances/{item['name']}"
+                    item['authorizedNetworksList'] = []
                     for network in item.get('settings', {}).get('ipConfiguration', {}).get('authorizedNetworks',[]):
                         item['authorizedNetworksList'].append(network['value'])
                     item['ipV4Enabled'] = item.get('settings', {}).get('ipConfiguration', {}).get('ipV4Enabled', False)

@@ -1,0 +1,18 @@
+{
+	"statements": [
+		{
+			"query": "MATCH ((n:AzureSQLServer)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) WHERE EXISTS(n.exposed_internet) WITH n limit $LIMIT_SIZE REMOVE n.exposed_internet_type RETURN COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (sql:AzureSQLServer)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE NOT (sql)-[:HAS]->(:AzureServerPrivateEndpointConnection) SET sql.exposed_internet = true, (CASE WHEN NOT 'no_private_endpoints' IN coalesce(sql.exposed_internet_type, []) THEN sql END).exposed_internet_type = coalesce(sql.exposed_internet_type, []) + 'no_private_endpoints';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (:AzureFirewallRule{start_ip_address: '0.0.0.0'})<-[:HAS]-(sql:AzureSQLServer)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET sql.exposed_internet = true, (CASE WHEN NOT 'unrestricted_firewall' IN coalesce(sql.exposed_internet_type, []) THEN sql END).exposed_internet_type = coalesce(sql.exposed_internet_type, []) + 'unrestricted_firewall';",
+			"iterative": false
+		}
+	],
+	"name": "Azure sql asset internet exposure"
+}

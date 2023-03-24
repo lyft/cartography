@@ -164,15 +164,13 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
             ClusterServicesIPv4Cidr=cluster.get('servicesIpv4Cidr'),
             ClusterDatabaseEncryption=cluster.get('databaseEncryption', {}).get('state'),
             ClusterNetworkPolicy=_process_network_policy(cluster),
-            ClusterMasterAuthorizedNetworks=cluster.get('masterAuthorizedNetworksConfig', {}).get('enabled'),
+            ClusterMasterAuthorizedNetworks=cluster.get('masterAuthorizedNetworksConfig',{}).get('enabled'),
             ClusterAbac=cluster.get('legacyAbac', {}).get('enabled'),
             ClusterShieldedNodes=cluster.get('shieldedNodes', {}).get('enabled'),
             ClusterPrivateNodes=cluster.get('privateClusterConfig', {}).get('enablePrivateNodes'),
             ClusterPrivateEndpointEnabled=cluster.get('privateClusterConfig', {}).get('enablePrivateEndpoint'),
             ClusterPrivateEndpoint=cluster.get('privateClusterConfig', {}).get('privateEndpoint'),
-            ClusterMasterGlobalAccessConfig=cluster.get('privateClusterConfig', {}).get(
-                'masterGlobalAccessConfig', {},
-            ).get('enabled'),
+            ClusterMasterGlobalAccessConfig=cluster.get('privateClusterConfig', {}).get('masterGlobalAccessConfig', {}).get('enabled'),
             ClusterPublicEndpoint=cluster.get('privateClusterConfig', {}).get('publicEndpoint'),
             ClusterMasterUsername=cluster.get('masterAuth', {}).get('username'),
             ClusterMasterPassword=cluster.get('masterAuth', {}).get('password'),
@@ -241,8 +239,9 @@ def sync(
     logger.info("Syncing GKE for project '%s', at %s.", project_id, tic)
 
     gke_res = get_gke_clusters(container, project_id, regions, common_job_parameters)
-
+    
     load_gke_clusters(neo4j_session, gke_res, project_id, gcp_update_tag)
+
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gke_clusters(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, gke_res, gcp_update_tag, common_job_parameters, 'gke clusters', 'GKECluster')

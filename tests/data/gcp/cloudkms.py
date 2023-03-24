@@ -48,3 +48,15 @@ CLOUD_KMS_CRYPTO_KEYS = [
         'rotationPeriod': '86400s',
     },
 ]
+FUNCTION_POLICY_BINDINGS = [
+
+    {
+        'id': 'projects/000000000000/function/keyring1/role/viewer',
+        'members': [
+            'allUsers',
+            'allAuthenticatedUsers',
+        ],
+        'role': 'viewer',
+
+    },
+]

@@ -47,6 +47,9 @@ DESCRIBE_NETWORKSUBNETS = [
         "network_id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             virtualNetworks/TestNetwork1",
+        "network_security_group_id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup1"
     },
     {
         "id":
@@ -67,6 +70,9 @@ DESCRIBE_NETWORKSUBNETS = [
         "network_id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             virtualNetworks/TestNetwork2",
+        "network_security_group_id":
+            "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup2"
     },
 ]
 
@@ -80,6 +86,12 @@ DESCRIBE_ROUTETABLE = [
         "resource_group": "TestRG",
         "name": "TestRoutetable1",
         "etag": "sewd-erd",
+        "subnets": [
+            {
+                "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork1/subnets/subnet1"
+            },
+        ]
     },
     {
         "id":
@@ -90,6 +102,12 @@ DESCRIBE_ROUTETABLE = [
         "resource_group": "TestRG",
         "name": "TestRoutetable2",
         "etag": "sewd-erd",
+        "subnets": [
+            {
+                "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            virtualNetworks/TestNetwork2/subnets/subnet2"
+            },
+        ]
     },
 ]
 
@@ -118,6 +136,8 @@ DESCRIBE_NETWORKROUTE = [
         "route2",
         "etag":
         "hhd-fftt-fsc",
+        "address_prefix": '0.0.0.0/0',
+        'next_hop_type': 'Internet',
         "routetable_id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             routeTables/TestRoutetable2",
@@ -161,6 +181,10 @@ DESCRIBE_NETWORKSECURITYRULES = [
         "security_group_id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             networkSecurityGroups/Testgroup1",
+        "access": "Allow",
+        "source_port_range": "*",
+        "protocol": "TCP",
+        "source_address_prefix": "1.1.1.1/24"
     },
     {
         "id":
@@ -175,7 +199,46 @@ DESCRIBE_NETWORKSECURITYRULES = [
         "security_group_id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             networkSecurityGroups/Testgroup2",
+        "access": "Allow",
+        "source_port_range": "8080",
+        "protocol": "TCP",
+        "source_address_prefix": "1.1.1.1/24"
     },
+    {
+        "id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup2/securityRules/rule3",
+        "type":
+        "Microsoft.Network/networkSecurityGroups/securityRules",
+        "name":
+        "rule3",
+        "etag":
+        "hhd-fftt-fsc",
+        "security_group_id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup2",
+        "access": "Allow",
+        "direction": "Inbound",
+        "destination_port_range": "0-65535"
+    },
+    {
+        "id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup2/securityRules/rule4",
+        "type":
+        "Microsoft.Network/networkSecurityGroups/securityRules",
+        "name":
+        "rule4",
+        "etag":
+        "hhd-fftt-fsc",
+        "security_group_id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup1",
+        "access": "Allow",
+        "direction": "Inbound",
+        "protocol": "ICMP",
+        "source_address_prefix": "*"
+    }
 ]
 
 DESCRIBE_PUBLICIPADDRESSES = [
@@ -200,6 +263,17 @@ DESCRIBE_PUBLICIPADDRESSES = [
     },
 ]
 
+DESCRIBE_PUBLICIPADDRESSES_REFERENCE = [
+    {
+        "public_ip_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            publicIPAddresses/ip1",
+    },
+    {
+        "public_ip_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            publicIPAddresses/ip2",
+    }
+]
+
 DESCRIBE_NETWORKUSAGES = [
     {
         "id":
@@ -222,5 +296,68 @@ DESCRIBE_NETWORKUSAGES = [
         "network_id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             virtualNetworks/TestNetwork2",
+    },
+]
+
+DESCRIBE_NETWORKINTERFACES = [
+    {
+        "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic",
+        "name": "test-nic",
+        "location": "eastus",
+        "network_security_group": {
+            "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup1",
+        },
+        "type": "Microsoft.Network/networkInterfaces",
+    },
+    {
+        "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic1",
+        "name": "test-nic1",
+        "location": "eastus",
+        "network_security_group": {
+            "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup2",
+        },
+        "type": "Microsoft.Network/networkInterfaces",
+    },
+    {
+        "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic2",
+        "name": "test-nic2",
+        "location": "eastus",
+        "network_security_group": {
+            "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup1",
+        },
+        "type": "Microsoft.Network/networkInterfaces",
+    },
+    {
+        "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic3",
+        "name": "test-nic3",
+        "location": "eastus",
+        "network_security_group": {
+            "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup2",
+        },
+        "type": "Microsoft.Network/networkInterfaces",
+    },
+    {
+        "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic4",
+        "name": "test-nic4",
+        "location": "eastus",
+        "network_security_group": {
+            "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup1",
+        },
+        "type": "Microsoft.Network/networkInterfaces",
+    },
+    {
+        "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic5",
+        "name": "test-nic5",
+        "location": "eastus",
+        "network_security_group": {
+            "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
+            networkSecurityGroups/Testgroup2",
+        },
+        "type": "Microsoft.Network/networkInterfaces",
     },
 ]

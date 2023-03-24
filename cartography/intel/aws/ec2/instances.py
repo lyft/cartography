@@ -76,7 +76,8 @@ def load_ec2_instance_network_interfaces_tx(
             nic.lastupdated = $update_tag
             
             WITH nic, interface
-            MERGE (instance:EC2Instance{instanceid: interface.InstanceId})-[r:NETWORK_INTERFACE]->(nic)
+            MATCH (instance:EC2Instance{instanceid: interface.InstanceId})
+            MERGE (instance)-[r:NETWORK_INTERFACE]->(nic)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = $update_tag
 
@@ -238,7 +239,10 @@ def _load_ec2_instances_tx(
 
 def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, region: str, update_tag: int) -> None:
     query = """
-        MATCH (instance:EC2Instance{id: $InstanceId})
+        MERGE (instance:Instance:EC2Instance{id: $InstanceId})
+        ON CREATE SET instance.firstseen = timestamp()
+        SET instance.region = $Region,
+        instance.lastupdated = $update_tag
         MERGE (subnet:EC2Subnet{subnetid: $SubnetId})
         ON CREATE SET subnet.firstseen = timestamp()
         SET subnet.region = $Region,
@@ -247,6 +251,7 @@ def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, 
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $update_tag
     """
+
     tx.run(
         query,
         InstanceId=instanceid,

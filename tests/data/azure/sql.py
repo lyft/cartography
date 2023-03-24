@@ -5,6 +5,17 @@ DESCRIBE_SERVERS = [
         "type": "Microsoft.Sql/servers",
         "location": "Central India",
         "kind": "v12.0",
+        "private_endpoint_connections": [
+            {
+                "id": "pec1",
+                "properties": {
+                    "provisioning_state": "Ready",
+                    "private_endpoint": {
+                        "id": "private-endpoint-name"
+                    }
+                }
+            }
+        ],
         "version": "12.0",
         "state": "Ready",
     },
@@ -324,4 +335,25 @@ DESCRIBE_TRANSPARENT_DATA_ENCRYPTIONS = [
         "status": "Enabled",
         "database_id": server2 + "/databases/testdb2",
     },
+]
+
+DESCRIBE_FIREWALL_RULES = [
+    {
+        "id": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/firewallrulecrudtest-12/providers/Microsoft.Sql/servers/firewallrulecrudtest-6285/firewallRules/firewallrulecrudtest-2304",
+        "name": "firewallrulecrudtest-2304",
+        "type": "Microsoft.Sql/servers/firewallRules",
+        "location": "eastus1",
+        "server_id": server1,
+        "start_ip_address": "0.0.0.0",
+        "end_ip_address": "0.0.0.0",
+    },
+    {
+        "id": "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/firewallrulecrudtest-12/providers/Microsoft.Sql/servers/firewallrulecrudtest-6285/firewallRules/firewallrulecrudtest-2305",
+        "name": "firewallrulecrudtest-2305",
+        "type": "Microsoft.Sql/servers/firewallRules",
+        "location": "eastus1",
+        "server_id": server2,
+        "start_ip_address": "14.65.46.34",
+        "end_ip_address": "0.0.0.0",
+    }
 ]
