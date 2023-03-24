@@ -8,6 +8,14 @@
         {
             "query": "MATCH (i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE '0.0.0.0/0' IN i.authorized_networks \nSET i.exposed_internet = true, i.exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'unrestricted_access'",
             "iterative": false
+        },
+        {
+            "query": "MATCH (u:GCPSQLUser)<-[r:USED_BY]-(i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.exposed_internet = true \nSET u.exposed_internet = true, u.exposed_internet_type = i.exposed_internet_type",
+            "iterative": false
+        },
+        {
+            "query": "MATCH (d:GCPSQLDatabase)<-[r:HAS_DATABASE]-(i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.exposed_internet = true \nSET d.exposed_internet = true, d.exposed_internet_type = i.exposed_internet_type",
+            "iterative": false
         }
     ],
     "name": "GCP SQL Instance unrestricted access analysis"
