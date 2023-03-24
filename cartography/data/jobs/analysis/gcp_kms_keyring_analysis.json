@@ -6,6 +6,11 @@
             "iterationsize": 1000
         },
         {
+            "query": "MATCH (crypto_key:GCPKMSCryptoKey)<-[r:RESOURCE]-(keyring:GCPKMSKeyRing)<-[r:RESOURCE]-(location:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH crypto_key LIMIT $LIMIT_SIZE REMOVE crypto_key.exposed_internet, crypto_key.exposed_internet_type return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 1000
+        },
+        {
             "query": "MATCH (binding:GCPBinding)<-[a:ATTACHED_BINDING]-(keyring:GCPKMSKeyRing)<-[r:RESOURCE]-(location:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})\nWHERE 'allUsers' IN binding.members \nSET keyring.exposed_internet = true, (CASE WHEN NOT 'allUsers' IN  coalesce(keyring.exposed_internet_type , []) THEN keyring END).exposed_internet_type = coalesce(keyring.exposed_internet_type, []) + 'allUsers'",
             "iterative": false
         },
