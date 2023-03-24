@@ -11,6 +11,11 @@
 			"iterationsize": 100
 		},
 		{
+			"query": "MATCH ((n)<-[:USES]-(:AzureStorageAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) WHERE EXISTS(n.exposed_internet) AND n:AzureStorageQueueService OR n:AzureStorageTableService OR n:AzureStorageFileService OR n:AzureStorageBlobService WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type RETURN COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
 			"query": "MATCH (bc:AzureStorageBlobContainer{publicaccess: 'container'})<-[:CONTAINS]-(:AzureStorageBlobService)<-[:USES]-(:AzureStorageAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET bc.anonymous_access = true, (CASE WHEN NOT 'public_container' IN  coalesce(bc.anonymous_access_type , []) THEN bc END).anonymous_access_type = coalesce(bc.anonymous_access_type , []) + 'public_container';",
 			"iterative": false
 		},
@@ -20,6 +25,22 @@
 		},
 		{
 			"query": "MATCH (sa:AzureStorageAccount{networkRuleDefaultAction: 'Allow'})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET sa.exposed_internet = true, (CASE WHEN NOT 'default_allow_action' IN  coalesce(sa.exposed_internet_type , []) THEN sa END).exposed_internet_type = coalesce(sa.exposed_internet_type , []) + 'default_allow_action';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (qs:AzureStorageQueueService)<-[:USES]-(sa:AzureStorageAccount{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET qs.exposed_internet = true, qs.exposed_internet_type = sa.exposed_internet_type;",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (ts:AzureStorageTableService)<-[:USES]-(sa:AzureStorageAccount{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET ts.exposed_internet = true, ts.exposed_internet_type = sa.exposed_internet_type;",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (fs:AzureStorageFileService)<-[:USES]-(sa:AzureStorageAccount{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET fs.exposed_internet = true, fs.exposed_internet_type = sa.exposed_internet_type;",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (bs:AzureStorageBlobService)<-[:USES]-(sa:AzureStorageAccount{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET bs.exposed_internet = true, bs.exposed_internet_type = sa.exposed_internet_type;",
 			"iterative": false
 		}
 	],
