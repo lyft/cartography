@@ -28,6 +28,7 @@ def process_request(msg: Dict):
             "client_secret": os.environ.get('client_secret'),
             "redirect_uri": os.environ.get('redirect_uri'),
             "subscription_id": msg.get('workspace', {}).get('account_id'),
+            "tenant_id": msg.get('tenantId'),
             "refresh_token": msg.get('refreshToken'),
             "graph_scope": os.environ.get('graph_scope'),
             "azure_scope": os.environ.get('azure_scope'),

@@ -199,7 +199,7 @@ class Authenticator:
             raise e
 
     # vault_scope: https://vault.azure.net/user_impersonation
-    def impersonate_user(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, graph_scope: str, azure_scope: str, vault_scope: str, subscription_id: str):
+    def impersonate_user(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, graph_scope: str, azure_scope: str, vault_scope: str, subscription_id: str, tenant_id: str = None):
         """
         Implements Impersonation authentication for the Azure provider
         """
@@ -212,10 +212,13 @@ class Authenticator:
         logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.ERROR)
 
         try:
-            graph_creds = self.refresh_graph_token(client_id, client_secret, redirect_uri, refresh_token, graph_scope)
-            vault_creds = self.refresh_vault_token(client_id, client_secret, redirect_uri, refresh_token, vault_scope)
-            azure_creds = self.refresh_azure_token(client_id, client_secret, redirect_uri, refresh_token, azure_scope)
-            tenant_id, user = self.decode_jwt(azure_creds.cred['id_token'])
+            graph_creds = self.refresh_graph_token(client_id, client_secret, redirect_uri, refresh_token, graph_scope, tenant_id)
+            vault_creds = self.refresh_vault_token(client_id, client_secret, redirect_uri, refresh_token, vault_scope, tenant_id)
+            azure_creds = self.refresh_azure_token(client_id, client_secret, redirect_uri, refresh_token, azure_scope, tenant_id)
+            user_tenant_id, user = self.decode_jwt(azure_creds.cred['id_token'])
+
+            if tenant_id is None:
+                tenant_id = user_tenant_id
 
             return Credentials(azure_creds, graph_creds, vault_creds, subscription_id=subscription_id, tenant_id=tenant_id, current_user=user)
 
@@ -224,17 +227,21 @@ class Authenticator:
 
             raise Exception(e)
 
-    def refresh_graph_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str) -> ImpersonateCredentials:
-        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope), "graph")
+    def refresh_graph_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str, tenant_id: str = None) -> ImpersonateCredentials:
+        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope, tenant_id), "graph")
 
-    def refresh_vault_token(self, client_id, client_secret, redirect_uri, refresh_token, scope):
-        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope), "vault")
+    def refresh_vault_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str, tenant_id: str = None):
+        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope, tenant_id), "vault")
 
-    def refresh_azure_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str) -> ImpersonateCredentials:
-        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope), "management")
+    def refresh_azure_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str, tenant_id: str = None) -> ImpersonateCredentials:
+        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope, tenant_id), "management")
 
-    def get_access_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str) -> Dict:
+    def get_access_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str, tenant_id: str = None) -> Dict:
         token_url = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+
+        if tenant_id:
+            token_url = token_url.replace("common", f"{tenant_id}")
+
         grant_type = "refresh_token"
         content_type = "application/x-www-form-urlencoded"
         headers = {"Content-Type": content_type}
