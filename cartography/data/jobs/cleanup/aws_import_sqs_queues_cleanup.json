@@ -6,7 +6,7 @@
       "iterationsize": 100
     },
     {
-      "query": "MATCH (:SQSQueue)-[r:HAS_DEADLETTER_QUEUE]->(:SQSQueue) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+      "query": "MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:SQSQueue)-[r:HAS_DEADLETTER_QUEUE]->(:SQSQueue) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
       "iterative": true,
       "iterationsize": 100,
       "__comment__": "Cleanup HAS_DEADLETTER_QUEUE for queues that no longer have a deadletter queue."
