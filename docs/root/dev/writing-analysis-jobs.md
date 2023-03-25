@@ -89,7 +89,7 @@ In general, the first statement(s) should be a "clean-up phase" that removes cus
       {
         "__comment": "This is a clean-up statement to remove custom attributes",
         "query": "MATCH (n)
-                  WHERE EXISTS(n.exposed_internet)
+                  WHERE n.exposed_internet IS NOT NULL
                         AND labels(n) IN ['AutoScalingGroup', 'EC2Instance', 'LoadBalancer']
                   WITH n LIMIT $LIMIT_SIZE
                   REMOVE n.exposed_internet, n.exposed_internet_type
