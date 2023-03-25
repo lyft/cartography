@@ -309,11 +309,15 @@ def load_roles(
     neo4j_session: neo4j.Session, roles: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_role = """
-    MERGE (rnode:AWSRole{arn: $Arn})
-    ON CREATE SET rnode:AWSPrincipal, rnode.roleid = $RoleId, rnode.firstseen = timestamp(),
-    rnode.createdate = $CreateDate
-    ON MATCH SET rnode.name = $RoleName, rnode.path = $Path
-    SET rnode.lastupdated = $aws_update_tag
+    MERGE (rnode:AWSPrincipal{arn: $Arn})
+    ON CREATE SET rnode.firstseen = timestamp()
+    SET
+        rnode:AWSRole,
+        rnode.roleid = $RoleId,
+        rnode.createdate = $CreateDate,
+        rnode.name = $RoleName,
+        rnode.path = $Path,
+        rnode.lastupdated = $aws_update_tag
     WITH rnode
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(rnode)
@@ -540,11 +544,12 @@ def transform_policy_data(policy_map: Dict, policy_type: str) -> None:
     for principal_arn, policy_statement_map in policy_map.items():
         logger.debug(f"Transforming IAM {policy_type} policies for principal {principal_arn}")
         for policy_key, statements in policy_statement_map.items():
-            policy_id = transform_policy_id(principal_arn, policy_type, policy_key) \
-                if policy_type == PolicyType.inline.value else policy_key
-            statements = _transform_policy_statements(
-                statements, policy_id,
-            )
+            policy_id = transform_policy_id(
+                principal_arn,
+                policy_type,
+                policy_key,
+            ) if policy_type == PolicyType.inline.value else policy_key
+            policy_statement_map[policy_key] = _transform_policy_statements(statements, policy_id)
 
 
 def transform_policy_id(principal_arn: str, policy_type: str, name: str) -> str:
