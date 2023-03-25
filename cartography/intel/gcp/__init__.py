@@ -625,22 +625,73 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         projects, config.update_tag, common_job_parameters, config,
     )
 
-    # run_analysis_job(
-    #     'gcp_compute_asset_inet_exposure.json',
-    #     neo4j_session,
-    #     common_job_parameters,
-    # )
+    common_job_parameters["GCP_PROJECT_ID"] = config.params['workspace']['account_id']
 
-    # run_analysis_job(
-    #     'gcp_gke_asset_exposure.json',
-    #     neo4j_session,
-    #     common_job_parameters,
-    # )
+    run_analysis_job(
+        'gcp_bigquery_dataset_analysis.json',
+        neo4j_session,
+        common_job_parameters,
+    )
 
-    # run_analysis_job(
-    #     'gcp_gke_basic_auth.json',
-    #     neo4j_session,
-    #     common_job_parameters,
-    # )
+    run_analysis_job(
+        'gcp_cloud_function_analysis.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_compute_asset_inet_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_compute_firewall_analysis.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_compute_instance_analysis.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_gke_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_gke_basic_auth.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_kms_keyring_analysis.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_kubernetes_engine_analysis.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_sql_instance_analysis.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'gcp_storage_bucket_policy_analysis.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
     del common_job_parameters['service_labels']
     return common_job_parameters
