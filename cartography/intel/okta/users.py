@@ -9,6 +9,7 @@ from okta import UsersClient
 from okta.models.user import User
 
 from cartography.intel.okta.sync_state import OktaSyncState
+from cartography.intel.okta.utils import check_rate_limit
 from cartography.util import timeit
 
 
@@ -44,6 +45,7 @@ def _get_okta_users(user_client: UsersClient) -> List[Dict]:
     # TODO: Fix bug, we miss last page :(
     while True:
         user_list.extend(paged_users.result)
+        check_rate_limit(paged_users.response)
         if not paged_users.is_last_page():
             # Keep on fetching pages of users until the last page
             paged_users = user_client.get_paged_users(url=paged_users.next_url)

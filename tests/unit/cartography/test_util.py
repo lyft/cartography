@@ -1,12 +1,15 @@
+from unittest import mock
 from unittest.mock import Mock
 from unittest.mock import patch
 
 import botocore
 import pytest
 
+import cartography.util
 from cartography import util
 from cartography.util import aws_handle_regions
 from cartography.util import batch
+from cartography.util import run_analysis_and_ensure_deps
 
 
 def test_run_analysis_job_default_package(mocker):
@@ -92,3 +95,65 @@ def test_batch(mocker):
     assert actual == expected
     # Also check for empty input
     assert batch([], 3) == []
+
+
+@mock.patch.object(cartography.util, 'run_analysis_job', return_value=None)
+def test_run_analysis_and_ensure_deps(mock_run_analysis_job: mock.MagicMock):
+    # Arrange
+    neo4j_session = mock.MagicMock()
+    common_job_parameters = mock.MagicMock()
+
+    # This arg doesn't matter for this test
+    requested_syncs = {
+        'ec2:instance',
+        'iam',
+        'resourcegroupstaggingapi',
+    }
+
+    # Act
+    ec2_asset_exposure_requirements = {
+        'ec2:instance',
+        'ec2:security_group',
+        'ec2:load_balancer',
+        'ec2:load_balancer_v2',
+    }
+    run_analysis_and_ensure_deps(
+        'aws_ec2_asset_exposure.json',
+        ec2_asset_exposure_requirements,
+        requested_syncs,
+        common_job_parameters,
+        neo4j_session,
+    )
+
+    # Assert that the analysis job was not called because the requested sync reqs aren't met
+    mock_run_analysis_job.assert_not_called()
+
+
+@mock.patch.object(cartography.util, 'run_analysis_job', return_value=None)
+def test_run_analysis_and_ensure_deps_no_requirements(mock_run_analysis_job: mock.MagicMock):
+    # Arrange
+    neo4j_session = mock.MagicMock()
+    common_job_parameters = mock.MagicMock()
+
+    # This arg doesn't matter for this test
+    requested_syncs = {
+        'ec2:instance',
+        'iam',
+        'resourcegroupstaggingapi',
+    }
+
+    # Act
+    run_analysis_and_ensure_deps(
+        'aws_foreign_accounts.json',
+        {'iam'},
+        requested_syncs,
+        common_job_parameters,
+        neo4j_session,
+    )
+
+    # Assert
+    mock_run_analysis_job.assert_called_once_with(
+        'aws_foreign_accounts.json',
+        neo4j_session,
+        common_job_parameters,
+    )

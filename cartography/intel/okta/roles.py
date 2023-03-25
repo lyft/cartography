@@ -8,6 +8,7 @@ import neo4j
 from okta.framework.ApiClient import ApiClient
 
 from cartography.intel.okta.sync_state import OktaSyncState
+from cartography.intel.okta.utils import check_rate_limit
 from cartography.intel.okta.utils import create_api_client
 from cartography.util import timeit
 
@@ -26,7 +27,7 @@ def _get_user_roles(api_client: ApiClient, user_id: str, okta_org_id: str) -> st
 
     # https://developer.okta.com/docs/reference/api/roles/#list-roles
     response = api_client.get_path(f'/{user_id}/roles')
-
+    check_rate_limit(response)
     return response.text
 
 
@@ -42,7 +43,7 @@ def _get_group_roles(api_client: ApiClient, group_id: str, okta_org_id: str) -> 
 
     # https://developer.okta.com/docs/reference/api/roles/#list-roles-assigned-to-group
     response = api_client.get_path(f'/{group_id}/roles')
-
+    check_rate_limit(response)
     return response.text
 
 

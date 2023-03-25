@@ -143,7 +143,7 @@ GET_ECS_SERVICES = [
 
 GET_ECS_TASK_DEFINITIONS = [
     {
-        'taskDefinitionArn': 'arn:aws:ecs:us-east-1:000000000000:task-definition/test:0',
+        'taskDefinitionArn': 'arn:aws:ecs:us-east-1:000000000000:task-definition/test_definition:0',
         'containerDefinitions': [
             {
                 'name': 'test',
