@@ -3,6 +3,7 @@ import getpass
 import logging
 import os
 import sys
+from typing import Optional
 
 import cartography.config
 import cartography.sync
@@ -21,9 +22,9 @@ class CLI:
     :param prog: The name of the command line program. This will be displayed in usage and help output.
     """
 
-    def __init__(self, sync, prog=None):
+    def __init__(self, sync: Optional[cartography.sync.Sync] = None, prog: Optional[str] = None):
+        self.sync = sync if sync else cartography.sync.build_default_sync()
         self.prog = prog
-        self.sync = sync
         self.parser = self._build_parser()
 
     def _build_parser(self):
@@ -108,6 +109,21 @@ class CLI:
                 'The name of the database in Neo4j to connect to. If not specified, uses the config settings of your '
                 'Neo4j database itself to infer which database is set to default. '
                 'See https://neo4j.com/docs/api/python-driver/4.4/api.html#database.'
+            ),
+        )
+        parser.add_argument(
+            '--selected-modules',
+            type=str,
+            default=None,
+            help=(
+                'Comma-separated list of cartography top-level modules to sync. Example 1: "aws,gcp" to run AWS and GCP'
+                'modules. See the full list available in source code at cartography.sync. '
+                'If not specified, cartography by default will run all modules available and log warnings when it '
+                'does not find credentials configured for them. '
+                # TODO remove this mention about the create-indexes module when everything is using auto-indexes.
+                'We recommend that you always specify the `create-indexes` module first in this list. '
+                'If you specify the `analysis` module, we recommend that you include it as the LAST item of this list, '
+                '(because it does not make sense to perform analysis on an empty/out-of-date graph).'
             ),
         )
         # TODO add the below parameters to a 'sync' subparser
@@ -481,6 +497,10 @@ class CLI:
         else:
             config.neo4j_password = None
 
+        # Selected modules
+        if config.selected_modules:
+            self.sync = cartography.sync.build_sync(config.selected_modules)
+
         # AWS config
         if config.aws_requested_syncs:
             # No need to store the returned value; we're using this for input validation.
@@ -610,5 +630,4 @@ def main(argv=None):
     logging.getLogger('googleapiclient').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
-    default_sync = cartography.sync.build_default_sync()
-    sys.exit(CLI(default_sync, prog='cartography').main(argv))
+    sys.exit(CLI(prog='cartography').main(argv))

@@ -3063,6 +3063,12 @@ Representation of an AWS ECS [Task Definition](https://docs.aws.amazon.com/Amazo
         (AWSAccount)-[RESOURCE]->(ECSTaskDefinition)
         ```
 
+- An ECSTask has an ECSTaskDefinition.
+
+        ```
+        (ECSTask)-[HAS_TASK_DEFINITION]->(ECSTaskDefinition)
+        ```
+
 ### ECSContainerDefinition
 
 Representation of an AWS ECS [Container Definition](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerDefinition.html)
@@ -3162,7 +3168,7 @@ Representation of an AWS ECS [Task](https://docs.aws.amazon.com/AmazonECS/latest
 - ECSTasks have ECSTaskDefinitions
 
         ```
-        (ECSContainerInstance)-[HAS_TASK_DEFINITION]->(ECSTask)
+        (ECSTask)-[HAS_TASK_DEFINITION]->(ECSTaskDefinition)
         ```
 
 ### ECSContainer
