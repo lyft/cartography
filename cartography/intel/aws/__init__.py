@@ -17,9 +17,11 @@ from cartography.config import Config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
+from cartography.util import run_analysis_and_ensure_deps
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+
 
 stat_handler = get_stats_client(__name__)
 logger = logging.getLogger(__name__)
@@ -204,6 +206,53 @@ def _sync_multiple_accounts(
 
 
 @timeit
+def _perform_aws_analysis(
+        requested_syncs: List[str],
+        neo4j_session: neo4j.Session,
+        common_job_parameters: Dict[str, Any],
+) -> None:
+    requested_syncs_as_set = set(requested_syncs)
+
+    ec2_asset_exposure_requirements = {
+        'ec2:instance',
+        'ec2:security_group',
+        'ec2:load_balancer',
+        'ec2:load_balancer_v2',
+    }
+    run_analysis_and_ensure_deps(
+        'aws_ec2_asset_exposure.json',
+        ec2_asset_exposure_requirements,
+        requested_syncs_as_set,
+        common_job_parameters,
+        neo4j_session,
+    )
+
+    run_analysis_and_ensure_deps(
+        'aws_ec2_keypair_analysis.json',
+        {'ec2:keypair'},
+        requested_syncs_as_set,
+        common_job_parameters,
+        neo4j_session,
+    )
+
+    run_analysis_and_ensure_deps(
+        'aws_eks_asset_exposure.json',
+        {'eks'},
+        requested_syncs_as_set,
+        common_job_parameters,
+        neo4j_session,
+    )
+
+    run_analysis_and_ensure_deps(
+        'aws_foreign_accounts.json',
+        set(),  # This job has no requirements
+        requested_syncs_as_set,
+        common_job_parameters,
+        neo4j_session,
+    )
+
+
+@timeit
 def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
@@ -256,26 +305,4 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     )
 
     if sync_successful:
-        run_analysis_job(
-            'aws_ec2_asset_exposure.json',
-            neo4j_session,
-            common_job_parameters,
-        )
-
-        run_analysis_job(
-            'aws_ec2_keypair_analysis.json',
-            neo4j_session,
-            common_job_parameters,
-        )
-
-        run_analysis_job(
-            'aws_eks_asset_exposure.json',
-            neo4j_session,
-            common_job_parameters,
-        )
-
-        run_analysis_job(
-            'aws_foreign_accounts.json',
-            neo4j_session,
-            common_job_parameters,
-        )
+        _perform_aws_analysis(requested_syncs, neo4j_session, common_job_parameters)
