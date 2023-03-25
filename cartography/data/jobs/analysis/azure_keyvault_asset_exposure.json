@@ -6,7 +6,35 @@
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (kv:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE kv.network_acl_default_action = 'Allow' OR kv.network_acl_default_action IS NULL SET kv.exposed_internet = true, (CASE WHEN NOT 'default_network_access' IN  coalesce(kv.exposed_internet_type , []) THEN kv END).exposed_internet_type = coalesce(kv.exposed_internet_type , []) + 'default_network_access';"
+			"query": "MATCH ((n:AzureKeyVaultKey)<-[:HAS_KEY]-(:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) WHERE EXISTS(n.exposed_internet) WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type RETURN COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH ((n:AzureKeyVaultSecret)<-[:HAS_SECRET]-(:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) WHERE EXISTS(n.exposed_internet) WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type RETURN COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH ((n:AzureKeyVaultCertificate)<-[:HAS_CERTIFICATE]-(:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) WHERE EXISTS(n.exposed_internet) WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type RETURN COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (kv:AzureKeyVault)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE kv.network_acl_default_action = 'Allow' OR kv.network_acl_default_action IS NULL SET kv.exposed_internet = true, (CASE WHEN NOT 'default_network_access' IN  coalesce(kv.exposed_internet_type , []) THEN kv END).exposed_internet_type = coalesce(kv.exposed_internet_type , []) + 'default_network_access';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (k:AzureKeyVaultKey)<-[:HAS_KEY]-(kv:AzureKeyVault{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET k.exposed_internet = true, k.exposed_internet_type = kv.exposed_internet_type;",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (s:AzureKeyVaultSecret)<-[:HAS_SECRET]-(kv:AzureKeyVault{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET s.exposed_internet = kv.exposed_internet, s.exposed_internet_type = coalesce(kv.exposed_internet_type , []);",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (c:AzureKeyVaultCertificate)<-[:HAS_CERTIFICATE]-(kv:AzureKeyVault{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET c.exposed_internet = true, c.exposed_internet_type = kv.exposed_internet_type;",
+			"iterative": false
 		}
 	],
 	"name": "Azure keyvault asset internet exposure"
