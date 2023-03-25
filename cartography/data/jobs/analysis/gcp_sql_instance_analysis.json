@@ -6,7 +6,25 @@
             "iterationsize": 1000
         },
         {
+            "query": "MATCH (u:GCPSQLUser{exposed_internet:true})<-[r:USED_BY]-(:GCPSQLInstance})<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH u LIMIT $LIMIT_SIZE REMOVE u.exposed_internet, u.exposed_internet_type return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 1000
+        },
+        {
+            "query": "MATCH (d:GCPSQLDatabase{exposed_internet:true})<-[r:HAS_DATABASE]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH d LIMIT $LIMIT_SIZE REMOVE d.exposed_internet, d.exposed_internet_type return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 1000
+        },
+        {
             "query": "MATCH (i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE '0.0.0.0/0' IN i.authorized_networks \nSET i.exposed_internet = true, i.exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'unrestricted_access'",
+            "iterative": false
+        },
+        {
+            "query": "MATCH (u:GCPSQLUser)<-[r:USED_BY]-(i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.exposed_internet = true \nSET u.exposed_internet = true, u.exposed_internet_type = i.exposed_internet_type",
+            "iterative": false
+        },
+        {
+            "query": "MATCH (d:GCPSQLDatabase)<-[r:HAS_DATABASE]-(i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.exposed_internet = true \nSET d.exposed_internet = true, d.exposed_internet_type = i.exposed_internet_type",
             "iterative": false
         }
     ],
