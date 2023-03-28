@@ -367,7 +367,7 @@ def _load_s3_public_access_block(
     MATCH (s:S3Bucket) where s.name = public_access_block.bucket
     SET s.block_public_acls = public_access_block.block_public_acls,
         s.ignore_public_acls = public_access_block.ignore_public_acls,
-        s.block_public_acls = public_access_block.block_public_acls,
+        s.block_public_policy = public_access_block.block_public_policy,
         s.restrict_public_buckets = public_access_block.restrict_public_buckets,
         s.lastupdated = $UpdateTag
     """
