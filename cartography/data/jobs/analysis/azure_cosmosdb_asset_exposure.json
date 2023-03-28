@@ -11,7 +11,17 @@
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH ((n)<-[:CONTAINS]-(:AzureCosmosDBSqlDatabase|AzureCosmosDBCassandraKeySpace|AzureCosmosDBMongoDBDatabase)<-[:CONTAINS]-(:AzureCosmosDBAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) WHERE EXISTS(n.exposed_internet) AND n:AzureCosmosDBSqlContainer OR n:AzureCosmosDBCassandraTable OR n:AzureCosmosDBMongoDBCollection WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type RETURN COUNT(*) as TotalCompleted",
+			"query": "MATCH ((n:AzureCosmosDBSqlContainer)<-[:CONTAINS]-(:AzureCosmosDBSqlDatabase)<-[:CONTAINS]-(:AzureCosmosDBAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) WHERE EXISTS(n.exposed_internet WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type RETURN COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH ((n:AzureCosmosDBCassandraTable)<-[:CONTAINS]-(:AzureCosmosDBCassandraKeySpace)<-[:CONTAINS]-(:AzureCosmosDBAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) WHERE EXISTS(n.exposed_internet WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type RETURN COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH ((n:AzureCosmosDBMongoDBCollection)<-[:CONTAINS]-(:AzureCosmosDBMongoDBDatabase)<-[:CONTAINS]-(:AzureCosmosDBAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) WHERE EXISTS(n.exposed_internet WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type RETURN COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
