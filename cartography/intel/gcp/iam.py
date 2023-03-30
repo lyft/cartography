@@ -664,15 +664,13 @@ def attach_role_to_user(
     pr.firstseen = timestamp()
     SET pr.lastupdated = $gcp_update_tag
     WITH user,role
-    WHERE $ParentId NOT IN coalesce(role.parent_id, [])
     SET
-    role.parent = coalesce(role.parent, []) + $Parent,
-    role.parent_id = coalesce(role.parent_id, []) + $ParentId
+    (CASE WHEN NOT $Parent IN coalesce(role.parent, []) THEN role END).parent = coalesce(role.parent, []) + $Parent,
+    (CASE WHEN NOT $ParentId IN coalesce(role.parent_id, []) THEN role END).parent_id = coalesce(role.parent_id, []) + $ParentId
     WITH user
-    WHERE $ParentId NOT IN coalesce(user.parent_id, [])
     SET
-    user.parent = coalesce(user.parent, []) + $Parent,
-    user.parent_id = coalesce(user.parent_id, []) + $ParentId
+    (CASE WHEN NOT $Parent IN coalesce(user.parent, []) THEN user END).parent = coalesce(user.parent, []) + $Parent,
+    (CASE WHEN NOT $ParentId IN coalesce(user.parent_id, []) THEN user END).parent_id = coalesce(user.parent_id, []) + $ParentId
     """
 
     neo4j_session.run(
@@ -706,15 +704,13 @@ def attach_role_to_service_account(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     WITH sa,role
-    WHERE $ParentId NOT IN coalesce(role.parent_id, [])
     SET
-    role.parent = coalesce(role.parent, []) + $Parent,
-    role.parent_id = coalesce(role.parent_id, []) + $ParentId
+    (CASE WHEN NOT $Parent IN coalesce(role.parent, []) THEN role END).parent = coalesce(role.parent, []) + $Parent,
+    (CASE WHEN NOT $ParentId IN coalesce(role.parent_id, []) THEN role END).parent_id = coalesce(role.parent_id, []) + $ParentId
     WITH sa
-    WHERE $ParentId NOT IN coalesce(sa.parent_id, [])
     SET
-    sa.parent = coalesce(sa.parent, []) + $Parent,
-    sa.parent_id = coalesce(sa.parent_id, []) + $ParentId
+    (CASE WHEN NOT $Parent IN coalesce(sa.parent, []) THEN sa END).parent = coalesce(sa.parent, []) + $Parent,
+    (CASE WHEN NOT $ParentId IN coalesce(sa.parent_id, []) THEN sa END).parent_id = coalesce(sa.parent_id, []) + $ParentId
     """
 
     neo4j_session.run(
@@ -758,15 +754,13 @@ def attach_role_to_group(
     pr.firstseen = timestamp()
     SET pr.lastupdated = $gcp_update_tag
     WITH group,role
-    WHERE $ParentId NOT IN coalesce(role.parent_id, [])
     SET
-    role.parent = coalesce(role.parent, []) + $Parent,
-    role.parent_id = coalesce(role.parent_id, []) + $ParentId
+    (CASE WHEN NOT $Parent IN coalesce(role.parent, []) THEN role END).parent = coalesce(role.parent, []) + $Parent,
+    (CASE WHEN NOT $ParentId IN coalesce(role.parent_id, []) THEN role END).parent_id = coalesce(role.parent_id, []) + $ParentId
     WITH group
-    WHERE $ParentId NOT IN coalesce(group.parent_id, [])
     SET
-    group.parent = coalesce(group.parent, []) + $Parent,
-    group.parent_id = coalesce(group.parent_id, []) + $ParentId
+    (CASE WHEN NOT $Parent IN coalesce(group.parent, []) THEN group END).parent = coalesce(group.parent, []) + $Parent,
+    (CASE WHEN NOT $ParentId IN coalesce(group.parent_id, []) THEN group END).parent_id = coalesce(group.parent_id, []) + $ParentId
     """
 
     neo4j_session.run(
@@ -814,15 +808,13 @@ def attach_role_to_domain(
     pr.firstseen = timestamp()
     SET pr.lastupdated = $gcp_update_tag
     WITH domain,role
-    WHERE $ParentId NOT IN coalesce(role.parent_id, [])
     SET
-    role.parent = coalesce(role.parent, []) + $Parent,
-    role.parent_id = coalesce(role.parent_id, []) + $ParentId
+    (CASE WHEN NOT $Parent IN coalesce(role.parent, []) THEN role END).parent = coalesce(role.parent, []) + $Parent,
+    (CASE WHEN NOT $ParentId IN coalesce(role.parent_id, []) THEN role END).parent_id = coalesce(role.parent_id, []) + $ParentId
     WITH domain
-    WHERE $ParentId NOT IN coalesce(domain.parent_id, [])
     SET
-    domain.parent = coalesce(domain.parent, []) + $Parent,
-    domain.parent_id = coalesce(domain.parent_id, []) + $ParentId
+    (CASE WHEN NOT $Parent IN coalesce(domain.parent, []) THEN domain END).parent = coalesce(domain.parent, []) + $Parent,
+    (CASE WHEN NOT $ParentId IN coalesce(domain.parent_id, []) THEN domain END).parent_id = coalesce(domain.parent_id, []) + $ParentId
     """
 
     neo4j_session.run(
