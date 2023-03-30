@@ -11,6 +11,7 @@ import botocore
 import neo4j
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -34,12 +35,34 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
         for each_function in page['Functions']:
             each_function['region'] = region
             each_function['consolelink'] = aws_console_link.get_console_link(arn=each_function['FunctionArn'])
-            policy = client.get_policy(FunctionName=each_function['FunctionArn'])
+            lambda_functions.append(each_function)
+
+    return lambda_functions
+
+@timeit
+@aws_handle_regions
+def get_lambda_policies(boto3_session: boto3.session.Session, region: str, lambda_functions: List[Dict]) -> List[Dict]:
+    """
+    Fetch policies for lambdas
+    """
+    client = boto3_session.client('lambda', region_name=region)
+    for lambda_function in lambda_functions:
+        try:
+            policy = client.get_policy(FunctionName=lambda_function['FunctionArn'])
             if policy is not None:
                 parsed_policy = Policy(json.loads(policy['Policy']))
-                each_function['anonymous_access'] = parsed_policy.is_internet_accessible()
-                each_function['anonymous_actions'] = list(parsed_policy.internet_accessible_actions())
-            lambda_functions.append(each_function)
+                lambda_function['anonymous_access'] = parsed_policy.is_internet_accessible()
+                lambda_function['anonymous_actions'] = list(parsed_policy.internet_accessible_actions())
+
+        except ClientError as e:
+            if e.response['Error']['Code'] in ("ResourceNotFoundException"):
+                logger.debug(f"unable to fetch function policy: {region} - {lambda_function['FunctionArn']} - {e}")
+                continue
+
+            else:
+                logger.debug(f"unable to fetch function policy: {region} - {lambda_function['FunctionArn']} - {e}")
+                continue
+
     return lambda_functions
 
 
@@ -284,6 +307,8 @@ def sync_lambda_functions(
     for region in regions:
         logger.info("Syncing Lambda for region in '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_lambda_data(boto3_session, region))
+
+    data = get_lambda_policies(boto3_session, region, data)
 
     logger.info(f"Total Lambdas: {len(data)}")
 

@@ -172,7 +172,12 @@ def get_log_groups(boto3_session: boto3.session.Session, region):
             log_groups.extend(page['logGroups'])
 
     except ClientError as e:
-        logger.error(f'Failed to call CloudWatch Logs describe_log_groups: {region} - {e}')
+        if e.response['Error']['Code'] in ["NotFoundException"]:
+            logger.debug(f'Failed to call CloudWatch Logs describe_log_groups: {region} - {e}')
+
+        else:
+            logger.error(f'Failed to call CloudWatch Logs describe_log_groups: {region} - {e}')
+
     return log_groups
 
 @timeit
@@ -253,7 +258,12 @@ def get_metrics(boto3_session: boto3.session.Session, region):
             metrics.extend(page['Metrics'])
 
     except ClientError as e:
-        logger.error(f'Failed to call CloudWatch list_metrics: {region} - {e}')
+        if e.response['Error']['Code'] in ["AccessDenied"]:
+            logger.debug(f'Failed to call CloudWatch list_metrics: {region} - {e}')
+
+        else:
+            logger.error(f'Failed to call CloudWatch list_metrics: {region} - {e}')
+
     return metrics
 
 @timeit

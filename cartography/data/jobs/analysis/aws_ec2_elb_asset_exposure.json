@@ -52,7 +52,7 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (cidr:Ipv6Range{range:'::/0'})-[:MEMBER_OF_IP_RULE]->(perm:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(sg:EC2SecurityGroup)<-[:SOURCE_SECURITY_GROUP]-(elb:LoadBalancer{scheme: 'internet-facing'})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH elb,perm MATCH (elb)-[:ELB_LISTENER]->(listener:ELBListener) listener.port>=perm.fromport AND listener.port<=perm.toport SET listener.exposed_internet = true,(CASE WHEN NOT 'loadbalancer_unrestricted_inbound_traffic_ipv6' IN  coalesce(listener.exposed_internet_type , []) THEN listener END).exposed_internet_type = coalesce(listener.exposed_internet_type , []) + 'loadbalancer_unrestricted_inbound_traffic_ipv6'",
+			"query": "MATCH (cidr:Ipv6Range{range:'::/0'})-[:MEMBER_OF_IP_RULE]->(perm:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(sg:EC2SecurityGroup)<-[:SOURCE_SECURITY_GROUP]-(elb:LoadBalancer{scheme: 'internet-facing'})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH elb,perm MATCH (elb)-[:ELB_LISTENER]->(listener:ELBListener) WHERE listener.port>=perm.fromport AND listener.port<=perm.toport SET listener.exposed_internet = true,(CASE WHEN NOT 'loadbalancer_unrestricted_inbound_traffic_ipv6' IN  coalesce(listener.exposed_internet_type , []) THEN listener END).exposed_internet_type = coalesce(listener.exposed_internet_type , []) + 'loadbalancer_unrestricted_inbound_traffic_ipv6'",
 			"iterative": false
 		},
 		{

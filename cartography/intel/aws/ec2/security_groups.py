@@ -155,7 +155,8 @@ def load_ec2_security_groupinfo(
         region = group.get('region', '')
         group_id = group["GroupId"]
         group_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:security-group/{group_id}"
-        consolelink = aws_console_link.get_console_link(arn=group_arn)
+        consolelink = ''
+        # consolelink = aws_console_link.get_console_link(arn=group_arn)
 
         neo4j_session.run(
             ingest_security_group,
