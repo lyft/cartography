@@ -66,15 +66,15 @@ def load(
 
     load_graph_data(
         neo4j_session,
-        user_query,
-        data,
+        tenant_query,
+        [{'id': common_job_parameters['LASTPASS_CID']}],
         lastupdated=common_job_parameters['UPDATE_TAG'],
-        tenant_id=common_job_parameters['LASTPASS_CID'],
     )
 
     load_graph_data(
         neo4j_session,
-        tenant_query,
-        [{'id': common_job_parameters['LASTPASS_CID']}],
+        user_query,
+        data,
         lastupdated=common_job_parameters['UPDATE_TAG'],
+        tenant_id=common_job_parameters['LASTPASS_CID'],
     )

@@ -15,9 +15,8 @@ from cartography.models.core.relationships import TargetNodeMatcher
 class LastpassUserNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    tenant_id: PropertyRef = PropertyRef('tenant_id', set_in_kwargs=True)
     name: PropertyRef = PropertyRef('fullname')
-    email: PropertyRef = PropertyRef('username')
+    email: PropertyRef = PropertyRef('username', extra_index=True)
     created: PropertyRef = PropertyRef('created')
     last_pw_change: PropertyRef = PropertyRef('last_pw_change')
     last_login: PropertyRef = PropertyRef('last_login')
@@ -53,7 +52,25 @@ class HumanToUserRel(CartographyRelSchema):
 
 
 @dataclass(frozen=True)
+class TenantToUserRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+# (:LastpassTenant)<-[:RESOURCE]-(:LastpassUser)
+class LastpassTenantToUserRel(CartographyRelSchema):
+    target_node_label: str = 'LastpassTenant'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'id': PropertyRef('tenant_id', set_in_kwargs=True)},
+    )
+    direction: LinkDirection = LinkDirection.OUTWARD
+    rel_label: str = "RESOURCE"
+    properties: TenantToUserRelProperties = TenantToUserRelProperties()
+
+
+@dataclass(frozen=True)
 class LastpassUserSchema(CartographyNodeSchema):
     label: str = 'LastpassUser'
     properties: LastpassUserNodeProperties = LastpassUserNodeProperties()
     other_relationships: OtherRelationships = OtherRelationships(rels=[HumanToUserRel()])
+    sub_resource_relationship: LastpassTenantToUserRel = LastpassTenantToUserRel()
