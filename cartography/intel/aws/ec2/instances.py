@@ -1,9 +1,9 @@
 import logging
 import time
+from collections import namedtuple
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Tuple
 
 import boto3
 import neo4j
@@ -23,6 +23,18 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
+Ec2Data = namedtuple(
+    'Ec2Data', [
+        "reservation_list",
+        "instance_list",
+        "subnet_list",
+        "sg_list",
+        "keypair_list",
+        "network_interface_list",
+        "instance_ebs_volumes_list",
+    ],
+)
+
 
 @timeit
 @aws_handle_regions
@@ -35,19 +47,7 @@ def get_ec2_instances(boto3_session: boto3.session.Session, region: str) -> List
     return reservations
 
 
-def transform_ec2_instances(
-        reservations: List[Dict[str, Any]],
-        region: str,
-        current_aws_account_id: str,
-) -> Tuple[
-    List[Dict[str, Any]],
-    List[Dict[str, Any]],
-    List[Dict[str, Any]],
-    List[Dict[str, Any]],
-    List[Dict[str, Any]],
-    List[Dict[str, Any]],
-    List[Dict[str, Any]],
-]:
+def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, current_aws_account_id: str) -> Ec2Data:
     reservation_list = []
     instance_list = []
     subnet_list = []
@@ -144,33 +144,14 @@ def transform_ec2_instances(
                             # 'SnapshotId': mapping['Ebs']['SnapshotId'],  # TODO check on this
                         })
 
-    return (
-        reservation_list,
-        instance_list,
-        subnet_list,
-        sg_list,
-        keypair_list,
-        network_interface_list,
-        instance_ebs_volumes_list,
-    )
-
-
-@timeit
-def load_instances(
-        neo4j_session: neo4j.Session,
-        instance_list: List[Dict[str, Any]],
-        region: str,
-        current_aws_account_id: str,
-        update_tag: int,
-) -> None:
-    logger.info(f"Loading {len(instance_list)} EC2 instances for region '{region}' into graph.")
-    load(
-        neo4j_session,
-        EC2InstanceSchema(),
-        instance_list,
-        lastupdated=update_tag,
-        Region=region,
-        AWS_ID=current_aws_account_id,
+    return Ec2Data(
+        reservation_list=reservation_list,
+        instance_list=instance_list,
+        subnet_list=subnet_list,
+        sg_list=sg_list,
+        keypair_list=keypair_list,
+        network_interface_list=network_interface_list,
+        instance_ebs_volumes_list=instance_ebs_volumes_list,
     )
 
 
@@ -346,26 +327,18 @@ def sync_ec2_instances(
     for region in regions:
         logger.info("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)
         reservations = get_ec2_instances(boto3_session, region)
-        (
-            reservation_list,
-            instance_list,
-            subnet_list,
-            sg_list,
-            key_pair_list,
-            nic_list,
-            ebs_volumes_list,
-        ) = transform_ec2_instances(reservations, region, current_aws_account_id)
+        ec2_data = transform_ec2_instances(reservations, region, current_aws_account_id)
         load_ec2_instance_data(
             neo4j_session,
             region,
             current_aws_account_id,
             update_tag,
-            reservation_list,
-            instance_list,
-            subnet_list,
-            sg_list,
-            key_pair_list,
-            nic_list,
-            ebs_volumes_list,
+            ec2_data.reservation_list,
+            ec2_data.instance_list,
+            ec2_data.subnet_list,
+            ec2_data.sg_list,
+            ec2_data.keypair_list,
+            ec2_data.network_interface_list,
+            ec2_data.instance_ebs_volumes_list,
         )
     cleanup(neo4j_session, common_job_parameters)
