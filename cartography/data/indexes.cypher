@@ -99,8 +99,6 @@ CREATE INDEX IF NOT EXISTS FOR (n:EBSSnapshot) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:EBSSnapshot) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:EBSVolume) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:EBSVolume) ON (n.lastupdated);
-CREATE INDEX IF NOT EXISTS FOR (n:EC2Image) ON (n.id);
-CREATE INDEX IF NOT EXISTS FOR (n:EC2Image) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2Instance) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2Instance) ON (n.instanceid);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2Instance) ON (n.publicdnsname);
