@@ -6,6 +6,8 @@ from typing import List
 import boto3
 import neo4j
 
+from cartography.graph.job import GraphJob
+from cartography.models.aws.ec2.securitygroups import EC2SecurityGroupSchema
 from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -146,6 +148,7 @@ def cleanup_ec2_security_groupinfo(neo4j_session: neo4j.Session, common_job_para
         neo4j_session,
         common_job_parameters,
     )
+    GraphJob.from_node_schema(EC2SecurityGroupSchema(), common_job_parameters).run(neo4j_session)
 
 
 @timeit

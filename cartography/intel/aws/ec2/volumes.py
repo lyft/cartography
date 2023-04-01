@@ -6,6 +6,8 @@ from typing import List
 import boto3
 import neo4j
 
+from cartography.graph.job import GraphJob
+from cartography.models.aws.ec2.volumes import EBSVolumeSchema
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -97,11 +99,7 @@ def load_volume_relationships(
 
 @timeit
 def cleanup_volumes(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job(
-        'aws_import_volumes_cleanup.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+    GraphJob.from_node_schema(EBSVolumeSchema(), common_job_parameters).run(neo4j_session)
 
 
 @timeit
