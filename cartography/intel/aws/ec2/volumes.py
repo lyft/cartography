@@ -9,7 +9,6 @@ import neo4j
 from cartography.graph.job import GraphJob
 from cartography.models.aws.ec2.volumes import EBSVolumeSchema
 from cartography.util import aws_handle_regions
-from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
