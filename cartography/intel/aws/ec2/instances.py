@@ -308,11 +308,6 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any])
     logger.debug("Running EC2 instance cleanup")
     GraphJob.from_node_schema(EC2ReservationSchema(), common_job_parameters).run(neo4j_session)
     GraphJob.from_node_schema(EC2InstanceSchema(), common_job_parameters).run(neo4j_session)
-    GraphJob.from_node_schema(EC2SubnetSchema(), common_job_parameters).run(neo4j_session)
-    GraphJob.from_node_schema(EC2SecurityGroupSchema(), common_job_parameters).run(neo4j_session)
-    GraphJob.from_node_schema(EC2KeyPairSchema(), common_job_parameters).run(neo4j_session)
-    GraphJob.from_node_schema(EC2NetworkInterfaceSchema(), common_job_parameters).run(neo4j_session)
-    GraphJob.from_node_schema(EBSVolumeSchema(), common_job_parameters).run(neo4j_session)
 
 
 @timeit
