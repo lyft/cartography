@@ -4,7 +4,6 @@ import neo4j
 
 import cartography.intel.lastpass.users
 from cartography.config import Config
-from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -34,11 +33,5 @@ def start_lastpass_ingestion(neo4j_session: neo4j.Session, config: Config) -> No
     cartography.intel.lastpass.users.sync(
         neo4j_session,
         config.lastpass_provhash,
-        common_job_parameters,
-    )
-
-    run_cleanup_job(
-        "lastpass_import_cleanup.json",
-        neo4j_session,
         common_job_parameters,
     )
