@@ -41,7 +41,7 @@ def _build_node_properties_statement(
         i.node_prop_1 = item.Prop1,
         i.node_prop_2 = $Prop2
         ```
-    where `i` is a reference to the Neo4j node.
+    where `i` is a reference to the Neo4j node and `item` is a reference to the current dict being processed.
     :param node_property_map: Mapping of node attribute names as str to PropertyRef objects
     :param extra_node_labels: Optional ExtraNodeLabels object to set on the node as string
     :return: The resulting Neo4j SET clause to set the given attributes on the node
@@ -79,6 +79,7 @@ def _build_rel_properties_statement(rel_var: str, rel_property_map: Optional[Dic
         r.rel_prop_1 = item.Prop1,
         r.rel_prop_2 = $Prop2
 
+    where `item` is a reference to the current dict being processed.
     :param rel_var: The variable name to use for the relationship in the Neo4j query
     :param rel_property_map: Mapping of relationship attribute names as str to PropertyRef objects
     :return: The resulting Neo4j SET clause to set the given attributes on the relationship
