@@ -1,14 +1,22 @@
 import logging
-from typing import Dict
+from typing import Any, Dict
 from typing import List
 
 import boto3
+import botocore.exceptions
 import neo4j
 
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
+
+from cartography.client.core.tx import load
+from cartography.graph.job import GraphJob
+from cartography.intel.aws.ec2.util import get_botocore_config
+from cartography.models.aws.dynamodb.tables import DynamoDBTableSchema
+from cartography.models.aws.dynamodb.gsi import DynamoDBGSISchema
+from cartography.util import aws_handle_regions
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -25,6 +33,53 @@ def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> Li
         for table_name in page['TableNames']:
             dynamodb_tables.append(client.describe_table(TableName=table_name))
     return dynamodb_tables
+
+
+@timeit
+def get_dynamodb(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict[str, Any]:
+    client = boto3_session.client('dynamodb', region_name=region, config=get_botocore_config())
+    cluster_details: Dict[str, Any] = {}
+    try:
+        # TODO
+        response = client.describe_cluster(ClusterId=cluster_id)
+        cluster_details = response['Cluster']
+    except botocore.exceptions.ClientError as e:
+        # TODO
+        code = e.response['Error']['Code']
+        msg = e.response['Error']['Message']
+        logger.warning(f"Could not run EMR describe_cluster due to boto3 error {code}: {msg}. Skipping.")
+    return cluster_details
+
+
+@timeit 
+def load_dynamodb_tables_emr(
+    neo4j_session: neo4j.Session, cluster_data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
+    logger.info(f"Loading Dynamo DB tables {len(cluster_data)} for region '{region}' into graph.")
+    load(
+        neo4j_session,
+        DynamoDBTableSchema(),
+        cluster_data,
+        lastupdated=aws_update_tag,
+        Region=region,
+        AWS_ID=current_aws_account_id,
+    )
+
+@timeit 
+def load_dynamodb_gsi_emr(
+    neo4j_session: neo4j.Session, cluster_data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
+    aws_update_tag: int,
+) -> None:
+    logger.info(f"Loading Dynamo DB GSI {len(cluster_data)} for region '{region}' into graph.")
+    load(
+        neo4j_session,
+        DynamoDBGSISchema(),
+        cluster_data,
+        lastupdated=aws_update_tag,
+        Region=region,
+        AWS_ID=current_aws_account_id,
+    )
 
 
 @timeit
@@ -98,6 +153,10 @@ def load_gsi(
 @timeit
 def cleanup_dynamodb_tables(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_dynamodb_tables_cleanup.json', neo4j_session, common_job_parameters)
+    '''
+    cleanup_job = GraphJob.from_node_schema(DynamoDBTableSchema(), common_job_parameters)
+    cleanup_job.run(neo4j_session)
+    '''
 
 
 @timeit
