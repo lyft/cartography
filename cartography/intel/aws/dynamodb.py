@@ -22,7 +22,7 @@ stat_handler = get_stats_client(__name__)
 
 @timeit
 @aws_handle_regions
-def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> Any:
+def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('dynamodb', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('list_tables')
     dynamodb_tables = []
@@ -33,7 +33,7 @@ def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> An
 
 
 @timeit
-def transform_dynamodb_tables(dynamodb_tables: List, region: str):
+def transform_dynamodb_tables(dynamodb_tables: List, region: str) -> Any:
     ddb_table_data: List[Dict[str, Any]] = []
     ddb_gsi_data: List[Dict[str, Any]] = []
 

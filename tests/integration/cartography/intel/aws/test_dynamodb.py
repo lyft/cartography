@@ -11,7 +11,10 @@ TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
 
 
-@patch.object(cartography.intel.aws.dynamodb, 'get_dynamodb_tables', return_value=tests.data.aws.dynamodb.LIST_DYNAMODB_TABLES['Tables'])
+@patch.object(
+    cartography.intel.aws.dynamodb, 'get_dynamodb_tables',
+    return_value=tests.data.aws.dynamodb.LIST_DYNAMODB_TABLES['Tables'],
+)
 def test_load_dynamodb(mock_get_instances, neo4j_session):
     """
     Ensure that instances actually get loaded and have their key fields
@@ -59,20 +62,36 @@ def test_load_dynamodb(mock_get_instances, neo4j_session):
         'GLOBAL_SECONDARY_INDEX',
         rel_direction_right=True,
     ) == {
-        ('arn:aws:dynamodb:us-east-1:000000000000:table/example-table',
-        'arn:aws:dynamodb:us-east-1:table/example-table/index/sample_1-index'),
-        ('arn:aws:dynamodb:us-east-1:000000000000:table/example-table',
-        'arn:aws:dynamodb:us-east-1:table/example-table/index/sample_2-index'),
-        ('arn:aws:dynamodb:us-east-1:000000000000:table/model-table',
-        'arn:aws:dynamodb:us-east-1:table/model-table/index/sample_1-index'),
-        ('arn:aws:dynamodb:us-east-1:000000000000:table/model-table',
-        'arn:aws:dynamodb:us-east-1:table/model-table/index/sample_2-index'),
-        ('arn:aws:dynamodb:us-east-1:000000000000:table/model-table',
-        'arn:aws:dynamodb:us-east-1:table/model-table/index/sample_3-index'),
-        ('arn:aws:dynamodb:us-east-1:000000000000:table/sample-table',
-        'arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_1-index'),
-        ('arn:aws:dynamodb:us-east-1:000000000000:table/sample-table',
-        'arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_2-index'),
-        ('arn:aws:dynamodb:us-east-1:000000000000:table/sample-table',
-        'arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_3-index'),
+        (
+            'arn:aws:dynamodb:us-east-1:000000000000:table/example-table',
+            'arn:aws:dynamodb:us-east-1:table/example-table/index/sample_1-index',
+        ),
+        (
+            'arn:aws:dynamodb:us-east-1:000000000000:table/example-table',
+            'arn:aws:dynamodb:us-east-1:table/example-table/index/sample_2-index',
+        ),
+        (
+            'arn:aws:dynamodb:us-east-1:000000000000:table/model-table',
+            'arn:aws:dynamodb:us-east-1:table/model-table/index/sample_1-index',
+        ),
+        (
+            'arn:aws:dynamodb:us-east-1:000000000000:table/model-table',
+            'arn:aws:dynamodb:us-east-1:table/model-table/index/sample_2-index',
+        ),
+        (
+            'arn:aws:dynamodb:us-east-1:000000000000:table/model-table',
+            'arn:aws:dynamodb:us-east-1:table/model-table/index/sample_3-index',
+        ),
+        (
+            'arn:aws:dynamodb:us-east-1:000000000000:table/sample-table',
+            'arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_1-index',
+        ),
+        (
+            'arn:aws:dynamodb:us-east-1:000000000000:table/sample-table',
+            'arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_2-index',
+        ),
+        (
+            'arn:aws:dynamodb:us-east-1:000000000000:table/sample-table',
+            'arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_3-index',
+        ),
     }
