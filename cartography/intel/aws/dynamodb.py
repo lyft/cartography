@@ -1,22 +1,19 @@
 import logging
-from typing import Any, Dict
+from typing import Any
+from typing import Dict
 from typing import List
 
 import boto3
-import botocore.exceptions
 import neo4j
-
-from cartography.stats import get_stats_client
-from cartography.util import aws_handle_regions
-from cartography.util import merge_module_sync_metadata
-from cartography.util import run_cleanup_job
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
 from cartography.intel.aws.ec2.util import get_botocore_config
-from cartography.models.aws.dynamodb.tables import DynamoDBTableSchema
 from cartography.models.aws.dynamodb.gsi import DynamoDBGSISchema
+from cartography.models.aws.dynamodb.tables import DynamoDBTableSchema
+from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
+from cartography.util import merge_module_sync_metadata
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -26,137 +23,140 @@ stat_handler = get_stats_client(__name__)
 @timeit
 @aws_handle_regions
 def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('dynamodb', region_name=region)
+    client = boto3_session.client('dynamodb', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('list_tables')
+    ddb_table_data: List[Dict[str, Any]] = []
+    ddb_gsi_data: List[Dict[str, Any]] = []
     dynamodb_tables = []
     for page in paginator.paginate():
         for table_name in page['TableNames']:
             dynamodb_tables.append(client.describe_table(TableName=table_name))
-    return dynamodb_tables
-
-
-@timeit
-def get_dynamodb(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict[str, Any]:
-    client = boto3_session.client('dynamodb', region_name=region, config=get_botocore_config())
-    cluster_details: Dict[str, Any] = {}
-    try:
-        # TODO
-        response = client.describe_cluster(ClusterId=cluster_id)
-        cluster_details = response['Cluster']
-    except botocore.exceptions.ClientError as e:
-        # TODO
-        code = e.response['Error']['Code']
-        msg = e.response['Error']['Message']
-        logger.warning(f"Could not run EMR describe_cluster due to boto3 error {code}: {msg}. Skipping.")
-    return cluster_details
-
-
-@timeit 
-def load_dynamodb_tables_emr(
-    neo4j_session: neo4j.Session, cluster_data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
-    aws_update_tag: int,
-) -> None:
-    logger.info(f"Loading Dynamo DB tables {len(cluster_data)} for region '{region}' into graph.")
-    load(
-        neo4j_session,
-        DynamoDBTableSchema(),
-        cluster_data,
-        lastupdated=aws_update_tag,
-        Region=region,
-        AWS_ID=current_aws_account_id,
-    )
-
-@timeit 
-def load_dynamodb_gsi_emr(
-    neo4j_session: neo4j.Session, cluster_data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
-    aws_update_tag: int,
-) -> None:
-    logger.info(f"Loading Dynamo DB GSI {len(cluster_data)} for region '{region}' into graph.")
-    load(
-        neo4j_session,
-        DynamoDBGSISchema(),
-        cluster_data,
-        lastupdated=aws_update_tag,
-        Region=region,
-        AWS_ID=current_aws_account_id,
-    )
+    for table in dynamodb_tables:
+        ddb_table_data.append({
+            'Arn': table['Table']['TableArn'],
+            'TableName': table['Table']['TableName'],
+            'Region': region,
+            'Rows': table['Table']['ItemCount'],
+            'Size': table['Table']['TableSizeBytes'],
+            'ProvisionedThroughputReadCapacityUnits': table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
+            'ProvisionedThroughputWriteCapacityUnits': table['Table']['ProvisionedThroughput']['WriteCapacityUnits'],
+        })
+        for gsi in table['Table'].get('GlobalSecondaryIndexes', []):
+            ddb_gsi_data.append({
+                'Arn': gsi['IndexArn'],
+                'TableArn': table['Table']['TableArn'],
+                'Region': region,
+                'ProvisionedThroughputReadCapacityUnits': gsi['ProvisionedThroughput']['ReadCapacityUnits'],
+                'ProvisionedThroughputWriteCapacityUnits': gsi['ProvisionedThroughput']['WriteCapacityUnits'],
+                'GSIName': gsi['IndexName'],
+            })
+    return ddb_table_data, ddb_gsi_data
 
 
 @timeit
 def load_dynamodb_tables(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, tables_data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
-    ingest_table = """
-    MERGE (table:DynamoDBTable{id: $Arn})
-    ON CREATE SET table.firstseen = timestamp(), table.arn = $Arn, table.name = $TableName,
-    table.region = $Region
-    SET table.lastupdated = $aws_update_tag, table.rows = $Rows, table.size = $Size,
-    table.provisioned_throughput_read_capacity_units = $ProvisionedThroughputReadCapacityUnits,
-    table.provisioned_throughput_write_capacity_units = $ProvisionedThroughputWriteCapacityUnits
-    WITH table
-    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
-    MERGE (owner)-[r:RESOURCE]->(table)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    """
-
-    for table in data:
-        neo4j_session.run(
-            ingest_table,
-            Arn=table['Table']['TableArn'],
-            Region=region,
-            ProvisionedThroughputReadCapacityUnits=table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
-            ProvisionedThroughputWriteCapacityUnits=table['Table']['ProvisionedThroughput']['WriteCapacityUnits'],
-            Size=table['Table']['TableSizeBytes'],
-            TableName=table['Table']['TableName'],
-            Rows=table['Table']['ItemCount'],
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-        )
-        load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag)
+    logger.info(f"Loading Dynamo DB tables {len(tables_data)} for region '{region}' into graph.")
+    load(
+        neo4j_session,
+        DynamoDBTableSchema(),
+        tables_data,
+        lastupdated=aws_update_tag,
+        Region=region,
+        AWS_ID=current_aws_account_id,
+    )
 
 
 @timeit
-def load_gsi(
-    neo4j_session: neo4j.Session, table: Dict, region: str, current_aws_account_id: str,
+def load_dynamodb_gsi(
+    neo4j_session: neo4j.Session, gsi_data: List[Dict[str, Any]], region: str, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
-    ingest_gsi = """
-    MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: $Arn})
-    ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = $Arn, gsi.name = $GSIName,
-    gsi.region = $Region
-    SET gsi.lastupdated = $aws_update_tag,
-    gsi.provisioned_throughput_read_capacity_units = $ProvisionedThroughputReadCapacityUnits,
-    gsi.provisioned_throughput_write_capacity_units = $ProvisionedThroughputWriteCapacityUnits
-    WITH gsi
-    MATCH (table:DynamoDBTable{arn: $TableArn})
-    MERGE (table)-[r:GLOBAL_SECONDARY_INDEX]->(gsi)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    """
+    logger.info(f"Loading Dynamo DB GSI {len(gsi_data)} for region '{region}' into graph.")
+    load(
+        neo4j_session,
+        DynamoDBGSISchema(),
+        gsi_data,
+        lastupdated=aws_update_tag,
+        Region=region,
+        AWS_ID=current_aws_account_id,
+    )
 
-    for gsi in table['Table'].get('GlobalSecondaryIndexes', []):
-        neo4j_session.run(
-            ingest_gsi,
-            TableArn=table['Table']['TableArn'],
-            Arn=gsi['IndexArn'],
-            Region=region,
-            ProvisionedThroughputReadCapacityUnits=gsi['ProvisionedThroughput']['ReadCapacityUnits'],
-            ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughput']['WriteCapacityUnits'],
-            GSIName=gsi['IndexName'],
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-        )
+
+# @timeit
+# def load_dynamodb_tables_old(
+#     neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+#     aws_update_tag: int,
+# ) -> None:
+#     ingest_table = """
+#     MERGE (table:DynamoDBTable{id: $Arn})
+#     ON CREATE SET table.firstseen = timestamp(), table.arn = $Arn, table.name = $TableName,
+#     table.region = $Region
+#     SET table.lastupdated = $aws_update_tag, table.rows = $Rows, table.size = $Size,
+#     table.provisioned_throughput_read_capacity_units = $ProvisionedThroughputReadCapacityUnits,
+#     table.provisioned_throughput_write_capacity_units = $ProvisionedThroughputWriteCapacityUnits
+#     WITH table
+#     MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
+#     MERGE (owner)-[r:RESOURCE]->(table)
+#     ON CREATE SET r.firstseen = timestamp()
+#     SET r.lastupdated = $aws_update_tag
+#     """
+
+#     for table in data:
+#         neo4j_session.run(
+#             ingest_table,
+#             Arn=table['Table']['TableArn'],
+#             Region=region,
+#             ProvisionedThroughputReadCapacityUnits=table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
+#             ProvisionedThroughputWriteCapacityUnits=table['Table']['ProvisionedThroughput']['WriteCapacityUnits'],
+#             Size=table['Table']['TableSizeBytes'],
+#             TableName=table['Table']['TableName'],
+#             Rows=table['Table']['ItemCount'],
+#             AWS_ACCOUNT_ID=current_aws_account_id,
+#             aws_update_tag=aws_update_tag,
+#         )
+#         load_gsi(neo4j_session, table, region, current_aws_account_id, aws_update_tag)
+
+
+# @timeit
+# def load_gsi_old(
+#     neo4j_session: neo4j.Session, table: Dict, region: str, current_aws_account_id: str,
+#     aws_update_tag: int,
+# ) -> None:
+#     ingest_gsi = """
+#     MERGE (gsi:DynamoDBGlobalSecondaryIndex{id: $Arn})
+#     ON CREATE SET gsi.firstseen = timestamp(), gsi.arn = $Arn, gsi.name = $GSIName,
+#     gsi.region = $Region
+#     SET gsi.lastupdated = $aws_update_tag,
+#     gsi.provisioned_throughput_read_capacity_units = $ProvisionedThroughputReadCapacityUnits,
+#     gsi.provisioned_throughput_write_capacity_units = $ProvisionedThroughputWriteCapacityUnits
+#     WITH gsi
+#     MATCH (table:DynamoDBTable{arn: $TableArn})
+#     MERGE (table)-[r:GLOBAL_SECONDARY_INDEX]->(gsi)
+#     ON CREATE SET r.firstseen = timestamp()
+#     SET r.lastupdated = $aws_update_tag
+#     """
+
+#     for gsi in table['Table'].get('GlobalSecondaryIndexes', []):
+#         neo4j_session.run(
+#             ingest_gsi,
+#             TableArn=table['Table']['TableArn'],
+#             Arn=gsi['IndexArn'],
+#             Region=region,
+#             ProvisionedThroughputReadCapacityUnits=gsi['ProvisionedThroughput']['ReadCapacityUnits'],
+#             ProvisionedThroughputWriteCapacityUnits=gsi['ProvisionedThroughput']['WriteCapacityUnits'],
+#             GSIName=gsi['IndexName'],
+#             AWS_ACCOUNT_ID=current_aws_account_id,
+#             aws_update_tag=aws_update_tag,
+#         )
 
 
 @timeit
 def cleanup_dynamodb_tables(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('aws_import_dynamodb_tables_cleanup.json', neo4j_session, common_job_parameters)
-    '''
     cleanup_job = GraphJob.from_node_schema(DynamoDBTableSchema(), common_job_parameters)
     cleanup_job.run(neo4j_session)
-    '''
 
 
 @timeit
@@ -166,8 +166,9 @@ def sync_dynamodb_tables(
 ) -> None:
     for region in regions:
         logger.info("Syncing DynamoDB for region in '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_dynamodb_tables(boto3_session, region)
-        load_dynamodb_tables(neo4j_session, data, region, current_aws_account_id, aws_update_tag)
+        ddb_table_data, ddb_gsi_data = get_dynamodb_tables(boto3_session, region)
+        load_dynamodb_tables(neo4j_session, ddb_table_data, region, current_aws_account_id, aws_update_tag)
+        load_dynamodb_gsi(neo4j_session, ddb_gsi_data, region, current_aws_account_id, aws_update_tag)
     cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
 
 

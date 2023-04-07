@@ -12,29 +12,15 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 @dataclass(frozen=True)
 class DynamoDBTableNodeProperties(CartographyNodeProperties):
-    # TODO
-    arn: PropertyRef = PropertyRef('ClusterArn', extra_index=True)
-    auto_terminate: PropertyRef = PropertyRef('AutoTerminate')
-    autoscaling_role: PropertyRef = PropertyRef('AutoScalingRole')
-    custom_ami_id: PropertyRef = PropertyRef('CustomAmiId')
-    id: PropertyRef = PropertyRef('Id')
-    instance_collection_type: PropertyRef = PropertyRef('InstanceCollectionType')
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    log_encryption_kms_key_id: PropertyRef = PropertyRef('LogEncryptionKmsKeyId')
-    log_uri: PropertyRef = PropertyRef('LogUri')
-    master_public_dns_name: PropertyRef = PropertyRef('MasterPublicDnsName')
-    name: PropertyRef = PropertyRef('Name')
-    outpost_arn: PropertyRef = PropertyRef('OutpostArn')
+    id: PropertyRef = PropertyRef('Arn', extra_index=True)
+    arn: PropertyRef = PropertyRef('Arn')
+    name: PropertyRef = PropertyRef('TableName')
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
-    release_label: PropertyRef = PropertyRef('ReleaseLabel')
-    repo_upgrade_on_boot: PropertyRef = PropertyRef('RepoUpgradeOnBoot')
-    requested_ami_version: PropertyRef = PropertyRef('RequestedAmiVersion')
-    running_ami_version: PropertyRef = PropertyRef('RunningAmiVersion')
-    scale_down_behavior: PropertyRef = PropertyRef('ScaleDownBehavior')
-    security_configuration: PropertyRef = PropertyRef('SecurityConfiguration')
-    servicerole: PropertyRef = PropertyRef('ServiceRole')
-    termination_protected: PropertyRef = PropertyRef('TerminationProtected')
-    visible_to_all_users: PropertyRef = PropertyRef('VisibleToAllUsers')
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    rows: PropertyRef = PropertyRef('Rows')
+    size: PropertyRef = PropertyRef('Size')
+    provisioned_throughput_read_capacity_units: PropertyRef = PropertyRef('ProvisionedThroughputReadCapacityUnits')
+    provisioned_throughput_write_capacity_units: PropertyRef = PropertyRef('ProvisionedThroughputWriteCapacityUnits')
 
 
 @dataclass(frozen=True)
@@ -43,8 +29,7 @@ class DynamoDBTableToAwsAccountRelProperties(CartographyRelProperties):
 
 
 @dataclass(frozen=True)
-# (:EMRCluster)<-[:RESOURCE]-(:AWSAccount)
-# TODO 
+# (:DynamoDBTable)<-[:RESOURCE]-(:AWSAccount)
 class DynamoDBTableToAWSAccount(CartographyRelSchema):
     target_node_label: str = 'AWSAccount'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
