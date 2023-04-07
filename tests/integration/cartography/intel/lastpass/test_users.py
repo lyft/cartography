@@ -14,7 +14,7 @@ def test_load_lastpass_users(neo4j_session):
         "LASTPASS_CID": '1234',
     }
 
-    cartography.intel.lastpass.users.load(
+    cartography.intel.lastpass.users.load_users(
         neo4j_session,
         formatted_data,
         common_job_parameters,
