@@ -7,8 +7,8 @@ import neo4j
 from dateutil import parser as dt_parse
 from requests import Session
 
-from cartography.client.core.tx import load_graph_data
-from cartography.graph.querybuilder import build_ingestion_query
+from cartography.client.core.tx import load
+from cartography.graph.job import GraphJob
 from cartography.models.lastpass.tenant import LastpassTenantSchema
 from cartography.models.lastpass.user import LastpassUserSchema
 from cartography.util import timeit
@@ -26,7 +26,8 @@ def sync(
 ) -> None:
     users = get(lastpass_provhash, common_job_parameters)
     formated_users = transform(users)
-    load(neo4j_session, formated_users, common_job_parameters)
+    load_users(neo4j_session, formated_users, common_job_parameters)
+    cleanup(neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -44,8 +45,8 @@ def get(lastpass_provhash: str, common_job_parameters: Dict[str, Any]) -> Dict[s
 
 
 @timeit
-def transform(api_result: dict) -> List[Dict]:
-    result: List[dict] = []
+def transform(api_result: Dict[str, Any]) -> List[Dict[str, Any]]:
+    result: List[Dict[str, Any]] = []
     for uid, user in api_result['Users'].items():
         n_user = user.copy()
         n_user['id'] = int(uid)
@@ -55,26 +56,27 @@ def transform(api_result: dict) -> List[Dict]:
     return result
 
 
-def load(
+def load_users(
     neo4j_session: neo4j.Session,
     data: List[Dict],
     common_job_parameters: Dict[str, Any],
 ) -> None:
 
-    user_query = build_ingestion_query(LastpassUserSchema())
-    tenant_query = build_ingestion_query(LastpassTenantSchema())
-
-    load_graph_data(
+    load(
         neo4j_session,
-        tenant_query,
+        LastpassTenantSchema(),
         [{'id': common_job_parameters['LASTPASS_CID']}],
         lastupdated=common_job_parameters['UPDATE_TAG'],
     )
 
-    load_graph_data(
+    load(
         neo4j_session,
-        user_query,
+        LastpassUserSchema(),
         data,
         lastupdated=common_job_parameters['UPDATE_TAG'],
         tenant_id=common_job_parameters['LASTPASS_CID'],
     )
+
+
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any]) -> None:
+    GraphJob.from_node_schema(LastpassUserSchema(), common_job_parameters).run(neo4j_session)
