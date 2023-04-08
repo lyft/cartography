@@ -76,7 +76,7 @@ class PropertyRef:
         # This function ensures that the Neo4j query sets the value of this node/relationship property by checking the
         # following sources in order:
         # 1. the current dict being processed. That is, we check if dict `item` contains a key called `self.name` with
-        # a non-None value. If so, we are done. Else continue and check the next source.
+        # a non-None value. If so, we use that value. Else continue and check the next source.
         # 2. An existing value on the node itself. That is, we convert self.name to lowercase and check if that is non
         # null on the Neo4j node `i` already. If None, then the property is not set (this a Neo4j driver behavior).
         # This means we make an ASSUMPTION that the property name set on the node is the lowercase version of self.name.
