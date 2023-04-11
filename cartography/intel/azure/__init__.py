@@ -17,8 +17,7 @@ from . import subscription
 from . import tag
 from . import tenant
 from .resources import RESOURCE_FUNCTIONS
-from .util.credentials import Authenticator
-from .util.credentials import Credentials
+from .util.credentials import Authenticator, Credentials
 from cartography.config import Config
 from cartography.intel.azure.util.common import parse_and_validate_azure_requested_syncs
 from cartography.util import timeit
