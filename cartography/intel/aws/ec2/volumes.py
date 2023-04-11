@@ -34,7 +34,7 @@ def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_ac
         active_attachments = [a for a in attachments if a['State'] == 'attached']
 
         volume_id = volume['VolumeId']
-        raw_vol = ({
+        raw_vol = {
             'Arn': build_arn('ec2', current_aws_account_id, 'volume', volume_id, region),
             'AvailabilityZone': volume['AvailabilityZone'],
             'CreateTime': volume['CreateTime'],
@@ -49,7 +49,7 @@ def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_ac
             'VolumeType': volume['VolumeType'],
             'VolumeId': volume_id,
             'KmsKeyId': volume['KmsKeyId'],
-        })
+        }
 
         if not active_attachments:
             result.append(raw_vol)
