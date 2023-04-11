@@ -33,7 +33,7 @@ def sync(
 @timeit
 def get(lastpass_provhash: str, common_job_parameters: Dict[str, Any]) -> Dict[str, Any]:
     payload = {
-        'cid': common_job_parameters['LASTPASS_CID'],
+        'cid': common_job_parameters['tenant_id'],
         'provhash': lastpass_provhash,
         'cmd': 'getuserdata',
         'data': None,
@@ -65,7 +65,7 @@ def load_users(
     load(
         neo4j_session,
         LastpassTenantSchema(),
-        [{'id': common_job_parameters['LASTPASS_CID']}],
+        [{'id': common_job_parameters['tenant_id']}],
         lastupdated=common_job_parameters['UPDATE_TAG'],
     )
 
@@ -74,7 +74,7 @@ def load_users(
         LastpassUserSchema(),
         data,
         lastupdated=common_job_parameters['UPDATE_TAG'],
-        tenant_id=common_job_parameters['LASTPASS_CID'],
+        tenant_id=common_job_parameters['tenant_id'],
     )
 
 

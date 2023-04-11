@@ -11,7 +11,7 @@ def test_load_lastpass_users(neo4j_session):
     formatted_data = cartography.intel.lastpass.users.transform(data)
     common_job_parameters = {
         "UPDATE_TAG": TEST_UPDATE_TAG,
-        "LASTPASS_CID": '1234',
+        "tenant_id": '1234',
     }
 
     cartography.intel.lastpass.users.load_users(
