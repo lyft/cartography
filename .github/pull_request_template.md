@@ -1,6 +1,13 @@
+### Summary
 
+> Describe your changes
+
+### Related issues
+- > Link any realted github issues
 ___
 Read through our [developer docs](https://lyft.github.io/cartography/dev/developer-guide.html)
+
+- [ ] PR Title starts with "Fixes: [issue number]"
 
 If you are modifying or implementing a new intel module
 - [ ] Update the [schema](https://github.com/lyft/cartography/tree/master/docs/root/modules)
