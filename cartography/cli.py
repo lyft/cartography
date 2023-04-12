@@ -11,7 +11,6 @@ import cartography.sync
 import cartography.util
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -243,6 +242,22 @@ class CLI:
             default=None,
             help=(
                 'AWS region name for which the updation of resource needs to be performed'
+            ),
+        )
+        parser.add_argument(
+            '--borneo-aws-profile',
+            type=str,
+            default=None,
+            help=(
+                'AWS profile name for which cartography needs to be run'
+            ),
+        )
+        parser.add_argument(
+            '--borneo-aws-config',
+            type=str,
+            default=None,
+            help=(
+                'AWS config file for which cartography needs to be run'
             ),
         )
         parser.add_argument(
@@ -546,6 +561,8 @@ class CLI:
         # TODO support parameter lookup in environment variables if not present on command line
         config: argparse.Namespace = self.parser.parse_args(argv)
         
+        os.environ['AWS_PROFILE'] = config.borneo_aws_profile
+        os.environ['AWS_CONFIG_FILE'] = config.borneo_aws_config
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
@@ -743,4 +760,4 @@ def main(argv=None, sync_flag=None):
             logger.warning("The requested sync doesn't exist, running the default sync")
         default_sync = cartography.sync.build_default_borneo_sync(requested_sync == 'skip_index')
         result = CLI(default_sync, prog='cartography').main(argv)
-    return result
+    exit(result)
