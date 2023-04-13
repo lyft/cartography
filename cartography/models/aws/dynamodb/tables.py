@@ -12,7 +12,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 @dataclass(frozen=True)
 class DynamoDBTableNodeProperties(CartographyNodeProperties):
-    id: PropertyRef = PropertyRef('Arn', extra_index=True)
+    id: PropertyRef = PropertyRef('Arn')
     arn: PropertyRef = PropertyRef('Arn')
     name: PropertyRef = PropertyRef('TableName')
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)

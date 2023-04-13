@@ -93,8 +93,8 @@ def load_dynamodb_gsi(
 
 @timeit
 def cleanup_dynamodb_tables(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    cleanup_job = GraphJob.from_node_schema(DynamoDBTableSchema(), common_job_parameters)
-    cleanup_job.run(neo4j_session)
+    GraphJob.from_node_schema(DynamoDBTableSchema(), common_job_parameters).run(neo4j_session)
+    GraphJob.from_node_schema(DynamoDBGSISchema(), common_job_parameters).run(neo4j_session)
 
 
 @timeit

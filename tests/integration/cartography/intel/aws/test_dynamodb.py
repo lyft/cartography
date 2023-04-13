@@ -52,6 +52,67 @@ def test_load_dynamodb(mock_get_instances, neo4j_session):
         ('arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_3-index',),
     }
 
+
+    # Assert AWSAccount -> DynamoDBTABLE
+    assert check_rels(
+        neo4j_session,
+        'NetworkInterface',
+        'id',
+        'AWSAccount',
+        'id',
+        'RESOURCE',
+        rel_direction_right=False,
+    ) == {
+        ('arn:aws:dynamodb:us-east-1:000000000000:table/example-table', '000000000000'),
+        ('arn:aws:dynamodb:us-east-1:000000000000:table/sample-table', '000000000000'),
+        ('arn:aws:dynamodb:us-east-1:000000000000:table/model-table', '000000000000'),
+        ('arn:aws:dynamodb:us-east-1:000000000000:table/basic-table', '000000000000'),
+    }
+
+    # Assert AWSAccount -> DynamoDBGlobalSecondaryIndex
+    assert check_rels(
+        neo4j_session,
+        'AWSAccount',
+        'id',
+        'DynamoDBGlobalSecondaryIndex',
+        'id',
+        'RESOURCE',
+        rel_direction_right=True,
+    ) == {
+        (
+            '000000000000',
+            'arn:aws:dynamodb:us-east-1:table/example-table/index/sample_1-index',
+        ),
+        (
+            '000000000000',
+            'arn:aws:dynamodb:us-east-1:table/example-table/index/sample_2-index',
+        ),
+        (
+            '000000000000',
+            'arn:aws:dynamodb:us-east-1:table/model-table/index/sample_1-index',
+        ),
+        (
+            '000000000000',
+            'arn:aws:dynamodb:us-east-1:table/model-table/index/sample_2-index',
+        ),
+        (
+            '000000000000',
+            'arn:aws:dynamodb:us-east-1:table/model-table/index/sample_3-index',
+        ),
+        (
+            '000000000000',
+            'arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_1-index',
+        ),
+        (
+            '000000000000',
+            'arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_2-index',
+        ),
+        (
+            '000000000000',
+            'arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_3-index',
+        ),
+    }
+
     # Assert DynamoDBTable -> DynamoDBGlobalSecondaryIndex
     assert check_rels(
         neo4j_session,
