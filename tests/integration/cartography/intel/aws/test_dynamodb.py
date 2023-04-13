@@ -54,7 +54,6 @@ def test_load_dynamodb(mock_get_instances, neo4j_session):
         ('arn:aws:dynamodb:us-east-1:table/sample-table/index/sample_3-index',),
     }
 
-
     # Assert AWSAccount -> DynamoDBTable
     assert check_rels(
         neo4j_session,
