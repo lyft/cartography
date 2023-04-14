@@ -131,6 +131,9 @@ class Config:
         crowdstrike_client_id=None,
         crowdstrike_client_secret=None,
         crowdstrike_api_url=None,
+        sumologic_access_id=None,
+        sumologic_access_key=None,
+        sumologic_api_url=None,
         gsuite_auth_method=None,
         gsuite_config=None,
     ):
@@ -174,5 +177,8 @@ class Config:
         self.crowdstrike_client_id = crowdstrike_client_id
         self.crowdstrike_client_secret = crowdstrike_client_secret
         self.crowdstrike_api_url = crowdstrike_api_url
+        self.sumologic_access_id = sumologic_access_id
+        self.sumologic_access_key = sumologic_access_key
+        self.sumologic_api_url = sumologic_api_url
         self.gsuite_auth_method = gsuite_auth_method
         self.gsuite_config = gsuite_config

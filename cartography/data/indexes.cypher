@@ -428,3 +428,5 @@ CREATE INDEX IF NOT EXISTS FOR (n:KubernetesSecret) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:KubernetesService) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:KubernetesService) ON (n.name);
 CREATE INDEX IF NOT EXISTS FOR (n:KubernetesService) ON (n.lastupdated);
+CREATE INDEX IF NOT EXISTS FOR (n:SumologicHost) ON (n.hostname);
+CREATE INDEX IF NOT EXISTS FOR (n:SumologicHost) ON (n.lastupdated);

@@ -25,6 +25,7 @@ import cartography.intel.gsuite
 import cartography.intel.kubernetes
 import cartography.intel.oci
 import cartography.intel.okta
+import cartography.intel.sumologic
 from cartography.config import Config
 from cartography.stats import set_stats_client
 from cartography.util import STATUS_FAILURE
@@ -44,6 +45,7 @@ TOP_LEVEL_MODULES = OrderedDict({  # preserve order so that the default sync alw
     'cve': cartography.intel.cve.start_cve_ingestion,
     'oci': cartography.intel.oci.start_oci_ingestion,
     'okta': cartography.intel.okta.start_okta_ingestion,
+    'sumologic': cartography.intel.sumologic.start_sumologic_ingestion,
     'github': cartography.intel.github.start_github_ingestion,
     'digitalocean': cartography.intel.digitalocean.start_digitalocean_ingestion,
     'kubernetes': cartography.intel.kubernetes.start_k8s_ingestion,

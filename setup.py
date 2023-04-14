@@ -59,6 +59,8 @@ setup(
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
         "python-dateutil",
+        "msticpy[azure]>=2.2.0",
+        "sumologic-sdk>=0.1.13",
     ],
     extras_require={
         ':python_version<"3.7"': [
