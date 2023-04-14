@@ -33,5 +33,7 @@ def start_lastpass_ingestion(neo4j_session: neo4j.Session, config: Config) -> No
     cartography.intel.lastpass.users.sync(
         neo4j_session,
         config.lastpass_provhash,
+        int(config.lastpass_cid),
+        config.lastpass_cid,
         common_job_parameters,
     )

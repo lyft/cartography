@@ -22,18 +22,20 @@ _TIMEOUT = (60, 60)
 def sync(
     neo4j_session: neo4j.Session,
     lastpass_provhash: str,
+    tenant_id: int,
+    update_tag: int,
     common_job_parameters: Dict[str, Any],
 ) -> None:
-    users = get(lastpass_provhash, common_job_parameters)
+    users = get(lastpass_provhash, tenant_id)
     formated_users = transform(users)
-    load_users(neo4j_session, formated_users, common_job_parameters)
+    load_users(neo4j_session, formated_users, tenant_id, update_tag)
     cleanup(neo4j_session, common_job_parameters)
 
 
 @timeit
-def get(lastpass_provhash: str, common_job_parameters: Dict[str, Any]) -> Dict[str, Any]:
+def get(lastpass_provhash: str, tenant_id: int) -> Dict[str, Any]:
     payload = {
-        'cid': common_job_parameters['tenant_id'],
+        'cid': tenant_id,
         'provhash': lastpass_provhash,
         'cmd': 'getuserdata',
         'data': None,
@@ -58,23 +60,24 @@ def transform(api_result: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 def load_users(
     neo4j_session: neo4j.Session,
-    data: List[Dict],
-    common_job_parameters: Dict[str, Any],
+    data: List[Dict[str, Any]],
+    tenant_id: int,
+    update_tag: int,
 ) -> None:
 
     load(
         neo4j_session,
         LastpassTenantSchema(),
-        [{'id': common_job_parameters['tenant_id']}],
-        lastupdated=common_job_parameters['UPDATE_TAG'],
+        [{'id': tenant_id}],
+        lastupdated=update_tag,
     )
 
     load(
         neo4j_session,
         LastpassUserSchema(),
         data,
-        lastupdated=common_job_parameters['UPDATE_TAG'],
-        tenant_id=common_job_parameters['tenant_id'],
+        lastupdated=update_tag,
+        tenant_id=tenant_id,
     )
 
 
