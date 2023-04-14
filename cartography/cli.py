@@ -436,6 +436,22 @@ class CLI:
                 'The name of environment variable containing secrets for GSuite authentication.'
             ),
         )
+        parser.add_argument(
+            '--activedirectory-name',
+            type=str,
+            default=None,
+            help=(
+                'Name of used Active Directory name for labelling.'
+            ),
+        )
+        parser.add_argument(
+            '--activedirectory-dirpath',
+            type=str,
+            default=None,
+            help=(
+                'Directory path where to find ActiveDirectory data from BloodHound and similar tools.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
