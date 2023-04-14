@@ -420,6 +420,38 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--azureresourcegraph-tenant-id',
+            type=str,
+            default=None,
+            help=(
+                'The azureresourcegraph tenant id for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--azureresourcegraph-client-id-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the azureresourcegraph client id for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--azureresourcegraph-client-secret-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the azureresourcegraph secret key for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--azureresourcegraph-use-managedidentity',
+            type=bool,
+            default=False,
+            help=(
+                'Use managed identity for azureresourcegraph authentication.'
+            ),
+        )
+        parser.add_argument(
             '--gsuite-auth-method',
             type=str,
             default='delegated',
@@ -568,6 +600,23 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
+
+        # Azure Resource Graph config
+        if config.azureresourcegraph_client_id_env_var:
+            logger.debug(
+                f"Reading API key for mde from environment variable {config.azureresourcegraph_client_id_env_var}",
+            )
+            config.azureresourcegraph_client_id = os.environ.get(config.azureresourcegraph_client_id_env_var)
+        else:
+            config.azureresourcegraph_client_id = None
+
+        if config.azureresourcegraph_client_secret_env_var:
+            logger.debug(
+                f"Reading API key for mde from environment variable {config.azureresourcegraph_client_secret_env_var}",
+            )
+            config.azureresourcegraph_client_secret = os.environ.get(config.azureresourcegraph_client_secret_env_var)
+        else:
+            config.azureresourcegraph_client_secret = None
 
         # GSuite config
         if config.gsuite_tokens_env_var:
