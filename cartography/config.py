@@ -131,6 +131,10 @@ class Config:
         crowdstrike_client_id=None,
         crowdstrike_client_secret=None,
         crowdstrike_api_url=None,
+        mde_tenant_id=None,
+        mde_client_id=None,
+        mde_client_secret=None,
+        mde_api_url=None,
         gsuite_auth_method=None,
         gsuite_config=None,
     ):
@@ -174,5 +178,9 @@ class Config:
         self.crowdstrike_client_id = crowdstrike_client_id
         self.crowdstrike_client_secret = crowdstrike_client_secret
         self.crowdstrike_api_url = crowdstrike_api_url
+        self.mde_tenant_id = mde_tenant_id
+        self.mde_client_id = mde_client_id
+        self.mde_client_secret = mde_client_secret
+        self.mde_api_url = mde_api_url
         self.gsuite_auth_method = gsuite_auth_method
         self.gsuite_config = gsuite_config

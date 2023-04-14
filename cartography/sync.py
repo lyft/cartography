@@ -23,6 +23,7 @@ import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.kubernetes
+import cartography.intel.mde
 import cartography.intel.oci
 import cartography.intel.okta
 from cartography.config import Config
@@ -42,6 +43,7 @@ TOP_LEVEL_MODULES = OrderedDict({  # preserve order so that the default sync alw
     'gsuite': cartography.intel.gsuite.start_gsuite_ingestion,
     'crxcavator': cartography.intel.crxcavator.start_extension_ingestion,
     'cve': cartography.intel.cve.start_cve_ingestion,
+    'mde': cartography.intel.mde.start_mde_ingestion,
     'oci': cartography.intel.oci.start_oci_ingestion,
     'okta': cartography.intel.okta.start_okta_ingestion,
     'github': cartography.intel.github.start_github_ingestion,
