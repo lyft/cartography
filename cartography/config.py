@@ -105,6 +105,8 @@ class Config:
         azure_tenant_id=None,
         azure_client_id=None,
         azure_client_secret=None,
+        azuremonitor_workspace_name=None,
+        azuremonitor_workspace_id=None,
         aws_requested_syncs=None,
         analysis_job_directory=None,
         crxcavator_api_base_uri=None,
@@ -148,6 +150,8 @@ class Config:
         self.azure_tenant_id = azure_tenant_id
         self.azure_client_id = azure_client_id
         self.azure_client_secret = azure_client_secret
+        self.azuremonitor_workspace_name = azuremonitor_workspace_name
+        self.azuremonitor_workspace_id = azuremonitor_workspace_id
         self.aws_requested_syncs = aws_requested_syncs
         self.analysis_job_directory = analysis_job_directory
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
