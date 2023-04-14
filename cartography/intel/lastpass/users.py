@@ -77,7 +77,7 @@ def load_users(
         LastpassUserSchema(),
         data,
         lastupdated=update_tag,
-        tenant_id=tenant_id,
+        TENANT_ID=tenant_id,
     )
 
 

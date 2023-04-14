@@ -44,7 +44,7 @@ class HumanToUserRelProperties(CartographyRelProperties):
 class HumanToUserRel(CartographyRelSchema):
     target_node_label: str = 'Human'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'email': PropertyRef('email')},
+        {'email': PropertyRef('username')},
     )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "IDENTITY_LASTPASS"
@@ -61,7 +61,7 @@ class TenantToUserRelProperties(CartographyRelProperties):
 class LastpassTenantToUserRel(CartographyRelSchema):
     target_node_label: str = 'LastpassTenant'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('tenant_id', set_in_kwargs=True)},
+        {'id': PropertyRef('TENANT_ID', set_in_kwargs=True)},
     )
     direction: LinkDirection = LinkDirection.OUTWARD
     rel_label: str = "RESOURCE"
