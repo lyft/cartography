@@ -35,24 +35,24 @@ class LastpassUserNodeProperties(CartographyNodeProperties):
 
 
 @dataclass(frozen=True)
-class HumanToUserRelProperties(CartographyRelProperties):
+class LastpassUserToHumanRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
 @dataclass(frozen=True)
 # (:LastpassUser)<-[:IDENTITY_LASTPASS]-(:Human)
-class HumanToUserRel(CartographyRelSchema):
+class LastpassHumanToUserRel(CartographyRelSchema):
     target_node_label: str = 'Human'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'email': PropertyRef('username')},
     )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "IDENTITY_LASTPASS"
-    properties: HumanToUserRelProperties = HumanToUserRelProperties()
+    properties: LastpassUserToHumanRelProperties = LastpassUserToHumanRelProperties()
 
 
 @dataclass(frozen=True)
-class TenantToUserRelProperties(CartographyRelProperties):
+class LastpassTenantToLastpassUserRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
@@ -65,12 +65,12 @@ class LastpassTenantToUserRel(CartographyRelSchema):
     )
     direction: LinkDirection = LinkDirection.OUTWARD
     rel_label: str = "RESOURCE"
-    properties: TenantToUserRelProperties = TenantToUserRelProperties()
+    properties: LastpassTenantToLastpassUserRelProperties = LastpassTenantToLastpassUserRelProperties()
 
 
 @dataclass(frozen=True)
 class LastpassUserSchema(CartographyNodeSchema):
     label: str = 'LastpassUser'
     properties: LastpassUserNodeProperties = LastpassUserNodeProperties()
-    other_relationships: OtherRelationships = OtherRelationships(rels=[HumanToUserRel()])
+    other_relationships: OtherRelationships = OtherRelationships(rels=[LastpassHumanToUserRel()])
     sub_resource_relationship: LastpassTenantToUserRel = LastpassTenantToUserRel()
