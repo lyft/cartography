@@ -87,6 +87,10 @@ class Config:
     :param gsuite_auth_method: Auth method (delegated, oauth) used for Google Workspace. Optional.
     :type gsuite_config: str
     :param gsuite_config: Base64 encoded config object or config file path for Google Workspace. Optional.
+    :type lastpass_cid: str
+    :param lastpass_cid: Lastpass account ID. Optional.
+    :type lastpass_provhash: str
+    :param lastpass_provhash: Lastpass API KEY. Optional.
     """
 
     def __init__(
@@ -133,6 +137,8 @@ class Config:
         crowdstrike_api_url=None,
         gsuite_auth_method=None,
         gsuite_config=None,
+        lastpass_cid=None,
+        lastpass_provhash=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -176,3 +182,5 @@ class Config:
         self.crowdstrike_api_url = crowdstrike_api_url
         self.gsuite_auth_method = gsuite_auth_method
         self.gsuite_config = gsuite_config
+        self.lastpass_cid = lastpass_cid
+        self.lastpass_provhash = lastpass_provhash

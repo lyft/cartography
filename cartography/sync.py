@@ -23,6 +23,7 @@ import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
 import cartography.intel.kubernetes
+import cartography.intel.lastpass
 import cartography.intel.oci
 import cartography.intel.okta
 from cartography.config import Config
@@ -47,6 +48,7 @@ TOP_LEVEL_MODULES = OrderedDict({  # preserve order so that the default sync alw
     'github': cartography.intel.github.start_github_ingestion,
     'digitalocean': cartography.intel.digitalocean.start_digitalocean_ingestion,
     'kubernetes': cartography.intel.kubernetes.start_k8s_ingestion,
+    'lastpass': cartography.intel.lastpass.start_lastpass_ingestion,
     'analysis': cartography.intel.analysis.run,
 })
 
