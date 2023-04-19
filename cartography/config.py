@@ -91,6 +91,12 @@ class Config:
     :param lastpass_cid: Lastpass account ID. Optional.
     :type lastpass_provhash: str
     :param lastpass_provhash: Lastpass API KEY. Optional.
+    :type bigfix_username: str
+    :param bigfix_username: The username to authenticate to BigFix. Optional.
+    :type bigfix_password: str
+    :param bigfix_password: The password to authenticate to BigFix. Optional.
+    :type bigfix_root_url: str
+    :param bigfix_root_url: The API URL to use for BigFix, e.g. "https://example.com:52311". Optional.
     """
 
     def __init__(
@@ -139,6 +145,9 @@ class Config:
         gsuite_config=None,
         lastpass_cid=None,
         lastpass_provhash=None,
+        bigfix_username=None,
+        bigfix_password=None,
+        bigfix_root_url=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -184,3 +193,6 @@ class Config:
         self.gsuite_config = gsuite_config
         self.lastpass_cid = lastpass_cid
         self.lastpass_provhash = lastpass_provhash
+        self.bigfix_username = bigfix_username
+        self.bigfix_password = bigfix_password
+        self.bigfix_root_url = bigfix_root_url

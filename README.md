@@ -32,6 +32,7 @@ Start [here](https://lyft.github.io/cartography/install.html).
 - [Crowdstrike Falcon](https://lyft.github.io/cartography/modules/crowdstrike/index.html) - Hosts, Spotlight vulnerabilites, CVEs
 - [NIST CVE](https://lyft.github.io/cartography/modules/cve/index.html) - Common Vulnerabilities and Exposures (CVE) data from NIST database
 - [Lastpass](https://lyft.github.io/cartography/modules/lastpass/index.html) - users
+- [BigFix](https://lyft.github.io/cartography/modules/bigfix/index.html) - Computers
 
 ## Usage
 Start with our [tutorial](https://lyft.github.io/cartography/usage/tutorial.html). Our [data schema](https://lyft.github.io/cartography/usage/schema.html) is a helpful reference when you get stuck.
