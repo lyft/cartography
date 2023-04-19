@@ -452,6 +452,30 @@ class CLI:
                 'The name of environment variable containing the Lastpass provhash for authentication.'
             ),
         )
+        parser.add_argument(
+            '--bigfix-username',
+            type=str,
+            default=None,
+            help=(
+                'The BigFix username for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--bigfix-password-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the BigFix password for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--bigfix-root-url',
+            type=str,
+            default=None,
+            help=(
+                'The BigFix Root URL, a.k.a the BigFix API URL'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -603,6 +627,11 @@ class CLI:
             config.lastpass_provhash = os.environ.get(config.lastpass_provhash_env_var)
         else:
             config.lastpass_provhash = None
+
+        # BigFix config
+        if config.bigfix_username and config.bigfix_password_env_var and config.bigfix_root_url:
+            logger.debug(f"Reading BigFix password from environment variable {config.bigfix_password_env_var}")
+            config.bigfix_password = os.environ.get(config.bigfix_password_env_var)
 
         # Run cartography
         try:

@@ -14,6 +14,7 @@ from statsd import StatsClient
 import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.azure
+import cartography.intel.bigfix
 import cartography.intel.create_indexes
 import cartography.intel.crowdstrike
 import cartography.intel.crxcavator.crxcavator
@@ -49,6 +50,7 @@ TOP_LEVEL_MODULES = OrderedDict({  # preserve order so that the default sync alw
     'digitalocean': cartography.intel.digitalocean.start_digitalocean_ingestion,
     'kubernetes': cartography.intel.kubernetes.start_k8s_ingestion,
     'lastpass': cartography.intel.lastpass.start_lastpass_ingestion,
+    'bigfix': cartography.intel.bigfix.start_bigfix_ingestion,
     'analysis': cartography.intel.analysis.run,
 })
 
