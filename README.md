@@ -33,6 +33,7 @@ Start [here](https://lyft.github.io/cartography/install.html).
 - [NIST CVE](https://lyft.github.io/cartography/modules/cve/index.html) - Common Vulnerabilities and Exposures (CVE) data from NIST database
 - [Lastpass](https://lyft.github.io/cartography/modules/lastpass/index.html) - users
 - [BigFix](https://lyft.github.io/cartography/modules/bigfix/index.html) - Computers
+- Trivy Scanner - AWS ECR Images (TODO documentation)
 
 ## Usage
 Start with our [tutorial](https://lyft.github.io/cartography/usage/tutorial.html). Our [data schema](https://lyft.github.io/cartography/usage/schema.html) is a helpful reference when you get stuck.
