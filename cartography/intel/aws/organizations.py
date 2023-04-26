@@ -109,7 +109,7 @@ def get_account_public_access_block(account_id: str, boto3_session: boto3.sessio
 @timeit
 def parse_account_public_access_block(account_id: str,public_access_block: Optional[Dict]) -> Optional[Dict]:
     """ Parses the account level public access block object and returns a dict of the relevant data """
-    # Versioning object JSON looks like:
+    # Public Access Block configuration object JSON looks like:
     # {
     #     'PublicAccessBlockConfiguration': {
     #         'BlockPublicAcls': True|False,
