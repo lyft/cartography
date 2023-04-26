@@ -131,6 +131,7 @@ def _autodiscover_accounts(
         # Add them to the graph
         logger.info("Loading autodiscovered accounts.")
         organizations.load_aws_accounts(neo4j_session, filtered_accounts, sync_tag, common_job_parameters)
+        
     except botocore.exceptions.ClientError:
         logger.warning(f"The current account ({account_id}) doesn't have enough permissions to perform autodiscovery.")
 
@@ -161,7 +162,8 @@ def _sync_multiple_accounts(
             boto3_session = boto3.Session(profile_name=profile_name)
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
-
+        logger.info("Adding account level public block access for '%s'", account_id)
+        organizations.load_accounts_public_access_block(neo4j_session, boto3_session, account_id, sync_tag)
         try:
             _sync_one_account(
                 neo4j_session,

@@ -1,6 +1,8 @@
 import logging
 import uuid
 from typing import Dict
+from typing import Optional
+from typing import List
 
 import boto3
 import botocore.exceptions
@@ -85,6 +87,73 @@ def get_aws_accounts_from_botocore_config(boto3_session: boto3.session.Session) 
         )
     return d
 
+@timeit
+def get_account_public_access_block(account_id: str, boto3_session: boto3.session.Session) -> Optional[Dict]:
+    """
+    Gets the S3 bucket public access block configuration.
+    """
+    client = boto3_session.client('s3control')
+    public_access_block = None
+    try:
+        public_access_block = client.get_public_access_block(AccountId=account_id)
+    except ClientError as e:
+        logger.info("Error in getting Account Level Public Access Block for '%s', Error: '%s'", 
+        account_id,
+        e.args[0])
+        raise
+    except EndpointConnectionError:
+        logger.warning(
+            f"Failed to retrieve S3 account public access block for account")
+    return public_access_block
+
+@timeit
+def parse_account_public_access_block(account_id: str,public_access_block: Optional[Dict]) -> Optional[Dict]:
+    """ Parses the account level public access block object and returns a dict of the relevant data """
+    # Versioning object JSON looks like:
+    # {
+    #     'PublicAccessBlockConfiguration': {
+    #         'BlockPublicAcls': True|False,
+    #         'IgnorePublicAcls': True|False,
+    #         'BlockPublicPolicy': True|False,
+    #         'RestrictPublicBuckets': True|False
+    #     }
+    # }
+    if public_access_block is None:
+        return None
+    pab = public_access_block["PublicAccessBlockConfiguration"]
+    return {
+        "account_id": account_id,
+        "block_public_acls": pab.get("BlockPublicAcls"),
+        "ignore_public_acls": pab.get("IgnorePublicAcls"),
+        "block_public_policy": pab.get("BlockPublicPolicy"),
+        "restrict_public_buckets": pab.get("RestrictPublicBuckets"),
+    }
+
+@timeit
+def _load_account_public_access_block(
+    neo4j_session: neo4j.Session,
+    account_public_access_block_configs: List[Dict],
+    update_tag: int,
+) -> None:
+    """
+    Ingest S3 public access block results into neo4j.
+    """
+    ingest_account_public_access_block = """
+    UNWIND {account_public_access_block_configs} AS account_public_access_block
+    MATCH (s:AWSAccount) where s.id = account_public_access_block.account_id
+    SET s.account_block_public_acls = account_public_access_block.block_public_acls,
+        s.account_ignore_public_acls = account_public_access_block.ignore_public_acls,
+        s.account_block_public_policy = account_public_access_block.block_public_policy,
+        s.account_restrict_public_buckets = account_public_access_block.restrict_public_buckets,
+        s.lastupdated = {UpdateTag}
+    """
+
+    neo4j_session.run(
+        ingest_account_public_access_block,
+        account_public_access_block_configs=account_public_access_block_configs,
+        UpdateTag=update_tag,
+    )
+
 
 def load_aws_accounts(
     neo4j_session: neo4j.Session, aws_accounts: Dict, aws_update_tag: int,
@@ -116,7 +185,17 @@ def load_aws_accounts(
             aws_update_tag=aws_update_tag
         )
 
-
+def load_accounts_public_access_block(
+  neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, account_id: str, aws_update_tag: int
+) -> None:
+  account_public_access_block = get_account_public_access_block(account_id, boto3_session)
+  account_public_access_block_configs: List[Dict] = []
+  parsed_account_public_access_block = parse_account_public_access_block(account_id,account_public_access_block)
+  logger.debug(parsed_account_public_access_block)
+  if parsed_account_public_access_block is not None:
+    account_public_access_block_configs.append(parsed_account_public_access_block)
+  _load_account_public_access_block(neo4j_session, account_public_access_block_configs, aws_update_tag)
+  
 @timeit
 def sync(neo4j_session: neo4j.Session, accounts: Dict, update_tag: int, common_job_parameters: Dict) -> None:
     load_aws_accounts(neo4j_session, accounts, update_tag, common_job_parameters)
