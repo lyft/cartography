@@ -101,8 +101,14 @@ def get(token: str, api_url: str, organization: str) -> List[Dict]:
     :return: A list of dicts representing repos. See tests.data.github.repos for data shape.
     """
     # TODO: link the Github organization to the repositories
-    repos, _ = fetch_all(token, api_url, organization, GITHUB_ORG_REPOS_PAGINATED_GRAPHQL, 'repositories', 'nodes')
-    return repos
+    repos, _ = fetch_all(
+        token,
+        api_url,
+        organization,
+        GITHUB_ORG_REPOS_PAGINATED_GRAPHQL,
+        'repositories',
+    )
+    return repos.nodes
 
 
 def transform(repos_json: List[Dict]) -> Dict:

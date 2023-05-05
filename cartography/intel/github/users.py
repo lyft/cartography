@@ -55,8 +55,14 @@ def get(token: str, api_url: str, organization: str) -> Tuple[List[Dict], Dict]:
     :return: A 2-tuple containing 1. a list of dicts representing users - see tests.data.github.users.GITHUB_USER_DATA
     for shape, and 2. data on the owning GitHub organization - see tests.data.github.users.GITHUB_ORG_DATA for shape.
     """
-    users, org = fetch_all(token, api_url, organization, GITHUB_ORG_USERS_PAGINATED_GRAPHQL, 'membersWithRole', 'edges')
-    return users, org
+    users, org = fetch_all(
+        token,
+        api_url,
+        organization,
+        GITHUB_ORG_USERS_PAGINATED_GRAPHQL,
+        'membersWithRole',
+    )
+    return users.edges, org
 
 
 @timeit

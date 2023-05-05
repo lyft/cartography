@@ -6,6 +6,7 @@ import neo4j
 from requests import exceptions
 
 import cartography.intel.github.repos
+import cartography.intel.github.teams
 import cartography.intel.github.users
 from cartography.config import Config
 from cartography.util import timeit
@@ -45,6 +46,14 @@ def start_github_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
                 auth_data['token'],
                 auth_data['url'],
                 auth_data['name'],
+            )
+            cartography.intel.github.teams.sync_github_teams(
+                neo4j_session,
+                common_job_parameters,
+                auth_data['token'],
+                auth_data['url'],
+                auth_data['name'],
+                config.update_tag,
             )
         except exceptions.RequestException as e:
             logger.error("Could not complete request to the GitHub API: %s", e)
