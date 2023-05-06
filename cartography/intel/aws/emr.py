@@ -37,7 +37,6 @@ def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[
 
 @timeit
 def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict:
-    print(f"describe for {cluster_id}")
     client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
     cluster_details: Dict[str, Any] = {}
     try:
@@ -81,6 +80,8 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict[str, Any],
 ) -> None:
+    tic = time.perf_counter()
+
     for region in regions:
         logger.info(f"Syncing EMR for region '{region}' in account '{current_aws_account_id}'.")
 
@@ -97,3 +98,6 @@ def sync(
         load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 instances: {toc - tic:0.4f} seconds")

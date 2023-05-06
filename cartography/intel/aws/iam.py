@@ -954,12 +954,3 @@ def sync(
 
     toc = time.perf_counter()
     logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")
-
-# https://docs.aws.amazon.com/cli/latest/reference/iam/generate-service-last-accessed-details.html
-#
-#
-# Steps to get access details:
-# 1.generate service last accessed details by ARN (or overall?)
-# 2.
-#
-#

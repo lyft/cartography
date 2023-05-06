@@ -183,7 +183,7 @@ def load_health_checks_tx(
     MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(healthcheck)
     ON CREATE SET
-        r.firstseeen = timestamp()
+        r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     """
 
@@ -370,7 +370,7 @@ def load_instance_groups_tx(
     MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(instancegroup)
     ON CREATE SET
-        r.firstseeen = timestamp()
+        r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     """
 
@@ -554,7 +554,7 @@ def load_url_maps_tx(
     MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(map)
     ON CREATE SET
-        r.firstseeen = timestamp()
+        r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     """
 
@@ -680,7 +680,7 @@ def load_ssl_policies_tx(
     MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(policy)
     ON CREATE SET
-        r.firstseeen = timestamp()
+        r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     """
 

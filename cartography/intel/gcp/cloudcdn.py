@@ -189,7 +189,7 @@ def load_backend_services_tx(
     MATCH (owner:GCPProject{id:$ProjectId})
     MERGE (owner)-[r:RESOURCE]->(service)
     ON CREATE SET
-        r.firstseeen = timestamp()
+        r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     """
 
@@ -376,7 +376,7 @@ def load_url_maps_tx(
     MATCH (owner:GCPProject{id: $ProjectId})
     MERGE (owner)-[r:RESOURCE]->(map)
     ON CREATE SET
-        r.firstseeen = timestamp()
+        r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     """
 

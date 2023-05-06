@@ -2,6 +2,7 @@ import json
 import logging
 import time
 from typing import Dict
+from typing import List
 
 import neo4j
 from cloudconsolelink.clouds.gcp import GCPLinker
@@ -16,7 +17,7 @@ gcp_console_link = GCPLinker()
 
 
 @timeit
-def get_gke_clusters(container: Resource, project_id: str, regions: list, common_job_parameters) -> Dict:
+def get_gke_clusters(container: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:
     """
     Returns a GCP response object containing a list of GKE clusters within the given project.
 
@@ -41,7 +42,7 @@ def get_gke_clusters(container: Resource, project_id: str, regions: list, common
             if regions is None:
                 data.append(item)
             else:
-                if item['zone'][:-2] in regions:
+                if get_region_from_location(item['zone']) in regions:
                     data.append(item)
         if common_job_parameters.get('pagination', {}).get('gke', None):
             pageNo = common_job_parameters.get("pagination", {}).get("gke", None)["pageNo"]
@@ -73,10 +74,22 @@ def get_gke_clusters(container: Resource, project_id: str, regions: list, common
                     "Could not retrieve GKE clusters on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
-            return {}
+            return []
         else:
             raise
 
+def get_region_from_location(location):
+    if not location:
+        return location
+
+    location = location.lower()
+    sections = location.split('-')
+
+    if len(sections) > 2:
+        return location[:location.index('-', location.index('-') + 1)]
+
+    else:
+        return location
 
 @timeit
 def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_id: str, gcp_update_tag: int) -> None:
@@ -139,7 +152,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
     SET r.lastupdated = $gcp_update_tag
     """
     for cluster in cluster_resp:
-        cluster['region'] = cluster.get('zone')[:-2]
+        cluster['region'] = get_region_from_location(cluster.get('zone'))
 
         neo4j_session.run(
             query,

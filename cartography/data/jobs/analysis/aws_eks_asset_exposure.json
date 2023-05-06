@@ -2,13 +2,13 @@
 	"statements": [
 		{
 			"__comment": "This is a clean-up statement to remove custom attributes",
-			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE EXISTS(cluster.exposed_internet) REMOVE cluster.exposed_internet return COUNT(*) as TotalCompleted",
+			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE EXISTS(cluster.exposed_internet) REMOVE cluster.exposed_internet return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
 			"__comment": "This sets the exposed_internet attribute",
-			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount)<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE cluster.endpoint_public_access = true AND '0.0.0.0/0' IN cluster.public_access_cidrs SET cluster.exposed_internet = true,(CASE WHEN NOT 'direct' IN coalesce(cluster.exposed_internet_type , []) THEN cluster END).exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct';",
+			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE cluster.endpoint_public_access = true AND '0.0.0.0/0' IN cluster.public_access_cidrs SET cluster.exposed_internet = true,(CASE WHEN NOT 'direct' IN coalesce(cluster.exposed_internet_type , []) THEN cluster END).exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct';",
 			"iterative": false
 		}
 	],

@@ -164,7 +164,7 @@ def _load_key_vaults_keys_tx(
     ingest_keys = """
     UNWIND $KEYS as key
     MERGE (k:AzureKeyVaultKey{id: key.id})
-    ON CREATE SET k.firstssen = timestamp(),
+    ON CREATE SET k.firstseen = timestamp(),
     k.name = key.name,
     k.type = key.type,
     k.location = key.location,
