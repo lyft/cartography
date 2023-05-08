@@ -40,18 +40,19 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
                 for item in response['items']:
                     item['id'] = f"projects/{project_id}/instances/{item['name']}"
                     item['authorizedNetworksList'] = []
-                    for network in item.get('settings', {}).get('ipConfiguration', {}).get('authorizedNetworks',[]):
+                    for network in item.get('settings', {}).get('ipConfiguration', {}).get('authorizedNetworks', []):
                         item['authorizedNetworksList'].append(network['value'])
                     item['ipV4Enabled'] = item.get('settings', {}).get('ipConfiguration', {}).get('ipV4Enabled', False)
                     item['consolelink'] = gcp_console_link.get_console_link(
                         resource_name='sql_instance', project_id=project_id, sql_instance_name=item['name'],
                     )
-                    if regions is None:
+                    if regions is None or len(regions) == 0:
                         sql_instances.append(item)
                     else:
                         if item.get('region') in regions:
                             sql_instances.append(item)
             request = sql.instances().list_next(previous_request=request, previous_response=response)
+
         if common_job_parameters.get('pagination', {}).get('sql', None):
             pageNo = common_job_parameters.get("pagination", {}).get("sql", None)["pageNo"]
             pageSize = common_job_parameters.get("pagination", {}).get("sql", None)["pageSize"]

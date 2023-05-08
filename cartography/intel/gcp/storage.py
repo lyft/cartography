@@ -132,7 +132,7 @@ def transform_gcp_buckets(bucket_res: Dict, project_id: str, regions: list) -> L
         bucket['log_bucket'] = b.get('logging', {}).get('logBucket')
         bucket['requester_pays'] = b.get('billing', {}).get('requesterPays', None)
         bucket['consolelink'] = gcp_console_link.get_console_link(resource_name='storage_bucket', bucket_name=b['name'])
-        if not regions:
+        if regions is None or len(regions) == 0:
             bucket_list.append(bucket)
 
         else:
