@@ -41,7 +41,7 @@ def get_kms_locations(kms: Resource, project_id: str, regions: list, common_job_
                 for location in response['locations']:
                     location['id'] = location['name']
                     location['location_name'] = location['name'].split('/')[-1]
-                    if regions is None:
+                    if regions is None or len(regions) == 0:
                         locations.append(location)
                     else:
                         if location['locationId'] in regions or location['locationId'] == 'global':
@@ -167,8 +167,9 @@ def get_keyring_policy_bindings(kms: Resource, keyring: Dict, project_id: str) -
         else:
             raise
 
+
 @timeit
-def transform_keryring_policy_bindings(response_objects: List[Dict], keyring_id: str,project_id: str) -> List[Dict]:
+def transform_keryring_policy_bindings(response_objects: List[Dict], keyring_id: str, project_id: str) -> List[Dict]:
     """
     Process the GCP kms_policy_binding objects and return a flattened list of GCP bindings with all the necessary fields
     we need to load it into Neo4j
@@ -181,8 +182,9 @@ def transform_keryring_policy_bindings(response_objects: List[Dict], keyring_id:
         binding_list.append(res)
     return binding_list
 
+
 @timeit
-def attach_keyring_to_binding(session: neo4j.Session, keyring_id: str,bindings: List[Dict], gcp_update_tag: int) -> None:
+def attach_keyring_to_binding(session: neo4j.Session, keyring_id: str, bindings: List[Dict], gcp_update_tag: int) -> None:
     session.write_transaction(attach_keyring_to_bindings_tx, bindings, keyring_id, gcp_update_tag)
 
 
@@ -214,6 +216,8 @@ def attach_keyring_to_bindings_tx(
         KeyringId=keyring_id,
         gcp_update_tag=gcp_update_tag,
     )
+
+
 @timeit
 def get_kms_crypto_keys(kms: Resource, key_rings: List[Dict], project_id: str) -> List[Dict]:
     """
@@ -511,9 +515,9 @@ def sync(
     load_kms_key_rings(neo4j_session, key_rings, project_id, gcp_update_tag)
     for key_ring in key_rings:
         load_keyring_entity_relation(neo4j_session, key_ring, gcp_update_tag)
-        bindings = get_keyring_policy_bindings(kms,key_ring,project_id)
-        bindings_list = transform_keryring_policy_bindings(bindings,key_ring['id'],project_id)
-        attach_keyring_to_binding(neo4j_session, key_ring['id'],bindings_list, gcp_update_tag)
+        bindings = get_keyring_policy_bindings(kms, key_ring, project_id)
+        bindings_list = transform_keryring_policy_bindings(bindings, key_ring['id'], project_id)
+        attach_keyring_to_binding(neo4j_session, key_ring['id'], bindings_list, gcp_update_tag)
     label.sync_labels(neo4j_session, key_rings, gcp_update_tag, common_job_parameters, 'keyrings', 'GCPKMSKeyRing')
     crypto_keys = get_kms_crypto_keys(kms, key_rings, project_id)
     load_kms_crypto_keys(neo4j_session, crypto_keys, project_id, gcp_update_tag)

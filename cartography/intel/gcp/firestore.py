@@ -42,7 +42,7 @@ def get_firestore_databases(firestore: Resource, project_id: str, regions: list,
                 database['consolelink'] = gcp_console_link.get_console_link(
                     resource_name='firestore_collection', project_id=project_id, firestore_collection_name=database['name'].split("/")[-1],
                 )
-                if regions is None:
+                if regions is None or len(regions) == 0:
                     firestore_databases.append(database)
                 else:
                     if database['locationId'] in regions or database['locationId'] == 'global':

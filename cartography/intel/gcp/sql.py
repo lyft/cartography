@@ -46,8 +46,13 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
                     item['consolelink'] = gcp_console_link.get_console_link(
                         resource_name='sql_instance', project_id=project_id, sql_instance_name=item['name'],
                     )
-                    sql_instances.append(item)
+                    if regions is None or len(regions) == 0:
+                        sql_instances.append(item)
+                    else:
+                        if item.get('region') in regions:
+                            sql_instances.append(item)
             request = sql.instances().list_next(previous_request=request, previous_response=response)
+
         if common_job_parameters.get('pagination', {}).get('sql', None):
             pageNo = common_job_parameters.get("pagination", {}).get("sql", None)["pageNo"]
             pageSize = common_job_parameters.get("pagination", {}).get("sql", None)["pageSize"]

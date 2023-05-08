@@ -43,7 +43,7 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list, common
             for location in response['locations']:
                 location["id"] = location.get("name", None)
                 location['location_name'] = location['name'].split('/')[-1]
-                if regions is None:
+                if regions is None or len(regions) == 0:
                     locations.append(location)
                 else:
                     if location['locationId'] in regions or location['locationId'] == 'global':
@@ -142,8 +142,9 @@ def get_function_policy_bindings(function: Resource, fns: Dict, project_id: str)
         else:
             raise
 
+
 @timeit
-def transform_function_policy_bindings(response_objects: List[Dict], function_id: str,project_id: str) -> List[Dict]:
+def transform_function_policy_bindings(response_objects: List[Dict], function_id: str, project_id: str) -> List[Dict]:
     """
     Process the GCP function_policy_binding objects and return a flattened list of GCP bindings with all the necessary fields
     we need to load it into Neo4j
@@ -260,6 +261,7 @@ def load_function_entity_relation_tx(tx: neo4j.Transaction, function: Dict, gcp_
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def attach_function_to_binding(session: neo4j.Session, function_id: str, bindings: List[Dict], gcp_update_tag: int) -> None:
     session.write_transaction(attach_function_to_bindings_tx, bindings, function_id, gcp_update_tag)
@@ -328,6 +330,7 @@ def cleanup_function_policy_bindings(neo4j_session: neo4j.Session, common_job_pa
     """
     run_cleanup_job('gcp_function_policy_bindings_cleanup.json', neo4j_session, common_job_parameters)
 
+
 @timeit
 def sync(
     neo4j_session: neo4j.Session, function: Resource, project_id: str, gcp_update_tag: int,
@@ -360,13 +363,13 @@ def sync(
 
     # FUNCTIONS
     functions = get_gcp_functions(function, project_id, regions, common_job_parameters)
-    
+
     load_functions(neo4j_session, functions, project_id, gcp_update_tag)
     for func in functions:
         load_function_entity_relation(neo4j_session, func, gcp_update_tag)
-        bindings = get_function_policy_bindings(function,func,project_id)
-        bindings_list = transform_function_policy_bindings(bindings,func['id'],project_id)
-        attach_function_to_binding(neo4j_session, func['id'],bindings_list, gcp_update_tag)
+        bindings = get_function_policy_bindings(function, func, project_id)
+        bindings_list = transform_function_policy_bindings(bindings, func['id'], project_id)
+        attach_function_to_binding(neo4j_session, func['id'], bindings_list, gcp_update_tag)
 
     cleanup_function_policy_bindings(neo4j_session, common_job_parameters)
     cleanup_gcp_functions(neo4j_session, common_job_parameters)
