@@ -736,6 +736,7 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
     MERGE (bucket:S3Bucket{id:$BucketName})
     ON CREATE SET bucket.firstseen = timestamp(), bucket.creationdate = $CreationDate
     SET bucket.name = $BucketName, bucket.region = $BucketRegion, bucket.arn = $Arn,
+    bucket.consolelink = $consolelink,
     bucket.lastupdated = $aws_update_tag
     WITH bucket
     MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
@@ -750,10 +751,12 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
 
     for bucket in data["Buckets"]:
         arn = "arn:aws:s3:::" + bucket["Name"]
+        consolelink = aws_console_link.get_console_link(arn=arn)
         neo4j_session.run(
             ingest_bucket,
             BucketName=bucket["Name"],
             BucketRegion=bucket["Region"],
+            consolelink=consolelink,
             Arn=arn,
             CreationDate=str(bucket["CreationDate"]),
             AWS_ACCOUNT_ID=current_aws_account_id,
