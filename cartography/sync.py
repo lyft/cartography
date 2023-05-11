@@ -20,6 +20,7 @@ import cartography.intel.crowdstrike
 import cartography.intel.crxcavator.crxcavator
 import cartography.intel.cve
 import cartography.intel.digitalocean
+import cartography.intel.duo
 import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
@@ -51,6 +52,7 @@ TOP_LEVEL_MODULES = OrderedDict({  # preserve order so that the default sync alw
     'kubernetes': cartography.intel.kubernetes.start_k8s_ingestion,
     'lastpass': cartography.intel.lastpass.start_lastpass_ingestion,
     'bigfix': cartography.intel.bigfix.start_bigfix_ingestion,
+    'duo': cartography.intel.duo.start_duo_ingestion,
     'analysis': cartography.intel.analysis.run,
 })
 
