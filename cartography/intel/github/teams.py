@@ -166,11 +166,10 @@ def sync_github_teams(
         github_api_key: str,
         github_url: str,
         organization: str,
-        update_tag: int,
 ) -> None:
     teams_paginated, org_data = get_teams(organization, github_url, github_api_key)
     team_repos = _get_team_repos_for_multiple_teams(teams_paginated.nodes, organization, github_url, github_api_key)
     processed_data = transform_teams(teams_paginated, org_data, team_repos)
-    load_team_repos(neo4j_session, processed_data, update_tag, org_data['url'])
+    load_team_repos(neo4j_session, processed_data, common_job_parameters['UPDATE_TAG'], org_data['url'])
     common_job_parameters['org_url'] = org_data['url']
     cleanup(neo4j_session, common_job_parameters)

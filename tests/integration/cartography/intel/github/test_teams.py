@@ -21,7 +21,7 @@ def test_sync_github_teams(mock_teams, mock_team_repos, neo4j_session):
     _ensure_local_neo4j_has_test_data(neo4j_session)
 
     # Act
-    sync_github_teams(neo4j_session, TEST_JOB_PARAMS, FAKE_API_KEY, TEST_GITHUB_URL, 'example_org', TEST_UPDATE_TAG)
+    sync_github_teams(neo4j_session, TEST_JOB_PARAMS, FAKE_API_KEY, TEST_GITHUB_URL, 'example_org')
 
     # Assert
     assert check_nodes(neo4j_session, 'GitHubTeam', ['id', 'url', 'name']) == {

@@ -53,7 +53,6 @@ def start_github_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
                 auth_data['token'],
                 auth_data['url'],
                 auth_data['name'],
-                config.update_tag,
             )
         except exceptions.RequestException as e:
             logger.error("Could not complete request to the GitHub API: %s", e)

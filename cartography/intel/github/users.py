@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -105,8 +106,11 @@ def load_organization_users(
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, common_job_parameters: Dict, github_api_key: str, github_url: str,
-    organization: str,
+        neo4j_session: neo4j.Session,
+        common_job_parameters: Dict[str, Any],
+        github_api_key: str,
+        github_url: str,
+        organization: str,
 ) -> None:
     logger.info("Syncing GitHub users")
     user_data, org_data = get(github_api_key, github_url, organization)
