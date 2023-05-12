@@ -19,6 +19,10 @@ FAKE_API_KEY = 'asdf'
 def test_sync_github_teams(mock_teams, mock_team_repos, neo4j_session):
     # Arrange
     _ensure_local_neo4j_has_test_data(neo4j_session)
+    # Arrange: Add another org to make sure we don't attach a node to the wrong org
+    neo4j_session.run('''
+        MERGE (g:GitHubOrganization{id: "this should have no attachments"})
+    ''')
 
     # Act
     sync_github_teams(neo4j_session, TEST_JOB_PARAMS, FAKE_API_KEY, TEST_GITHUB_URL, 'example_org')
