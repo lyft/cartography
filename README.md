@@ -24,7 +24,7 @@ Start [here](https://lyft.github.io/cartography/install.html).
 - [Duo CRXcavator](https://lyft.github.io/cartography/modules/crxcavator/index.html) - Chrome extensions, GSuite users
 - [Oracle Cloud Infrastructure](docs/setup/config/oci.md) - IAM
 - [Okta](https://lyft.github.io/cartography/modules/okta/index.html) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
-- [Github](https://lyft.github.io/cartography/modules/github/index.html) - repos, branches, users
+- [Github](https://lyft.github.io/cartography/modules/github/index.html) - repos, branches, users, teams
 - [DigitalOcean](https://lyft.github.io/cartography/modules/digitalocean/index.html)
 - [Microsoft Azure](https://lyft.github.io/cartography/modules/azure/index.html) -  CosmosDB, SQL, Storage, Virtual Machine
 - [Kubernetes](https://lyft.github.io/cartography/modules/kubernetes/index.html) - Cluster, Namespace, Service, Pod, Container
