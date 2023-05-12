@@ -97,6 +97,12 @@ class Config:
     :param bigfix_password: The password to authenticate to BigFix. Optional.
     :type bigfix_root_url: str
     :param bigfix_root_url: The API URL to use for BigFix, e.g. "https://example.com:52311". Optional.
+    :type trivy_path: str
+    :param trivy_path: The path the to the Trivy file binary.
+    :type trivy_opa_policy_file_path: str
+    :param trivy_path: The path to the OPA policy file to use with Trivy. Optional.
+    :type trivy_resource_type: str
+    :param trivy_resource_type: The resource type to scan with Trivy e.g. 'aws.ecr'.
     """
 
     def __init__(
@@ -148,6 +154,9 @@ class Config:
         bigfix_username=None,
         bigfix_password=None,
         bigfix_root_url=None,
+        trivy_path=None,
+        trivy_opa_policy_file_path=None,
+        trivy_resource_type=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -196,3 +205,6 @@ class Config:
         self.bigfix_username = bigfix_username
         self.bigfix_password = bigfix_password
         self.bigfix_root_url = bigfix_root_url
+        self.trivy_path = trivy_path
+        self.trivy_opa_policy_file_path = trivy_opa_policy_file_path
+        self.trivy_resource_type = trivy_resource_type
