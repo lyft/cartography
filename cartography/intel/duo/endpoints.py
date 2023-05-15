@@ -22,7 +22,7 @@ def sync_duo_endpoints(
     common_job_parameters: Dict[str, Any],
 ) -> None:
     '''
-    Sync Duo Users
+    Sync Duo Endpoints
     '''
     endpoints = _get_endpoints(client)
     transformed_endpoints = _transform_endpoints(endpoints)
@@ -45,7 +45,7 @@ def _transform_endpoints(endpoints: List[Dict[str, Any]]) -> List[Dict[str, Any]
     '''
     Reformat the data before loading
     '''
-    logger.info(f'Transforming {len(endpoints)} duo users')
+    logger.info(f'Transforming {len(endpoints)} duo endpoints')
     transformed_endpoints = []
     for endpoint in endpoints:
         transformed_endpoint = {

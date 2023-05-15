@@ -81,7 +81,7 @@ class DuoGroupToDuoUserRel(CartographyRelSchema):
         {'group_id': PropertyRef('group_id')},
     )
     direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "GROUP_DUO"
+    rel_label: str = "MEMBER_OF_DUO_GROUP"
     properties: DuoGroupToDuoUserRelProperties = DuoGroupToDuoUserRelProperties()
 
 

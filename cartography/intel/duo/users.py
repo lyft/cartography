@@ -61,7 +61,13 @@ def _transform_users(users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             'last_login': user['last_login'],
             'lastname': user['lastname'],
             'notes': user['notes'],
-            'phones': [dumps(phone) for phone in user['phones']],
+            'phones': [
+                dumps({
+                    **phone,
+                    'number': None,
+                })
+                for phone in user['phones']
+            ],
             'realname': user['realname'],
             'status': user['status'],
             'tokens': [dumps(token) for token in user['tokens']],
