@@ -13,6 +13,10 @@
 		{
 			"query": "MATCH (:Ipv6Range{id: '::/0'})-[:MEMBER_OF_IP_RULE]->(:IpPermissionInbound)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(:EC2SecurityGroup)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(cluster:RedshiftCluster{publicly_accessible: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET cluster.exposed_internet = true,(CASE WHEN NOT 'direct_ipv6' IN coalesce(cluster.exposed_internet_type , []) THEN cluster END).exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct_ipv6';",
 			"iterative": false
+		},
+		{
+			"query":"MATCH (:AWSInternetGateway)-[:ATTACHED_TO]->(:AWSVpc)<-[:MEMBER_OF_AWS_VPC]-(cluster:RedshiftCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET cluster.exposed_internet = true,(CASE WHEN NOT 'public_vpc' IN coalesce(cluster.exposed_internet_type , []) THEN cluster END).exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'public_vpc';",
+			"iterative":false
 		}
 	],
 	"name": "aws redshift cluster internet exposure"
