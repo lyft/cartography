@@ -2,7 +2,9 @@ from unittest.mock import Mock
 
 from cartography.intel.duo.api_host import sync_duo_api_host
 from cartography.intel.duo.endpoints import sync_duo_endpoints
+from cartography.intel.duo.users import sync_duo_users
 from tests.data.duo.endpoints import GET_ENDPOINTS_RESPONSE
+from tests.data.duo.users import GET_USERS_RESPONSE
 from tests.integration.util import check_nodes
 from tests.integration.util import check_rels
 
@@ -16,10 +18,14 @@ COMMON_JOB_PARAMETERS = {
 
 def test_sync_duo_endpoints(neo4j_session):
     # Arrange
-    mock_client = Mock(get_endpoints=Mock(return_value=GET_ENDPOINTS_RESPONSE))
+    mock_client = Mock(
+        get_users=Mock(return_value=GET_USERS_RESPONSE),
+        get_endpoints=Mock(return_value=GET_ENDPOINTS_RESPONSE),
+    )
 
     # Act
     sync_duo_api_host(neo4j_session, COMMON_JOB_PARAMETERS)
+    sync_duo_users(mock_client, neo4j_session, COMMON_JOB_PARAMETERS)
     sync_duo_endpoints(mock_client, neo4j_session, COMMON_JOB_PARAMETERS)
 
     # Assert
@@ -47,4 +53,17 @@ def test_sync_duo_endpoints(neo4j_session):
         (TEST_API_HOSTNAME, 'epkey3'),
         (TEST_API_HOSTNAME, 'epkey4'),
         (TEST_API_HOSTNAME, 'epkey5'),
+    }
+
+    assert check_rels(
+        neo4j_session,
+        'DuoUser', 'id',
+        'DuoEndpoint', 'id',
+        'ENDPOINT_DUO',
+        rel_direction_right=True,
+    ) == {
+        ('userid1', 'epkey1'),
+        ('userid2', 'epkey2'),
+        ('userid3', 'epkey3'),
+        ('userid4', 'epkey4'),
     }
