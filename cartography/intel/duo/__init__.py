@@ -7,6 +7,7 @@ from cartography.config import Config
 from cartography.intel.duo.api_host import sync_duo_api_host
 from cartography.intel.duo.endpoints import sync_duo_endpoints
 from cartography.intel.duo.groups import sync_duo_groups
+from cartography.intel.duo.phones import sync as sync_duo_phones
 from cartography.intel.duo.users import sync_duo_users
 from cartography.util import timeit
 
@@ -56,6 +57,11 @@ def start_duo_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         common_job_parameters,
     )
     sync_duo_endpoints(
+        client,
+        neo4j_session,
+        common_job_parameters,
+    )
+    sync_duo_phones(
         client,
         neo4j_session,
         common_job_parameters,

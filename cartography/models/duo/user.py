@@ -29,7 +29,6 @@ class DuoUserNodeProperties(CartographyNodeProperties):
     last_login: PropertyRef = PropertyRef('last_login')
     lastname: PropertyRef = PropertyRef('lastname')
     notes: PropertyRef = PropertyRef('notes')
-    phones: PropertyRef = PropertyRef('phones')
     realname: PropertyRef = PropertyRef('realname')
     status: PropertyRef = PropertyRef('status')
     tokens: PropertyRef = PropertyRef('tokens')
@@ -53,6 +52,21 @@ class DuoUserToDuoApiHostRel(CartographyRelSchema):
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RESOURCE"
     properties: DuoUserToDuoApiHostRelProperties = DuoUserToDuoApiHostRelProperties()
+
+
+class DuoPhoneToDuoUserRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+class DuoPhoneToDuoUserRel(CartographyRelSchema):
+    target_node_label: str = 'DuoPhone'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'email': PropertyRef('email')},
+    )
+    direction: LinkDirection = LinkDirection.OUTWARD
+    rel_label: str = "PHONE_DUO"
+    properties: DuoPhoneToDuoUserRelProperties = DuoPhoneToDuoUserRelProperties()
 
 
 class DuoEndpointToDuoUserRelProperties(CartographyRelProperties):

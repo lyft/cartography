@@ -32,6 +32,13 @@ Represents a Duo API Host to conain Duo resources.
     (DuoApiHost)-[RESOURCE]->(DuoEndpoint)
     ```
 
+
+- An DuoApiHost contains DuoPhones
+
+    ```
+    (DuoApiHost)-[RESOURCE]->(DuoPhone)
+    ```
+
 ### DuoGroup
 
 Represents a [group](https://duo.com/docs/adminapi#groups) in Duo.
@@ -88,7 +95,6 @@ Represents a [user](https://duo.com/docs/adminapi#users) in Duo.
 | last_login | An integer indicating the last time this user logged in, as a Unix timestamp, or null if the user has not logged in. |
 | lastname | The user's surname. |
 | notes | Notes about this user. Viewable in the Duo Admin Panel. |
-| phones | A list of phones that this user can use. See Retrieve Phones for descriptions of the phone response values. |
 | realname | The user's real name (or full name). |
 | status | The user's status. One of: "active", "bypass", "disabled", "locked out", "pending deletion". |
 | tokens | A list of tokens that this user can use. A list of JSON strings |
@@ -115,6 +121,12 @@ Represents a [user](https://duo.com/docs/adminapi#users) in Duo.
 
     ```
     (DuoUser)-[ENDPOINT_DUO]->(DuoEndpoint)
+    ```
+
+- A DuoUser has multiple DuoPhones
+
+    ```
+    (DuoUser)-[PHONE_DUO]->(DuoPhone)
     ```
 
 - A DuoUser is an identity to a Human
@@ -175,4 +187,44 @@ Represents a [endpoint](https://duo.com/docs/adminapi#endpoints) in Duo.
 
     ```
     (DuoUser)-[ENDPOINT_DUO]->(DuoEndpoint)
+    ```
+
+### DuoPhone
+
+Represents a [phone](https://duo.com/docs/adminapi#phones) in Duo.
+
+| Field | Description |
+|-------|--------------|
+| firstseen| Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The phone_id |
+| activated | Has this phone been activated for Duo Mobile yet? Either true or false. |
+| capabilities | List of strings, each a factor that can be used with the device. Any of "auto", "push", "pphone", "sms", "mobile_otp" |
+| encrypted | The encryption status of an Android or iOS device file system. One of: "Encrypted", "Unencrypted", or "Unknown". Blank for other platforms. |
+| extension | An extension, if necessary. |
+| fingerprint | Whether an Android or iOS phone is configured for biometric verification. One of: "Configured", "Disabled", or "Unknown". Blank for other platforms. |
+| last_seen | An integer indicating the timestamp of the last contact between Duo's service and the activated Duo Mobile app installed on the phone. Blank if the device has never activated Duo Mobile or if the platform does not support it. |
+| model | The phone's model. |
+| name | Free-form label for the phone. |
+| phone_id | The phone's ID. |
+| platform | The phone platform. One of: "unknown", "google android", "apple ios", "windows phone 7", "rim blackberry", "java j2me", "palm webos", "symbian os", "windows mobile", or "generic smartphone" |
+| postdelay | The time (in seconds) to wait after the extension is dialed and before the speaking the prompt. |
+| predelay | The time (in seconds) to wait after the number picks up and before dialing the extension. |
+| screenlock | Whether screen lock is enabled on an Android or iOS phone. One of: "Locked", "Unlocked", or "Unknown". Blank for other platforms. |
+| sms_passcodes_sent | Have SMS passcodes been sent to this phone? Either true or false. |
+| tampered | Whether an iOS or Android device is jailbroken or rooted. One of: "Not Tampered", "Tampered", or "Unknown". Blank for other platforms. |
+| type | The type of phone. One of: "unknown", "mobile", or "landline". |
+
+#### Relationships
+
+- An DuoApiHost contains DuoPhone
+
+    ```
+    (DuoApiHost)-[RESOURCE]->(DuoPhone)
+    ```
+
+- A DuoUser has multiple DuoPhones
+
+    ```
+    (DuoUser)-[PHONE_DUO]->(DuoPhone)
     ```
