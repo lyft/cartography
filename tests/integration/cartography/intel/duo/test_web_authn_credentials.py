@@ -1,10 +1,10 @@
 from unittest.mock import Mock
 
 from cartography.intel.duo.api_host import sync_duo_api_host
-from cartography.intel.duo.phones import sync as sync_duo_phones
 from cartography.intel.duo.users import sync_duo_users
-from tests.data.duo.phones import GET_PHONES_RESPONSE
+from cartography.intel.duo.web_authn_credentials import sync as sync_duo_web_authn_credentials
 from tests.data.duo.users import GET_USERS_RESPONSE
+from tests.data.duo.web_authn_credentials import GET_WEBAUTHNCREDENTIALS_RESPONSE
 from tests.integration.util import check_nodes
 from tests.integration.util import check_rels
 
@@ -16,52 +16,49 @@ COMMON_JOB_PARAMETERS = {
 }
 
 
-def test_sync_duo_phones(neo4j_session):
+def test_sync_duo_web_authn_credentials(neo4j_session):
     # Arrange
     mock_client = Mock(
-        get_phones=Mock(return_value=GET_PHONES_RESPONSE),
         get_users=Mock(return_value=GET_USERS_RESPONSE),
+        get_webauthncredentials=Mock(return_value=GET_WEBAUTHNCREDENTIALS_RESPONSE),
     )
 
     # Act
     sync_duo_api_host(neo4j_session, COMMON_JOB_PARAMETERS)
     sync_duo_users(mock_client, neo4j_session, COMMON_JOB_PARAMETERS)
-    sync_duo_phones(mock_client, neo4j_session, COMMON_JOB_PARAMETERS)
+    sync_duo_web_authn_credentials(mock_client, neo4j_session, COMMON_JOB_PARAMETERS)
 
     # Assert
     assert check_nodes(
         neo4j_session,
-        'DuoPhone',
-        ['id', 'phone_id', 'platform'],
+        'DuoWebAuthnCredential',
+        ['id', 'webauthnkey', 'credential_name'],
     ) == {
-        ('phoneid1', 'phoneid1', 'Apple iOS'),
-        ('phoneid2', 'phoneid2', 'Apple iOS'),
-        ('phoneid3', 'phoneid3', 'Apple iOS'),
-        ('phoneid4', 'phoneid4', 'Apple iOS'),
+        ('webauthnkey1', 'webauthnkey1', 'YubiKey'),
+        ('webauthnkey2', 'webauthnkey2', 'YubiKey'),
+        ('webauthnkey3', 'webauthnkey3', 'YubiKey'),
     }
 
     assert check_rels(
         neo4j_session,
         'DuoApiHost', 'id',
-        'DuoPhone', 'id',
+        'DuoWebAuthnCredential', 'id',
         'RESOURCE',
         rel_direction_right=True,
     ) == {
-        (TEST_API_HOSTNAME, 'phoneid1'),
-        (TEST_API_HOSTNAME, 'phoneid2'),
-        (TEST_API_HOSTNAME, 'phoneid3'),
-        (TEST_API_HOSTNAME, 'phoneid4'),
+        (TEST_API_HOSTNAME, 'webauthnkey1'),
+        (TEST_API_HOSTNAME, 'webauthnkey2'),
+        (TEST_API_HOSTNAME, 'webauthnkey3'),
     }
 
     assert check_rels(
         neo4j_session,
         'DuoUser', 'id',
-        'DuoPhone', 'id',
-        'HAS_DUO_PHONE',
+        'DuoWebAuthnCredential', 'id',
+        'HAS_DUO_WEB_AUTHN_CREDENTIAL',
         rel_direction_right=True,
     ) == {
-        ('userid1', 'phoneid1'),
-        ('userid2', 'phoneid2'),
-        ('userid3', 'phoneid3'),
-        ('userid4', 'phoneid4'),
+        ('userid1', 'webauthnkey1'),
+        ('userid2', 'webauthnkey2'),
+        ('userid3', 'webauthnkey3'),
     }

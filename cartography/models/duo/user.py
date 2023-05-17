@@ -31,11 +31,9 @@ class DuoUserNodeProperties(CartographyNodeProperties):
     notes: PropertyRef = PropertyRef('notes')
     realname: PropertyRef = PropertyRef('realname')
     status: PropertyRef = PropertyRef('status')
-    tokens: PropertyRef = PropertyRef('tokens')
     u2ftokens: PropertyRef = PropertyRef('u2ftokens')
     user_id: PropertyRef = PropertyRef('user_id', extra_index=True)
     username: PropertyRef = PropertyRef('username', extra_index=True)
-    webauthncredentials: PropertyRef = PropertyRef('webauthncredentials')
 
 
 @dataclass(frozen=True)
@@ -54,6 +52,36 @@ class DuoUserToDuoApiHostRel(CartographyRelSchema):
     properties: DuoUserToDuoApiHostRelProperties = DuoUserToDuoApiHostRelProperties()
 
 
+class DuoWebAuthnCredentialToDuoUserRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+class DuoWebAuthnCredentialToDuoUserRel(CartographyRelSchema):
+    target_node_label: str = 'DuoWebAuthnCredential'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'webauthnkey': PropertyRef('webauthnkey')},
+    )
+    direction: LinkDirection = LinkDirection.OUTWARD
+    rel_label: str = "HAS_DUO_WEB_AUTHN_CREDENTIAL"
+    properties: DuoWebAuthnCredentialToDuoUserRelProperties = DuoWebAuthnCredentialToDuoUserRelProperties()
+
+
+class DuoTokenToDuoUserRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+class DuoTokenToDuoUserRel(CartographyRelSchema):
+    target_node_label: str = 'DuoToken'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'token_id': PropertyRef('token_id')},
+    )
+    direction: LinkDirection = LinkDirection.OUTWARD
+    rel_label: str = "HAS_DUO_TOKEN"
+    properties: DuoTokenToDuoUserRelProperties = DuoTokenToDuoUserRelProperties()
+
+
 class DuoPhoneToDuoUserRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
@@ -62,10 +90,10 @@ class DuoPhoneToDuoUserRelProperties(CartographyRelProperties):
 class DuoPhoneToDuoUserRel(CartographyRelSchema):
     target_node_label: str = 'DuoPhone'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'email': PropertyRef('email')},
+        {'phone_id': PropertyRef('phone_id')},
     )
     direction: LinkDirection = LinkDirection.OUTWARD
-    rel_label: str = "PHONE_DUO"
+    rel_label: str = "HAS_DUO_PHONE"
     properties: DuoPhoneToDuoUserRelProperties = DuoPhoneToDuoUserRelProperties()
 
 
@@ -80,7 +108,7 @@ class DuoEndpointToDuoUserRel(CartographyRelSchema):
         {'email': PropertyRef('email')},
     )
     direction: LinkDirection = LinkDirection.OUTWARD
-    rel_label: str = "ENDPOINT_DUO"
+    rel_label: str = "HAS_DUO_ENDPOINT"
     properties: DuoEndpointToDuoUserRelProperties = DuoEndpointToDuoUserRelProperties()
 
 
@@ -124,7 +152,10 @@ class DuoUserSchema(CartographyNodeSchema):
     other_relationships: OtherRelationships = OtherRelationships(
         rels=[
             DuoUserToHumanRel(),
-            DuoEndpointToDuoUserRel(),
             DuoGroupToDuoUserRel(),
+            DuoEndpointToDuoUserRel(),
+            DuoPhoneToDuoUserRel(),
+            DuoTokenToDuoUserRel(),
+            DuoWebAuthnCredentialToDuoUserRel(),
         ],
     )

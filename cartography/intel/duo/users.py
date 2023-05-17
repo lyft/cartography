@@ -81,11 +81,28 @@ def _transform_users(users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             ],
         }
         transformed_users.append(transformed_user)
-        # make mock "user" objects so we can match them to groups by group_id
         for group in user['groups']:
             match_user = {
                 **transformed_user,
                 'group_id': group['group_id'],
+            }
+            transformed_users.append(match_user)
+        for phone in user['phones']:
+            match_user = {
+                **transformed_user,
+                'phone_id': phone['phone_id'],
+            }
+            transformed_users.append(match_user)
+        for token in user['tokens']:
+            match_user = {
+                **transformed_user,
+                'token_id': token['token_id'],
+            }
+            transformed_users.append(match_user)
+        for webauthncredential in user['webauthncredentials']:
+            match_user = {
+                **transformed_user,
+                'webauthnkey': webauthncredential['webauthnkey'],
             }
             transformed_users.append(match_user)
     return transformed_users

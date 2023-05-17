@@ -59,7 +59,7 @@ def test_sync_duo_endpoints(neo4j_session):
         neo4j_session,
         'DuoUser', 'id',
         'DuoEndpoint', 'id',
-        'ENDPOINT_DUO',
+        'HAS_DUO_ENDPOINT',
         rel_direction_right=True,
     ) == {
         ('userid1', 'epkey1'),

@@ -120,13 +120,13 @@ Represents a [user](https://duo.com/docs/adminapi#users) in Duo.
 - A DuoUser has multiple DuoEndpoints
 
     ```
-    (DuoUser)-[ENDPOINT_DUO]->(DuoEndpoint)
+    (DuoUser)-[HAS_DUO_ENDPOINT]->(DuoEndpoint)
     ```
 
 - A DuoUser has multiple DuoPhones
 
     ```
-    (DuoUser)-[PHONE_DUO]->(DuoPhone)
+    (DuoUser)-[HAS_DUO_PHONE]->(DuoPhone)
     ```
 
 - A DuoUser is an identity to a Human
@@ -186,7 +186,7 @@ Represents a [endpoint](https://duo.com/docs/adminapi#endpoints) in Duo.
 - A DuoUser has multiple DuoEndpoints
 
     ```
-    (DuoUser)-[ENDPOINT_DUO]->(DuoEndpoint)
+    (DuoUser)-[HAS_DUO_ENDPOINT]->(DuoEndpoint)
     ```
 
 ### DuoPhone
@@ -226,5 +226,5 @@ Represents a [phone](https://duo.com/docs/adminapi#phones) in Duo.
 - A DuoUser has multiple DuoPhones
 
     ```
-    (DuoUser)-[PHONE_DUO]->(DuoPhone)
+    (DuoUser)-[HAS_DUO_PHONE]->(DuoPhone)
     ```

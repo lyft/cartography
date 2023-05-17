@@ -8,7 +8,9 @@ from cartography.intel.duo.api_host import sync_duo_api_host
 from cartography.intel.duo.endpoints import sync_duo_endpoints
 from cartography.intel.duo.groups import sync_duo_groups
 from cartography.intel.duo.phones import sync as sync_duo_phones
+from cartography.intel.duo.tokens import sync as sync_duo_tokens
 from cartography.intel.duo.users import sync_duo_users
+from cartography.intel.duo.web_authn_credentials import sync as sync_duo_web_authn_credentials
 from cartography.util import timeit
 
 
@@ -53,6 +55,16 @@ def start_duo_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     }
 
     sync_duo_api_host(
+        neo4j_session,
+        common_job_parameters,
+    )
+    sync_duo_tokens(
+        client,
+        neo4j_session,
+        common_job_parameters,
+    )
+    sync_duo_web_authn_credentials(
+        client,
         neo4j_session,
         common_job_parameters,
     )

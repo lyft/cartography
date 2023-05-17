@@ -73,7 +73,7 @@ class DuoEndpointToDuoUserRel(CartographyRelSchema):
         {'email': PropertyRef('email')},
     )
     direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "ENDPOINT_DUO"
+    rel_label: str = "HAS_DUO_ENDPOINT"
     properties: DuoEndpointToDuoUserProperties = DuoEndpointToDuoUserProperties()
 
 

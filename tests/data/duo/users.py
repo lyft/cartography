@@ -59,7 +59,20 @@ GET_USERS_RESPONSE = [
         ],
         "realname": "real name 1",
         "status": "active",
-        "tokens": [],
+        "tokens": [
+            {
+                "serial": "serial1",
+                "token_id": "tokenid1",
+                "totp_step": None,
+                "type": "yk",
+            },
+            {
+                "serial": "serial2",
+                "token_id": "tokenid2",
+                "totp_step": None,
+                "type": "yk",
+            },
+        ],
         "u2ftokens": [
             {"date_added": 1540012036, "registration_id": "registrationid1"},
         ],
@@ -199,7 +212,14 @@ GET_USERS_RESPONSE = [
         ],
         "realname": "real name 3",
         "status": "active",
-        "tokens": [],
+        "tokens": [
+            {
+                "serial": "serial3",
+                "token_id": "tokenid3",
+                "totp_step": None,
+                "type": "yk",
+            },
+        ],
         "u2ftokens": [],
         "user_id": "userid3",
         "username": "username3",

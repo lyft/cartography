@@ -12,65 +12,54 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 
 @dataclass(frozen=True)
-class DuoPhoneNodeProperties(CartographyNodeProperties):
-    id: PropertyRef = PropertyRef('phone_id')
+class DuoTokenNodeProperties(CartographyNodeProperties):
+    id: PropertyRef = PropertyRef('token_id')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    activated: PropertyRef = PropertyRef('activated')
-    capabilities: PropertyRef = PropertyRef('capabilities')
-    encrypted: PropertyRef = PropertyRef('encrypted')
-    extension: PropertyRef = PropertyRef('extension')
-    fingerprint: PropertyRef = PropertyRef('fingerprint')
-    last_seen: PropertyRef = PropertyRef('last_seen')
-    model: PropertyRef = PropertyRef('model')
-    name: PropertyRef = PropertyRef('name')
-    phone_id: PropertyRef = PropertyRef('phone_id', extra_index=True)
-    platform: PropertyRef = PropertyRef('platform')
-    postdelay: PropertyRef = PropertyRef('postdelay')
-    predelay: PropertyRef = PropertyRef('predelay')
-    screenlock: PropertyRef = PropertyRef('screenlock')
-    sms_passcodes_sent: PropertyRef = PropertyRef('sms_passcodes_sent')
-    tampered: PropertyRef = PropertyRef('tampered')
+    admins: PropertyRef = PropertyRef('admins')
+    serial: PropertyRef = PropertyRef('serial', extra_index=True)
+    token_id: PropertyRef = PropertyRef('token_id', extra_index=True)
+    totp_step: PropertyRef = PropertyRef('totp_step')
     type: PropertyRef = PropertyRef('type')
 
 
 @dataclass(frozen=True)
-class DuoPhoneToDuoApiHostRelProperties(CartographyRelProperties):
+class DuoTokenToDuoApiHostRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
 @dataclass(frozen=True)
-class DuoPhoneToDuoApiHostRel(CartographyRelSchema):
+class DuoTokenToDuoApiHostRel(CartographyRelSchema):
     target_node_label: str = 'DuoApiHost'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'id': PropertyRef('DUO_API_HOSTNAME', set_in_kwargs=True)},
     )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RESOURCE"
-    properties: DuoPhoneToDuoApiHostRelProperties = DuoPhoneToDuoApiHostRelProperties()
+    properties: DuoTokenToDuoApiHostRelProperties = DuoTokenToDuoApiHostRelProperties()
 
 
-class DuoPhoneToDuoUserProperties(CartographyRelProperties):
+class DuoTokenToDuoUserProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
 @dataclass(frozen=True)
-class DuoPhoneToDuoUserRel(CartographyRelSchema):
+class DuoTokenToDuoUserRel(CartographyRelSchema):
     target_node_label: str = 'DuoUser'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'user_id': PropertyRef('user_id')},
     )
     direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "HAS_DUO_PHONE"
-    properties: DuoPhoneToDuoUserProperties = DuoPhoneToDuoUserProperties()
+    rel_label: str = "HAS_DUO_TOKEN"
+    properties: DuoTokenToDuoUserProperties = DuoTokenToDuoUserProperties()
 
 
 @dataclass(frozen=True)
-class DuoPhoneSchema(CartographyNodeSchema):
-    label: str = 'DuoPhone'
-    properties: DuoPhoneNodeProperties = DuoPhoneNodeProperties()
-    sub_resource_relationship: DuoPhoneToDuoApiHostRel = DuoPhoneToDuoApiHostRel()
+class DuoTokenSchema(CartographyNodeSchema):
+    label: str = 'DuoToken'
+    properties: DuoTokenNodeProperties = DuoTokenNodeProperties()
+    sub_resource_relationship: DuoTokenToDuoApiHostRel = DuoTokenToDuoApiHostRel()
     other_relationships: OtherRelationships = OtherRelationships(
         rels=[
-            DuoPhoneToDuoUserRel(),
+            DuoTokenToDuoUserRel(),
         ],
     )
