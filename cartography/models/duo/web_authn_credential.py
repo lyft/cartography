@@ -15,6 +15,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 class DuoWebAuthnCredentialNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('webauthnkey')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    admin: PropertyRef = PropertyRef('admin')
     credential_name: PropertyRef = PropertyRef('credential_name', extra_index=True)
     date_added: PropertyRef = PropertyRef('date_added')
     label: PropertyRef = PropertyRef('label')

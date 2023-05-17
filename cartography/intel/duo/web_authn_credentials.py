@@ -48,6 +48,8 @@ def _transform(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     transformed_data = []
     for datum in data:
         transformed_datum = {
+            # The admin property may be null if the cred is attached to a user
+            'admin': datum.get('admin'),
             'credential_name': datum['credential_name'],
             'date_added': datum['date_added'],
             'label': datum['label'],
@@ -55,7 +57,8 @@ def _transform(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             'webauthnkey': datum['webauthnkey'],
         }
         transformed_data.append(transformed_datum)
-        if 'user' in datum:
+        # The user property may be null if the cred is attached to an admin
+        if datum.get('user'):
             match_datum = {
                 **transformed_datum,
                 'user_id': datum['user']['user_id'],

@@ -290,7 +290,7 @@ Represents a [web authn credential](https://duo.com/docs/adminapi#webauthn-crede
 | firstseen | Timestamp of when a sync job first discovered this node  |
 | lastupdated |  Timestamp of the last time the node was updated |
 | **id** | The webauthnkey |
-| admins | A list of administrators associated with this hardware token. See Retrieve Administrators for descriptions of the response fields. A list of JSON strings |
+| admin |Selected information about the administrator attached to the WebAuthn credential. Returns null if attached to an end user. Not returned if the API application does not have sufficient permission to manage administrators. A JSON string |
 | credential_name | Free-form label for the WebAuthn credential. |
 | date_added | The date the WebAuthn credential was registered in Duo. |
 | label | Indicates the type of WebAuthn credential. One of: "Security Key" or "Touch ID". Present when attached to a user. |
