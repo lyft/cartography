@@ -476,6 +476,30 @@ class CLI:
                 'The BigFix Root URL, a.k.a the BigFix API URL'
             ),
         )
+        parser.add_argument(
+            '--duo-api-key-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Duo api key'
+            ),
+        )
+        parser.add_argument(
+            '--duo-api-secret-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Duo api secret'
+            ),
+        )
+        parser.add_argument(
+            '--duo-api-hostname',
+            type=str,
+            default=None,
+            help=(
+                'The Duo api hostname'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -632,6 +656,15 @@ class CLI:
         if config.bigfix_username and config.bigfix_password_env_var and config.bigfix_root_url:
             logger.debug(f"Reading BigFix password from environment variable {config.bigfix_password_env_var}")
             config.bigfix_password = os.environ.get(config.bigfix_password_env_var)
+
+        # Duo config
+        if config.duo_api_key_env_var and config.duo_api_secret_env_var and config.duo_api_hostname:
+            logger.debug(
+                f"Reading Duo api key and secret from environment variables {config.duo_api_key_env_var}"
+                f", {config.duo_api_secret_env_var}",
+            )
+            config.duo_api_key = os.environ.get(config.duo_api_key_env_var)
+            config.duo_api_secret = os.environ.get(config.duo_api_secret_env_var)
 
         # Run cartography
         try:

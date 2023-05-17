@@ -97,6 +97,12 @@ class Config:
     :param bigfix_password: The password to authenticate to BigFix. Optional.
     :type bigfix_root_url: str
     :param bigfix_root_url: The API URL to use for BigFix, e.g. "https://example.com:52311". Optional.
+    :type duo_api_key: str
+    :param duo_api_key: The Duo api key. Optional.
+    :type duo_api_key: str
+    :param duo_api_key: The Duo api secret. Optional.
+    :type duo_api_hostname: str
+    :param duo_api_hostname: The Duo api hostname, e.g. "api-abc123.duosecurity.com". Optional.
     """
 
     def __init__(
@@ -148,6 +154,9 @@ class Config:
         bigfix_username=None,
         bigfix_password=None,
         bigfix_root_url=None,
+        duo_api_key=None,
+        duo_api_secret=None,
+        duo_api_hostname=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -196,3 +205,6 @@ class Config:
         self.bigfix_username = bigfix_username
         self.bigfix_password = bigfix_password
         self.bigfix_root_url = bigfix_root_url
+        self.duo_api_key = duo_api_key
+        self.duo_api_secret = duo_api_secret
+        self.duo_api_hostname = duo_api_hostname
