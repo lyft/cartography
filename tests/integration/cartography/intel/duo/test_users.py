@@ -128,7 +128,7 @@ def test_sync_duo_users(neo4j_session):
         'DuoGroup', 'id',
         'DuoUser', 'id',
         'MEMBER_OF_DUO_GROUP',
-        rel_direction_right=True,
+        rel_direction_right=False,
     ) == {
         ('groupid1', 'userid1'),
         ('groupid2', 'userid1'),
