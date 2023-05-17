@@ -8,8 +8,8 @@ Represents a Duo API Host to conain Duo resources.
 
 | Field | Description |
 |-------|--------------|
-| firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated |
+| firstseen | Timestamp of when a sync job first discovered this node  |
+| lastupdated | Timestamp of the last time the node was updated |
 | **id** | The hostname |
 
 #### Relationships
@@ -32,11 +32,22 @@ Represents a Duo API Host to conain Duo resources.
     (DuoApiHost)-[RESOURCE]->(DuoEndpoint)
     ```
 
-
 - An DuoApiHost contains DuoPhones
 
     ```
     (DuoApiHost)-[RESOURCE]->(DuoPhone)
+    ```
+
+- An DuoApiHost contains DuoTokens
+
+    ```
+    (DuoApiHost)-[RESOURCE]->(DuoToken)
+    ```
+
+- An DuoApiHost contains DuoWebAuthnCredentials
+
+    ```
+    (DuoApiHost)-[RESOURCE]->(DuoWebAuthnCredential)
     ```
 
 ### DuoGroup
@@ -45,8 +56,8 @@ Represents a [group](https://duo.com/docs/adminapi#groups) in Duo.
 
 | Field | Description |
 |-------|--------------|
-| firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated |
+| firstseen | Timestamp of when a sync job first discovered this node  |
+| lastupdated | Timestamp of the last time the node was updated |
 | **id** | The user_id |
 | desc | The group's description. |
 | group_id | The group's ID. |
@@ -78,8 +89,8 @@ Represents a [user](https://duo.com/docs/adminapi#users) in Duo.
 
 | Field | Description |
 |-------|--------------|
-| firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated |
+| firstseen | Timestamp of when a sync job first discovered this node  |
+| lastupdated | Timestamp of the last time the node was updated |
 | **id** | The user_id |
 | alias1 | The user's username alias1. |
 | alias2 | The user's username alias2. |
@@ -129,6 +140,18 @@ Represents a [user](https://duo.com/docs/adminapi#users) in Duo.
     (DuoUser)-[HAS_DUO_PHONE]->(DuoPhone)
     ```
 
+- A DuoUser has multiple DuoTokens
+
+    ```
+    (DuoUser)-[HAS_DUO_TOKEN]->(DuoToken)
+    ```
+
+- A DuoUser has multiple WebAuthnCredentials
+
+    ```
+    (DuoUser)-[HAS_DUO_WEB_AUTHN_CREDENTIAL]->(WebAuthnCredential)
+    ```
+
 - A DuoUser is an identity to a Human
 
     ```
@@ -141,8 +164,8 @@ Represents a [endpoint](https://duo.com/docs/adminapi#endpoints) in Duo.
 
 | Field | Description |
 |-------|--------------|
-| firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated |
+| firstseen | Timestamp of when a sync job first discovered this node  |
+| lastupdated | Timestamp of the last time the node was updated |
 | **id** | The epkey |
 | browsers | Collected information about all detected browsers on an individual endpoint. A list of JSON strings |
 | computer_sid | The machine security identifier of a Windows endpoint. |
@@ -195,8 +218,8 @@ Represents a [phone](https://duo.com/docs/adminapi#phones) in Duo.
 
 | Field | Description |
 |-------|--------------|
-| firstseen| Timestamp of when a sync job first discovered this node  |
-| lastupdated |  Timestamp of the last time the node was updated |
+| firstseen | Timestamp of when a sync job first discovered this node  |
+| lastupdated | Timestamp of the last time the node was updated |
 | **id** | The phone_id |
 | activated | Has this phone been activated for Duo Mobile yet? Either true or false. |
 | capabilities | List of strings, each a factor that can be used with the device. Any of "auto", "push", "pphone", "sms", "mobile_otp" |
@@ -227,4 +250,62 @@ Represents a [phone](https://duo.com/docs/adminapi#phones) in Duo.
 
     ```
     (DuoUser)-[HAS_DUO_PHONE]->(DuoPhone)
+    ```
+
+### DuoToken
+
+Represents a [token](https://duo.com/docs/adminapi#tokens) in Duo.
+
+| Field | Description |
+|-------|--------------|
+| firstseen | Timestamp of when a sync job first discovered this node  |
+| lastupdated | Timestamp of the last time the node was updated |
+| **id** | The token_id |
+| admins | A list of administrators associated with this hardware token. See Retrieve Administrators for descriptions of the response fields. A list of JSON strings |
+| serial | The serial number of the hardware token; used to uniquely identify the hardware token when paired with type. |
+| token_id | The hardware token's unique ID. |
+| totp_step | Value is null for all supported token types. |
+| type | The type of hardware token. |
+
+#### Relationships
+
+- An DuoApiHost contains DuoTokens
+
+    ```
+    (DuoApiHost)-[RESOURCE]->(DuoToken)
+    ```
+
+- A DuoUser has multiple DuoTokens
+
+    ```
+    (DuoUser)-[HAS_DUO_TOKEN]->(DuoToken)
+    ```
+
+### DuoWebAuthnCredential
+
+Represents a [web authn credential](https://duo.com/docs/adminapi#webauthn-credentials) in Duo.
+
+| Field | Description |
+|-------|--------------|
+| firstseen | Timestamp of when a sync job first discovered this node  |
+| lastupdated |  Timestamp of the last time the node was updated |
+| **id** | The webauthnkey |
+| admins | A list of administrators associated with this hardware token. See Retrieve Administrators for descriptions of the response fields. A list of JSON strings |
+| credential_name | Free-form label for the WebAuthn credential. |
+| date_added | The date the WebAuthn credential was registered in Duo. |
+| label | Indicates the type of WebAuthn credential. One of: "Security Key" or "Touch ID". Present when attached to a user. |
+| webauthnkey | The WebAuthn credential's registration identifier. |
+
+#### Relationships
+
+- An DuoApiHost contains DuoWebAuthnCredentials
+
+    ```
+    (DuoApiHost)-[RESOURCE]->(DuoWebAuthnCredential)
+    ```
+
+- A DuoUser has multiple DuoWebAuthnCredentials
+
+    ```
+    (DuoUser)-[HAS_DUO_WEB_AUTHN_CREDENTIAL]->(DuoWebAuthnCredential)
     ```
