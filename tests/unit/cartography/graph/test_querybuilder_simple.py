@@ -32,15 +32,15 @@ def test_build_ingestion_query_with_sub_resource():
     """
     # Act
     query = build_ingestion_query(SimpleNodeWithSubResourceSchema())
-
+# TODO - figure out wtf I want to do here with this id field COALESCING :\
     expected = """
         UNWIND $DictList AS item
             MERGE (i:SimpleNode{id: item.Id})
             ON CREATE SET i.firstseen = timestamp()
             SET
                 i.lastupdated = $lastupdated,
-                i.property1 = item.property1,
-                i.property2 = item.property2
+                i.property1 = COALESCE(item.property1, i.property1),
+                i.property2 = COALESCE(item.property2, i.property2)
 
             WITH i, item
             CALL {
@@ -69,8 +69,8 @@ def test_build_ingestion_query_case_insensitive_match():
             ON CREATE SET i.firstseen = timestamp()
             SET
                 i.lastupdated = $lastupdated,
-                i.email = item.email,
-                i.github_username = item.github_username
+                i.email = COALESCE(item.email, i.email),
+                i.github_username = COALESCE(item.github_username, i.github_username)
 
             WITH i, item
             CALL {

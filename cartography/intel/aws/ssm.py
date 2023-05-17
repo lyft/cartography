@@ -19,12 +19,12 @@ def get_instance_ids(neo4j_session: neo4j.Session, region: str, current_aws_acco
     get_instances_query = """
     MATCH (:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(i:EC2Instance)
     WHERE i.region = $Region
-    RETURN i.id
+    RETURN i.instanceid
     """
     results = neo4j_session.run(get_instances_query, AWS_ACCOUNT_ID=current_aws_account_id, Region=region)
     instance_ids = []
     for r in results:
-        instance_ids.append(r['i.id'])
+        instance_ids.append(r['i.instanceid'])
     return instance_ids
 
 
@@ -105,7 +105,7 @@ def load_instance_information(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $aws_update_tag
         WITH i
-        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(ec2_instance:EC2Instance{id: i.instance_id})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(ec2_instance:EC2Instance{instanceid: i.instance_id})
         MERGE (ec2_instance)-[r2:HAS_INFORMATION]->(i)
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = $aws_update_tag
@@ -153,7 +153,7 @@ def load_instance_patches(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $aws_update_tag
         WITH p
-        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(ec2_instance:EC2Instance{id: p.instance_id})
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(ec2_instance:EC2Instance{instanceid: p.instance_id})
         MERGE (ec2_instance)-[r2:HAS_PATCH]->(p)
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = $aws_update_tag

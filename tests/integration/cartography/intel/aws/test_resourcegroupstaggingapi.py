@@ -8,7 +8,8 @@ import tests.data.aws.resourcegroupstaggingapi
 from cartography.intel.aws.ec2.instances import sync_ec2_instances
 from tests.data.aws.ec2.instances import DESCRIBE_INSTANCES
 from tests.integration.cartography.intel.aws.common import create_test_account
-
+from tests.integration.util import check_nodes
+from tests.integration.util import check_rels
 
 TEST_ACCOUNT_ID = '1234'
 TEST_REGION = 'us-east-1'
@@ -50,19 +51,9 @@ def test_transform_and_load_ec2_tags(mock_get_instances, neo4j_session):
     )
 
     # Assert
-    expected = {
+    assert check_rels(neo4j_session, 'EC2Instance', 'instanceid', 'AWSTag', 'id', 'TAGGED', True) == {
         ('i-01', 'TestKey:TestValue'),
     }
-    # Fetch relationships
-    result = neo4j_session.run(
-        """
-        MATCH (n1:EC2Instance)-[:TAGGED]->(n2:AWSTag) RETURN n1.id, n2.id;
-        """,
-    )
-    actual = {
-        (r['n1.id'], r['n2.id']) for r in result
-    }
-    assert actual == expected
 
     # Act: Test the cleanup removes old tags that are not attached to any resource
     new_update_tag = TEST_UPDATE_TAG + 1
@@ -80,11 +71,4 @@ def test_transform_and_load_ec2_tags(mock_get_instances, neo4j_session):
     rgta.cleanup(neo4j_session, {'AWS_ID': TEST_ACCOUNT_ID, 'UPDATE_TAG': new_update_tag})
 
     # Assert
-    expected = {
-        ('TestKeyUpdated:TestValueUpdated'),
-    }
-    result = neo4j_session.run('MATCH (t:AWSTag) RETURN t.id')
-    actual = {
-        (r['t.id']) for r in result
-    }
-    assert actual == expected
+    assert check_nodes(neo4j_session, 'AWSTag', ['id']) == {('TestKeyUpdated:TestValueUpdated',)}

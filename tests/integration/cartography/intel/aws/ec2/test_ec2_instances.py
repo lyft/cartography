@@ -38,10 +38,10 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
 
     # Assert EC2 instances exist
     assert check_nodes(neo4j_session, 'EC2Instance', ['id', 'instanceid']) == {
-        ("i-01", "i-01"),
-        ("i-02", "i-02"),
-        ("i-03", "i-03"),
-        ("i-04", "i-04"),
+        ('arn:aws:ec2:us-east-1:000000000000:instance/i-01', 'i-01'),
+        ('arn:aws:ec2:us-east-1:000000000000:instance/i-02', 'i-02'),
+        ('arn:aws:ec2:us-east-1:000000000000:instance/i-03', 'i-03'),
+        ('arn:aws:ec2:us-east-1:000000000000:instance/i-04', 'i-04'),
     }
 
     # Assert that instances are connected to their expected reservations
@@ -54,10 +54,10 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
         'MEMBER_OF_EC2_RESERVATION',
         rel_direction_right=False,
     ) == {
-        ("r-01", "i-01"),
-        ("r-02", "i-02"),
-        ("r-03", "i-03"),
-        ("r-03", "i-04"),
+        ('r-01', 'arn:aws:ec2:us-east-1:000000000000:instance/i-01'),
+        ('r-02', 'arn:aws:ec2:us-east-1:000000000000:instance/i-02'),
+        ('r-03', 'arn:aws:ec2:us-east-1:000000000000:instance/i-03'),
+        ('r-03', 'arn:aws:ec2:us-east-1:000000000000:instance/i-04'),
     }
 
     # Assert network interface to instances
@@ -66,56 +66,56 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
         'NetworkInterface',
         'id',
         'EC2Instance',
-        'id',
+        'instanceid',
         'NETWORK_INTERFACE',
         rel_direction_right=False,
     ) == {
-        ('eni-de', 'i-01'),
-        ('eni-87', 'i-02'),
-        ('eni-75', 'i-03'),
-        ('eni-76', 'i-04'),
+        ('arn:aws:ec2:us-east-1:000000000000:network-interface/eni-75', 'i-03'),
+        ('arn:aws:ec2:us-east-1:000000000000:network-interface/eni-76', 'i-04'),
+        ('arn:aws:ec2:us-east-1:000000000000:network-interface/eni-87', 'i-02'),
+        ('arn:aws:ec2:us-east-1:000000000000:network-interface/eni-de', 'i-01'),
     }
 
     # Assert network interface to subnet
     assert check_rels(
         neo4j_session,
         'NetworkInterface',
-        'id',
+        'networkinterfaceid',
         'EC2Subnet',
         'id',
         'PART_OF_SUBNET',
         rel_direction_right=True,
     ) == {
-        ('eni-75', 'SOME_SUBNET_1'),
-        ('eni-76', 'SOME_SUBNET_1'),
-        ('eni-87', 'SOME_SUBNET_1'),
+        ('eni-75', 'arn:aws:ec2:us-east-1:000000000000:subnet/SOME_SUBNET_1'),
+        ('eni-76', 'arn:aws:ec2:us-east-1:000000000000:subnet/SOME_SUBNET_1'),
+        ('eni-87', 'arn:aws:ec2:us-east-1:000000000000:subnet/SOME_SUBNET_1'),
     }
 
     # Assert network interface to security group
     assert check_rels(
         neo4j_session,
         'NetworkInterface',
-        'id',
+        'networkinterfaceid',
         'EC2SecurityGroup',
         'id',
         'MEMBER_OF_EC2_SECURITY_GROUP',
         rel_direction_right=True,
     ) == {
-        ('eni-75', 'SOME_GROUP_ID_2'),
-        ('eni-75', 'THIS_IS_A_SG_ID'),
-        ('eni-76', 'SOME_GROUP_ID_2'),
-        ('eni-76', 'THIS_IS_A_SG_ID'),
-        ('eni-87', 'SOME_GROUP_ID_2'),
-        ('eni-87', 'SOME_GROUP_ID_3'),
-        ('eni-de', 'SOME_GROUP_ID_2'),
-        ('eni-de', 'sg-GROUP-ID'),
+        ('eni-75', 'arn:aws:ec2:us-east-1:000000000000:security-group/SOME_GROUP_ID_2'),
+        ('eni-75', 'arn:aws:ec2:us-east-1:000000000000:security-group/THIS_IS_A_SG_ID'),
+        ('eni-76', 'arn:aws:ec2:us-east-1:000000000000:security-group/SOME_GROUP_ID_2'),
+        ('eni-76', 'arn:aws:ec2:us-east-1:000000000000:security-group/THIS_IS_A_SG_ID'),
+        ('eni-87', 'arn:aws:ec2:us-east-1:000000000000:security-group/SOME_GROUP_ID_2'),
+        ('eni-87', 'arn:aws:ec2:us-east-1:000000000000:security-group/SOME_GROUP_ID_3'),
+        ('eni-de', 'arn:aws:ec2:us-east-1:000000000000:security-group/SOME_GROUP_ID_2'),
+        ('eni-de', 'arn:aws:ec2:us-east-1:000000000000:security-group/sg-GROUP-ID'),
     }
 
     # Assert network interface to AWS account
     assert check_rels(
         neo4j_session,
         'NetworkInterface',
-        'id',
+        'networkinterfaceid',
         'AWSAccount',
         'id',
         'RESOURCE',
@@ -146,7 +146,7 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
         'EC2KeyPair',
         'id',
         'EC2Instance',
-        'id',
+        'instanceid',
         'SSH_LOGIN_TO',
         rel_direction_right=True,
     ) == {
@@ -160,9 +160,9 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
     assert check_rels(
         neo4j_session,
         'EC2SecurityGroup',
-        'id',
+        'groupid',
         'EC2Instance',
-        'id',
+        'instanceid',
         'MEMBER_OF_EC2_SECURITY_GROUP',
         rel_direction_right=False,
     ) == {
@@ -186,19 +186,19 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
         'RESOURCE',
         rel_direction_right=False,
     ) == {
-        ('SOME_GROUP_ID_2', '000000000000'),
-        ('SOME_GROUP_ID_3', '000000000000'),
-        ('THIS_IS_A_SG_ID', '000000000000'),
-        ('sg-GROUP-ID', '000000000000'),
+        ('arn:aws:ec2:us-east-1:000000000000:security-group/SOME_GROUP_ID_2', '000000000000'),
+        ('arn:aws:ec2:us-east-1:000000000000:security-group/SOME_GROUP_ID_3', '000000000000'),
+        ('arn:aws:ec2:us-east-1:000000000000:security-group/THIS_IS_A_SG_ID', '000000000000'),
+        ('arn:aws:ec2:us-east-1:000000000000:security-group/sg-GROUP-ID', '000000000000'),
     }
 
     # Assert EC2 Subnet to EC2 Instance
     assert check_rels(
         neo4j_session,
         'EC2Subnet',
-        'id',
+        'subnetid',
         'EC2Instance',
-        'id',
+        'instanceid',
         'PART_OF_SUBNET',
         rel_direction_right=False,
     ) == {
@@ -211,7 +211,7 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
     assert check_rels(
         neo4j_session,
         'EC2Subnet',
-        'id',
+        'subnetid',
         'AWSAccount',
         'id',
         'RESOURCE',
@@ -230,17 +230,17 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
         'ATTACHED_TO',
         rel_direction_right=True,
     ) == {
-        ('vol-0df', 'i-01'),
-        ('vol-03', 'i-02'),
-        ('vol-09', 'i-03'),
-        ('vol-04', 'i-04'),
+        ('arn:aws:ec2:us-east-1:000000000000:volume/vol-03', 'arn:aws:ec2:us-east-1:000000000000:instance/i-02'),
+        ('arn:aws:ec2:us-east-1:000000000000:volume/vol-04', 'arn:aws:ec2:us-east-1:000000000000:instance/i-04'),
+        ('arn:aws:ec2:us-east-1:000000000000:volume/vol-09', 'arn:aws:ec2:us-east-1:000000000000:instance/i-03'),
+        ('arn:aws:ec2:us-east-1:000000000000:volume/vol-0df', 'arn:aws:ec2:us-east-1:000000000000:instance/i-01'),
     }
 
     # Assert EBS Volume to AWS account
     assert check_rels(
         neo4j_session,
         'EBSVolume',
-        'id',
+        'volumeid',
         'AWSAccount',
         'id',
         'RESOURCE',
@@ -288,7 +288,7 @@ def test_ec2_iaminstanceprofiles(mock_get_instances, neo4j_session):
     assert check_rels(
         neo4j_session,
         'EC2Instance',
-        'id',
+        'instanceid',
         'AWSRole',
         'arn',
         'STS_ASSUMEROLE_ALLOW',

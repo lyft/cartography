@@ -13,7 +13,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 @dataclass(frozen=True)
 class EC2ReservationNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('ReservationId')
-    reservationid: PropertyRef = PropertyRef('ReservationId')
+    reservationid: PropertyRef = PropertyRef('ReservationId', extra_index=True)
     ownerid: PropertyRef = PropertyRef('OwnerId')
     requesterid: PropertyRef = PropertyRef('RequesterId')
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
