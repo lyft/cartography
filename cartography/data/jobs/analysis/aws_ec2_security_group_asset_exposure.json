@@ -24,6 +24,10 @@
 		{
 			"query": "MATCH (group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE NOT EXISTS ((group)<-[:MEMBER_OF_EC2_SECURITY_GROUP]-(:AWSVpc)) SET group.exposed_internet = true,(CASE WHEN NOT 'vpc_none' IN  coalesce(group.exposed_internet_type , []) THEN group END).exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'vpc_none';",
 			"iterative": false
+		},
+		{
+			"query": "MATCH (:AWSInternetGateway)-[:ATTACHED_TO]->(:AWSVpc)-[:MEMBER_OF_EC2_SECURITY_GROUP]->(group:EC2SecurityGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET group.exposed_internet = true,(CASE WHEN NOT 'public_vpc' IN  coalesce(group.exposed_internet_type , []) THEN group END).exposed_internet_type = coalesce(group.exposed_internet_type , []) + 'public_vpc';",
+			"iterative": false
 		}
 	],
 	"name": "aws ec2 security group internet exposure"

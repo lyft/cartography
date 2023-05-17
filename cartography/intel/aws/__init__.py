@@ -143,6 +143,12 @@ def _sync_one_account(
     )  # NOTE temp solution (query has to be only executed after both subnet & route table is loaded)
 
     run_analysis_job(
+        'aws_ec2_vpc_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    run_analysis_job(
         'aws_ec2_security_group_asset_exposure.json',
         neo4j_session,
         common_job_parameters
