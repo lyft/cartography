@@ -501,6 +501,137 @@ def sync_network_security_groups(
     sync_network_security_rules(neo4j_session, network_security_groups_list, client, update_tag, common_job_parameters)
 
 
+def sync_nat_gateway(
+    neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict, regions: list
+) -> None:
+    nat_gateway_list = get_network_nat_gateway(client, regions, common_job_parameters)
+
+    if common_job_parameters.get('pagination', {}).get('network', None):
+        pageNo = common_job_parameters.get("pagination", {}).get("network", None)["pageNo"]
+        pageSize = common_job_parameters.get("pagination", {}).get("network", None)["pageSize"]
+        totalPages = len(nat_gateway_list) / pageSize
+        if int(totalPages) != totalPages:
+            totalPages = totalPages + 1
+        totalPages = int(totalPages)
+        if pageNo < totalPages or pageNo == totalPages:
+            logger.info(f'pages process for network nat gateway list  {pageNo}/{totalPages} pageSize is {pageSize}')
+        page_start = (common_job_parameters.get('pagination', {}).get('network', {})[
+                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
+        page_end = page_start + common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
+        if page_end > len(nat_gateway_list) or page_end == len(nat_gateway_list):
+            nat_gateway_list = nat_gateway_list[page_start:]
+        else:
+            has_next_page = True
+            nat_gateway_list = nat_gateway_list[page_start:page_end]
+            common_job_parameters['pagination']['network']['hasNextPage'] = has_next_page
+
+    load_network_nat_gateway(neo4j_session, subscription_id, nat_gateway_list, update_tag)
+    for nat_gateway in nat_gateway_list:
+        load_network_nat_gateway_subnet(session=neo4j_session, nat_gateway_id=nat_gateway.get('id'), nat_subnet_list=nat_gateway.get("subnets", []), update_tag=update_tag)
+    cleanup_network_nat_gateway(neo4j_session, common_job_parameters)
+
+
+@timeit
+def get_network_nat_gateway(client: NetworkManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
+    try:
+        nat_gateways_list = list(map(lambda x: x.as_dict(), client.nat_gateways.list_all()))
+        group_list = []
+        for network in nat_gateways_list:
+            x = network['id'].split('/')
+            network['resource_group'] = x[x.index('resourceGroups') + 1]
+            network['consolelink'] = azure_console_link.get_console_link(
+                id=network['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            if regions is None:
+                group_list.append(network)
+            else:
+                if network.get('location') in regions or network.get('location') == 'global':
+                    group_list.append(network)
+        return group_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving nat gateways list - {e}")
+        return []
+
+
+def _load_network_nat_gateway_tx(
+    tx: neo4j.Transaction, subscription_id: str, nat_gateway_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_network = """
+    UNWIND $nat_gateway_list AS network
+    MERGE (n:AzureNatGateway{id: network.id})
+    ON CREATE SET n.firstseen = timestamp(),
+    n.type = network.type,
+    n.location = network.location,
+    n.region = network.location,
+    n.consolelink = network.consolelink,
+    n.resourcegroup = network.resource_group
+    SET n.lastupdated = $update_tag,
+    n.name = network.name,
+    n.id = network.id,
+    n.etag=network.etag
+    WITH n
+    MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
+    MERGE (owner)-[r:RESOURCE]->(n)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+
+
+    """
+
+    tx.run(
+        ingest_network,
+        nat_gateway_list=nat_gateway_list,
+        SUBSCRIPTION_ID=subscription_id,
+        update_tag=update_tag,
+    )
+
+
+def _load_network_nat_subnet_tx(
+    tx: neo4j.Transaction, nat_subnet_list: List[Dict], nat_gateway_id: str, update_tag: int,
+) -> None:
+    ingest_network = """
+    UNWIND $nat_subnet_list AS subnet
+        MERGE (s:AzureNetworkSubnet{id: subnet.id})
+        ON CREATE SET s.firstseen = timestamp(),
+        s.id=subnet.id
+        WITH s
+        MATCH (n:AzureNatGateway{id: $nat_gateway_id})
+        MERGE (n)-[r:ATTACHED_TO]->(s)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $update_tag
+
+    """
+    tx.run(
+        ingest_network,
+        nat_subnet_list=nat_subnet_list,
+        nat_gateway_id=nat_gateway_id,
+        update_tag=update_tag,
+    )
+
+
+def load_network_nat_gateway(
+    session: neo4j.Session,
+    subscription_id: str,
+    data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(_load_network_nat_gateway_tx, subscription_id, data_list, update_tag)
+
+
+def load_network_nat_gateway_subnet(
+    session: neo4j.Session,
+    nat_gateway_id: str,
+    nat_subnet_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(_load_network_nat_subnet_tx, nat_subnet_list, nat_gateway_id, update_tag)
+
+
+def cleanup_network_nat_gateway(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_network_nat_gateway_cleanup.json', neo4j_session, common_job_parameters)
+
+
 @timeit
 def get_network_security_rules_list(
     network_security_groups_list: List[Dict], client: NetworkManagementClient, common_job_parameters: Dict
@@ -819,3 +950,4 @@ def sync(
     client = get_network_client(credentials, subscription_id)
     sync_network_security_groups(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
     sync_networks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
+    sync_nat_gateway(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
