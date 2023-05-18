@@ -145,8 +145,7 @@ def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, cur
                                 # 'SnapshotId': mapping['Ebs']['SnapshotId'],  # TODO check on this
                             })
             except Exception as e:
-                logger.error(f"Failed to process instance {instance_id}. Error: {e}")
-                raise e
+                raise Exception(f"Failed to process instance {instance_id}", e)
 
     return Ec2Data(
         reservation_list=reservation_list,
