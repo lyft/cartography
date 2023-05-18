@@ -65,84 +65,90 @@ def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, cur
         })
         for instance in reservation['Instances']:
             instance_id = instance['InstanceId']
-            launch_time = instance.get("LaunchTime")
-            launch_time_unix = str(time.mktime(launch_time.timetuple())) if launch_time else None
-            instance_list.append(
-                {
-                    'InstanceId': instance_id,
-                    'ReservationId': reservation_id,
-                    'PublicDnsName': instance.get("PublicDnsName"),
-                    'PublicIpAddress': instance.get("PublicIpAddress"),
-                    'PrivateIpAddress': instance.get("PrivateIpAddress"),
-                    'ImageId': instance.get("ImageId"),
-                    'InstanceType': instance.get("InstanceType"),
-                    'IamInstanceProfile': instance.get("IamInstanceProfile", {}).get("Arn"),
-                    'MonitoringState': instance.get("Monitoring", {}).get("State"),
-                    'LaunchTime': instance.get("LaunchTime"),
-                    'LaunchTimeUnix': launch_time_unix,
-                    'State': instance.get("State", {}).get("Name"),
-                    'AvailabilityZone': instance.get("Placement", {}).get("AvailabilityZone"),
-                    'Tenancy': instance.get("Placement", {}).get("Tenancy"),
-                    'HostResourceGroupArn': instance.get("Placement", {}).get("HostResourceGroupArn"),
-                    'Platform': instance.get("Platform"),
-                    'Architecture': instance.get("Architecture"),
-                    'EbsOptimized': instance.get("EbsOptimized"),
-                    'BootMode': instance.get("BootMode"),
-                    'InstanceLifecycle': instance.get("InstanceLifecycle"),
-                    'HibernationOptions': instance.get("HibernationOptions", {}).get("Configured"),
-                },
-            )
-
-            subnet_id = instance.get('SubnetId')
-            if subnet_id:
-                subnet_list.append(
+            try:
+                launch_time = instance.get("LaunchTime")
+                launch_time_unix = str(time.mktime(launch_time.timetuple())) if launch_time else None
+                instance_list.append(
                     {
-                        'SubnetId': subnet_id,
                         'InstanceId': instance_id,
+                        'ReservationId': reservation_id,
+                        'PublicDnsName': instance.get("PublicDnsName"),
+                        'PublicIpAddress': instance.get("PublicIpAddress"),
+                        'PrivateIpAddress': instance.get("PrivateIpAddress"),
+                        'ImageId': instance.get("ImageId"),
+                        'InstanceType': instance.get("InstanceType"),
+                        'IamInstanceProfile': instance.get("IamInstanceProfile", {}).get("Arn"),
+                        'MonitoringState': instance.get("Monitoring", {}).get("State"),
+                        'LaunchTime': instance.get("LaunchTime"),
+                        'LaunchTimeUnix': launch_time_unix,
+                        'State': instance.get("State", {}).get("Name"),
+                        'AvailabilityZone': instance.get("Placement", {}).get("AvailabilityZone"),
+                        'Tenancy': instance.get("Placement", {}).get("Tenancy"),
+                        'HostResourceGroupArn': instance.get("Placement", {}).get("HostResourceGroupArn"),
+                        'Platform': instance.get("Platform"),
+                        'Architecture': instance.get("Architecture"),
+                        'EbsOptimized': instance.get("EbsOptimized"),
+                        'BootMode': instance.get("BootMode"),
+                        'InstanceLifecycle': instance.get("InstanceLifecycle"),
+                        'HibernationOptions': instance.get("HibernationOptions", {}).get("Configured"),
                     },
                 )
 
-            if instance.get("KeyName"):
-                key_name = instance["KeyName"]
-                key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
-                keypair_list.append({
-                    'KeyPairArn': key_pair_arn,
-                    'KeyName': key_name,
-                    'InstanceId': instance_id,
-                })
-
-            if instance.get("SecurityGroups"):
-                for group in instance["SecurityGroups"]:
-                    sg_list.append(
+                subnet_id = instance.get('SubnetId')
+                if subnet_id:
+                    subnet_list.append(
                         {
-                            'GroupId': group['GroupId'],
+                            'SubnetId': subnet_id,
                             'InstanceId': instance_id,
                         },
                     )
 
-            for network_interface in instance['NetworkInterfaces']:
-                for security_group in network_interface['Groups']:
-                    network_interface_list.append({
-                        'NetworkInterfaceId': network_interface['NetworkInterfaceId'],
-                        'Status': network_interface['Status'],
-                        'MacAddress': network_interface['MacAddress'],
-                        'Description': network_interface['Description'],
-                        'PrivateDnsName': network_interface.get('PrivateDnsName'),
-                        'PrivateIpAddress': network_interface['PrivateIpAddress'],
+                if instance.get("KeyName"):
+                    key_name = instance["KeyName"]
+                    key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
+                    keypair_list.append({
+                        'KeyPairArn': key_pair_arn,
+                        'KeyName': key_name,
                         'InstanceId': instance_id,
-                        'SubnetId': subnet_id,
-                        'GroupId': security_group['GroupId'],
                     })
 
-            if 'BlockDeviceMappings' in instance and len(instance['BlockDeviceMappings']) > 0:
-                for mapping in instance['BlockDeviceMappings']:
-                    if 'VolumeId' in mapping['Ebs']:
-                        instance_ebs_volumes_list.append({
+                if instance.get("SecurityGroups"):
+                    for group in instance["SecurityGroups"]:
+                        sg_list.append(
+                            {
+                                'GroupId': group['GroupId'],
+                                'InstanceId': instance_id,
+                            },
+                        )
+
+                for network_interface in instance['NetworkInterfaces']:
+                    for security_group in network_interface.get('Groups', []):
+                        network_interface_list.append({
+                            'NetworkInterfaceId': network_interface['NetworkInterfaceId'],
+                            'Status': network_interface['Status'],
+                            'MacAddress': network_interface['MacAddress'],
+                            'Description': network_interface['Description'],
+                            'PrivateDnsName': network_interface.get('PrivateDnsName'),
+                            'PrivateIpAddress': network_interface['PrivateIpAddress'],
                             'InstanceId': instance_id,
-                            'VolumeId': mapping['Ebs']['VolumeId'],
-                            'DeleteOnTermination': mapping['Ebs']['DeleteOnTermination'],
-                            # 'SnapshotId': mapping['Ebs']['SnapshotId'],  # TODO check on this
+                            'SubnetId': subnet_id,
+                            'GroupId': security_group['GroupId'],
                         })
+
+                if 'BlockDeviceMappings' in instance and len(instance['BlockDeviceMappings']) > 0:
+                    for mapping in instance['BlockDeviceMappings']:
+                        if 'VolumeId' in mapping['Ebs']:
+                            instance_ebs_volumes_list.append({
+                                'InstanceId': instance_id,
+                                'VolumeId': mapping['Ebs']['VolumeId'],
+                                'DeleteOnTermination': mapping['Ebs']['DeleteOnTermination'],
+                                # 'SnapshotId': mapping['Ebs']['SnapshotId'],  # TODO check on this
+                            })
+            # Write a valid except clause below
+            except Exception as e:
+                logger.error(f"Failed to process instance {instance_id}. Error: {e}")
+                raise e
+
 
     return Ec2Data(
         reservation_list=reservation_list,
