@@ -121,7 +121,7 @@ def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, cur
                     )
 
             for network_interface in instance['NetworkInterfaces']:
-                for security_group in network_interface['Groups']:
+                for security_group in network_interface.get('Groups', []):
                     network_interface_list.append({
                         'NetworkInterfaceId': network_interface['NetworkInterfaceId'],
                         'Status': network_interface['Status'],
