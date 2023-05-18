@@ -148,7 +148,6 @@ def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, cur
                 logger.error(f"Failed to process instance {instance_id}. Error: {e}")
                 raise e
 
-
     return Ec2Data(
         reservation_list=reservation_list,
         instance_list=instance_list,
