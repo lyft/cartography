@@ -7,7 +7,7 @@ from typing import List
 import boto3
 import botocore.exceptions
 from botocore.exceptions import ClientError
-from botocore.exceptions import EndpointConnectionErro
+from botocore.exceptions import EndpointConnectionError
 import neo4j
 from cartography.util import timeit
 
