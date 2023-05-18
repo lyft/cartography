@@ -144,7 +144,6 @@ def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, cur
                                 'DeleteOnTermination': mapping['Ebs']['DeleteOnTermination'],
                                 # 'SnapshotId': mapping['Ebs']['SnapshotId'],  # TODO check on this
                             })
-            # Write a valid except clause below
             except Exception as e:
                 logger.error(f"Failed to process instance {instance_id}. Error: {e}")
                 raise e
