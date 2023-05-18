@@ -100,7 +100,7 @@ def get_account_public_access_block(account_id: str, boto3_session: boto3.sessio
         logger.info("Error in getting Account Level Public Access Block for '%s', Error: '%s'", 
         account_id,
         e.args[0])
-        raise
+        pass
     except EndpointConnectionError:
         logger.warning(
             f"Failed to retrieve S3 account public access block for account")
