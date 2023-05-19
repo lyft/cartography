@@ -850,7 +850,7 @@ def _attach_subnet_to_network_interfaces_tx(
 def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_network_interfaces_cleanup.json', neo4j_session, common_job_parameters)
 
-def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+def cleanup_network_ip_configurations(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_network_ip_configurations_cleanup.json', neo4j_session, common_job_parameters)
 
 def cleanup_network_load_balancers(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
