@@ -10,6 +10,14 @@
 			"iterative": false
 		},
 		{
+			"query": "MATCH (rule:AzureNetworkSecurityRule)<-[:CONTAIN]-(group:AzureNetworkSecurityGroup)<-[:MEMBER_NETWORK_SECURITY_GROUP]-(:AzureNetworkSubnet)<-[:SUBNET]-(interface:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE rule.access='Allow' AND rule.source_port_range='*' OR rule.protocol='*' OR rule.source_address_prefix='0.0.0.0/0' SET vm.exposed_internet = true, (CASE WHEN NOT 'public_interface_subnet' IN  coalesce(vm.exposed_internet_type , []) THEN vm END).exposed_internet_type = coalesce(vm.exposed_internet_type , []) + 'public_interface_subnet';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (:AzureNetworkLoadBalancer{type: 'public'})-[:HAS]->(:AzureLoadBalancerBackendAddressPool)-[:HAS]->(:AzureNetworkInterfaceIPConfiguration)<-[:CONTAIN]-(interface:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.exposed_internet = true, (CASE WHEN NOT 'public_load_balancer' IN  coalesce(vm.exposed_internet_type , []) THEN vm END).exposed_internet_type = coalesce(vm.exposed_internet_type , []) + 'public_load_balancer';",
+			"iterative": false
+		},
+		{
 			"query": "MATCH (:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(interface:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.exposed_internet = true, (CASE WHEN NOT 'public_ip' IN  coalesce(vm.exposed_internet_type , []) THEN vm END).exposed_internet_type = coalesce(vm.exposed_internet_type , []) + 'public_ip';",
 			"iterative": false
 		},
