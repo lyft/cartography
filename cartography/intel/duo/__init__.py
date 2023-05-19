@@ -1,4 +1,7 @@
 import logging
+import os
+from base64 import b64encode
+from urllib.parse import urlparse
 
 import duo_client
 import neo4j
@@ -22,11 +25,24 @@ def get_client(config: Config) -> duo_client.Admin:
     '''
     Return a duo Admin client with the creds in the config object
     '''
-    return duo_client.Admin(
+    client = duo_client.Admin(
         ikey=config.duo_api_key,
         skey=config.duo_api_secret,
         host=config.duo_api_hostname,
     )
+    proxy_url = os.environ.get('HTTP_PROXY')
+    if proxy_url:
+        proxy_config = urlparse(proxy_url)
+        headers = {}
+        if proxy_config.username:
+            proxy_auth_token = b64encode(f"{proxy_config.username}:{proxy_config.password}".encode()).decode('ascii')
+            headers['Proxy-Authorization'] = f'Basic {proxy_auth_token}'
+        client.set_proxy(
+            host=proxy_config.hostname,
+            port=proxy_config.port,
+            headers=headers,
+        )
+    return client
 
 
 @timeit
