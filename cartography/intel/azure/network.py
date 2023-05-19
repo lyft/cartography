@@ -592,9 +592,7 @@ def _load_network_nat_subnet_tx(
 ) -> None:
     ingest_network = """
     UNWIND $nat_subnet_list AS subnet
-        MERGE (s:AzureNetworkSubnet{id: subnet.id})
-        ON CREATE SET s.firstseen = timestamp(),
-        s.id=subnet.id
+        MATCH (s:AzureNetworkSubnet{id: subnet.id})
         WITH s
         MATCH (n:AzureNatGateway{id: $nat_gateway_id})
         MERGE (n)-[r:ATTACHED_TO]->(s)
