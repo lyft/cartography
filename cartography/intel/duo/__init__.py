@@ -30,6 +30,7 @@ def get_client(config: Config) -> duo_client.Admin:
         skey=config.duo_api_secret,
         host=config.duo_api_hostname,
     )
+    # Duo's library does not automatically respect the HTTP_PROXY env variable
     proxy_url = os.environ.get('HTTP_PROXY')
     if proxy_url:
         proxy_config = urlparse(proxy_url)
