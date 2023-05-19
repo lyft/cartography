@@ -723,7 +723,7 @@ def _attach_ec2_subnets_to_subnetgroup(
         MATCH (sng:DBSubnetGroup{id: rds_sn.sng_arn})
         MERGE (subnet:EC2Subnet{subnetid: rds_sn.sn_id})
         ON CREATE SET subnet.firstseen = timestamp()
-        MERGE (sng)-[r:RESOURCE]->(subnet)
+        MERGE (sng)-[r:CONNECTED_TO]->(subnet)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $aws_update_tag,
         subnet.availability_zone = rds_sn.az,
