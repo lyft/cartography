@@ -100,4 +100,4 @@ def sync(
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
-    logger.info(f"Time to process EC2 instances: {toc - tic:0.4f} seconds")
+    logger.info(f"Time to process EMR: {toc - tic:0.4f} seconds")

@@ -618,43 +618,43 @@ def sync(
             current_aws_account_id,
             update_tag,
         )
-        task_definitions = get_ecs_task_definitions(
-            boto3_session,
-            cluster_arn['region'],
-        )
-        load_ecs_task_definitions(
-            neo4j_session,
-            task_definitions,
-            cluster_arn['region'],
-            current_aws_account_id,
-            update_tag,
-        )
-        services = get_ecs_services(
-            cluster_arn['arn'],
-            boto3_session,
-            cluster_arn['region'],
-        )
-        load_ecs_services(
-            neo4j_session,
-            cluster_arn['arn'],
-            services,
-            cluster_arn['region'],
-            current_aws_account_id,
-            update_tag,
-        )
-        tasks = get_ecs_tasks(
-            cluster_arn['arn'],
-            boto3_session,
-            cluster_arn['region'],
-        )
-        load_ecs_tasks(
-            neo4j_session,
-            cluster_arn['arn'],
-            tasks,
-            cluster_arn['region'],
-            current_aws_account_id,
-            update_tag,
-        )
+        # task_definitions = get_ecs_task_definitions(
+        #     boto3_session,
+        #     cluster_arn['region'],
+        # )
+        # load_ecs_task_definitions(
+        #     neo4j_session,
+        #     task_definitions,
+        #     cluster_arn['region'],
+        #     current_aws_account_id,
+        #     update_tag,
+        # )
+        # services = get_ecs_services(
+        #     cluster_arn['arn'],
+        #     boto3_session,
+        #     cluster_arn['region'],
+        # )
+        # load_ecs_services(
+        #     neo4j_session,
+        #     cluster_arn['arn'],
+        #     services,
+        #     cluster_arn['region'],
+        #     current_aws_account_id,
+        #     update_tag,
+        # )
+        # tasks = get_ecs_tasks(
+        #     cluster_arn['arn'],
+        #     boto3_session,
+        #     cluster_arn['region'],
+        # )
+        # load_ecs_tasks(
+        #     neo4j_session,
+        #     cluster_arn['arn'],
+        #     tasks,
+        #     cluster_arn['region'],
+        #     current_aws_account_id,
+        #     update_tag,
+        # )
     cleanup_ecs(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

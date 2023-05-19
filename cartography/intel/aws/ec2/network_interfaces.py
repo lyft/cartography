@@ -276,6 +276,7 @@ def load_network_interface_items(neo4j_session: neo4j.Session, data: List[Dict],
     load_network_interface_elbv2_relations(neo4j_session, elb_associations_v2, region, aws_account_id, update_tag)
     load_network_interface_instance_to_subnet_relations(neo4j_session, update_tag)
     load_network_interface_load_balancer_relations(neo4j_session, update_tag)
+    load_network_interface_load_balancer_v2_relations(neo4j_session, update_tag)
 
 
 @timeit

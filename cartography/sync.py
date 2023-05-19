@@ -14,33 +14,22 @@ from statsd import StatsClient
 
 import cartography.intel.analysis
 import cartography.intel.aws
+# import cartography.intel.azure
 import cartography.intel.create_indexes
-# from cartography.stats import set_stats_client
-import cartography.intel.azure
-# from cartography.scoped_stats_client import ScopedStatsClient
+# import cartography.intel.crowdstrike
 # import cartography.intel.crxcavator.crxcavator
+# import cartography.intel.cve
 # import cartography.intel.digitalocean
 # import cartography.intel.gcp
 # import cartography.intel.github
 # import cartography.intel.gsuite
 # import cartography.intel.kubernetes
 # import cartography.intel.okta
-# import cartography.intel.kubernetes
-# import cartography.intel.okta
-# import cartography.intel.crowdstrike
-# import cartography.intel.crxcavator.crxcavator
-# import cartography.intel.cve
-# import cartography.intel.digitalocean
-import cartography.intel.gcp
-# import cartography.intel.github
-# import cartography.intel.gsuite
-# import cartography.intel.kubernetes
 # import cartography.intel.oci
-# import cartography.intel.okta
 from cartography.config import Config
+# from cartography.scoped_stats_client import ScopedStatsClient
 from cartography.stats import set_stats_client
-from cartography.util import STATUS_FAILURE
-from cartography.util import STATUS_SUCCESS
+from cartography.util import STATUS_FAILURE, STATUS_SUCCESS
 
 import cloudanix
 
@@ -210,7 +199,7 @@ def build_default_sync() -> Sync:
     return sync
 
 
-def build_aws_sync(init_indexes):
+def build_aws_sync():
     """
     Build the aws cartography sync, which runs all intelligence modules shipped with the cartography package.
 
@@ -220,9 +209,6 @@ def build_aws_sync(init_indexes):
     sync = Sync()
 
     stages = []
-    if init_indexes:
-        stages.append(('create-indexes', cartography.intel.create_indexes.run))
-
     stages.append(('cloudanix-workspace', cloudanix.run))
     stages.append(('aws', cartography.intel.aws.start_aws_ingestion))
     stages.append(('analysis', cartography.intel.analysis.run))
@@ -232,7 +218,7 @@ def build_aws_sync(init_indexes):
     return sync
 
 
-def build_azure_sync(init_indexes):
+def build_azure_sync():
     """
     Build the azure cartography sync, which runs all intelligence modules shipped with the cartography package.
 
@@ -242,9 +228,6 @@ def build_azure_sync(init_indexes):
     sync = Sync()
 
     stages = []
-    if init_indexes:
-        stages.append(('create-indexes', cartography.intel.create_indexes.run))
-
     stages.append(('cloudanix-workspace', cloudanix.run))
     stages.append(('azure', cartography.intel.azure.start_azure_ingestion))
     stages.append(('analysis', cartography.intel.analysis.run))
@@ -254,7 +237,7 @@ def build_azure_sync(init_indexes):
     return sync
 
 
-def build_gcp_sync(init_indexes):
+def build_gcp_sync():
     """
     Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
 
@@ -264,13 +247,9 @@ def build_gcp_sync(init_indexes):
     sync = Sync()
 
     stages = []
-    if init_indexes:
-        stages.append(('create-indexes', cartography.intel.create_indexes.run))
-
-    else:
-        stages.append(('cloudanix-workspace', cloudanix.run))
-        stages.append(('gcp', cartography.intel.gcp.start_gcp_ingestion))
-        stages.append(('analysis', cartography.intel.analysis.run))
+    stages.append(('cloudanix-workspace', cloudanix.run))
+    stages.append(('gcp', cartography.intel.gcp.start_gcp_ingestion))
+    stages.append(('analysis', cartography.intel.analysis.run))
 
     sync.add_stages(stages)
 

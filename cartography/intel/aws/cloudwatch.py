@@ -496,143 +496,27 @@ def sync(
 
     logger.info(f"Total Cloudwatch Rules: {len(rules)}")
 
-    if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageSize"]
-        totalPages = len(alarms) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for cloudwatch alarms {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('cloudwatch', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
-        if page_end > len(alarms) or page_end == len(alarms):
-            alarms = alarms[page_start:]
-
-        else:
-            has_next_page = True
-            alarms = alarms[page_start:page_end]
-            common_job_parameters['pagination']['cloudwatch']['hasNextPage'] = has_next_page
-
     load_cloudwatch_alarm(neo4j_session, alarms, current_aws_account_id, update_tag)
 
     cleanup_cloudwatch_alarm(neo4j_session, common_job_parameters)
-
-    if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageSize"]
-        totalPages = len(flowlogs) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for cloudwatch flowlogs {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('cloudwatch', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
-        if page_end > len(flowlogs) or page_end == len(flowlogs):
-            flowlogs = flowlogs[page_start:]
-
-        else:
-            has_next_page = True
-            flowlogs = flowlogs[page_start:page_end]
-            common_job_parameters['pagination']['cloudwatch']['hasNextPage'] = has_next_page
 
     load_cloudwatch_flowlogs(neo4j_session, flowlogs, current_aws_account_id, update_tag)
 
     cleanup_cloudwatch_flowlogs(neo4j_session, common_job_parameters)
 
-    if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageSize"]
-        totalPages = len(event_buses) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for cloudwatch event buses {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('cloudwatch', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
-        if page_end > len(event_buses) or page_end == len(event_buses):
-            event_buses = event_buses[page_start:]
-
-        else:
-            has_next_page = True
-            event_buses = event_buses[page_start:page_end]
-            common_job_parameters['pagination']['cloudwatch']['hasNextPage'] = has_next_page
-
     load_event_buses(neo4j_session, event_buses, current_aws_account_id, update_tag)
-
-    if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageSize"]
-        totalPages = len(log_groups) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for cloudwatch event buses {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('cloudwatch', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
-        if page_end > len(log_groups) or page_end == len(log_groups):
-            log_groups = log_groups[page_start:]
-
-        else:
-            has_next_page = True
-            log_groups = log_groups[page_start:page_end]
-            common_job_parameters['pagination']['cloudwatch']['hasNextPage'] = has_next_page
 
     load_log_groups(neo4j_session, log_groups, current_aws_account_id, update_tag)
 
     cleanup_log_groups(neo4j_session, common_job_parameters)
 
-    if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("cloudwatch", None)["pageSize"]
-        totalPages = len(metrics) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for cloudwatch metrics {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('cloudwatch', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudwatch', {})['pageSize']
-        if page_end > len(metrics) or page_end == len(metrics):
-            metrics = metrics[page_start:]
-
-        else:
-            has_next_page = True
-            metrics = metrics[page_start:page_end]
-            common_job_parameters['pagination']['cloudwatch']['hasNextPage'] = has_next_page
-
     load_metrics(neo4j_session, metrics, current_aws_account_id, update_tag)
 
     cleanup_metrics(neo4j_session, common_job_parameters)
 
-    if common_job_parameters.get('pagination', {}).get('cloudwatch', None):
-        if not common_job_parameters.get('pagination', {}).get('cloudwatch', {}).get('hasNextPage', False):
-            for region in regions:
-                rls = get_event_rules(boto3_session, region, current_aws_account_id)
-                rules.extend(transform_rules(rls, region, current_aws_account_id))
-    else:
-        for region in regions:
-            rls = get_event_rules(boto3_session, region, current_aws_account_id)
-            rules.extend(transform_rules(rls, region, current_aws_account_id))
+    for region in regions:
+        rls = get_event_rules(boto3_session, region, current_aws_account_id)
+        rules.extend(transform_rules(rls, region, current_aws_account_id))
 
     load_event_rules(neo4j_session, rules, current_aws_account_id, update_tag)
 

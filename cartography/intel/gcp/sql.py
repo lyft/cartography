@@ -53,27 +53,27 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
                             sql_instances.append(item)
             request = sql.instances().list_next(previous_request=request, previous_response=response)
 
-        if common_job_parameters.get('pagination', {}).get('sql', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("sql", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("sql", None)["pageSize"]
-            totalPages = len(sql_instances) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for sql instances {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('sql', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('sql', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('sql', None)['pageSize']
-            if page_end > len(sql_instances) or page_end == len(sql_instances):
-                sql_instances = sql_instances[page_start:]
-            else:
-                has_next_page = True
-                sql_instances = sql_instances[page_start:page_end]
-                common_job_parameters['pagination']['sql']['hasNextPage'] = has_next_page
+        # if common_job_parameters.get('pagination', {}).get('sql', None):
+        #     pageNo = common_job_parameters.get("pagination", {}).get("sql", None)["pageNo"]
+        #     pageSize = common_job_parameters.get("pagination", {}).get("sql", None)["pageSize"]
+        #     totalPages = len(sql_instances) / pageSize
+        #     if int(totalPages) != totalPages:
+        #         totalPages = totalPages + 1
+        #     totalPages = int(totalPages)
+        #     if pageNo < totalPages or pageNo == totalPages:
+        #         logger.info(f'pages process for sql instances {pageNo}/{totalPages} pageSize is {pageSize}')
+        #     page_start = (
+        #         common_job_parameters.get('pagination', {}).get('sql', None)[
+        #             'pageNo'
+        #         ] - 1
+        #     ) * common_job_parameters.get('pagination', {}).get('sql', None)['pageSize']
+        #     page_end = page_start + common_job_parameters.get('pagination', {}).get('sql', None)['pageSize']
+        #     if page_end > len(sql_instances) or page_end == len(sql_instances):
+        #         sql_instances = sql_instances[page_start:]
+        #     else:
+        #         has_next_page = True
+        #         sql_instances = sql_instances[page_start:page_end]
+        #         common_job_parameters['pagination']['sql']['hasNextPage'] = has_next_page
         return sql_instances
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -399,19 +399,19 @@ def sync(
     logger.info("Syncing CloudSQL for project '%s', at %s.", project_id, tic)
 
     # SQL INSTANCES
-    sqlinstances = get_sql_instances(sql, project_id, regions, common_job_parameters)
-    load_sql_instances(neo4j_session, sqlinstances, project_id, gcp_update_tag)
+    sql_instances = get_sql_instances(sql, project_id, regions, common_job_parameters)
+    load_sql_instances(neo4j_session, sql_instances, project_id, gcp_update_tag)
     logger.info("Load GCP Cloud SQL Instances completed for project %s.", project_id)
     label.sync_labels(
-        neo4j_session, sqlinstances, gcp_update_tag,
+        neo4j_session, sql_instances, gcp_update_tag,
         common_job_parameters, 'sql instances', 'GCPSQLInstance',
     )
 
     logger.info("Syncing GCP Cloud SQL Users for project %s.", project_id)
     # SQL USERS
-    users = get_sql_users(sql, sqlinstances, project_id)
+    users = get_sql_users(sql, sql_instances, project_id)
     load_sql_users(neo4j_session, users, project_id, gcp_update_tag)
-    for instance in sqlinstances:
+    for instance in sql_instances:
         database = get_sql_databases(sql, instance, project_id)
         load_sql_databases(neo4j_session, database, project_id, gcp_update_tag)
 
