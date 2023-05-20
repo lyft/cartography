@@ -52,8 +52,8 @@ RESOURCE_FUNCTIONS: Dict = {
     'cloudcdn': cloudcdn.sync,
     'loadbalancer': loadbalancer.sync,
     'bigquery': bigquery.sync,
-    'dataflow': dataflow.sync,
     'spanner': spanner.sync,
+    'dataflow': dataflow.sync,
     'pubsublite': pubsublite.sync,
     'cloudtasks': cloudtasks.sync,
 }
