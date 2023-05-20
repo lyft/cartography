@@ -188,13 +188,13 @@ def load_network_interface_elbv2_relations(
 
 
 @timeit
-def load_network_interface_instance_to_subnet_relations(neo4j_session: neo4j.Session, aws_account_id, update_tag: int) -> None:
+def load_network_interface_instance_to_subnet_relations(neo4j_session: neo4j.Session, aws_account_id: str, update_tag: int) -> None:
     """
     Creates (:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet) if
     (:EC2Instance)--(:NetworkInterface)--(:EC2Subnet).
     """
     ingest_network_interface_instance_relations = """
-    MATCH(aa: AWSAccount{id: $AWS_ACCOUNT_ID}), (i:EC2Instance)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
+    MATCH(aa: AWSAccount{id: $AWS_ACCOUNT_ID})-[r:RESOURCE]-> (i:EC2Instance)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
@@ -206,14 +206,14 @@ def load_network_interface_instance_to_subnet_relations(neo4j_session: neo4j.Ses
 
 
 @timeit
-def load_network_interface_load_balancer_relations(neo4j_session: neo4j.Session, aws_account_id, update_tag: int) -> None:
+def load_network_interface_load_balancer_relations(neo4j_session: neo4j.Session, aws_account_id: str, update_tag: int) -> None:
     """
     Creates (:LoadBalancer)-[:PART_OF_SUBNET]->(:EC2Subnet) if
     (:LoadBalancer)--(:NetworkInterface)--(:EC2Subnet).
     """
     ingest_network_interface_loadbalancer_relations = """
     
-    MATCH(aa: AWSAccount{id: $AWS_ACCOUNT_ID}),(i:LoadBalancer)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
+    MATCH(aa: AWSAccount{id: $AWS_ACCOUNT_ID})-[r:RESOURCE]->(i:LoadBalancer)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
@@ -225,13 +225,13 @@ def load_network_interface_load_balancer_relations(neo4j_session: neo4j.Session,
 
 
 @timeit
-def load_network_interface_load_balancer_v2_relations(neo4j_session: neo4j.Session, aws_account_id, update_tag: int) -> None:
+def load_network_interface_load_balancer_v2_relations(neo4j_session: neo4j.Session, aws_account_id: str, update_tag: int) -> None:
     """
     Creates (:LoadBalancerV2)-[:PART_OF_SUBNET]->(:EC2Subnet) if
     (:LoadBalancerV2)--(:NetworkInterface)--(:EC2Subnet).
     """
     ingest_network_interface_loadbalancerv2_relations = """
-    MATCH(aa: AWSAccount{id: $AWS_ACCOUNT_ID}), (i:LoadBalancerV2)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
+    MATCH(aa: AWSAccount{id: $AWS_ACCOUNT_ID})-[r:RESOURCE]-> (i:LoadBalancerV2)-[:NETWORK_INTERFACE]-(interface:NetworkInterface)-[:PART_OF_SUBNET]-(s:EC2Subnet)
     MERGE (i)-[r:PART_OF_SUBNET]->(s)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
@@ -276,7 +276,7 @@ def load_network_interface_items(neo4j_session: neo4j.Session, data: List[Dict],
     )
     load_network_interface_elb_relations(neo4j_session, elb_associations, region, aws_account_id, update_tag)
     load_network_interface_elbv2_relations(neo4j_session, elb_associations_v2, region, aws_account_id, update_tag)
-    load_network_interface_instance_to_subnet_relations(neo4j_session, instance_associations, aws_account_id, update_tag)
+    load_network_interface_instance_to_subnet_relations(neo4j_session, aws_account_id, update_tag)
     load_network_interface_load_balancer_relations(neo4j_session, aws_account_id, update_tag)
     load_network_interface_load_balancer_v2_relations(neo4j_session, aws_account_id, update_tag)
 
