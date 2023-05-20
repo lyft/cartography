@@ -212,6 +212,8 @@ def load_redshift_cluster_data(
         _attach_ec2_security_groups(neo4j_session, cluster, aws_update_tag, current_aws_account_id)
         _attach_iam_roles(neo4j_session, cluster, aws_update_tag)
         _attach_aws_vpc(neo4j_session, cluster, aws_update_tag)
+        _attach_aws_network_interface(neo4j_session, cluster, aws_update_tag)
+        _attach_aws_ec2_subnet(neo4j_session, cluster, aws_update_tag)
 
 
 @timeit
@@ -270,6 +272,44 @@ def _attach_aws_vpc(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag:
             attach_cluster_to_vpc,
             ClusterArn=cluster['arn'],
             VpcId=cluster['VpcId'],
+            aws_update_tag=aws_update_tag,
+        )
+
+
+@timeit
+def _attach_aws_network_interface(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
+    attach_cluster_to_network_interface = """
+    UNWIND $NetworkInterfaces as NetworkInterface
+        MATCH (c:RedshiftCluster{id:$ClusterArn})
+        MERGE (v:NetworkInterface{id: NetworkInterface.NetworkInterfaceId})
+        MERGE (c)-[m:NETWORK_INTERFACE]->(v)
+        ON CREATE SET m.firstseen = timestamp()
+        SET m.lastupdated = $aws_update_tag
+    """
+    for vpc_endpoint in cluster.get('VpcEndpoints', []):
+        neo4j_session.run(
+            attach_cluster_to_network_interface,
+            ClusterArn=cluster['arn'],
+            NetworkInterfaces=vpc_endpoint['NetworkInterfaces'],
+            aws_update_tag=aws_update_tag,
+        )
+
+
+@timeit
+def _attach_aws_ec2_subnet(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
+    attach_cluster_to_ec2_subnet = """
+    UNWIND $NetworkInterfaces as NetworkInterface
+        MATCH (c:RedshiftCluster{id:$ClusterArn})
+        MERGE (s:EC2Subnet{id: NetworkInterface.SubnetId})
+        MERGE (c)-[m:CLUSTER_SUBNET]->(s)
+        ON CREATE SET m.firstseen = timestamp()
+        SET m.lastupdated = $aws_update_tag
+    """
+    for vpc_endpoint in cluster.get('VpcEndpoints', []):
+        neo4j_session.run(
+            attach_cluster_to_ec2_subnet,
+            ClusterArn=cluster['arn'],
+            NetworkInterfaces=vpc_endpoint['NetworkInterfaces'],
             aws_update_tag=aws_update_tag,
         )
 

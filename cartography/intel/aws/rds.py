@@ -427,6 +427,7 @@ def load_rds_clusters(
     for cluster in data:
         _attach_associate_roles(neo4j_session, cluster, aws_update_tag)
         _attach_db_subnet_group(neo4j_session, cluster, aws_update_tag)
+        _attach_ec2_security_groups_cluster(neo4j_session, cluster, aws_update_tag)
         # TODO: track read replicas
         # TODO: track associated roles
         # TODO: track security groups
@@ -464,6 +465,27 @@ def _attach_associate_roles(neo4j_session: neo4j.Session, cluster: Dict, aws_upd
             RoleArn=role['RoleArn'],
             aws_update_tag=aws_update_tag,
         )
+
+
+@timeit
+def _attach_ec2_security_groups_cluster(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
+    """
+    Attach an RDS instance to its EC2SecurityGroups
+    """
+    attach_rds_to_group = """
+    UNWIND $VpcSecurityGroups as rds_sg
+        MATCH (rds:RDSCluster{id: $DBClusterArn})
+        MERGE (sg:EC2SecurityGroup{id: rds_sg.VpcSecurityGroupId})
+        MERGE (rds)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
+        ON CREATE SET m.firstseen = timestamp()
+        SET m.lastupdated = $aws_update_tag
+    """
+    neo4j_session.run(
+        attach_rds_to_group,
+        ClusterArn=cluster['DBClusterArn'],
+        VpcSecurityGroups=cluster['VpcSecurityGroups'],
+        aws_update_tag=aws_update_tag,
+    )
 
 
 @timeit
