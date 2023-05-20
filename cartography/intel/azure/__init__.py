@@ -167,6 +167,12 @@ def _sync_multiple_subscriptions(
         )
 
         run_analysis_job(
+            'azure_network_load_balancer_asset_exposure.json',
+            neo4j_session,
+            common_job_parameters
+        )
+
+        run_analysis_job(
             'azure_storage_asset_exposure.json',
             neo4j_session,
             common_job_parameters,
