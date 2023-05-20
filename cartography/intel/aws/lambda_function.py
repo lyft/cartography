@@ -56,11 +56,11 @@ def get_lambda_policies(boto3_session: boto3.session.Session, region: str, lambd
 
         except ClientError as e:
             if e.response['Error']['Code'] in ("ResourceNotFoundException"):
-                logger.debug(f"unable to fetch function policy: {region} - {lambda_function['FunctionArn']} - {e}")
+                logger.error(f"unable to fetch function policy: {region} - {lambda_function['FunctionArn']} - {e}")
                 continue
 
             else:
-                logger.debug(f"unable to fetch function policy: {region} - {lambda_function['FunctionArn']} - {e}")
+                logger.error(f"unable to fetch function policy: {region} - {lambda_function['FunctionArn']} - {e}")
                 continue
 
     return lambda_functions
@@ -306,30 +306,30 @@ def sync_lambda_functions(
     data = []
     for region in regions:
         logger.info("Syncing Lambda for region in '%s' in account '%s'.", region, current_aws_account_id)
-        data.extend(get_lambda_data(boto3_session, region))
-
-    data = get_lambda_policies(boto3_session, region, data)
+        lambdas = get_lambda_data(boto3_session, region)
+        lambdas = get_lambda_policies(boto3_session, region, lambdas)
+        data.extend(lambdas)
 
     logger.info(f"Total Lambdas: {len(data)}")
 
-    if common_job_parameters.get('pagination', {}).get('lambda_function', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for lambda_function {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('lambda_function', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['lambda_function']['hasNextPage'] = has_next_page
+    # if common_job_parameters.get('pagination', {}).get('lambda_function', None):
+    #     pageNo = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageNo"]
+    #     pageSize = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageSize"]
+    #     totalPages = len(data) / pageSize
+    #     if int(totalPages) != totalPages:
+    #         totalPages = totalPages + 1
+    #     totalPages = int(totalPages)
+    #     if pageNo < totalPages or pageNo == totalPages:
+    #         logger.info(f'pages process for lambda_function {pageNo}/{totalPages} pageSize is {pageSize}')
+    #     page_start = (common_job_parameters.get('pagination', {}).get('lambda_function', {})[
+    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
+    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
+    #     if page_end > len(data) or page_end == len(data):
+    #         data = data[page_start:]
+    #     else:
+    #         has_next_page = True
+    #         data = data[page_start:page_end]
+    #         common_job_parameters['pagination']['lambda_function']['hasNextPage'] = has_next_page
 
     load_lambda_functions(neo4j_session, data, current_aws_account_id, aws_update_tag)
     lambda_function_details = get_lambda_function_details(boto3_session, data)

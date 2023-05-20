@@ -16,6 +16,9 @@ import neo4j
 import pytz
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from botocore.exceptions import ClientError
+from botocore.exceptions import EndpointConnectionError
+
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
 from cartography.util import run_cleanup_job
@@ -35,6 +38,25 @@ class PolicyType(enum.Enum):
 def get_policy_name_from_arn(arn: str) -> str:
     return arn.split("/")[-1]
 
+@timeit
+def _is_common_exception(e: Exception, item: str) -> bool:
+    error_msg = "Failed to retrieve IAM details"
+    if "AccessDenied" in e.args[0]:
+        logger.warning(f"{error_msg} for {item} - Access Denied")
+        return True
+    elif "NoSuchEntityException" in e.args[0]:
+        logger.warning(f"{error_msg} for {item} - NoSuchEntityException")
+        return True
+    elif "EndpointConnectionError" in e.args[0]:
+        logger.warning(f"{error_msg} for {item} - EndpointConnectionError")
+        return True
+    elif "InvalidToken" in e.args[0]:
+        logger.warning(f"{error_msg} for {item} - InvalidToken")
+        return True
+    elif "IllegalLocationConstraintException" in e.args[0]:
+        logger.warning(f"{error_msg} for {item} - IllegalLocationConstraintException")
+        return True
+    return False
 
 @timeit
 def get_group_policies(boto3_session: boto3.session.Session, group_name: str) -> Dict:
@@ -60,9 +82,12 @@ def get_group_membership_data(boto3_session: boto3.session.Session, group_name: 
     try:
         memberships = client.get_group(GroupName=group_name)
         return memberships
-    except client.exceptions.NoSuchEntityException:
-        # Avoid crashing the sync
-        logger.warning("client.get_group(GroupName='%s') failed with NoSuchEntityException; skipping.", group_name)
+
+    except ClientError as e:
+        if _is_common_exception(e, group_name):
+            pass
+        else:
+            logger.warning("client.get_group(GroupName='%s') failed with NoSuchEntityException; skipping.", group_name)
         return {}
 
 
@@ -103,10 +128,14 @@ def get_user_policy_data(boto3_session: boto3.session.Session, user_list: List[D
         resource_user = resource_client.User(name)
         try:
             policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_user.policies.all()}
-        except resource_client.meta.client.exceptions.NoSuchEntityException:
-            logger.warning(
-                f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
-            )
+
+        except ClientError as e:
+            if _is_common_exception(e, name):
+                pass
+            else:
+                logger.warning(
+                    f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
+                )
     return policies
 
 
@@ -123,10 +152,14 @@ def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list
                 p.arn: p.default_version.document["Statement"]
                 for p in resource_user.attached_policies.all()
             }
-        except resource_client.meta.client.exceptions.NoSuchEntityException:
-            logger.warning(
-                f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
-            )
+
+        except ClientError as e:
+            if _is_common_exception(e, name):
+                pass
+            else:
+                logger.warning(
+                    f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
+                )
     return policies
 
 
@@ -140,10 +173,14 @@ def get_role_policy_data(boto3_session: boto3.session.Session, role_list: List[D
         resource_role = resource_client.Role(name)
         try:
             policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_role.policies.all()}
-        except resource_client.meta.client.exceptions.NoSuchEntityException:
-            logger.warning(
-                f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
-            )
+
+        except ClientError as e:
+            if _is_common_exception(e, name):
+                pass
+            else:
+                logger.warning(
+                    f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
+                )
     return policies
 
 
@@ -160,10 +197,13 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
                 p.arn: p.default_version.document["Statement"]
                 for p in resource_role.attached_policies.all()
             }
-        except resource_client.meta.client.exceptions.NoSuchEntityException:
-            logger.warning(
-                f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
-            )
+        except ClientError as e:
+            if _is_common_exception(e, name):
+                pass
+            else:
+                logger.warning(
+                    f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
+                )
     return policies
 
 
@@ -227,10 +267,14 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
     access_keys: Dict = {}
     try:
         access_keys = client.list_access_keys(UserName=username)
-    except client.exceptions.NoSuchEntityException:
-        logger.warning(
-            f"Could not get access key for user {username} due to NoSuchEntityException; skipping.",
-        )
+
+    except ClientError as e:
+        if _is_common_exception(e, username):
+            pass
+        else:
+            logger.warning(
+                f"Could not get access key for user {username} due to NoSuchEntityException; skipping.",
+            )
     return access_keys
 
 
@@ -659,25 +703,6 @@ def sync_users(
 
     logger.info(f"Total Users: {len(data['Users'])}")
 
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-        totalPages = len(data['Users']) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for iam Users {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        if page_end > len(data['Users']) or page_end == len(data['Users']):
-            data['Users'] = data['Users'][page_start:]
-        else:
-            has_next_page = True
-            data['Users'] = data['Users'][page_start:page_end]
-            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
-
     load_users(neo4j_session, data['Users'], current_aws_account_id, aws_update_tag)
 
     sync_user_inline_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
@@ -716,25 +741,6 @@ def sync_groups(
     data = get_group_list_data(boto3_session)
 
     logger.info(f"Total Groups: {len(data['Groups'])}")
-
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-        totalPages = len(data['Groups']) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for iam Groups {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        if page_end > len(data['Groups']) or page_end == len(data['Groups']):
-            data['Groups'] = data['Groups'][page_start:]
-        else:
-            has_next_page = True
-            data['Groups'] = data['Groups'][page_start:page_end]
-            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_groups(neo4j_session, data['Groups'], current_aws_account_id, aws_update_tag)
 
@@ -775,25 +781,6 @@ def sync_roles(
     data = get_role_list_data(boto3_session)
 
     logger.info(f"Total Roles: {len(data['Roles'])}")
-
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-        totalPages = len(data['Roles']) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for iam Roles {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-        if page_end > len(data['Roles']) or page_end == len(data['Roles']):
-            data['Roles'] = data['Roles'][page_start:]
-        else:
-            has_next_page = True
-            data['Roles'] = data['Roles'][page_start:page_end]
-            common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_roles(neo4j_session, data['Roles'], current_aws_account_id, aws_update_tag)
 
@@ -875,8 +862,7 @@ def _set_used_state_tx(
     tx: neo4j.Transaction, project_id: str, common_job_parameters: Dict, update_tag: int,
 ) -> None:
     ingest_role_used = """
-    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
-    (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n:AWSRole)
+    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n:AWSRole)
     WHERE (n)-[:TRUSTS_AWS_PRINCIPAL]->() AND n.lastupdated = $update_tag
     SET n.isUsed = $isUsed
     """
@@ -890,8 +876,7 @@ def _set_used_state_tx(
     )
 
     ingest_entity_used = """
-    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
-    (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n)
+    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n)
     WHERE ()-[:TRUSTS_AWS_PRINCIPAL]->(n) AND n.lastupdated = $update_tag
     AND labels(n) IN [['AWSUser'], ['AWSGroup']]
     SET n.isUsed = $isUsed
@@ -906,8 +891,7 @@ def _set_used_state_tx(
     )
 
     ingest_entity_unused = """
-    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
-    (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n)
+    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n)
     WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = $update_tag
     AND labels(n) IN [['AWSUser'], ['AWSGroup'], ['AWSRole']]
     SET n.isUsed = $isUsed
@@ -935,20 +919,10 @@ def sync(
     sync_users(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_groups(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_roles(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-
-    if common_job_parameters.get('pagination', {}).get('iam', None):
-        if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
-            sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id,
-                                   update_tag, common_job_parameters)
-            sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
-            sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id,
-                                  update_tag, common_job_parameters)
-            set_used_state(neo4j_session, current_aws_account_id, common_job_parameters, update_tag)
-    else:
-        sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-        sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
-        sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-        set_used_state(neo4j_session, current_aws_account_id, common_job_parameters, update_tag)
+    sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+    sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
+    sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
+    set_used_state(neo4j_session, current_aws_account_id, common_job_parameters, update_tag)
 
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
 

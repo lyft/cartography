@@ -7,6 +7,8 @@ from typing import List
 import boto3
 import neo4j
 
+from botocore.exceptions import ClientError
+
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
 from cartography.util import aws_paginate
@@ -267,11 +269,17 @@ def get_rds_snapshots(boto3_session: boto3.session.Session, region: str) -> List
 @timeit
 @aws_handle_regions
 def get_rds_snapshot_attributes(boto3_session: boto3.session.Session, snapshot_id: str, region: str) -> List[Any]:
-    client = boto3_session.client('rds', region_name=region)
-    response = client.describe_db_snapshot_attributes(
-        DBSnapshotIdentifier=snapshot_id,
-    )
-    return response['DBSnapshotAttributesResult']
+    try:
+        client = boto3_session.client('rds', region_name=region)
+        response = client.describe_db_snapshot_attributes(
+            DBSnapshotIdentifier=snapshot_id,
+        )
+        return response['DBSnapshotAttributesResult']
+
+    except ClientError as e:
+        logger.warning("failed to fetch snapshot attributes:", snapshot_id, e)
+
+        return {}
 
 
 @timeit
@@ -714,8 +722,8 @@ def _attach_ec2_subnet_groups(
             sng.lastupdated = $aws_update_tag,
             sng.arn = rds_sng.arn
         WITH sng, rds_sng.instance_arn AS instance_arn
-        MATCH(rds:RDSInstance{id: instance_arn})
-        MERGE(rds)-[r:MEMBER_OF_DB_SUBNET_GROUP]->(sng)
+        MATCH (rds:RDSInstance{id: instance_arn})
+        MERGE (rds)-[r:MEMBER_OF_DB_SUBNET_GROUP]->(sng)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $aws_update_tag
     """
@@ -750,10 +758,10 @@ def _attach_ec2_subnets_to_subnetgroup(
     """
     attach_subnets_to_sng = """
     UNWIND $Subnets as rds_sn
-        MATCH(sng:DBSubnetGroup{id: rds_sn.sng_arn})
-        MERGE(subnet:EC2Subnet{subnetid: rds_sn.sn_id})
+        MATCH (sng:DBSubnetGroup{id: rds_sn.sng_arn})
+        MERGE (subnet:EC2Subnet{subnetid: rds_sn.sn_id})
         ON CREATE SET subnet.firstseen = timestamp()
-        MERGE(sng)-[r:RESOURCE]->(subnet)
+        MERGE (sng)-[r:CONNECTED_TO]->(subnet)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $aws_update_tag,
         subnet.availability_zone = rds_sn.az,

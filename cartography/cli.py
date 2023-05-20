@@ -640,7 +640,7 @@ def run_aws(request):
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
 
-    default_sync = cartography.sync.build_aws_sync(request.get('config', {}).get('initIndexes', False))
+    default_sync = cartography.sync.build_aws_sync()
 
     # TODO: Define config and pass it forward
     config = Config(
@@ -667,7 +667,7 @@ def run_azure(request):
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
 
-    default_sync = cartography.sync.build_azure_sync(request.get('config', {}).get('initIndexes', False))
+    default_sync = cartography.sync.build_azure_sync()
 
     # TODO: Define config and pass it forward
     config = Config(
@@ -679,6 +679,7 @@ def run_azure(request):
         azure_client_secret=request['azure']['client_secret'],
         azure_redirect_uri=request['azure']['redirect_uri'],
         azure_subscription_id=request['azure']['subscription_id'],
+        azure_tenant_id=request['azure']['tenant_id'],
         azure_refresh_token=request['azure']['refresh_token'],
         azure_vault_scope=request['azure']['vault_scope'],
         azure_graph_scope=request['azure']['graph_scope'],
@@ -701,7 +702,7 @@ def run_gcp(request):
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
 
-    default_sync = cartography.sync.build_gcp_sync(request.get('config', {}).get('initIndexes', False))
+    default_sync = cartography.sync.build_gcp_sync()
 
     # TODO: Define config and pass it forward
     config = Config(

@@ -14,7 +14,7 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (:AWSInternetGateway)-[:ATTACHED_TO]->(:AWSVpc)<-[:MEMBER_OF_AWS_VPC]-(subnet:EC2Subnet)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET subnet.exposed_internet = true,(CASE WHEN NOT 'public_vpc' IN coalesce(subnet.exposed_internet_type , []) THEN subnet END).exposed_internet_type = coalesce(subnet.exposed_internet_type , []) + 'public_vpc';",
+			"query": "MATCH (ig:AWSInternetGateway)-[:ATTACHED_TO]->(:AWSVpc)<-[:MEMBER_OF_AWS_VPC]-(subnet:EC2Subnet)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET subnet.exposed_internet = true,(CASE WHEN NOT 'attached_internet_gateway' IN  coalesce(subnet.exposed_internet_type , []) THEN subnet END).exposed_internet_type = coalesce(subnet.exposed_internet_type , []) + 'attached_internet_gateway';",
 			"iterative": false
 		}
 	],

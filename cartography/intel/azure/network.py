@@ -70,6 +70,27 @@ def load_network_interfaces(
 ) -> None:
     session.write_transaction(_load_network_interfaces_tx, subscription_id, data_list, update_tag)
 
+def load_load_balancers(
+    session: neo4j.Session,
+    subscription_id: str,
+    data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(_load_load_balancers_tx, subscription_id, data_list, update_tag)
+
+def load_backend_address_pools(
+    session: neo4j.Session,
+    data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(_load_backend_address_pools_tx, data_list, update_tag)
+
+def load_ip_configurations(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_ip_configurations_tx, data_list, update_tag)
+
+def attach_subnet_to_network_interfaces(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_attach_subnet_to_network_interfaces_tx, data_list, update_tag)
+
 
 def load_public_ip_network_interfaces_relationship(session: neo4j.Session, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_public_ip_network_interfaces_relationship, interface_id, data_list, update_tag)
@@ -175,6 +196,7 @@ def sync_networks(
     sync_public_ip_addresses(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
     sync_network_interfaces(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
     sync_usages(neo4j_session, networks_list, client, update_tag, common_job_parameters)
+    sync_network_load_balancer(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
 
 
 @timeit
@@ -653,9 +675,14 @@ def get_network_interfaces_list(client: NetworkManagementClient, regions: list, 
         interfaces_list = []
         for interface in network_interfaces_list:
             interface['public_ip_address'] = []
+            interface['subnet'] = []
             for conf in interface.get('ip_configurations', []):
                 interface['public_ip_address'].append(
                     {'public_ip_id': conf.get('public_ip_address', {}).get('id', None)})
+                interface['subnet'].append(
+                    {'subnet_id': conf.get('subnet', {}).get('id', None)}
+                )
+            interface['subnet'] = list(set(interface['subnet']))
             interface['consolelink'] = azure_console_link.get_console_link(
                 id=interface['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
@@ -669,6 +696,22 @@ def get_network_interfaces_list(client: NetworkManagementClient, regions: list, 
         logger.warning(f"Error while retrieving network interface - {e}")
         return []
 
+def get_load_balancers_list(client: NetworkManagementClient, regions: list, common_job_parameters: Dict) -> List[Dict]:
+    try:
+        network_load_balancer_list = list(map(lambda x: x.as_dict(), client.load_balancers.list_all()))
+        load_balancer_list = []
+        for load_balancer in network_load_balancer_list:
+            load_balancer['consolelink'] = azure_console_link.get_console_link(
+                id=load_balancer['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            if regions is None:
+                load_balancer_list.append(load_balancer)
+            else:
+                if load_balancer.get('location') in regions or load_balancer.get('location') == 'global':
+                    load_balancer_list.append(load_balancer)
+        return load_balancer_list
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving network load balancer - {e}")
+        return []
 
 def _load_network_interfaces_tx(
     tx: neo4j.Transaction, subscription_id: str, network_interfaces_list: List[Dict], update_tag: int,
@@ -702,10 +745,119 @@ def _load_network_interfaces_tx(
         update_tag=update_tag,
     )
 
+def _load_load_balancers_tx(
+    tx: neo4j.Transaction, subscription_id: str, load_balancers_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_load_balancer = """
+    UNWIND $load_balancers_list AS lb
+    MERGE (n:AzureNetworkLoadBalancer{id: lb.id})
+    ON CREATE SET n.firstseen = timestamp(),
+    n.type = lb.type,
+    n.location = lb.location,
+    n.consolelink = lb.consolelink,
+    n.region = lb.location
+    SET n.lastupdated = $update_tag,
+    n.name = lb.name,
+    WITH n
+    MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
+    MERGE (owner)-[r:RESOURCE]->(n)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        ingest_load_balancer,
+        load_balancers_list=load_balancers_list,
+        SUBSCRIPTION_ID=subscription_id,
+        update_tag=update_tag,
+    )
+
+def _load_backend_address_pools_tx(
+    tx: neo4j.Transaction, load_balancers_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_backend_address_pool = """
+    UNWIND $load_balancers_list AS lb
+        MATCH (n:AzureNetworkLoadBalancer{id: lb.id})
+        WITH n, lb
+        UNWIND lb.backend_address_pools AS b_pool
+            MERGE (bap:AzureLoadBalancerBackendAddressPool{id: b_pool.id})
+            ON CREATE SET bap.firstseen = timestamp(),
+            bap.type = b_pool.type
+            SET bap.name = b_pool.name,
+            bap.lastupdated = $update_tag
+            WITH n, b_pool, bap
+            UNWIND b_pool.backend_ip_configurations as ip_conf
+                MATCH (ipc:AzureNetworkInterfaceIPConfiguration{id: ip_conf})
+                WITH n, bap, ipc
+                MERGE (bap)-[r:HAS]->(ipc)
+                ON CREATE SET r.firstseen = timestamp()
+                SET r.lastupdated = $update_tag
+            WITH n, bap
+            MERGE (n)-[rel:HAS]->(bap)
+            ON CREATE SET rel.firstseen = timestamp()
+            SET rel.lastupdated = $update_tag
+    """
+    tx.run(
+        ingest_backend_address_pool,
+        load_balancers_list=load_balancers_list,
+        update_tag=update_tag,
+    )
+
+def _load_ip_configurations_tx(
+    tx: neo4j.Transaction, network_interfaces_list: List[Dict], update_tag: int,
+) -> None:
+    query = """
+    UNWIND $network_interfaces_list AS interface
+    MATCH (n:AzureNetworkInterface{id: interface.id})
+    WITH n, interface
+    UNWIND interface.ip_configurations AS ip_conf
+    MERGE (ipc:AzureNetworkInterfaceIPConfiguration{id: ip_conf.id})
+    ON CREATE SET ipc.firstseen = timestamp(),
+    ipc.private_ip_address = ip_conf.private_ip_address,
+    ipc.private_ip_allocation_method = ip_conf.private_ip_allocation_method,
+    ipc.private_ip_address_version = ip_conf.private_ip_address_version
+    SET ipc.lastupdated = $update_tag,
+    ipc.name = ip_conf.name
+    WITH ipc, n
+    MERGE (n)-[r:CONTAINS]->(ipc)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        query,
+        network_interfaces_list=network_interfaces_list,
+        update_tag=update_tag,
+    )
+
+def _attach_subnet_to_network_interfaces_tx(
+        tx: neo4j.Transaction, network_interfaces_list: List[Dict], update_tag: int,
+) -> None:
+    query = """
+    UNWIND $network_interfaces_list AS interface
+    MATCH (n:AzureNetworkInterface{id: interface.id})
+    WITH n, interface
+    UNWIND interface.subnet AS snet
+    MATCH (s:AzureNetworkSubnet{id: snet.subnet_id})
+    MERGE (n)-[r:SUBNET]->(s)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        query,
+        network_interfaces_list=network_interfaces_list,
+        update_tag=update_tag,
+    )
 
 def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_network_interfaces_cleanup.json', neo4j_session, common_job_parameters)
 
+def cleanup_network_ip_configurations(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_network_ip_configurations_cleanup.json', neo4j_session, common_job_parameters)
+
+def cleanup_network_load_balancers(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_network_load_balancers_cleanup.json', neo4j_session, common_job_parameters)
+
+def cleanup_network_backend_address_pools(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_network_backend_address_pools_cleanup.json', neo4j_session, common_job_parameters)
 
 def sync_network_interfaces(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
@@ -713,10 +865,24 @@ def sync_network_interfaces(
 ) -> None:
     network_interfaces_list = get_network_interfaces_list(client, regions, common_job_parameters)
     load_network_interfaces(neo4j_session, subscription_id, network_interfaces_list, update_tag)
+    load_ip_configurations(neo4j_session, network_interfaces_list, update_tag)
+    attach_subnet_to_network_interfaces(neo4j_session, network_interfaces_list, update_tag)
+    cleanup_network_ip_configurations(neo4j_session, common_job_parameters)
     cleanup_network_interfaces(neo4j_session, common_job_parameters)
     for interface in network_interfaces_list:
         load_public_ip_network_interfaces_relationship(neo4j_session, interface.get(
             'id'), interface.get('public_ip_address', []), update_tag)
+
+
+def sync_network_load_balancer(
+    neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
+    common_job_parameters: Dict, regions: list
+) -> None:
+    load_balancers_list = get_load_balancers_list(client, regions, common_job_parameters)
+    load_load_balancers(neo4j_session, subscription_id, load_balancers_list, update_tag)
+    load_backend_address_pools(neo4j_session, load_balancers_list, update_tag)
+    cleanup_network_backend_address_pools(neo4j_session, common_job_parameters)
+    cleanup_network_load_balancers(neo4j_session, common_job_parameters)
 
 
 def _load_public_ip_network_interfaces_relationship(tx: neo4j.Transaction, interface_id: str, data_list: List[Dict], update_tag: int) -> None:

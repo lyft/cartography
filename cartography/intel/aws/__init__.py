@@ -143,12 +143,6 @@ def _sync_one_account(
     )  # NOTE temp solution (query has to be only executed after both subnet & route table is loaded)
 
     run_analysis_job(
-        'aws_ec2_vpc_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters
-    )
-
-    run_analysis_job(
         'aws_ec2_security_group_asset_exposure.json',
         neo4j_session,
         common_job_parameters
@@ -319,6 +313,9 @@ def _sync_multiple_accounts(
     num_accounts = len(accounts)
 
     for profile_name, account_id in accounts.items():
+        if account_id != common_job_parameters["AWS_ACCOUNT_ID"]:
+            continue
+
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
         # boto3_session = boto3.Session(profile_name=profile_name)
@@ -338,7 +335,7 @@ def _sync_multiple_accounts(
                 aws_session_token=config.credentials['session_token'],
             )
 
-        _autodiscover_accounts(neo4j_session, boto3_session, account_id, config.update_tag, common_job_parameters)
+        # _autodiscover_accounts(neo4j_session, boto3_session, account_id, config.update_tag, common_job_parameters)
 
         # INFO: fetching active regions for customers instead of reading from parameters
         regions = list_all_regions(boto3_session, logger)
@@ -377,6 +374,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "UPDATE_TAG": config.update_tag,
         "permission_relationships_file": config.permission_relationships_file,
         "WORKSPACE_ID": config.params['workspace']['id_string'],
+        "AWS_ACCOUNT_ID": config.params['workspace']['account_id'],
         "pagination": {},
         "PUBLIC_PORTS": ['20', '21', '22', '3306', '3389', '4333'],
     }
