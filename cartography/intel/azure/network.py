@@ -95,6 +95,9 @@ def attach_subnet_to_network_interfaces(session: neo4j.Session, data_list: List[
 def load_public_ip_network_interfaces_relationship(session: neo4j.Session, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_public_ip_network_interfaces_relationship, interface_id, data_list, update_tag)
 
+def attach_public_ip_to_load_balancer(session: neo4j.Session, load_balancer_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_attach_public_ip_to_load_balancer_tx, load_balancer_id, data_list, update_tag)
+
 
 def load_usages(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_usages_tx, data_list, update_tag)
@@ -701,6 +704,13 @@ def get_load_balancers_list(client: NetworkManagementClient, regions: list, comm
         network_load_balancer_list = list(map(lambda x: x.as_dict(), client.load_balancers.list_all()))
         load_balancer_list = []
         for load_balancer in network_load_balancer_list:
+            load_balancer['public_ip_address'] = []
+            for frontend_ip_configuration in load_balancer.get('frontend_ip_configurations', []):
+                public_ip_id = frontend_ip_configuration.get('public_ip_address', {}).get('id', None)
+                if public_ip_id:
+                    load_balancer['public_ip_address'].append(
+                        {'public_ip_id': public_ip_id}
+                    )
             load_balancer['consolelink'] = azure_console_link.get_console_link(
                 id=load_balancer['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
@@ -883,7 +893,26 @@ def sync_network_load_balancer(
     load_backend_address_pools(neo4j_session, load_balancers_list, update_tag)
     cleanup_network_backend_address_pools(neo4j_session, common_job_parameters)
     cleanup_network_load_balancers(neo4j_session, common_job_parameters)
+    for load_balancer in load_balancers_list:
+        attach_public_ip_to_load_balancer(
+            neo4j_session, load_balancer.get('if'), load_balancer.get('public_ip_address', []), update_tag)
 
+def _attach_public_ip_to_load_balancer_tx(tx: neo4j.Transaction, load_balancer_id: str, data_list: List[Dict], update_tag: int) -> None:
+    attach_ip_lb = """
+    UNWIND $ip_list AS public_ip
+    MATCH (ip:AzurePublicIPAddress{id: public_ip.public_ip_id})
+    WITH ip
+    MATCH (lb:AzureNetworkLoadBalancer{id: $load_balancer_id})
+    MERGE (lb)-[r:MEMBER_PUBLIC_IP_ADDRESS]->(ip)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        attach_ip_lb,
+        ip_list=data_list,
+        load_balancer_id=load_balancer_id,
+        update_tag=update_tag,
+    )
 
 def _load_public_ip_network_interfaces_relationship(tx: neo4j.Transaction, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
     ingest_ip_ni = """
