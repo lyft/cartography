@@ -14,7 +14,7 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (:AzureNetworkLoadBalancer{type: 'public'})-[:HAS]->(:AzureLoadBalancerBackendAddressPool)-[:HAS]->(:AzureNetworkInterfaceIPConfiguration)<-[:CONTAIN]-(interface:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.exposed_internet = true, (CASE WHEN NOT 'public_load_balancer' IN  coalesce(vm.exposed_internet_type , []) THEN vm END).exposed_internet_type = coalesce(vm.exposed_internet_type , []) + 'public_load_balancer';",
+			"query": "MATCH (:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(:AzureNetworkLoadBalancer{type: 'public'})<-[:CONNECTED_TO]-(interface:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.exposed_internet = true, (CASE WHEN NOT 'public_load_balancer' IN  coalesce(vm.exposed_internet_type , []) THEN vm END).exposed_internet_type = coalesce(vm.exposed_internet_type , []) + 'public_load_balancer';",
 			"iterative": false
 		},
 		{
