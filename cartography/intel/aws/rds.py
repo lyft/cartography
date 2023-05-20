@@ -373,6 +373,7 @@ def load_rds_clusters(
             cluster.arn = rds_cluster.DBClusterArn
         SET cluster.allocated_storage = rds_cluster.AllocatedStorage,
             cluster.name = rds_cluster.name,
+            cluster.db_subnet_group= rds_cluster.DBSubnetGroup
             cluster.availability_zones = rds_cluster.AvailabilityZones,
             cluster.backup_retention_period = rds_cluster.BackupRetentionPeriod,
             cluster.character_set_name = rds_cluster.CharacterSetName,
@@ -416,6 +417,8 @@ def load_rds_clusters(
         SET r.lastupdated = $aws_update_tag
     """
     for cluster in data:
+        _attach_associate_roles(neo4j_session, cluster, aws_update_tag)
+        _attach_db_subnet_group(neo4j_session, cluster, aws_update_tag)
         # TODO: track read replicas
         # TODO: track associated roles
         # TODO: track security groups
@@ -433,6 +436,41 @@ def load_rds_clusters(
         ingest_rds_cluster,
         Clusters=data,
         AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def _attach_associate_roles(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
+    attach_cluster_to_role = """
+    MATCH (c:RDSCluster{id:$DBClusterArn})
+    MERGE (p:AWSPrincipal{arn:$RoleArn})
+    MERGE (c)-[s:RDS_ASSUMEROLE_ALLOW]->(p)
+    ON CREATE SET s.firstseen = timestamp()
+    SET s.lastupdated = $aws_update_tag
+    """
+    for role in cluster.get('AssociatedRoles', []):
+        neo4j_session.run(
+            attach_cluster_to_role,
+            ClusterArn=cluster['DBClusterArn'],
+            RoleArn=role['RoleArn'],
+            aws_update_tag=aws_update_tag,
+        )
+
+
+@timeit
+def _attach_db_subnet_group(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
+    attach_cluster_to_role = """
+    MATCH (c:RDSCluster{id:$DBClusterArn})
+    MERGE (p:DBSubnetGroup{name:$DBSubnetgroup})
+    MERGE (c)-[s:ATTACH_TO]->(p)
+    ON CREATE SET s.firstseen = timestamp()
+    SET s.lastupdated = $aws_update_tag
+    """
+    neo4j_session.run(
+        attach_cluster_to_role,
+        ClusterArn=cluster['DBClusterArn'],
+        DBSubnetgroup=cluster['DBSubnetGroup'],
         aws_update_tag=aws_update_tag,
     )
 
