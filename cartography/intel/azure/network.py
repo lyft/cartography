@@ -85,6 +85,17 @@ def load_backend_address_pools(
 ) -> None:
     session.write_transaction(_load_backend_address_pools_tx, data_list, update_tag)
 
+def create_relationship_between_network_interface_and_load_balancer(
+    session: neo4j.Session,
+    data_list: List[Dict],
+    update_tag: int,
+) -> None:
+    session.write_transaction(
+        _create_relationship_between_network_interface_and_load_balancer_tx,
+        data_list,
+        update_tag        
+    )
+
 def load_ip_configurations(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_ip_configurations_tx, data_list, update_tag)
 
@@ -812,6 +823,23 @@ def _load_backend_address_pools_tx(
         update_tag=update_tag,
     )
 
+def _create_relationship_between_network_interface_and_load_balancer_tx(
+    tx: neo4j.Transaction, load_balancers_list: List[Dict], update_tag: int,
+) -> None:
+    query = """
+    UNWIND $load_balancers_list AS lb
+        MATCH (n:AzureNetworkLoadBalancer{id: lb.id})-[:HAS]->(:AzureLoadBalancerBackendAddressPool)-[:HAS]->(:AzureNetworkInterfaceIPConfiguration)<-[:CONTAINS]-(interface:AzureNetworkInterface)
+        WITH n, interface
+        MERGE (interface)-[r:CONNECTED_TO]->(n)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        query,
+        load_balancers_list=load_balancers_list,
+        update_tag=update_tag,
+    )
+
 def _load_ip_configurations_tx(
     tx: neo4j.Transaction, network_interfaces_list: List[Dict], update_tag: int,
 ) -> None:
@@ -893,6 +921,7 @@ def sync_network_load_balancer(
     load_backend_address_pools(neo4j_session, load_balancers_list, update_tag)
     cleanup_network_backend_address_pools(neo4j_session, common_job_parameters)
     cleanup_network_load_balancers(neo4j_session, common_job_parameters)
+    create_relationship_between_network_interface_and_load_balancer(neo4j_session, load_balancers_list, update_tag)
     for load_balancer in load_balancers_list:
         attach_public_ip_to_load_balancer(
             neo4j_session, load_balancer.get('if'), load_balancer.get('public_ip_address', []), update_tag)
