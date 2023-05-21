@@ -5,16 +5,18 @@ import uuid
 
 import azure.functions as func
 
+logger = logging.getLogger(__name__)
+
 
 def main(req: func.HttpRequest, outputEvent: func.Out[func.EventGridOutputEvent]) -> func.HttpResponse:
-    logging.info('Cartography listener request received via HTTP Request')
+    logger.info('Cartography listener request received via HTTP Request')
 
     message = None
     try:
         message = req.get_json()
 
     except Exception as e:
-        logging.error(f"failed to parse request body: {e}", exc_info=True, stack_info=True)
+        logger.error(f"failed to parse request body: {e}", exc_info=True, stack_info=True)
 
         response = {
             "status": "failure",
@@ -26,7 +28,7 @@ def main(req: func.HttpRequest, outputEvent: func.Out[func.EventGridOutputEvent]
             mimetype="application/json",
         )
 
-    logging.info(f'request: {message}')
+    logger.info(f'request: {message}')
 
     response = None
     try:
@@ -47,7 +49,7 @@ def main(req: func.HttpRequest, outputEvent: func.Out[func.EventGridOutputEvent]
         }
 
     except Exception as e:
-        logging.error(f"failed to generate event grid message: {e}", exc_info=True, stack_info=True)
+        logger.error(f"failed to generate event grid message: {e}", exc_info=True, stack_info=True)
 
         response = {
             "status": "failure",

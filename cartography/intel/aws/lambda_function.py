@@ -56,11 +56,11 @@ def get_lambda_policies(boto3_session: boto3.session.Session, region: str, lambd
 
         except ClientError as e:
             if e.response['Error']['Code'] in ("ResourceNotFoundException"):
-                logger.error(f"unable to fetch function policy: {region} - {lambda_function['FunctionArn']} - {e}")
+                logger.debug(f"unable to fetch function policy: {region} - {lambda_function['FunctionArn']} - {e}")
                 continue
 
             else:
-                logger.error(f"unable to fetch function policy: {region} - {lambda_function['FunctionArn']} - {e}")
+                logger.debug(f"unable to fetch function policy: {region} - {lambda_function['FunctionArn']} - {e}")
                 continue
 
     return lambda_functions

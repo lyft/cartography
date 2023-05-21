@@ -85,6 +85,7 @@ class AppContext:
         neo4j_uri=None,
         neo4j_user=None,
         neo4j_pwd=None,
+        neo4j_connection_lifetime=None,
         aws_inventory_sync_request_topic=None,
         aws_inventory_sync_response_topic=None,
         aws_iam_deepdive_request_topic=None,
@@ -191,6 +192,7 @@ class AppContext:
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_pwd = neo4j_pwd
+        self.neo4j_connection_lifetime = neo4j_connection_lifetime
         self.aws_inventory_sync_request_topic = aws_inventory_sync_request_topic
         self.aws_inventory_sync_response_topic = aws_inventory_sync_response_topic
         self.aws_iam_deepdive_request_topic = aws_iam_deepdive_request_topic
@@ -284,6 +286,7 @@ class AppContext:
             self.neo4j_uri = self.get_value(cfg, ['neo4j', 'uri'])
             self.neo4j_user = self.get_value(cfg, ['neo4j', 'user'])
             self.neo4j_pwd = self.get_value(cfg, ['neo4j', 'pwd'])
+            self.neo4j_connection_lifetime = self.get_value(cfg, ['neo4j', 'connection_lifetime'])
             self.aws_inventory_sync_request_topic = self.get_sns_topic(self.get_value(cfg, ['awsinventorysync', 'reqTopic']), self.audit_sns_request_topic)
             self.aws_inventory_sync_response_topic = self.get_sns_topic(self.get_value(cfg, ['awsinventorysync', 'resTopic']), self.audit_sns_response_topic)
             self.aws_iam_deepdive_request_topic = self.get_sns_topic(self.get_value(cfg, ['awsiamdeepdive', 'reqTopic']), self.audit_sns_request_topic)

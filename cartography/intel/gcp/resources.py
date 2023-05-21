@@ -5,31 +5,27 @@ from typing import Dict
 
 from . import apigateway
 from . import bigtable
+from . import bigquery
 from . import cloud_logging
 from . import cloudcdn
 from . import cloudfunction
 from . import cloudkms
 from . import cloudmonitoring
 from . import cloudrun
+from . import cloudtasks
 from . import compute
+from . import dataflow
 from . import dataproc
 from . import dns
 from . import firestore
 from . import gke
 from . import iam
+from . import loadbalancer
 from . import pubsub
+from . import pubsublite
+from . import spanner
 from . import sql
 from . import storage
-from . import cloud_logging
-from . import cloudmonitoring
-from . import dataproc
-from . import cloudcdn
-from . import loadbalancer
-from . import bigquery
-from . import dataflow
-from . import spanner
-from . import pubsublite
-from . import cloudtasks
 
 
 RESOURCE_FUNCTIONS: Dict = {

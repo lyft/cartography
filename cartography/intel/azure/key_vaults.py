@@ -269,13 +269,12 @@ def get_key_vault_certificates(client: CertificateClient, vault: Dict) -> List[D
             certificate_data['version'] = certificate.version
             certificates_list.append(certificate_data)
         return certificates_list
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving certificates list  - {e}")
-        return []
     except KeyError as e:
-        logger.warning(f"Error while retrieving certificates list  - {e}")
+        logger.warning(f"Error while retrieving certificates list - KeyError - {e}")
         return []
-
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving certificates list - {e}")
+        return []
 
 @timeit
 def transform_key_vault_certificates(certificates: List[Dict], vault_id: str, common_job_parameters):

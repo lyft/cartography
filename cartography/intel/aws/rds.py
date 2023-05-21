@@ -381,7 +381,7 @@ def load_rds_clusters(
             cluster.arn = rds_cluster.DBClusterArn
         SET cluster.allocated_storage = rds_cluster.AllocatedStorage,
             cluster.name = rds_cluster.name,
-            cluster.db_subnet_group= rds_cluster.DBSubnetGroup
+            cluster.db_subnet_group= rds_cluster.DBSubnetGroup,
             cluster.availability_zones = rds_cluster.AvailabilityZones,
             cluster.backup_retention_period = rds_cluster.BackupRetentionPeriod,
             cluster.character_set_name = rds_cluster.CharacterSetName,

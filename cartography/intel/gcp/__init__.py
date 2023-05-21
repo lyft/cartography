@@ -27,23 +27,23 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
-    'Resources', 'compute gke cloudfunction crm_v1 crm_v2 dns storage serviceusage \
-        iam apigateway cloudkms cloudrun sql bigtable firestore pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer apikey bigquery dataflow spanner pubsublite cloudtasks',
+    'Resources', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun  \
+        iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
-    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey bigquery dataflow spanner pubsublite cloudtasks',
+    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage',
 )
 service_names = Services(
     compute='compute.googleapis.com',
     storage='storage.googleapis.com',
     gke='container.googleapis.com',
     dns='dns.googleapis.com',
+    cloudfunction='cloudfunctions.googleapis.com',
     crm_v1='cloudresourcemanager.googleapis.com',
     crm_v2='cloudresourcemanager.googleapis.com',
-    cloudfunction='cloudfunctions.googleapis.com',
     cloudkms='cloudkms.googleapis.com',
     cloudrun='run.googleapis.com',
     iam='iam.googleapis.com',
@@ -52,11 +52,18 @@ service_names = Services(
     bigtable='bigtableadmin.googleapis.com',
     firestore='firestore.googleapis.com',
     apikey='apikeys.googleapis.com',
+    pubsub='pubsub.googleapis.com',
+    dataproc='dataproc.googleapis.com',
+    cloudmonitoring='cloudmonitoring.googleapis.com',
+    cloud_logging='cloud_logging.googleapis.com',
+    cloudcdn='cloudcdn.googleapis.com',
+    loadbalancer='loadbalancer.googleapis.com',
     bigquery='bigquery.googleapis.com',
     dataflow='dataflow.googleapis.com',
-    cloudtasks='cloudtasks.googleapis.com',
     spanner='spanner.googleapis.com',
     pubsublite='pubsublite.googleapis.com',
+    cloudtasks='cloudtasks.googleapis.com',
+    serviceusage='serviceusage.googleapis.com',
 )
 
 
@@ -412,7 +419,7 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 
 
 def concurrent_execution(
-    service: str, service_func: Any, config: Config, iam: Resource,
+    service: str, service_func: Any, config: Config, resource: Resource,
     common_job_parameters: Dict, gcp_update_tag: int, project_id: str, crm_v1: Resource,
     crm_v2: Resource, apikey: Resource,
 ):
@@ -428,11 +435,11 @@ def concurrent_execution(
     )
 
     if service == 'iam':
-
-        service_func(Session(neo4j_driver), iam, crm_v1, crm_v2, apikey, project_id,
+        service_func(Session(neo4j_driver), resource, crm_v1, crm_v2, apikey, project_id,
                      gcp_update_tag, common_job_parameters)
+
     else:
-        service_func(Session(neo4j_driver), iam, project_id, gcp_update_tag,
+        service_func(Session(neo4j_driver), resource, project_id, gcp_update_tag,
                      common_job_parameters, regions)
 
     logger.info(f"END processing for service: {service}")
@@ -505,57 +512,59 @@ def _sync_multiple_projects(
     crm.sync_gcp_projects(neo4j_session, projects, gcp_update_tag, common_job_parameters)
 
     for project in projects:
-        if common_job_parameters["GCP_PROJECT_ID"] == project['projectId']:
-            logger.info("Syncing GCP project %s.", common_job_parameters["GCP_PROJECT_ID"])
-            _sync_single_project(
-                neo4j_session, resources, requested_syncs,
-                common_job_parameters["GCP_PROJECT_ID"], gcp_update_tag, common_job_parameters, config,
-            )
-            run_analysis_job(
-                'gcp_storage_bucket_policy_analysis.json',
-                neo4j_session,
-                common_job_parameters,
-            )
-            run_analysis_job(
-                'gcp_bigquery_dataset_analysis.json',
-                neo4j_session,
-                common_job_parameters,
-            )
-            run_analysis_job(
-                'gcp_compute_firewall_analysis.json',
-                neo4j_session,
-                common_job_parameters,
-            )
-            run_analysis_job(
-                'gcp_cloud_function_analysis.json',
-                neo4j_session,
-                common_job_parameters,
-            )
-            run_analysis_job(
-                'gcp_compute_instance_analysis.json',
-                neo4j_session,
-                common_job_parameters,
-            )
-            run_analysis_job(
-                'gcp_kms_keyring_analysis.json',
-                neo4j_session,
-                common_job_parameters,
-            )
-            run_analysis_job(
-                'gcp_cloud_function_analysis.json',
-                neo4j_session,
-                common_job_parameters,
-            )
-            run_analysis_job(
-                'gcp_sql_instance_analysis.json',
-                neo4j_session,
-                common_job_parameters,
-            )
-            run_analysis_job(
-                'gcp_kubernetes_engine_analysis.json',
-                neo4j_session,
-                common_job_parameters,
-            )
+        if common_job_parameters["GCP_PROJECT_ID"] != project['projectId']:
+            continue
+
+        logger.info("Syncing GCP project %s.", common_job_parameters["GCP_PROJECT_ID"])
+        _sync_single_project(
+            neo4j_session, resources, requested_syncs,
+            common_job_parameters["GCP_PROJECT_ID"], gcp_update_tag, common_job_parameters, config,
+        )
+        run_analysis_job(
+            'gcp_storage_bucket_policy_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+        run_analysis_job(
+            'gcp_bigquery_dataset_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+        run_analysis_job(
+            'gcp_compute_firewall_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+        run_analysis_job(
+            'gcp_cloud_function_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+        run_analysis_job(
+            'gcp_compute_instance_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+        run_analysis_job(
+            'gcp_kms_keyring_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+        run_analysis_job(
+            'gcp_cloud_function_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+        run_analysis_job(
+            'gcp_sql_instance_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
+        run_analysis_job(
+            'gcp_kubernetes_engine_analysis.json',
+            neo4j_session,
+            common_job_parameters,
+        )
 
     del common_job_parameters["GCP_PROJECT_ID"]
 

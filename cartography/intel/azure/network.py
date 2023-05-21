@@ -778,7 +778,7 @@ def _load_load_balancers_tx(
     n.consolelink = lb.consolelink,
     n.region = lb.location
     SET n.lastupdated = $update_tag,
-    n.name = lb.name,
+    n.name = lb.name
     WITH n
     MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(n)
