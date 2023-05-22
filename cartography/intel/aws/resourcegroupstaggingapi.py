@@ -223,7 +223,16 @@ def compute_resource_id(tag_mapping: Dict, resource_type: str) -> str:
 
 @timeit
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('aws_import_tags_cleanup.json', neo4j_session, common_job_parameters)
+    cleanup_scripts = ['aws_import_tags_cleanup.json']
+    if common_job_parameters['aws_resource_type'] == 's3':
+        cleanup_scripts.append('aws_import_tags_s3_cleanup.json')
+    if common_job_parameters['aws_resource_type'] == 'rds':
+        cleanup_scripts.append('aws_import_tags_cleanup_rds.json')
+    if not common_job_parameters['aws_resource_type']:
+        cleanup_scripts = cleanup_scripts + ['aws_import_tags_cleanup_rds.json', 'aws_import_tags_cleanup_aws_vpc.json', 'aws_import_tags_cleanup_ec2_security_group.json', 'aws_import_tags_cleanup_ec2_subnet.json', 'aws_import_tags_cleanup_es_domain.json', 'aws_import_tags_cleanup_network_interface.json', 'aws_import_tags_cleanup_redshift.json', 'aws_import_tags_ec2_cleanup.json', 'aws_import_tags_s3_cleanup.json']
+    for cleanup_file in cleanup_scripts:
+        print('running cleanup_file', cleanup_file)
+        run_cleanup_job(cleanup_file, neo4j_session, common_job_parameters)
 
 
 @timeit
