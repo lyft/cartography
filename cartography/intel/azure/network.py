@@ -119,6 +119,9 @@ def load_public_ip_network_interfaces_relationship(session: neo4j.Session, inter
 def attach_public_ip_to_load_balancer(session: neo4j.Session, load_balancer_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_attach_public_ip_to_load_balancer_tx, load_balancer_id, data_list, update_tag)
 
+def attach_public_ip_to_bastion_host(session: neo4j.Session, bastion_host_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_attach_public_ip_to_bastion_host_tx, bastion_host_id, data_list, update_tag)
+
 
 def load_usages(session: neo4j.Session, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_usages_tx, data_list, update_tag)
@@ -476,6 +479,9 @@ def sync_network_bastion_hosts(
     load_network_bastion_hosts(neo4j_session, subscription_id, network_bastion_list, update_tag)
     attach_network_bastion_hosts_to_subnet(neo4j_session, network_bastion_list, update_tag)
     cleanup_network_bastion_hosts(neo4j_session, common_job_parameters)
+    for network_bastion in network_bastion_list:
+        attach_public_ip_to_bastion_host(
+            neo4j_session, network_bastion.get('id'), network_bastion.get('public_ip_address', []), update_tag)
 
 
 @timeit
@@ -1023,7 +1029,7 @@ def sync_network_load_balancer(
     create_relationship_between_network_interface_and_load_balancer(neo4j_session, load_balancers_list, update_tag)
     for load_balancer in load_balancers_list:
         attach_public_ip_to_load_balancer(
-            neo4j_session, load_balancer.get('if'), load_balancer.get('public_ip_address', []), update_tag)
+            neo4j_session, load_balancer.get('id'), load_balancer.get('public_ip_address', []), update_tag)
 
 def _attach_public_ip_to_load_balancer_tx(tx: neo4j.Transaction, load_balancer_id: str, data_list: List[Dict], update_tag: int) -> None:
     attach_ip_lb = """
@@ -1039,6 +1045,23 @@ def _attach_public_ip_to_load_balancer_tx(tx: neo4j.Transaction, load_balancer_i
         attach_ip_lb,
         ip_list=data_list,
         load_balancer_id=load_balancer_id,
+        update_tag=update_tag,
+    )
+
+def _attach_public_ip_to_bastion_host_tx(tx: neo4j.Transaction, bastion_host_id: str, data_list: List[Dict], update_tag: int) -> None:
+    attach_ip_bh = """
+    UNWIND $ip_list AS public_ip
+    MATCH (ip:AzurePublicIPAddress{id: public_ip.public_ip_id})
+    WITH ip
+    MATCH (bh:AzureNetworkBastionHost{id: $bastion_host_id})
+    MERGE (bh)-[r:MEMBER_PUBLIC_IP_ADDRESS]->(ip)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        attach_ip_bh,
+        ip_list=data_list,
+        bastion_host_id=bastion_host_id,
         update_tag=update_tag,
     )
 
