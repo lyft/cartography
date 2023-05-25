@@ -18,7 +18,7 @@ from cartography.models.bigfix.bigfix_root import BigfixRootSchema
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-# Connect and read timeouts of 60 seconds each; see https://session.readthedocs.io/en/master/user/advanced/#timeouts
+# Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
 _TIMEOUT = (60, 60)
 
 DEFAULT_SUPPORTED_KEYS = {
