@@ -8,7 +8,12 @@
 		},
 		{
 			"__comment": "This sets the exposed_internet attribute",
-			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE cluster.endpoint_public_access = true AND ('0.0.0.0/0' IN cluster.public_access_cidrs OR '::/0' IN cluster.public_access_cidrs) SET cluster.exposed_internet = true,(CASE WHEN NOT 'direct' IN coalesce(cluster.exposed_internet_type , []) THEN cluster END).exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct';",
+			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE cluster.endpoint_public_access = true AND '0.0.0.0/0' IN cluster.public_access_cidrs SET cluster.exposed_internet = true,(CASE WHEN NOT 'direct_ipv4' IN coalesce(cluster.exposed_internet_type , []) THEN cluster END).exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct_ipv4';",
+			"iterative": false
+		},
+		{
+			"__comment": "This sets the exposed_internet attribute",
+			"query": "MATCH (cluster:EKSCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE cluster.endpoint_public_access = true AND '::/0' IN cluster.public_access_cidrs SET cluster.exposed_internet = true,(CASE WHEN NOT 'direct_ipv6' IN coalesce(cluster.exposed_internet_type , []) THEN cluster END).exposed_internet_type = coalesce(cluster.exposed_internet_type , []) + 'direct_ipv6';",
 			"iterative": false
 		}
 	],
