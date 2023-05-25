@@ -1,12 +1,15 @@
 import logging
 
 import neo4j
+import requests
 
 from cartography.config import Config
 from cartography.intel.bigfix.computers import sync
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+
+requests_session = requests.Session()
 
 
 @timeit
@@ -31,6 +34,7 @@ def start_bigfix_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
     }
     sync(
         neo4j_session,
+        requests_session,
         config.bigfix_root_url,
         config.bigfix_username,
         config.bigfix_password,
