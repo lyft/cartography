@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def start_bigfix_ingestion(
     neo4j_session: neo4j.Session,
     config: Config,
-    requests_session: requests.Session = requests.Session(),
+    requests_session: requests.Session = None,
 ) -> None:
     """
     If this module is configured, perform ingestion of BigFix data. Otherwise warn and exit
@@ -30,6 +30,10 @@ def start_bigfix_ingestion(
             'See docs to configure.',
         )
         return
+
+    if requests_session is None:
+        logger.info('creating new requests session')
+        requests_session = requests.Session()
 
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
