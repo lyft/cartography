@@ -9,15 +9,18 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
-requests_session = requests.Session()
-
 
 @timeit
-def start_bigfix_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
+def start_bigfix_ingestion(
+    neo4j_session: neo4j.Session,
+    config: Config,
+    requests_session: requests.Session = requests.Session(),
+) -> None:
     """
     If this module is configured, perform ingestion of BigFix data. Otherwise warn and exit
     :param neo4j_session: Neo4J session for database interface
     :param config: A cartography.config object
+    :param requests_session: a Session object from the requests library
     :return: None
     """
 

@@ -1,3 +1,4 @@
+from unittest.mock import Mock
 from unittest.mock import patch
 
 import cartography.intel.bigfix.computers
@@ -18,6 +19,7 @@ def test_sync(mock_list, mock_details, neo4j_session):
     bigfix_root_url = 'https://bigfixroot.example.com'
     sync(
         neo4j_session,
+        Mock(),
         bigfix_root_url,
         'myuser',
         'mypassword',
