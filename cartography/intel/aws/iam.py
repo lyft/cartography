@@ -441,7 +441,7 @@ def load_instance_profiles(
     profile.path = $Path,
     profile.region = $Region,
     profile.consolelink = $consolelink,
-    profile.createdate = $CreateDate
+    profile.createdate = $CreateDate,
     profile.name = $ProfileName, 
     profile.lastupdated = $aws_update_tag
     WITH profile
