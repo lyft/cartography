@@ -224,7 +224,7 @@ def _load_ec2_instances_tx(
             WITH instance, inst, profile
             MERGE (instance)-[rel:PROFILE]->(profile)
             ON CREATE SET rel.firstseen = timestamp()
-            SET rel.lastupdated - $update_tag
+            SET rel.lastupdated = $update_tag
             WITH instance, inst
             MATCH (rez:EC2Reservation{reservationid: inst.ReservationId})
             MERGE (instance)-[r:MEMBER_OF_EC2_RESERVATION]->(rez)

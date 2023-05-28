@@ -470,7 +470,7 @@ def load_instance_profiles(
             CreateDate=str(instance_profile["CreateDate"]),
             ProfileName=instance_profile["InstanceProfileName"],
             Path=instance_profile["Path"],
-            region="global",
+            Region="global",
             AWS_ACCOUNT_ID=current_aws_account_id,
             aws_update_tag=aws_update_tag,
         )
