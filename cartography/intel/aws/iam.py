@@ -440,7 +440,6 @@ def load_instance_profiles(
     SET
     profile.path = $Path,
     profile.region = $Region,
-    profile.consolelink = $consolelink,
     profile.createdate = $CreateDate,
     profile.name = $ProfileName, 
     profile.lastupdated = $aws_update_tag
@@ -467,7 +466,6 @@ def load_instance_profiles(
         neo4j_session.run(
             ingest_instance_profiles,
             Arn=instance_profile["Arn"],
-            consolelink=aws_console_link.get_console_link(arn=instance_profile["Arn"]),
             InstanceProfileId=instance_profile["InstanceProfileId"],
             CreateDate=str(instance_profile["CreateDate"]),
             ProfileName=instance_profile["InstanceProfileName"],
