@@ -206,7 +206,6 @@ def _load_ec2_instances_tx(
                 instance.instancelifecycle = inst.InstanceLifecycle,
                 instance.region = inst.region,
                 instance.lastupdated = $update_tag,
-                instance.iaminstanceprofile = inst.IamInstanceProfile.Arn,
                 instance.availabilityzone = inst.Placement.AvailabilityZone,
                 instance.tenancy = inst.Placement.Tenancy,
                 instance.hostresourcegrouparn = inst.Placement.HostResourceGroupArn,
@@ -218,6 +217,14 @@ def _load_ec2_instances_tx(
                 instance.hibernationoptions = inst.HibernationOptions.Configured,
                 instance.consolelink = inst.consolelink,
                 instance.arn = inst.InstanceArn
+            WITH instance, inst
+            MERGE (profile:AWSInstanceProfile{arn: inst.IamInstanceProfile.Arn})
+            ON CREATE SET profile.id = inst.IamInstanceProfile.Id, profile.firstseen = timestamp()
+            SET profile.lastupdated = $update_tag
+            WITH instance, inst, profile
+            MERGE (instance)-[rel:PROFILE]->(profile)
+            ON CREATE SET rel.firstseen = timestamp()
+            SET rel.lastupdated - $update_tag
             WITH instance, inst
             MATCH (rez:EC2Reservation{reservationid: inst.ReservationId})
             MERGE (instance)-[r:MEMBER_OF_EC2_RESERVATION]->(rez)
