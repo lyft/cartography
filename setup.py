@@ -40,6 +40,7 @@ setup(
         "oauth2client>=4.1.3",
         "marshmallow>=3.0.0rc7",
         "oci>=2.71.0",
+        "slack-sdk>=3.19.2",
         "okta<1.0.0",
         "pyyaml>=5.3.1",
         "requests>=2.22.0",

@@ -500,6 +500,22 @@ class CLI:
                 'The Duo api hostname'
             ),
         )
+        parser.add_argument(
+            '--slack-token-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Slack Token'
+            ),
+        )
+        parser.add_argument(
+            '--slack-teams',
+            type=str,
+            default=None,
+            help=(
+                'The Slack Team ID to sync, comma separated.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -665,6 +681,13 @@ class CLI:
             )
             config.duo_api_key = os.environ.get(config.duo_api_key_env_var)
             config.duo_api_secret = os.environ.get(config.duo_api_secret_env_var)
+
+        # Slack config
+        if config.slack_token_env_var:
+            logger.debug(
+                f"Reading Slack token from environment variables {config.slack_token_env_var}",
+            )
+            config.slack_token = os.environ.get(config.slack_token_env_var)
 
         # Run cartography
         try:
