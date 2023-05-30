@@ -24,7 +24,7 @@ Start [here](https://lyft.github.io/cartography/install.html).
 - [Duo CRXcavator](https://lyft.github.io/cartography/modules/crxcavator/index.html) - Chrome extensions, GSuite users
 - [Oracle Cloud Infrastructure](docs/setup/config/oci.md) - IAM
 - [Okta](https://lyft.github.io/cartography/modules/okta/index.html) - users, groups, organizations, roles, applications, factors, trusted origins, reply URIs
-- [Github](https://lyft.github.io/cartography/modules/github/index.html) - repos, branches, users
+- [Github](https://lyft.github.io/cartography/modules/github/index.html) - repos, branches, users, teams
 - [HiBob](https://lyft.github.io/cartography/modules/hibob/index.html) - department, employees
 - [DigitalOcean](https://lyft.github.io/cartography/modules/digitalocean/index.html)
 - [Microsoft Azure](https://lyft.github.io/cartography/modules/azure/index.html) -  CosmosDB, SQL, Storage, Virtual Machine
@@ -32,6 +32,10 @@ Start [here](https://lyft.github.io/cartography/install.html).
 - [PagerDuty](https://lyft.github.io/cartography/modules/pagerduty/index.html) - Users, teams, services, schedules, escalation policies, integrations, vendors
 - [Crowdstrike Falcon](https://lyft.github.io/cartography/modules/crowdstrike/index.html) - Hosts, Spotlight vulnerabilites, CVEs
 - [NIST CVE](https://lyft.github.io/cartography/modules/cve/index.html) - Common Vulnerabilities and Exposures (CVE) data from NIST database
+- [Lastpass](https://lyft.github.io/cartography/modules/lastpass/index.html) - users
+- [BigFix](https://lyft.github.io/cartography/modules/bigfix/index.html) - Computers
+- [Duo](https://lyft.github.io/cartography/modules/duo/index.html) - Users, Groups, Endpoints
+
 
 ## Usage
 Start with our [tutorial](https://lyft.github.io/cartography/usage/tutorial.html). Our [data schema](https://lyft.github.io/cartography/usage/schema.html) is a helpful reference when you get stuck.

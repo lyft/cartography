@@ -61,7 +61,7 @@
             "iterationsize": 100
         },
         {
-            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:RedshiftCluster) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:RedshiftCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
             "iterative": true,
             "iterationsize": 100
         },

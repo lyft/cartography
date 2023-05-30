@@ -7,6 +7,8 @@ import boto3
 import neo4j
 
 from .util import get_botocore_config
+from cartography.graph.job import GraphJob
+from cartography.models.aws.ec2.networkinterfaces import EC2NetworkInterfaceSchema
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -265,6 +267,7 @@ def load(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_accoun
 @timeit
 def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_ingest_network_interfaces_cleanup.json', neo4j_session, common_job_parameters)
+    GraphJob.from_node_schema(EC2NetworkInterfaceSchema(), common_job_parameters).run(neo4j_session)
 
 
 @timeit
