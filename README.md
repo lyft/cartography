@@ -34,7 +34,7 @@ Start [here](https://lyft.github.io/cartography/install.html).
 - [Lastpass](https://lyft.github.io/cartography/modules/lastpass/index.html) - users
 - [BigFix](https://lyft.github.io/cartography/modules/bigfix/index.html) - Computers
 - [Duo](https://lyft.github.io/cartography/modules/duo/index.html) - Users, Groups, Endpoints
-
+- [Hexnode](https://lyft.github.io/cartography/modules/hexnode/index.html) - users, devices, groups, policies
 
 ## Usage
 Start with our [tutorial](https://lyft.github.io/cartography/usage/tutorial.html). Our [data schema](https://lyft.github.io/cartography/usage/schema.html) is a helpful reference when you get stuck.
