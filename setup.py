@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.75.0rc1'
+__version__ = '0.79.2'
 
 
 setup(
@@ -60,6 +60,8 @@ setup(
         "crowdstrike-falconpy>=0.5.1",
         "python-dateutil",
         "tldextract>=3.4.0",
+        "xmltodict",
+        "duo-client",
     ],
     extras_require={
         ':python_version<"3.7"': [

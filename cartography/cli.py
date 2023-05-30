@@ -3,6 +3,7 @@ import getpass
 import logging
 import os
 import sys
+from typing import Optional
 
 import cartography.config
 import cartography.sync
@@ -21,9 +22,9 @@ class CLI:
     :param prog: The name of the command line program. This will be displayed in usage and help output.
     """
 
-    def __init__(self, sync, prog=None):
+    def __init__(self, sync: Optional[cartography.sync.Sync] = None, prog: Optional[str] = None):
+        self.sync = sync if sync else cartography.sync.build_default_sync()
         self.prog = prog
-        self.sync = sync
         self.parser = self._build_parser()
 
     def _build_parser(self):
@@ -108,6 +109,21 @@ class CLI:
                 'The name of the database in Neo4j to connect to. If not specified, uses the config settings of your '
                 'Neo4j database itself to infer which database is set to default. '
                 'See https://neo4j.com/docs/api/python-driver/4.4/api.html#database.'
+            ),
+        )
+        parser.add_argument(
+            '--selected-modules',
+            type=str,
+            default=None,
+            help=(
+                'Comma-separated list of cartography top-level modules to sync. Example 1: "aws,gcp" to run AWS and GCP'
+                'modules. See the full list available in source code at cartography.sync. '
+                'If not specified, cartography by default will run all modules available and log warnings when it '
+                'does not find credentials configured for them. '
+                # TODO remove this mention about the create-indexes module when everything is using auto-indexes.
+                'We recommend that you always specify the `create-indexes` module first in this list. '
+                'If you specify the `analysis` module, we recommend that you include it as the LAST item of this list, '
+                '(because it does not make sense to perform analysis on an empty/out-of-date graph).'
             ),
         )
         # TODO add the below parameters to a 'sync' subparser
@@ -421,6 +437,70 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--lastpass-cid-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Lastpass CID for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--lastpass-provhash-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Lastpass provhash for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--bigfix-username',
+            type=str,
+            default=None,
+            help=(
+                'The BigFix username for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--bigfix-password-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the BigFix password for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--bigfix-root-url',
+            type=str,
+            default=None,
+            help=(
+                'The BigFix Root URL, a.k.a the BigFix API URL'
+            ),
+        )
+        parser.add_argument(
+            '--duo-api-key-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Duo api key'
+            ),
+        )
+        parser.add_argument(
+            '--duo-api-secret-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Duo api secret'
+            ),
+        )
+        parser.add_argument(
+            '--duo-api-hostname',
+            type=str,
+            default=None,
+            help=(
+                'The Duo api hostname'
+            ),
+        )
+        parser.add_argument(
             '--clevercloud-config-env-var',
             type=str,
             default=None,
@@ -465,6 +545,10 @@ class CLI:
                 logger.warning("Neo4j username was provided but a password could not be found.")
         else:
             config.neo4j_password = None
+
+        # Selected modules
+        if config.selected_modules:
+            self.sync = cartography.sync.build_sync(config.selected_modules)
 
         # AWS config
         if config.aws_requested_syncs:
@@ -565,6 +649,32 @@ class CLI:
         else:
             config.github_config = None
 
+        # Lastpass config
+        if config.lastpass_cid_env_var:
+            logger.debug(f"Reading CID for Lastpass from environment variable {config.lastpass_cid_env_var}")
+            config.lastpass_cid = os.environ.get(config.lastpass_cid_env_var)
+        else:
+            config.lastpass_cid = None
+        if config.lastpass_provhash_env_var:
+            logger.debug(f"Reading provhash for Lastpass from environment variable {config.lastpass_provhash_env_var}")
+            config.lastpass_provhash = os.environ.get(config.lastpass_provhash_env_var)
+        else:
+            config.lastpass_provhash = None
+
+        # BigFix config
+        if config.bigfix_username and config.bigfix_password_env_var and config.bigfix_root_url:
+            logger.debug(f"Reading BigFix password from environment variable {config.bigfix_password_env_var}")
+            config.bigfix_password = os.environ.get(config.bigfix_password_env_var)
+
+        # Duo config
+        if config.duo_api_key_env_var and config.duo_api_secret_env_var and config.duo_api_hostname:
+            logger.debug(
+                f"Reading Duo api key and secret from environment variables {config.duo_api_key_env_var}"
+                f", {config.duo_api_secret_env_var}",
+            )
+            config.duo_api_key = os.environ.get(config.duo_api_key_env_var)
+            config.duo_api_secret = os.environ.get(config.duo_api_secret_env_var)
+
         # Clevercloud config
         if config.clevercloud_config_env_var:
             logger.debug(
@@ -596,5 +706,4 @@ def main(argv=None):
     logging.getLogger('googleapiclient').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
-    default_sync = cartography.sync.build_default_sync()
-    sys.exit(CLI(default_sync, prog='cartography').main(argv))
+    sys.exit(CLI(prog='cartography').main(argv))
