@@ -101,8 +101,14 @@ def get(token: str, api_url: str, organization: str) -> List[Dict]:
     :return: A list of dicts representing repos. See tests.data.github.repos for data shape.
     """
     # TODO: link the Github organization to the repositories
-    repos, _ = fetch_all(token, api_url, organization, GITHUB_ORG_REPOS_PAGINATED_GRAPHQL, 'repositories', 'nodes')
-    return repos
+    repos, _ = fetch_all(
+        token,
+        api_url,
+        organization,
+        GITHUB_ORG_REPOS_PAGINATED_GRAPHQL,
+        'repositories',
+    )
+    return repos.nodes
 
 
 def transform(repos_json: List[Dict]) -> Dict:
@@ -539,8 +545,11 @@ def load_python_requirements(neo4j_session: neo4j.Session, update_tag: int, requ
 
 
 def sync(
-    neo4j_session: neo4j.Session, common_job_parameters: Dict, github_api_key: str, github_url: str,
-    organization: str,
+        neo4j_session: neo4j.Session,
+        common_job_parameters: Dict[str, Any],
+        github_api_key: str,
+        github_url: str,
+        organization: str,
 ) -> None:
     """
     Performs the sequential tasks to collect, transform, and sync github data
@@ -554,5 +563,5 @@ def sync(
     logger.info("Syncing GitHub repos")
     repos_json = get(github_api_key, github_url, organization)
     repo_data = transform(repos_json)
-    load(neo4j_session, common_job_parameters, repo_data)
+    load(neo4j_session, repo_data, common_job_parameters['UPDATE_TAG'])
     run_cleanup_job('github_repos_cleanup.json', neo4j_session, common_job_parameters)
