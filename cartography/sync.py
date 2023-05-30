@@ -24,6 +24,7 @@ import cartography.intel.duo
 import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
+import cartography.intel.hibob
 import cartography.intel.kubernetes
 import cartography.intel.lastpass
 import cartography.intel.oci
@@ -53,6 +54,7 @@ TOP_LEVEL_MODULES = OrderedDict({  # preserve order so that the default sync alw
     'lastpass': cartography.intel.lastpass.start_lastpass_ingestion,
     'bigfix': cartography.intel.bigfix.start_bigfix_ingestion,
     'duo': cartography.intel.duo.start_duo_ingestion,
+    'hibob': cartography.intel.hibob.start_hibob_ingestion,
     'analysis': cartography.intel.analysis.run,
 })
 

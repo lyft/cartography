@@ -500,6 +500,14 @@ class CLI:
                 'The Duo api hostname'
             ),
         )
+        parser.add_argument(
+            '--hibob-api-key-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the HiBob API key for authentication.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -665,6 +673,13 @@ class CLI:
             )
             config.duo_api_key = os.environ.get(config.duo_api_key_env_var)
             config.duo_api_secret = os.environ.get(config.duo_api_secret_env_var)
+
+        # HiBob config
+        if config.hibob_api_key_env_var:
+            logger.debug(f"Reading API key for HiBob from environment variable {config.hibob_api_key_env_var}")
+            config.hibob_api_key = os.environ.get(config.hibob_api_key_env_var)
+        else:
+            config.hibob_api_key = None
 
         # Run cartography
         try:
