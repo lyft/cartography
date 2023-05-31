@@ -100,5 +100,11 @@ class SlackGroupToChannelRel(CartographyRelSchema):
 class SlackGroupSchema(CartographyNodeSchema):
     label: str = 'SlackGroup'
     properties: SlackGroupNodeProperties = SlackGroupNodeProperties()
-    other_relationships: OtherRelationships = OtherRelationships(rels=[SlackGroupToUserRel(), SlackGroupToChannelRel(), SlackGroupToCreatorRel()])
+    other_relationships: OtherRelationships = OtherRelationships(
+        rels=[
+            SlackGroupToUserRel(),
+            SlackGroupToChannelRel(),
+            SlackGroupToCreatorRel(),
+        ],
+    )
     sub_resource_relationship: SlackTeamToGroupRel = SlackTeamToGroupRel()
