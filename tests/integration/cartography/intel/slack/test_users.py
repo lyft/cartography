@@ -5,6 +5,7 @@ import cartography.intel.slack.users
 import tests.data.slack.team
 import tests.data.slack.users
 from tests.integration.util import check_nodes
+from tests.integration.util import check_rels
 
 SLACK_TEAM_ID = 'TTPQ4FBPT'
 SLACK_TOKEN = 'fake-token'
@@ -64,3 +65,36 @@ def test_load_slack_users(neo4j_session):
         ('jane.smith@lyft.com', 'jane.smith@lyft.com'),
     }
     assert check_nodes(neo4j_session, 'Human', ['id', 'email']) == expected_nodes
+
+    # Assert Users exists
+    expected_nodes = {
+        ('AAAABBBBCCCC', 'john.doe@lyft.com'),
+        ('QQQQWWWWEEEE', 'jane.smith@lyft.com'),
+    }
+    assert check_nodes(neo4j_session, 'SlackUser', ['id', 'email']) == expected_nodes
+
+    # Assert Users are connected with Team
+    expected_rels = {
+        ('AAAABBBBCCCC', SLACK_TEAM_ID),
+        ('QQQQWWWWEEEE', SLACK_TEAM_ID),
+    }
+    assert check_rels(
+        neo4j_session,
+        'SlackUser', 'id',
+        'SlackTeam', 'id',
+        'RESOURCE',
+        rel_direction_right=True,
+    ) == expected_rels
+
+    # Assert Users are connected with Humans
+    expected_rels = {
+        ('AAAABBBBCCCC', 'john.doe@lyft.com'),
+        ('QQQQWWWWEEEE', 'jane.smith@lyft.com'),
+    }
+    assert check_rels(
+        neo4j_session,
+        'SlackUser', 'id',
+        'Human', 'email',
+        'IDENTITY_SLACK',
+        rel_direction_right=False,
+    ) == expected_rels
