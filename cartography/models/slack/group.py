@@ -17,14 +17,12 @@ class SlackGroupNodeProperties(CartographyNodeProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     name: PropertyRef = PropertyRef('name')
     description: PropertyRef = PropertyRef('description')
-    is_usergroup: PropertyRef = PropertyRef('is_usergroup')
     is_subteam: PropertyRef = PropertyRef('is_subteam')
     handle: PropertyRef = PropertyRef('handle')
     is_external: PropertyRef = PropertyRef('is_external')
     date_create: PropertyRef = PropertyRef('date_create')
     date_update: PropertyRef = PropertyRef('date_update')
     date_delete: PropertyRef = PropertyRef('date_delete')
-    created_by: PropertyRef = PropertyRef('created_by')
     updated_by: PropertyRef = PropertyRef('updated_by')
     user_count: PropertyRef = PropertyRef('user_count')
     channel_count: PropertyRef = PropertyRef('channel_count')
@@ -45,6 +43,23 @@ class SlackGroupToUserRel(CartographyRelSchema):
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "MEMBER_OF"
     properties: SlackGroupToSlackUserRelProperties = SlackGroupToSlackUserRelProperties()
+
+
+@dataclass(frozen=True)
+class SlackGroupToCreatorRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+
+@dataclass(frozen=True)
+# (:SlackUser)<-[:CREATED_BY]-(:SlackGroup)
+class SlackGroupToCreatorRel(CartographyRelSchema):
+    target_node_label: str = 'SlackUser'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'id': PropertyRef('created_by')},
+    )
+    direction: LinkDirection = LinkDirection.OUTWARD
+    rel_label: str = "CREATED_BY"
+    properties: SlackGroupToCreatorRelProperties = SlackGroupToCreatorRelProperties()
 
 
 @dataclass(frozen=True)
@@ -85,5 +100,5 @@ class SlackGroupToChannelRel(CartographyRelSchema):
 class SlackGroupSchema(CartographyNodeSchema):
     label: str = 'SlackGroup'
     properties: SlackGroupNodeProperties = SlackGroupNodeProperties()
-    other_relationships: OtherRelationships = OtherRelationships(rels=[SlackGroupToUserRel(), SlackGroupToChannelRel()])
+    other_relationships: OtherRelationships = OtherRelationships(rels=[SlackGroupToUserRel(), SlackGroupToChannelRel(), SlackGroupToCreatorRel()])
     sub_resource_relationship: SlackTeamToGroupRel = SlackTeamToGroupRel()
