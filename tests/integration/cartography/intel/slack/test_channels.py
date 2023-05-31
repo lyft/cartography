@@ -1,11 +1,11 @@
 from unittest.mock import Mock
 
+import cartography.intel.slack.channels
 import cartography.intel.slack.team
 import cartography.intel.slack.users
-import cartography.intel.slack.channels
+import tests.data.slack.channels
 import tests.data.slack.team
 import tests.data.slack.users
-import tests.data.slack.channels
 from tests.integration.util import check_nodes
 from tests.integration.util import check_rels
 
@@ -56,7 +56,7 @@ def test_load_slack_channels(neo4j_session):
     }
     assert check_nodes(neo4j_session, 'SlackChannel', ['id', 'name']) == expected_nodes
 
-    # Assert Channels are connected to team
+    # Assert Channels are connected to team
     expected_rels = {
         ('SLACKCHANNEL2', SLACK_TEAM_ID),
         ('SLACKCHANNEL1', SLACK_TEAM_ID),
@@ -69,7 +69,7 @@ def test_load_slack_channels(neo4j_session):
         rel_direction_right=True,
     ) == expected_rels
 
-    # Assert Channels are connected to Creator
+    # Assert Channels are connected to Creator
     expected_rels = {
         ('SLACKCHANNEL2', 'SLACKUSER1'),
         ('SLACKCHANNEL1', 'SLACKUSER1'),
@@ -82,7 +82,7 @@ def test_load_slack_channels(neo4j_session):
         rel_direction_right=True,
     ) == expected_rels
 
-    # Assert Channels are connected to Members
+    # Assert Channels are connected to Members
     expected_rels = {
         ('SLACKCHANNEL2', 'SLACKUSER1'),
         ('SLACKCHANNEL1', 'SLACKUSER1'),

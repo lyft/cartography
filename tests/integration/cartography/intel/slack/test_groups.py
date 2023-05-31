@@ -1,13 +1,13 @@
 from unittest.mock import Mock
 
-import cartography.intel.slack.team
-import cartography.intel.slack.users
 import cartography.intel.slack.channels
 import cartography.intel.slack.groups
-import tests.data.slack.team
-import tests.data.slack.users
+import cartography.intel.slack.team
+import cartography.intel.slack.users
 import tests.data.slack.channels
+import tests.data.slack.team
 import tests.data.slack.usergroups
+import tests.data.slack.users
 from tests.integration.util import check_nodes
 from tests.integration.util import check_rels
 
@@ -66,7 +66,7 @@ def test_load_slack_groups(neo4j_session):
     }
     assert check_nodes(neo4j_session, 'SlackGroup', ['id', 'name']) == expected_nodes
 
-    # Assert groups are connected to team
+    # Assert groups are connected to team
     expected_rels = {
         ('SLACKGROUP1', SLACK_TEAM_ID),
         ('SLACKGROUP2', SLACK_TEAM_ID),
@@ -79,7 +79,7 @@ def test_load_slack_groups(neo4j_session):
         rel_direction_right=True,
     ) == expected_rels
 
-    # Assert groups are connected to Creator
+    # Assert groups are connected to Creator
     expected_rels = {
         ('SLACKGROUP1', 'SLACKUSER1'),
         ('SLACKGROUP2', 'SLACKUSER1'),
@@ -92,7 +92,7 @@ def test_load_slack_groups(neo4j_session):
         rel_direction_right=True,
     ) == expected_rels
 
-    # Assert groups are connected to Members
+    # Assert groups are connected to Members
     expected_rels = {
         ('SLACKGROUP1', 'SLACKUSER1'),
         ('SLACKGROUP2', 'SLACKUSER1'),
@@ -106,7 +106,7 @@ def test_load_slack_groups(neo4j_session):
         rel_direction_right=False,
     ) == expected_rels
 
-    # Assert groups are connected to channels
+    # Assert groups are connected to channels
     expected_rels = {
         ('SLACKGROUP1', 'SLACKCHANNEL1'),
         ('SLACKGROUP2', 'SLACKCHANNEL2'),
