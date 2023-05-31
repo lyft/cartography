@@ -1,7 +1,7 @@
 SLACK_USERS = {
     "members": [
         {
-            "id": "AAAABBBBCCCC",
+            "id": "SLACKUSER1",
             "team_id": "TTPQ4FBPT",
             "name": "john.doe",
             "deleted": False,
@@ -53,7 +53,7 @@ SLACK_USERS = {
             "who_can_share_contact_card": "EVERYONE",
         },
         {
-            "id": "QQQQWWWWEEEE",
+            "id": "SLACKUSER2",
             "team_id": "TTPQ4FBPT",
             "name": "jane.smith",
             "deleted": False,

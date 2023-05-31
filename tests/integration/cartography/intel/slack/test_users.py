@@ -68,15 +68,15 @@ def test_load_slack_users(neo4j_session):
 
     # Assert Users exists
     expected_nodes = {
-        ('AAAABBBBCCCC', 'john.doe@lyft.com'),
-        ('QQQQWWWWEEEE', 'jane.smith@lyft.com'),
+        ('SLACKUSER1', 'john.doe@lyft.com'),
+        ('SLACKUSER2', 'jane.smith@lyft.com'),
     }
     assert check_nodes(neo4j_session, 'SlackUser', ['id', 'email']) == expected_nodes
 
     # Assert Users are connected with Team
     expected_rels = {
-        ('AAAABBBBCCCC', SLACK_TEAM_ID),
-        ('QQQQWWWWEEEE', SLACK_TEAM_ID),
+        ('SLACKUSER1', SLACK_TEAM_ID),
+        ('SLACKUSER2', SLACK_TEAM_ID),
     }
     assert check_rels(
         neo4j_session,
@@ -88,8 +88,8 @@ def test_load_slack_users(neo4j_session):
 
     # Assert Users are connected with Humans
     expected_rels = {
-        ('AAAABBBBCCCC', 'john.doe@lyft.com'),
-        ('QQQQWWWWEEEE', 'jane.smith@lyft.com'),
+        ('SLACKUSER1', 'john.doe@lyft.com'),
+        ('SLACKUSER2', 'jane.smith@lyft.com'),
     }
     assert check_rels(
         neo4j_session,
