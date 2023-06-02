@@ -59,7 +59,7 @@ def get_vm_list(credentials: Credentials, subscription_id: str, regions: list, c
             for interface in vm.get('network_profile', {}).get('network_interfaces', []):
                 network_interfaces.append(interface)
             vm['network_interfaces'] = network_interfaces
-
+            vm['user_assigned_identities'] = list(vm.get('identity', {}).get('user_assigned_identities', {}).keys())
             network_security_group = []
             for config in vm.get('network_profile', {}).get('network_interface_configurations', []):
                 network_security_group.append(config.get('network_security_group'), None)
@@ -91,6 +91,12 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
     v.identity_type=vm.identity.type, v.zones=vm.zones,
     v.ultra_ssd_enabled=vm.additional_capabilities.ultra_ssd_enabled,
     v.priority=vm.priority, v.eviction_policy=vm.eviction_policy
+    WITH vm, v
+    UNWIND vm.user_assigned_identities AS ua
+    MATCH (i:AzureManagedIdentity{id: ua})
+    MERGE (v)-[rel:HAS]->(i)
+    ON CREATE SET rel.firstseen = timestamp()
+    SET rel.lastupdated = $update_tag
     WITH v
     MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(v)
