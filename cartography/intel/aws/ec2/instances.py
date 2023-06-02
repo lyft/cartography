@@ -150,7 +150,7 @@ def _load_ec2_reservation_tx(
     )
 
 
-def _load_ec2_instances_attach_iam_profiles(
+def _load_ec2_instances(
     neo4j_session: neo4j.Session,
     instances: List[Dict[str, Any]],
     current_aws_account_id: str,
@@ -178,13 +178,6 @@ def _load_ec2_instances_attach_iam_profiles(
             current_aws_account_id,
             update_tag,
         )
-
-        neo4j_session.write_transaction(
-            _attach_ec2_instance_to_iam_profile_tx,
-            paginated_instances,
-            update_tag
-        )
-
         logger.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
 
 
@@ -212,6 +205,7 @@ def _load_ec2_instances_tx(
                 instance.instancelifecycle = inst.InstanceLifecycle,
                 instance.region = inst.region,
                 instance.lastupdated = $update_tag,
+                instance.iaminstanceprofile = inst.IamInstanceProfile.Arn,
                 instance.availabilityzone = inst.Placement.AvailabilityZone,
                 instance.tenancy = inst.Placement.Tenancy,
                 instance.hostresourcegrouparn = inst.Placement.HostResourceGroupArn,
@@ -240,30 +234,6 @@ def _load_ec2_instances_tx(
         AWS_ACCOUNT_ID=current_aws_account_id,
         update_tag=update_tag,
     )
-
-def _attach_ec2_instance_to_iam_profile_tx(tx: neo4j.Transaction, instances: List[Dict[str, Any]], update_tag: str):
-    query = """
-    MATCH (i:EC2Instance{id: $InstanceId})
-    MERGE (profile:AWSInstanceProfile{arn: $ProfileARN})
-    ON CREATE SET profile.id = $ProfileID, profile.firstseen = timestamp()
-    SET profile.lastupdated = $update_tag
-    WITH i, profile
-    MERGE (instance)-[rel:PROFILE]->(profile)
-    ON CREATE SET rel.firstseen = timestamp()
-    SET rel.lastupdated = $update_tag
-    """
-
-    for instance in instances:
-        profile = instance.get('IamInstanceProfile', {}).get('Arn', None)
-        if profile:
-            tx.run(
-                query,
-                InstanceId=instance.get('InstanceId'),
-                ProfileARN=profile,
-                ProfileID=instance.get('IamInstanceProfile', {}).get('Id', None),
-                update_tag=update_tag,                                  
-            )
-
 
 def _load_ec2_subnet_tx(tx: neo4j.Transaction, instanceid: str, subnet_id: str, region: str, update_tag: int) -> None:
     query = """
@@ -465,7 +435,7 @@ def load_ec2_instances(
 
     _load_ec2_reservations(neo4j_session, reservations, current_aws_account_id, update_tag)
 
-    _load_ec2_instances_attach_iam_profiles(neo4j_session, instances, current_aws_account_id, update_tag)
+    _load_ec2_instances(neo4j_session, instances, current_aws_account_id, update_tag)
 
     _load_ec2_key_pairs(neo4j_session, key_pairs, current_aws_account_id, update_tag)
 

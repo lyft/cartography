@@ -260,16 +260,6 @@ def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
     return {'Roles': roles}
 
 @timeit
-def get_instance_profile_list_data(boto3_session: boto3.session.Session) -> Dict:
-    client = boto3_session.client('iam')
-    paginator = client.get_paginator('list_instance_profiles')
-    instance_profiles: List[Dict] = []
-    for page in paginator.paginate():
-        instance_profiles.extend(page['InstanceProfiles'])
-    return {'InstanceProfiles': instance_profiles}
-
-
-@timeit
 def get_account_access_key_data(boto3_session: boto3.session.Session, username: str) -> Dict:
     client = boto3_session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
@@ -429,59 +419,6 @@ def load_roles(
                     RoleArn=role['Arn'],
                     aws_update_tag=aws_update_tag,
                 )
-
-@timeit
-def load_instance_profiles(
-    neo4j_session: neo4j.Session, instance_profiles: List[Dict], current_aws_account_id: str, aws_update_tag: int,
-):
-    ingest_instance_profiles = """
-    MERGE (profile:AWSInstanceProfile{arn: $Arn})
-    ON CREATE SET profile.id = $InstanceProfileId, profile.firstseen = timestamp()
-    SET
-    profile.path = $Path,
-    profile.region = $Region,
-    profile.createdate = $CreateDate,
-    profile.name = $ProfileName, 
-    profile.lastupdated = $aws_update_tag
-    WITH profile
-    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
-    MERGE (aa)-[r:RESOURCE]->(profile)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    """
-
-    attach_roles_to_instance_profiles = """
-    MERGE (role:AWSRole{arn: $RoleArn})
-    ON CREATE SET role.firstseen = timestamp()
-    SET role.lastupdated = $aws_update_tag
-    WITH role
-    MATCH (profile:AWSInstanceProfile{arn: $ProfileArn})
-    MERGE (profile)-[r:HAS]->(role)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    """
-
-    logger.info(f"Loading {len(instance_profiles)} IAM Instance Profiles to the graph.")
-    for instance_profile in instance_profiles:
-        neo4j_session.run(
-            ingest_instance_profiles,
-            Arn=instance_profile["Arn"],
-            InstanceProfileId=instance_profile["InstanceProfileId"],
-            CreateDate=str(instance_profile["CreateDate"]),
-            ProfileName=instance_profile["InstanceProfileName"],
-            Path=instance_profile["Path"],
-            Region="global",
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-        )
-
-        for role in instance_profile.get("Roles", []):
-            neo4j_session.run(
-                attach_roles_to_instance_profiles,
-                RoleArn=role['Arn'],
-                ProfileArn=instance_profile["Arn"],
-                aws_update_tag=aws_update_tag,
-            )
 
 @timeit
 def load_group_memberships(neo4j_session: neo4j.Session, group_memberships: Dict, aws_update_tag: int) -> None:
@@ -853,21 +790,6 @@ def sync_roles(
 
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
 
-@timeit
-def sync_instance_profiles(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
-    aws_update_tag: int, common_job_parameters: Dict,
-) -> None:
-    logger.info("Syncing IAM Instance Profiles for account '%s'.", current_aws_account_id)
-    data = get_instance_profile_list_data(boto3_session)
-
-    logger.info(f"Total Instance Profiles: {len(data['InstanceProfiles'])}")
-
-    load_instance_profiles(neo4j_session, data['InstanceProfiles'], current_aws_account_id, aws_update_tag)
-
-    run_cleanup_job('aws_import_instance_profiles_cleanup.json', neo4j_session, common_job_parameters)
-
-
 def sync_role_managed_policies(
     current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
     neo4j_session: neo4j.Session, aws_update_tag: int,
@@ -997,7 +919,6 @@ def sync(
     sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
     sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_instance_profiles(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
     set_used_state(neo4j_session, current_aws_account_id, common_job_parameters, update_tag)
 
     run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
