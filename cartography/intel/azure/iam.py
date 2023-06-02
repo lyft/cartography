@@ -7,6 +7,7 @@ import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.graphrbac import GraphRbacManagementClient
 from azure.mgmt.authorization import AuthorizationManagementClient
+from azure.mgmt.msi import ManagedServiceIdentityClient
 from cloudconsolelink.clouds.azure import AzureLinker
 from datetime import datetime
 
@@ -42,6 +43,9 @@ def load_tenant_users(session: neo4j.Session, tenant_id: str, data_list: List[Di
 def load_roles(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int, SUBSCRIPTION_ID: str) -> None:
     session.write_transaction(_load_roles_tx, tenant_id, data_list, update_tag, SUBSCRIPTION_ID)
 
+def load_managed_identities(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None: 
+    session.write_transaction(_load_managed_identities_tx, tenant_id, data_list, update_tag)
+
 
 def load_tenant_groups(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_tenant_groups_tx, tenant_id, data_list, update_tag)
@@ -76,6 +80,10 @@ def get_authorization_client(credentials: Credentials, subscription_id: str) -> 
     client = AuthorizationManagementClient(credentials, subscription_id)
     return client
 
+@timeit
+def get_managed_identity_client(credentials: Credentials, subscription_id: str) -> ManagedServiceIdentityClient:
+    client = ManagedServiceIdentityClient(credentials, subscription_id)
+    return client
 
 @timeit
 def list_tenant_users(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
@@ -608,6 +616,22 @@ def get_roles_list(client: AuthorizationManagementClient, common_job_parameters:
         return []
 
 
+@timeit
+def get_managed_identity_list(client: ManagedServiceIdentityClient, subscription_id: str, common_job_parameters: Dict) -> List[Dict]:
+    try:
+        managed_identity_list = list(
+            map(lambda x: x.as_dict(), client.user_assigned_identities.list_by_subscription(subscription_id)),
+        )
+
+        for managed_identity in managed_identity_list:
+            managed_identity['consolelink'] = azure_console_link.get_console_link(
+                id=managed_identity['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name']
+            )
+        return managed_identity_list
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving managed identity - {e}")
+        return []
+
 def _load_roles_tx(
     tx: neo4j.Transaction, tenant_id: str, roles_list: List[Dict], update_tag: int, SUBSCRIPTION_ID: str
 ) -> None:
@@ -650,10 +674,41 @@ def _load_roles_tx(
         SUBSCRIPTION_ID=SUBSCRIPTION_ID,
     )
 
+def _load_managed_identities_tx(
+    tx: neo4j.Transaction, tenant_id: str, managed_identity_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_managed_identity = """
+    UNWIND $managed_identity_list AS managed_identity
+    MERGE (i:AzureManagedIdentity{id: managed_identity.id})
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
+    i.name = managed_identity.name,
+    i.consolelink = managed_identity.consolelink,
+    i.location = managed_identity.location,
+    i.type = managed_identity.type,
+    i.object_id = managed_identity.principal_id,
+    i.principal_id = managed_identity.principal_id,
+    i.client_id = managed_identity.client_id
+    SET i.lastupdated = $update_tag
+    WITH i
+    MATCH (t:AzureTenant{id: $tenant_id})
+    MERGE (t)-[tr:RESOURCE]->(i)
+    ON CREATE SET tr.firstseen = timestamp()
+    SET tr.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_managed_identity,
+        managed_identity_list=managed_identity_list,
+        update_tag=update_tag,
+        tenant_id=tenant_id,
+    )
 
 def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_tenant_roles_cleanup.json', neo4j_session, common_job_parameters)
 
+def cleanup_managed_identities(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_managed_identity_cleanup.json', neo4j_session, common_job_parameters)
 
 def sync_roles(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
@@ -663,6 +718,16 @@ def sync_roles(
     roles_list = get_roles_list(client, common_job_parameters)
     load_roles(neo4j_session, tenant_id, roles_list, update_tag, credentials.subscription_id)
     cleanup_roles(neo4j_session, common_job_parameters)
+
+
+def sync_managed_identity(
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
+    common_job_parameters: Dict
+) -> None:
+    client = get_managed_identity_client(credentials.arm_credentials, credentials.subscription_id)
+    managed_identity_list = get_managed_identity_list(client, credentials.subscription_id, common_job_parameters)
+    load_managed_identities(neo4j_session, tenant_id, managed_identity_list, update_tag)
+    cleanup_managed_identities(neo4j_session, common_job_parameters)
 
 
 def _set_used_state_tx(
@@ -730,6 +795,9 @@ def sync(
         #         )
         #         set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
         # else:
+        sync_managed_identity(
+            neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
+        )
         sync_roles(
             neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
         )
