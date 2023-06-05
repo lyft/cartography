@@ -14,6 +14,8 @@ packaging
 
 python-digitalocean>=1.16.0
 
+netaddr~=0.8.0
+
 # Cloudanix Lambda Specific requirements
 flask<2.0,>=1.0
 maya~=0.6.1
