@@ -18,6 +18,9 @@ from cloudconsolelink.clouds.azure import AzureLinker
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from . import network
+
+from netaddr import iter_iprange
 
 logger = logging.getLogger(__name__)
 azure_console_link = AzureLinker()
@@ -443,6 +446,14 @@ def load_server_details(
     _load_elastic_pools(neo4j_session, elastic_pools, update_tag)
     _load_databases(neo4j_session, databases, update_tag)
     _load_firewall_rules(neo4j_session, fw_rules, update_tag)
+    network_client = network.get_network_client(credentials, subscription_id)
+    public_ips = [ip['ip_address'] for ip in network.get_public_ip_addresses_list(network_client, None, common_job_parameters)]
+
+    for fw_rule in fw_rules:
+        ip_range = iter_iprange(fw_rule['start_ip_address'], fw_rule['end_ip_address'])
+        for ip in ip_range:
+            if str(ip) in public_ips:
+                attach_firewall_rule_to_public_ip(neo4j_session, fw_rule['id'], str(ip), update_tag)
 
     sync_database_details(neo4j_session, credentials, subscription_id, databases, update_tag, common_job_parameters)
 
@@ -503,6 +514,27 @@ def _load_firewall_rules(neo4j_session: neo4j.Session, fw_rules: List[Dict], upd
         ingest_firewall_rules,
         fw_rules=fw_rules,
         azure_update_tag=update_tag,
+    )
+
+
+def attach_firewall_rule_to_public_ip(session: neo4j.Session, fw_rule, public_ip: str, update_tag: int) -> None:
+    session.write_transaction(_attach_firewall_rule_to_public_ip_tx, fw_rule, public_ip, update_tag)
+
+
+def _attach_firewall_rule_to_public_ip_tx(tx: neo4j.Transaction, fw_rule: str, public_ip: str, update_tag: int) -> None:
+    ingest_address = """
+    MATCH (fwr:AzureFirewallRule{id: $fw_rule})
+    WITH fwr
+    MATCH (ip:AzurePublicIPAddress{ipAddress: $public_ip})
+    MERGE (fwr)-[r:MEMBER_PUBLIC_IP_ADDRESS]->(ip)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        ingest_address,
+        fw_rule=fw_rule,
+        public_ip=public_ip,
+        update_tag=update_tag,
     )
 
 
