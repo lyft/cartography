@@ -35,7 +35,6 @@ def load_team(
     data: Dict[str, Any],
     update_tag: int,
 ) -> None:
-
     load(
         neo4j_session,
         SlackTeamSchema(),

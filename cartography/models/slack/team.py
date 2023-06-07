@@ -9,7 +9,7 @@ from cartography.models.core.nodes import CartographyNodeSchema
 class SlackTeamNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    name: PropertyRef = PropertyRef('name')
+    name: PropertyRef = PropertyRef('name', extra_index=True)
     domain: PropertyRef = PropertyRef('domain')
     url: PropertyRef = PropertyRef('url')
     is_verified: PropertyRef = PropertyRef('is_verified')

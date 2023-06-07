@@ -33,7 +33,6 @@ def get(slack_client: WebClient, team_id: str, cursor: Optional[str] = None) -> 
     channels: List[Dict[str, Any]] = []
     channels_info = slack_client.conversations_list(cursor=cursor, team_id=team_id)
     for m in channels_info['channels']:
-        channels.append(m)
         if m['is_archived']:
             channels.append(m)
         else:
@@ -64,7 +63,6 @@ def load_channels(
     team_id: str,
     update_tag: int,
 ) -> None:
-
     load(
         neo4j_session,
         SlackChannelSchema(),

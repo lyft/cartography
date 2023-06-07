@@ -15,14 +15,14 @@ from cartography.models.core.relationships import TargetNodeMatcher
 class SlackUserNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    name: PropertyRef = PropertyRef('name')
+    name: PropertyRef = PropertyRef('name', extra_index=True)
     real_name: PropertyRef = PropertyRef('real_name')
     display_name: PropertyRef = PropertyRef('profile.display_name')
     first_name: PropertyRef = PropertyRef('profile.first_name')
     last_name: PropertyRef = PropertyRef('profile.last_name')
     profile_title: PropertyRef = PropertyRef('profile.title')
     profile_phone: PropertyRef = PropertyRef('profile.phone')
-    email: PropertyRef = PropertyRef('profile.email')
+    email: PropertyRef = PropertyRef('profile.email', extra_index=True)
     deleted: PropertyRef = PropertyRef('deleted')
     is_admin: PropertyRef = PropertyRef('is_admin')
     is_owner: PropertyRef = PropertyRef('is_owner')
@@ -31,6 +31,7 @@ class SlackUserNodeProperties(CartographyNodeProperties):
     is_bot: PropertyRef = PropertyRef('is_bot')
     is_app_user: PropertyRef = PropertyRef('is_app_user')
     is_email_confirmed: PropertyRef = PropertyRef('is_email_confirmed')
+    team: PropertyRef = PropertyRef('profile.team')
 
 
 @dataclass(frozen=True)

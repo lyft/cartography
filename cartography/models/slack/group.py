@@ -15,7 +15,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 class SlackGroupNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    name: PropertyRef = PropertyRef('name')
+    name: PropertyRef = PropertyRef('name', extra_index=True)
     description: PropertyRef = PropertyRef('description')
     is_subteam: PropertyRef = PropertyRef('is_subteam')
     handle: PropertyRef = PropertyRef('handle')
@@ -23,6 +23,7 @@ class SlackGroupNodeProperties(CartographyNodeProperties):
     date_create: PropertyRef = PropertyRef('date_create')
     date_update: PropertyRef = PropertyRef('date_update')
     date_delete: PropertyRef = PropertyRef('date_delete')
+    created_by: PropertyRef = PropertyRef('created_by')
     updated_by: PropertyRef = PropertyRef('updated_by')
     user_count: PropertyRef = PropertyRef('user_count')
     channel_count: PropertyRef = PropertyRef('channel_count')
@@ -51,14 +52,14 @@ class SlackGroupToCreatorRelProperties(CartographyRelProperties):
 
 
 @dataclass(frozen=True)
-# (:SlackUser)<-[:CREATED_BY]-(:SlackGroup)
+# (:SlackUser)-[:CREATED]->(:SlackGroup)
 class SlackGroupToCreatorRel(CartographyRelSchema):
     target_node_label: str = 'SlackUser'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'id': PropertyRef('created_by')},
     )
-    direction: LinkDirection = LinkDirection.OUTWARD
-    rel_label: str = "CREATED_BY"
+    direction: LinkDirection = LinkDirection.INWARD
+    rel_label: str = "CREATED"
     properties: SlackGroupToCreatorRelProperties = SlackGroupToCreatorRelProperties()
 
 

@@ -68,7 +68,6 @@ def load_groups(
     team_id: str,
     update_tag: int,
 ) -> None:
-
     load(
         neo4j_session,
         SlackGroupSchema(),

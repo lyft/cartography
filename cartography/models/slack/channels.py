@@ -15,7 +15,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 class SlackChannelNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    name: PropertyRef = PropertyRef('name')
+    name: PropertyRef = PropertyRef('name', extra_index=True)
     is_private: PropertyRef = PropertyRef('is_private')
     created: PropertyRef = PropertyRef('created')
     is_archived: PropertyRef = PropertyRef('is_archived')
@@ -33,14 +33,14 @@ class SlackChannelToSlackUserRelProperties(CartographyRelProperties):
 
 
 @dataclass(frozen=True)
-# (:SlackUser)<-[:CREATED_BY]-(:SlackChannel)
+# (:SlackUser)-[:CREATED]->(:SlackChannel)
 class SlackChannelToCreatorRel(CartographyRelSchema):
     target_node_label: str = 'SlackUser'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'id': PropertyRef('creator')},
     )
-    direction: LinkDirection = LinkDirection.OUTWARD
-    rel_label: str = "CREATED_BY"
+    direction: LinkDirection = LinkDirection.INWARD
+    rel_label: str = "CREATED"
     properties: SlackChannelToSlackUserRelProperties = SlackChannelToSlackUserRelProperties()
 
 

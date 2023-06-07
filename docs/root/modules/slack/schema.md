@@ -96,7 +96,7 @@ Representation of a single User in Slack.
 - A SlackChannel is created by a SlackUser
 
     ```
-    (SlackUser)<-[:CREATED_BY]-(SlackChannel)
+    (SlackUser)-[:CREATED]->(SlackChannel)
     ```
 
 - A SlackUser is a member of a SlackChannel
@@ -114,7 +114,7 @@ Representation of a single User in Slack.
 - A SlackGroup is created by a SlackUser
 
     ```
-    (SlackUser)<-[CREATED_BY]-(SlackGroup)
+    (SlackUser)-[CREATED]->(SlackGroup)
     ```
 
 
@@ -148,7 +148,7 @@ Representation of a single Channel in Slack.
 - A SlackChannel is created by a SlackUser
 
     ```
-    (SlackUser)<-[:CREATED_BY]-(SlackChannel)
+    (SlackUser)-[:CREATED]->(SlackChannel)
     ```
 
 - A SlackUser is a member of a SlackChannel
@@ -208,5 +208,5 @@ Representation of a single Group in Slack.
 - A SlackGroup is created by a SlackUser
 
     ```
-    (SlackUser)<-[CREATED_BY]-(SlackGroup)
+    (SlackUser)-[CREATED]->(SlackGroup)
     ```

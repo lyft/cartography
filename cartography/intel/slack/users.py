@@ -46,7 +46,6 @@ def load_users(
     team_id: str,
     update_tag: int,
 ) -> None:
-
     load(
         neo4j_session,
         SlackUserSchema(),
