@@ -9,8 +9,8 @@ import neo4j
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
 from cartography.models.duo.group import DuoGroupSchema
+from cartography.parallel_pre_fetch import pre_fetcher
 from cartography.util import timeit
-
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,7 @@ def sync_duo_groups(
     _cleanup_groups(neo4j_session, common_job_parameters)
 
 
+# @pre_fetcher.register_func_v2([], namespace='duo_get')
 @timeit
 def _get_groups(client: duo_client.Admin) -> List[Dict[str, Any]]:
     '''

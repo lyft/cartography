@@ -10,7 +10,9 @@ import neo4j
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
 from cartography.models.duo.endpoint import DuoEndpointSchema
+from cartography.parallel_pre_fetch import pre_fetcher
 from cartography.util import timeit
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,15 @@ def sync_duo_endpoints(
     _cleanup_endpoints(neo4j_session, common_job_parameters)
 
 
+def yeild_args():
+    from cartography.intel.duo import get_client
+    from cartography.parallel_pre_fetch import call
+    print('yielding')
+    yield call(get_client())
+
+
+# # @pre_fetcher.register_func_v2([], namespace='duo_get')
+@pre_fetcher.register_func_v2(yeild_args())
 @timeit
 def _get_endpoints(client: duo_client.Admin) -> List[Dict[str, Any]]:
     '''
