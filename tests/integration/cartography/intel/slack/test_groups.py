@@ -88,8 +88,8 @@ def test_load_slack_groups(neo4j_session):
         neo4j_session,
         'SlackGroup', 'id',
         'SlackUser', 'id',
-        'CREATED_BY',
-        rel_direction_right=True,
+        'CREATED',
+        rel_direction_right=False,
     ) == expected_rels
 
     # Assert groups are connected to Members

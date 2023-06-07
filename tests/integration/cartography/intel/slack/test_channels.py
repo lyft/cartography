@@ -78,8 +78,8 @@ def test_load_slack_channels(neo4j_session):
         neo4j_session,
         'SlackChannel', 'id',
         'SlackUser', 'id',
-        'CREATED_BY',
-        rel_direction_right=True,
+        'CREATED',
+        rel_direction_right=False,
     ) == expected_rels
 
     # Assert Channels are connected to Members
