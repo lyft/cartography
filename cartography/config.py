@@ -103,6 +103,8 @@ class Config:
     :param duo_api_key: The Duo api secret. Optional.
     :type duo_api_hostname: str
     :param duo_api_hostname: The Duo api hostname, e.g. "api-abc123.duosecurity.com". Optional.
+    :type: gandi_apikey: str
+    :param gandi_apikey: API authentication key for Gandi. Optional.
     """
 
     def __init__(
@@ -157,6 +159,7 @@ class Config:
         duo_api_key=None,
         duo_api_secret=None,
         duo_api_hostname=None,
+        gandi_apikey=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -208,3 +211,4 @@ class Config:
         self.duo_api_key = duo_api_key
         self.duo_api_secret = duo_api_secret
         self.duo_api_hostname = duo_api_hostname
+        self.gandi_apikey = gandi_apikey

@@ -500,6 +500,14 @@ class CLI:
                 'The Duo api hostname'
             ),
         )
+        parser.add_argument(
+            '--gandi-apikey-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the gandi API key for authentication.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -665,6 +673,13 @@ class CLI:
             )
             config.duo_api_key = os.environ.get(config.duo_api_key_env_var)
             config.duo_api_secret = os.environ.get(config.duo_api_secret_env_var)
+
+        # Gandi config
+        if config.gandi_apikey_env_var:
+            logger.debug(f"Reading API key for Gandi from environment variable {config.gandi_apikey_env_var}")
+            config.gandi_apikey = os.environ.get(config.gandi_apikey_env_var)
+        else:
+            config.gandi_apikey = None
 
         # Run cartography
         try:
