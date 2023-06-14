@@ -54,26 +54,27 @@ def transform(domains: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List
                 "rsset_value": ns,
                 "registered_domain": dom['fqdn'],
             })
-        # Extract records
-        for rec in dom['records']:
-            rec['rrset_value'] = ','.join(rec['rrset_values'])
-            if rec['rrset_name'] == '@':
-                rec['id'] = rec['rrset_values'][0]
-            else:
-                rec['id'] = f"{rec['rrset_name']}.{dom['fqdn']}+{rec['rrset_type']}"
-            rec['registered_domain'] = dom['fqdn']
-            # Split on IPs
-            if rec['rrset_type'] in ['A', 'AAAA']:
-                if len(rec['rrset_values']) >= 1:
-                    for ip in rec['rrset_values']:
-                        splited_record = rec.copy()
-                        splited_record['resolved_ip'] = ip
-                        ips.add(ip)
-                        records.append(splited_record)
+        if "gandilivedns" in dom['services']:
+            # Extract records
+            for rec in dom['records']:
+                rec['rrset_value'] = ','.join(rec['rrset_values'])
+                if rec['rrset_name'] == '@':
+                    rec['id'] = rec['rrset_values'][0]
+                else:
+                    rec['id'] = f"{rec['rrset_name']}.{dom['fqdn']}+{rec['rrset_type']}"
+                rec['registered_domain'] = dom['fqdn']
+                # Split on IPs
+                if rec['rrset_type'] in ['A', 'AAAA']:
+                    if len(rec['rrset_values']) >= 1:
+                        for ip in rec['rrset_values']:
+                            splited_record = rec.copy()
+                            splited_record['resolved_ip'] = ip
+                            ips.add(ip)
+                            records.append(splited_record)
+                    else:
+                        records.append(rec)
                 else:
                     records.append(rec)
-            else:
-                records.append(rec)
         zones.append(dom)
     # Format IPs
     formated_ips: List[Dict[str, Any]] = []
