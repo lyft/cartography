@@ -1,11 +1,15 @@
 import logging
 import os.path
 import time
+from typing import Any
+from typing import Dict
+from typing import List
 
 import neo4j.exceptions
 from marshmallow import ValidationError
 from neo4j import GraphDatabase
 
+from cartography.client.core.tx import read_list_of_dicts_tx
 from cartography.driftdetect.add_shortcut import add_shortcut
 from cartography.driftdetect.config import UpdateConfig
 from cartography.driftdetect.model import State
@@ -134,11 +138,14 @@ def get_state(session: neo4j.Session, state: State) -> None:
     :return:
     """
 
-    # TODO replace session.run() with a read_transaction
-    new_results: neo4j.Result = session.run(state.validation_query)
+    new_results: List[Dict[str, Any]] = session.read_transaction(
+        read_list_of_dicts_tx,
+        state.validation_query,
+    )
     logger.debug(f"Updating results for {state.name}")
 
-    state.properties = new_results.keys()
+    # The keys will be the same across all items in the returned list
+    state.properties = list(new_results[0].keys())
     results = []
 
     for record in new_results:
