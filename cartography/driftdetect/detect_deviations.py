@@ -1,15 +1,17 @@
 import logging
 import os
+from typing import List
+from typing import Union
 
 from marshmallow import ValidationError
 
+from cartography.driftdetect.config import GetDriftConfig
 from cartography.driftdetect.model import State
 from cartography.driftdetect.reporter import report_drift
 from cartography.driftdetect.serializers import ShortcutSchema
 from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.storage import FileSystem
 from cartography.driftdetect.util import valid_directory
-from cartography.driftdetect.config import GetDriftConfig
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +101,7 @@ def compare_states(start_state: State, end_state: State):
     for result in end_state.results:
         if tuple(result) in start_state_results:
             continue
-        drift = []
+        drift: List[Union[str, List[str]]] = []
         for field in result:
             value = field.split("|")
             if len(value) > 1:
