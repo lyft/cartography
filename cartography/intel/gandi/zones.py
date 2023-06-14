@@ -57,24 +57,27 @@ def transform(domains: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List
         if "gandilivedns" in dom['services']:
             # Extract records
             for rec in dom['records']:
-                rec['rrset_value'] = ','.join(rec['rrset_values'])
-                if rec['rrset_name'] == '@':
-                    rec['id'] = rec['rrset_values'][0]
-                else:
-                    rec['id'] = f"{rec['rrset_name']}.{dom['fqdn']}+{rec['rrset_type']}"
-                rec['registered_domain'] = dom['fqdn']
-                # Split on IPs
-                if rec['rrset_type'] in ['A', 'AAAA']:
-                    if len(rec['rrset_values']) >= 1:
+                # No value
+                if len(rec['rrset_values']) == 0:
+                    records.append(rec)
+                    continue
+                # 1 or more values
+                for value in rec['rrset_values']:
+                    rec_single = rec.copy()
+                    if rec_single['rrset_name'] == '@':
+                        rec['id'] = value
+                    else:
+                        rec_single['id'] = f"{rec['rrset_name']}.{dom['fqdn']}+{rec['rrset_type']}"
+                    rec_single['registered_domain'] = dom['fqdn']
+                    # Split on IPs
+                    if rec['rrset_type'] in ['A', 'AAAA']:
                         for ip in rec['rrset_values']:
-                            splited_record = rec.copy()
+                            splited_record = rec_single.copy()
                             splited_record['resolved_ip'] = ip
                             ips.add(ip)
                             records.append(splited_record)
                     else:
-                        records.append(rec)
-                else:
-                    records.append(rec)
+                        records.append(rec_single)
         zones.append(dom)
     # Format IPs
     formated_ips: List[Dict[str, Any]] = []
