@@ -50,7 +50,7 @@ def transform(domains: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List
             records.append({
                 "id": f"{ns}+NS",
                 "rsset_name": "@",
-                "rsset_type": "NS",
+                "rrset_type": "NS",
                 "rsset_value": ns,
                 "registered_domain": dom['fqdn'],
             })
