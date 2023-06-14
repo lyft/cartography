@@ -30,6 +30,10 @@
 			"iterative": false
 		},
 		{
+			"query": "MATCH (:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(acc:AzureCosmosDBAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET acc.exposed_internet = true, (CASE WHEN NOT 'public_ip' IN coalesce(acc.exposed_internet_type, []) THEN acc END).exposed_internet_type = coalesce(acc.exposed_internet_type, []) + 'public_ip';",
+			"iterative": false
+		},
+		{
 			"query": "MATCH (sql:AzureCosmosDBSqlDatabase)<-[:CONTAINS]-(acc:AzureCosmosDBAccount{exposed_internet: true})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET sql.exposed_internet = true, sql.exposed_internet_type = acc.exposed_internet_type;",
 			"iterative": false
 		},
