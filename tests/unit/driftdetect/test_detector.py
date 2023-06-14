@@ -54,6 +54,7 @@ def test_state_picks_up_drift():
         {key: "7"},
     ]
 
+    # Arrange
     mock_result.__getitem__.side_effect = results.__getitem__
     mock_result.__iter__.side_effect = results.__iter__
     mock_session.run.return_value = mock_result
@@ -62,10 +63,49 @@ def test_state_picks_up_drift():
     state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
     get_state(mock_session, state_new)
     state_new.properties = state_old.properties
+
+    # Act
     drifts = compare_states(state_old, state_new)
+
+    # Assert
     mock_session.run.assert_called_with(state_new.validation_query)
     assert drifts
     assert ["7"] in drifts
+
+
+def test_state_order_does_not_matter():
+    """
+    Test that a state that detects drift.
+    :return:
+    """
+    key = "d.test"
+    mock_session = MagicMock()
+    mock_result = MagicMock()
+    results = [
+        {key: "1"},
+        {key: "2"},
+        {key: "6"},  # This one is out of order
+        {key: "3"},
+        {key: "4"},
+        {key: "5"},
+    ]
+
+    # Arrange
+    mock_result.__getitem__.side_effect = results.__getitem__
+    mock_result.__iter__.side_effect = results.__iter__
+    mock_session.run.return_value = mock_result
+    data = FileSystem.load("tests/data/detectors/test_expectations.json")
+    state_old = StateSchema().load(data)
+    state_new = State(state_old.name, state_old.validation_query, state_old.properties, [])
+    get_state(mock_session, state_new)
+    state_new.properties = state_old.properties
+
+    # Act
+    drifts = compare_states(state_old, state_new)
+
+    # Assert
+    mock_session.run.assert_called_with(state_new.validation_query)
+    assert not drifts
 
 
 def test_state_multiple_expectations():

@@ -3,16 +3,18 @@ import os
 
 from marshmallow import ValidationError
 
+from cartography.driftdetect.model import State
 from cartography.driftdetect.reporter import report_drift
 from cartography.driftdetect.serializers import ShortcutSchema
 from cartography.driftdetect.serializers import StateSchema
 from cartography.driftdetect.storage import FileSystem
 from cartography.driftdetect.util import valid_directory
+from cartography.driftdetect.config import GetDriftConfig
 
 logger = logging.getLogger(__name__)
 
 
-def run_drift_detection(config):
+def run_drift_detection(config: GetDriftConfig) -> None:
     try:
         if not valid_directory(config.query_directory):
             logger.error("Invalid Drift Detection Directory")
@@ -59,7 +61,7 @@ def run_drift_detection(config):
         logger.exception(msg)
 
 
-def perform_drift_detection(start_state, end_state):
+def perform_drift_detection(start_state: State, end_state: State):
     """
     Returns differences (additions and missing results) between two States.
 
@@ -81,7 +83,7 @@ def perform_drift_detection(start_state, end_state):
     return new_results, missing_results
 
 
-def compare_states(start_state, end_state):
+def compare_states(start_state: State, end_state: State):
     """
     Helper function for comparing differences between two States.
 
@@ -92,8 +94,10 @@ def compare_states(start_state, end_state):
     :return: list of tuples of differences between states in the form (dictionary, State object)
     """
     differences = []
+    # Use set for faster membership check
+    start_state_results = {tuple(res) for res in start_state.results}
     for result in end_state.results:
-        if result in start_state.results:
+        if tuple(result) in start_state_results:
             continue
         drift = []
         for field in result:
