@@ -250,7 +250,7 @@ def load_load_balancer_v2_target_groups(
 
 @timeit
 def load_load_balancer_v2_target_group_targets(
-        neo4j_session: neo4j.Session, rule_data: Dict, lb_data: Dict, current_aws_account_id: str, update_tag: int
+        neo4j_session: neo4j.Session, rule_data: Dict, lb_data: Dict, current_aws_account_id: str, update_tag: int,
 ) -> None:
     """Create target group relationships from ELBV2Actions to targets"""
 
@@ -309,7 +309,7 @@ def load_load_balancer_v2_target_group_targets(
                 MERGE (aa)-[r:RESOURCE]->(lb)
                 ON CREATE SET r.firstseen = timestamp()
                 SET r.lastupdated = $update_tag
-            """
+            """,
     }
 
     for action in rule_data['Actions']:
