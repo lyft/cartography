@@ -152,6 +152,29 @@ def sync_database_account_data_resources(
         _load_database_account_write_locations(neo4j_session, database_account, azure_update_tag)
         _load_database_account_read_locations(neo4j_session, database_account, azure_update_tag)
         _load_database_account_associated_locations(neo4j_session, database_account, azure_update_tag)
+        _load_database_account_associated_iprules(neo4j_session, database_account, azure_update_tag)
+
+
+@timeit
+def _load_database_account_associated_iprules(neo4j_session: neo4j.Session, database_account: Dict, azure_update_tag: int,
+                                              ) -> None:
+    """Relationship between Azure Cosmos DB And Public Ip Addresses in Cartography """
+    ingest_iprules = """
+        UNWIND $ip_rules_list as ip_rule
+        MATCH (ip:AzurePublicIPAddress{ipAddress: ip_rule})
+        WITH ip
+        MATCH (d:AzureCosmosDBAccount{id: $DatabaseAccountId})
+        MERGE (d)-[r:MEMBER_PUBLIC_IP_ADDRESS]->(ip)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $azure_update_tag
+        """
+
+    neo4j_session.run(
+        ingest_iprules,
+        ip_rules_list=database_account.get('ipruleslist', []),
+        DatabaseAccountId=database_account.get('id'),
+        azure_update_tag=azure_update_tag,
+    )
 
 
 @timeit
