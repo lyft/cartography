@@ -152,11 +152,11 @@ def sync_database_account_data_resources(
         _load_database_account_write_locations(neo4j_session, database_account, azure_update_tag)
         _load_database_account_read_locations(neo4j_session, database_account, azure_update_tag)
         _load_database_account_associated_locations(neo4j_session, database_account, azure_update_tag)
-        _load_dadabase_account_associated_iprules(neo4j_session, database_account, azure_update_tag)
+        _load_database_account_associated_iprules(neo4j_session, database_account, azure_update_tag)
 
 
 @timeit
-def _load_dadabase_account_associated_iprules(neo4j_session: neo4j.Session, database_account: Dict, azure_update_tag: int,
+def _load_database_account_associated_iprules(neo4j_session: neo4j.Session, database_account: Dict, azure_update_tag: int,
                                               ) -> None:
     """Relationship between Azure Cosmos DB And Public Ip Addresses in Cartography """
     ingest_iprules = """
