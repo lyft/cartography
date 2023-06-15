@@ -65,7 +65,7 @@ def transform(domains: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List
                 for value in rec['rrset_values']:
                     rec_single = rec.copy()
                     if rec_single['rrset_name'] == '@':
-                        rec['id'] = value
+                        rec_single['id'] = value
                     else:
                         rec_single['id'] = f"{rec['rrset_name']}.{dom['fqdn']}+{rec['rrset_type']}"
                     rec_single['registered_domain'] = dom['fqdn']
