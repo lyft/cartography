@@ -447,7 +447,7 @@ def load_server_details(
     _load_databases(neo4j_session, databases, update_tag)
     _load_firewall_rules(neo4j_session, fw_rules, update_tag)
     network_client = network.get_network_client(credentials, subscription_id)
-    public_ips = [ip['ip_address'] for ip in network.get_public_ip_addresses_list(network_client, None, common_job_parameters)]
+    public_ips = [ip.get('ip_address') for ip in network.get_public_ip_addresses_list(network_client, None, common_job_parameters) if ip.get('ip_address')]
 
     for fw_rule in fw_rules:
         ip_range = iter_iprange(fw_rule['start_ip_address'], fw_rule['end_ip_address'])
