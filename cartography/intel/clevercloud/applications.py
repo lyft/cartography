@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
+import dns.resolver
 
 import neo4j
 from requests_oauthlib import OAuth1Session
@@ -92,7 +93,10 @@ def load(
 
     # Link apps to VHosts
     for link in apps_vhosts:
-        ingest_dns_record_by_fqdn(
-            neo4j_session, common_job_parameters['UPDATE_TAG'], link['fqdn'], link['app_id'],
-            record_label="CleverCloudApplication", dns_node_additional_label="CleverCloudDNSRecord",
-        )
+        try:
+            ingest_dns_record_by_fqdn(
+                neo4j_session, common_job_parameters['UPDATE_TAG'], link['fqdn'], link['app_id'],
+                record_label="CleverCloudApplication", dns_node_additional_label="CleverCloudDNSRecord",
+            )
+        except dns.resolver.NXDOMAIN:
+            logger.warning("DNS resolution failed for %s", link['fqdn'])
