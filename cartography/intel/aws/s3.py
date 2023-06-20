@@ -43,7 +43,7 @@ def get_s3_bucket_list(boto3_session: boto3.session.Session) -> List[Dict]:
                 bucket['Region'] = 'us-east-1'
         except ClientError as e:
             if _is_common_exception(e, bucket):
-                bucket['Region'] = 'us-east-1'
+                bucket['Region'] = None
                 logger.warning("skipping bucket='{}' due to exception.".format(bucket['Name']))
                 continue
             else:
