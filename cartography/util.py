@@ -1,9 +1,12 @@
+import asyncio
 import logging
 import re
 import sys
+from functools import partial
 from functools import wraps
 from string import Template
 from typing import Any
+from typing import Awaitable
 from typing import BinaryIO
 from typing import Callable
 from typing import cast
@@ -24,6 +27,7 @@ from cartography.graph.job import GraphJob
 from cartography.graph.statement import get_job_shortname
 from cartography.stats import get_stats_client
 from cartography.stats import ScopedStatsClient
+
 
 if sys.version_info >= (3, 7):
     from importlib.resources import open_binary, read_text
@@ -297,3 +301,27 @@ def batch(items: Iterable, size: int = DEFAULT_BATCH_SIZE) -> List[List]:
         items[i: i + size]
         for i in range(0, len(items), size)
     ]
+
+
+def to_async(func: Callable, *args: Any, **kwargs: Any) -> asyncio.Future:
+    '''
+    Returns a Future that will run a function in the default threadpool.
+    Helper until we start using pytohn 3.9's asyncio.to_thread
+
+    example:
+    future = to_async(my_func, my_arg, my_arg2)
+    to_sync(future)
+    '''
+    call = partial(func, *args, **kwargs)
+    return asyncio.get_event_loop().run_in_executor(None, call)
+
+
+def to_sync(*awaitables: Awaitable[Any]) -> Any:
+    '''
+    Waits for the Awaitable(s) to complete and returns their result(s).
+    See https://docs.python.org/3.8/library/asyncio-task.html#asyncio-awaitables
+
+    example:
+    result = to_sync(my_async_func(my_arg), another_async(my_arg2)))
+    '''
+    return asyncio.get_event_loop().run_until_complete(asyncio.gather(*awaitables))

@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 from typing import Dict
 from typing import List
 
@@ -9,6 +10,8 @@ from cartography.util import aws_handle_regions
 from cartography.util import batch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+from cartography.util import to_async
+from cartography.util import to_sync
 
 logger = logging.getLogger(__name__)
 
@@ -148,9 +151,12 @@ def sync(
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
         image_data = {}
         repositories = get_ecr_repositories(boto3_session, region)
-        for repo in repositories:
-            repo_image_obj = get_ecr_repository_images(boto3_session, region, repo['repositoryName'])
+
+        async def async_get_images(repo: Dict[str, Any]) -> None:
+            repo_image_obj = await to_async(get_ecr_repository_images, boto3_session, region, repo['repositoryName'])
             image_data[repo['repositoryUri']] = repo_image_obj
+        to_sync(*[async_get_images(repo) for repo in repositories])
+
         load_ecr_repositories(neo4j_session, repositories, region, current_aws_account_id, update_tag)
         repo_images_list = transform_ecr_repository_images(image_data)
         load_ecr_repository_images(neo4j_session, repo_images_list, region, update_tag)
