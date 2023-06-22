@@ -217,9 +217,9 @@ def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseCl
             try:
                 response = client.get_client_certificate(clientCertificateId=stage['clientCertificateId'])
                 response['stageName'] = stage['stageName']
-                certificates.extend(response)
+                certificates.append(response)
             except ClientError as e:
-                logger.warning(f"Failed to retrive Client Certificate for Stage {stage['stageName']} - {e}")
+                logger.warning(f"Failed to retrieve Client Certificate for Stage {stage['stageName']} - {e}")
                 raise
         else:
             return []
@@ -230,9 +230,14 @@ def get_rest_api_client_certificate(stages: Dict, client: botocore.client.BaseCl
 @timeit
 def transform_rest_api_client_certificate(certs: List[Dict], api_region: str, aws_account_id: str) -> List[Dict]:
     certificates = []
+
+    # neo4j does not accept datetime objects and values. This loop is used to convert date values to string.
     for certificate in certs:
-        # console_arn = f"arn:aws:apigateway:{api_region}:{aws_account_id}:clientcertificates/{certificate['clientCertificateId']}"
-        # certificate['consolelink'] = aws_console_link.get_console_link(arn=console_arn)
+        certificate['region'] = api_region
+        certificate['createdDate'] = str(certificate['createdDate'])
+        certificate['expirationDate'] = str(certificate.get('expirationDate'))
+        certificate['arn'] = f"arn:aws:apigateway:{api_region}:{aws_account_id}:clientcertificates/{certificate['clientCertificateId']}"
+        # certificate['consolelink'] = aws_console_link.get_console_link(arn=certificate['arn'])
 
         certificates.append(certificate)
 
@@ -408,12 +413,6 @@ def _load_apigateway_certificates(
     SET r.lastupdated = $UpdateTag
     """
 
-    # neo4j does not accept datetime objects and values. This loop is used to convert
-    # these values to string.
-    for certificate in certificates:
-        certificate['createdDate'] = str(certificate['createdDate'])
-        certificate['expirationDate'] = str(certificate.get('expirationDate'))
-        certificate['arn'] = f"arn:aws:apigateway:{certificate['region']}:{certificate['aws_account_id']}:clientcertificates/{certificate['clientCertificateId']}"
     neo4j_session.run(
         ingest_certificates,
         certificates_list=certificates,
@@ -488,12 +487,12 @@ def load_rest_api_details(
 
             resources.extend(resource)
 
-        if certificate:
-            certificate['apiId'] = api_id
-            certificate['region'] = region
-            certificate['aws_account_id'] = aws_account_id
+        if len(certificate) > 0:
+            for cert in certificate:
+                cert['apiId']: api_id
+                cert['region']: region
 
-            certificates.append(certificate)
+            certificates.extend(certificate)
 
     # cleanup existing properties
     run_cleanup_job(
