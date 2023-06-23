@@ -130,6 +130,7 @@ class Config:
         okta_api_key=None,
         okta_saml_role_regex=None,
         github_config=None,
+        github_integration=None,
         digitalocean_token=None,
         permission_relationships_file=None,
         jamf_base_uri=None,
@@ -181,6 +182,7 @@ class Config:
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
         self.github_config = github_config
+        self.github_integration = github_integration
         self.digitalocean_token = digitalocean_token
         self.permission_relationships_file = permission_relationships_file
         self.jamf_base_uri = jamf_base_uri
