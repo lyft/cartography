@@ -311,6 +311,10 @@ def to_async(func: Callable, *args: Any, **kwargs: Any) -> asyncio.Future:
     example:
     future = to_async(my_func, my_arg, my_arg2)
     to_sync(future)
+
+    NOTE: to use this in a Jupyter notebook, you need to do:
+    # import nest_asyncio
+    # nest_asyncio.apply()
     '''
     call = partial(func, *args, **kwargs)
     return asyncio.get_event_loop().run_in_executor(None, call)
