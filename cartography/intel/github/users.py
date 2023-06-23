@@ -142,8 +142,8 @@ def sync(
         common_job_parameters: Dict[str, Any],
         github_api_key: str,
         github_url: str,
-        integration_auth: bool,
         organization: str,
+        integration_auth: bool,
 ) -> None:
     logger.info("Syncing GitHub users")
     user_data, org_data = get(github_api_key, github_url, organization, integration_auth)

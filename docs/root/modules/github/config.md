@@ -34,4 +34,5 @@ Follow these steps to analyze GitHub repos and other objects with Cartography.
        and the resulting environment variable would be ```eyJvcmdhbml6YXRpb24iOiBbeyJ0b2tlbiI6ICJmYWtldG9rZW4iLCAidXJsIjogImh0dHBzOi8vYXBpLmdpdGh1Yi5jb20vZ3JhcGhxbCIsICJuYW1lIjogImZha2VvcmcifSwgeyJ0b2tlbiI6ICJzdGlsbGZha2UiLCAidXJsIjogImh0dHBzOi8vZ2l0aHViLmV4YW1wbGUuY29tL2FwaS9ncmFwaHFsIiwgIm5hbWUiOiAiZmFrZW9yZyJ9XX0=```
 1. Populate an environment variable of your choice with the contents of the base64 output from the previous step.
 1. Call the `cartography` CLI with `--github-config-env-var YOUR_ENV_VAR_HERE`.
+1. If you use a GitHub App token, you must use `--github-integration` to remove forbiden field (like user email) from requests.
 1. `cartography` will then load your graph with data from all the organizations you specified.

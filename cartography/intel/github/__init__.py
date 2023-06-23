@@ -39,6 +39,7 @@ def start_github_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
                 auth_data['token'],
                 auth_data['url'],
                 auth_data['name'],
+                config.github_integration,
             )
             cartography.intel.github.repos.sync(
                 neo4j_session,
