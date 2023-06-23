@@ -563,5 +563,5 @@ def sync(
     logger.info("Syncing GitHub repos")
     repos_json = get(github_api_key, github_url, organization)
     repo_data = transform(repos_json)
-    load(neo4j_session, common_job_parameters['UPDATE_TAG'], repo_data)
+    load(neo4j_session, common_job_parameters, repo_data)
     run_cleanup_job('github_repos_cleanup.json', neo4j_session, common_job_parameters)
