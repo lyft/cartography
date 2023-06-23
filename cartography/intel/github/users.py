@@ -57,9 +57,7 @@ GITHUB_ORG_USERS_PAGINATED_GRAPHQL_FOR_INTEGRATION = """
                         url
                         login
                         name
-                        company
                     }
-                    role
                 }
                 pageInfo{
                     endCursor
