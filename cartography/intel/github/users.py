@@ -85,6 +85,7 @@ def get(token: str, api_url: str, organization: str, integration_auth: bool) -> 
     for shape, and 2. data on the owning GitHub organization - see tests.data.github.users.GITHUB_ORG_DATA for shape.
     """
     if integration_auth:
+        logger.info('Using GraphQL query for integration token, not requesting email addresses.')
         query = GITHUB_ORG_USERS_PAGINATED_GRAPHQL_FOR_INTEGRATION
     else:
         query = GITHUB_ORG_USERS_PAGINATED_GRAPHQL
