@@ -665,6 +665,9 @@ class CLI:
             )
             config.duo_api_key = os.environ.get(config.duo_api_key_env_var)
             config.duo_api_secret = os.environ.get(config.duo_api_secret_env_var)
+        else:
+            config.duo_api_key = None
+            config.duo_api_secret = None
 
         # Run cartography
         try:
