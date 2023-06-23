@@ -80,7 +80,7 @@ def load_organization_users(
 
     UNWIND $UserData as user
 
-    MERGE (u:GitHubUser{id: user.node.id})
+    MERGE (u:GitHubUser{id: user.node.url})
     ON CREATE SET u.firstseen = timestamp()
     SET u.fullname = user.node.name,
     u.username = user.node.login,
