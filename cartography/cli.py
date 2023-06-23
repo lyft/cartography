@@ -287,14 +287,6 @@ class CLI:
             ),
         )
         parser.add_argument(
-            '--github-integration',
-            action='store_true',
-            help=(
-                'This flag indicates that the token is an integration token.'
-                'Note that some data, such as user emails, cannot be retrieved using an integration token.'
-            ),
-        )
-        parser.add_argument(
             '--digitalocean-token-env-var',
             type=str,
             default=None,

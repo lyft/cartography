@@ -44,55 +44,23 @@ GITHUB_ORG_USERS_PAGINATED_GRAPHQL = """
     }
     """
 
-GITHUB_ORG_USERS_PAGINATED_GRAPHQL_FOR_INTEGRATION = """
-    query($login: String!, $cursor: String) {
-    organization(login: $login)
-        {
-            url
-            login
-            membersWithRole(first:100, after: $cursor){
-                edges {
-                    hasTwoFactorEnabled
-                    node {
-                        id
-                        login
-                        name
-                    }
-                    role
-                }
-                pageInfo{
-                    endCursor
-                    hasNextPage
-                }
-            }
-        }
-    }
-    """
-
 
 @timeit
-def get(token: str, api_url: str, organization: str, integration_auth: bool) -> Tuple[List[Dict], Dict]:
+def get(token: str, api_url: str, organization: str) -> Tuple[List[Dict], Dict]:
     """
     Retrieve a list of users from the given GitHub organization as described in
     https://docs.github.com/en/graphql/reference/objects#organizationmemberedge.
     :param token: The Github API token as string.
     :param api_url: The Github v4 API endpoint as string.
     :param organization: The name of the target Github organization as string.
-    :param integration_auth: Flag indicating that the token is an integration token.
     :return: A 2-tuple containing 1. a list of dicts representing users - see tests.data.github.users.GITHUB_USER_DATA
     for shape, and 2. data on the owning GitHub organization - see tests.data.github.users.GITHUB_ORG_DATA for shape.
     """
-    if integration_auth:
-        logger.info('Using GraphQL query for integration token, not requesting email addresses.')
-        query = GITHUB_ORG_USERS_PAGINATED_GRAPHQL_FOR_INTEGRATION
-        logger.info(query)
-    else:
-        query = GITHUB_ORG_USERS_PAGINATED_GRAPHQL
     users, org = fetch_all(
         token,
         api_url,
         organization,
-        query,
+        GITHUB_ORG_USERS_PAGINATED_GRAPHQL,
         'membersWithRole',
     )
     return users.edges, org
@@ -143,10 +111,9 @@ def sync(
         github_api_key: str,
         github_url: str,
         organization: str,
-        integration_auth: bool,
 ) -> None:
     logger.info("Syncing GitHub users")
-    user_data, org_data = get(github_api_key, github_url, organization, integration_auth)
+    user_data, org_data = get(github_api_key, github_url, organization)
     load_organization_users(neo4j_session, user_data, org_data, common_job_parameters['UPDATE_TAG'])
     run_cleanup_job('github_users_cleanup.json', neo4j_session, common_job_parameters)
     merge_module_sync_metadata(
