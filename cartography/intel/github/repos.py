@@ -7,7 +7,6 @@ from typing import List
 from typing import Optional
 
 import neo4j
-from packaging._tokenizer import ParserSyntaxError
 from packaging.requirements import InvalidRequirement
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
@@ -315,12 +314,6 @@ def _transform_python_requirements(
             req = Requirement(stripped_line)
             parsed_list.append(req)
         except InvalidRequirement:
-            # INFO and not WARN/ERROR as we intentionally don't support all ways to specify Python requirements
-            logger.info(
-                f"Failed to parse line \"{line}\" in repo {repo_url}'s requirements.txt; skipping line.",
-                exc_info=True,
-            )
-        except ParserSyntaxError:
             # INFO and not WARN/ERROR as we intentionally don't support all ways to specify Python requirements
             logger.info(
                 f"Failed to parse line \"{line}\" in repo {repo_url}'s requirements.txt; skipping line.",

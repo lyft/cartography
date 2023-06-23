@@ -54,10 +54,11 @@ GITHUB_ORG_USERS_PAGINATED_GRAPHQL_FOR_INTEGRATION = """
                 edges {
                     hasTwoFactorEnabled
                     node {
-                        url
+                        id
                         login
                         name
                     }
+                    role
                 }
                 pageInfo{
                     endCursor
