@@ -362,20 +362,27 @@ def sync_function_apps_conf(
 
 def get_function_apps_functions_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient, common_job_parameters: Dict
+        client: WebSiteManagementClient,
+        common_job_parameters: Dict
 ) -> List[Dict]:
-    try:
         function_apps_functions_list: List[Dict] = []
         for function in function_apps_list:
-            functions_list = list(
-                map(
-                    lambda x: x.as_dict(),
-                    client.web_apps.list_functions(
-                        function['resource_group'],
-                        function['name'],
+            functions_list = []
+
+            try:
+                functions_list = list(
+                    map(
+                        lambda x: x.as_dict(),
+                        client.web_apps.list_functions(
+                            function['resource_group'],
+                            function['name'],
+                        ),
                     ),
-                ),
-            )
+                )
+
+            except HttpResponseError as e:
+                logger.warning(f"Error while retrieving function_apps functions - {e}")
+                functions_list = []
 
             for fun in functions_list:
                 x = fun['id'].split('/')
@@ -387,12 +394,10 @@ def get_function_apps_functions_list(
                 fun["location"] = function.get("location", "global")
                 fun['consolelink'] = azure_console_link.get_console_link(
                     id=fun['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-            function_apps_functions_list.extend(functions_list)
-        return function_apps_functions_list
 
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving function_apps functions - {e}")
-        return []
+            function_apps_functions_list.extend(functions_list)
+
+        return function_apps_functions_list
 
 
 def _load_function_apps_functions_tx(
