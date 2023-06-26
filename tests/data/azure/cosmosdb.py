@@ -21,6 +21,7 @@ DESCRIBE_DATABASE_ACCOUNTS = [
         "database_account_offer_type": "Standard",
         "disable_key_based_metadata_write_access": False,
         "enable_free_tier": False,
+        "ipruleslist": ["34.34.14.01"],
         "enable_analytical_storage": True,
         "consistency_policy": {
             "default_consistency_level": "Session",
@@ -130,6 +131,7 @@ DESCRIBE_DATABASE_ACCOUNTS = [
         "database_account_offer_type": "Standard",
         "disable_key_based_metadata_write_access": False,
         "enable_free_tier": False,
+        "ipruleslist": ["56.89.88.01"],
         "enable_analytical_storage": True,
         "consistency_policy": {
             "default_consistency_level": "Session",

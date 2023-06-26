@@ -4,7 +4,7 @@ from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Tuple
-
+import ipaddress
 import neo4j
 from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
@@ -20,7 +20,7 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 from . import network
 
-from netaddr import iter_iprange
+from netaddr import *
 
 logger = logging.getLogger(__name__)
 azure_console_link = AzureLinker()
@@ -453,7 +453,9 @@ def load_server_details(
         ip_range = iter_iprange(fw_rule['start_ip_address'], fw_rule['end_ip_address'])
         for ip in ip_range:
             if str(ip) in public_ips:
-                attach_firewall_rule_to_public_ip(neo4j_session, fw_rule['id'], str(ip), update_tag)
+                attach_firewall_rule_to_public_ip(neo4j_session, fw_rule, str(ip), "Azure", "Internal", update_tag)
+            elif not ipaddress.ip_address(str(ip)).is_private:
+                attach_firewall_rule_to_public_ip(neo4j_session, fw_rule, str(ip), "Azure", "External", update_tag)
 
     sync_database_details(neo4j_session, credentials, subscription_id, databases, update_tag, common_job_parameters)
 
@@ -517,24 +519,35 @@ def _load_firewall_rules(neo4j_session: neo4j.Session, fw_rules: List[Dict], upd
     )
 
 
-def attach_firewall_rule_to_public_ip(session: neo4j.Session, fw_rule, public_ip: str, update_tag: int) -> None:
-    session.write_transaction(_attach_firewall_rule_to_public_ip_tx, fw_rule, public_ip, update_tag)
+def attach_firewall_rule_to_public_ip(session: neo4j.Session, fw_rule: Dict, public_ip: str, source: str, type: str, update_tag: int) -> None:
+    session.write_transaction(_attach_firewall_rule_to_public_ip_tx, fw_rule, public_ip, source, type, update_tag)
 
 
-def _attach_firewall_rule_to_public_ip_tx(tx: neo4j.Transaction, fw_rule: str, public_ip: str, update_tag: int) -> None:
+def _attach_firewall_rule_to_public_ip_tx(tx: neo4j.Transaction, fw_rule: Dict, public_ip: str, source: str, type: str, update_tag: int) -> None:
     ingest_address = """
     MATCH (fwr:AzureFirewallRule{id: $fw_rule})
     WITH fwr
-    MATCH (ip:AzurePublicIPAddress{ipAddress: $public_ip})
+    MERGE (ip:AzurePublicIPAddress{ipAddress: $public_ip})
+    ON CREATE SET ip.firstseen = timestamp()
+    SET
+        ip.id =$public_ip,
+        ip.name=$public_ip,
+        ip.source =$source,
+        ip.type=$type,
+        ip.resource=$resource,
+        ip.ipAddress=$public_ip
     MERGE (fwr)-[r:MEMBER_PUBLIC_IP_ADDRESS]->(ip)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """
     tx.run(
         ingest_address,
-        fw_rule=fw_rule,
+        fw_rule=fw_rule['id'],
         public_ip=public_ip,
-        update_tag=update_tag,
+        source=source,
+        type=type,
+        resource=fw_rule['type'],
+        update_tag=update_tag
     )
 
 
