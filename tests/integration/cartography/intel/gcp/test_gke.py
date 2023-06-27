@@ -38,7 +38,7 @@ def test_load_gke_clusters(neo4j_session):
 
     expected_nodes = {
         # flake8: noqa
-        'projects/000000000000/clusters/test-cluster',
+        'projects/000000000000/location/europe-west2/clusters/test-cluster',
 
     }
 
