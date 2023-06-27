@@ -620,7 +620,7 @@ def get_roles_list(client: AuthorizationManagementClient, common_job_parameters:
 def get_managed_identity_list(client: ManagedServiceIdentityClient, subscription_id: str, common_job_parameters: Dict) -> List[Dict]:
     try:
         managed_identity_list = list(
-            map(lambda x: x.as_dict(), client.user_assigned_identities.list_by_subscription(subscription_id)),
+            map(lambda x: x.as_dict(), client.user_assigned_identities.list_by_subscription()),
         )
 
         for managed_identity in managed_identity_list:
@@ -776,18 +776,18 @@ def sync(
     common_job_parameters['AZURE_TENANT_ID'] = tenant_id
 
     try:
-        sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id,
-                          update_tag, common_job_parameters)
-        sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id,
-                           update_tag, common_job_parameters)
-        sync_tenant_applications(
-            neo4j_session, credentials.aad_graph_credentials,
-            tenant_id, update_tag, common_job_parameters)
-        sync_tenant_service_accounts(
-            neo4j_session, credentials.aad_graph_credentials,
-            tenant_id, update_tag, common_job_parameters,
-        )
-        sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
+        # sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id,
+        #                   update_tag, common_job_parameters)
+        # sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id,
+        #                    update_tag, common_job_parameters)
+        # sync_tenant_applications(
+        #     neo4j_session, credentials.aad_graph_credentials,
+        #     tenant_id, update_tag, common_job_parameters)
+        # sync_tenant_service_accounts(
+        #     neo4j_session, credentials.aad_graph_credentials,
+        #     tenant_id, update_tag, common_job_parameters,
+        # )
+        # sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
         # if common_job_parameters.get('pagination', {}).get('iam', None):
         #     if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
         #         sync_roles(
