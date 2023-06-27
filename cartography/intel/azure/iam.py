@@ -620,7 +620,7 @@ def get_roles_list(client: AuthorizationManagementClient, common_job_parameters:
 def get_managed_identity_list(client: ManagedServiceIdentityClient, subscription_id: str, common_job_parameters: Dict) -> List[Dict]:
     try:
         managed_identity_list = list(
-            map(lambda x: x.as_dict(), client.user_assigned_identities.list_by_subscription(subscription_id)),
+            map(lambda x: x.as_dict(), client.user_assigned_identities.list_by_subscription()),
         )
 
         for managed_identity in managed_identity_list:
