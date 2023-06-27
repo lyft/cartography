@@ -776,18 +776,18 @@ def sync(
     common_job_parameters['AZURE_TENANT_ID'] = tenant_id
 
     try:
-        # sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id,
-        #                   update_tag, common_job_parameters)
-        # sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id,
-        #                    update_tag, common_job_parameters)
-        # sync_tenant_applications(
-        #     neo4j_session, credentials.aad_graph_credentials,
-        #     tenant_id, update_tag, common_job_parameters)
-        # sync_tenant_service_accounts(
-        #     neo4j_session, credentials.aad_graph_credentials,
-        #     tenant_id, update_tag, common_job_parameters,
-        # )
-        # sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
+        sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id,
+                          update_tag, common_job_parameters)
+        sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id,
+                           update_tag, common_job_parameters)
+        sync_tenant_applications(
+            neo4j_session, credentials.aad_graph_credentials,
+            tenant_id, update_tag, common_job_parameters)
+        sync_tenant_service_accounts(
+            neo4j_session, credentials.aad_graph_credentials,
+            tenant_id, update_tag, common_job_parameters,
+        )
+        sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
         # if common_job_parameters.get('pagination', {}).get('iam', None):
         #     if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
         #         sync_roles(
