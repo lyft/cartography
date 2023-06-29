@@ -52,6 +52,8 @@ def get(slack_client: WebClient, team_id: str, cursor: Optional[str] = None) -> 
 def transform(groups: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     splitted_groups: List[Dict[str, Any]] = []
     for group in groups:
+        if len(group['description']) == 0:
+            group['description'] = None
         for ms in zip_longest(group['users'], group['prefs']['channels']):
             formated_group = group.copy()
             formated_group.pop('users')
