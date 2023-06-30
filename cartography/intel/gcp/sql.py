@@ -341,8 +341,11 @@ def _load_public_ip_address_tx(tx: neo4j.Transaction, instance: List[Dict], proj
     ON CREATE SET
         p.firstseen = timestamp()
     SET
-       p.IpAddress=ip.ipAddress,
-       p.type=ip.type,
+       p.IpAddress=ip,
+       p.id=ip,
+       p.type='Internal',
+       p.source='GCP',
+       p.resource='SQLInstance',
        p.lastupdated = $gcp_update_tag
     WITH p
     MATCH (i:GCPSQLInstance{id:$instanceId})

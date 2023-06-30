@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import time
+import ipaddress
 from collections import namedtuple
 from string import Template
 from typing import Any
@@ -1458,8 +1459,37 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
         )
         _attach_firewall_rules(neo4j_session, fw, gcp_update_tag)
         _attach_target_tags(neo4j_session, fw, gcp_update_tag)
+        _attach_firewall_public_ip_address(neo4j_session, fw, gcp_update_tag)
 
-
+@timeit
+def _attach_firewall_public_ip_address(neo4j_session: neo4j.Session, fw: Resource, gcp_update_tag: int) -> None:
+    ingest_public_ip_address="""
+    UNWIND $PublicIpAddress as ip
+        MERGE (i:GCPPublicIpAddress{ipAddress:ip})
+            ON CREATE SET i.firstseen = timestamp()
+            SET i.lastupdated = $gcp_update_tag,
+                i.IpAddress=ip,
+                i.id=ip,
+                i.type='Internal',
+                i.source='GCP',
+                i.resource='FirewallRule',
+                i.lastupdated = $gcp_update_tag         
+        with i
+            MATCH (p:GCPFirewall{id: $FwId})
+        with i,p
+         MERGE (p)-[r:MEMBER_OF_PUBLIC_IP_ADDRESS]->(i)
+         ON CREATE SET r.firstseen = timestamp()
+         SET
+         r.lastupdated = $gcp_update_tag       
+    """
+    public_ip_address=[ip for ip in fw.get('sourceRanges',[]) if not ipaddress.IPv4Network(str(ip).split('/')[0]).is_private]
+    neo4j_session.run(
+        query=ingest_public_ip_address,
+        PublicIpAddress=public_ip_address,
+        FwId=fw['id'],
+        gcp_update_tag=gcp_update_tag,
+    )
+    
 @timeit
 def _attach_firewall_rules(neo4j_session: neo4j.Session, fw: Resource, gcp_update_tag: int) -> None:
     """
