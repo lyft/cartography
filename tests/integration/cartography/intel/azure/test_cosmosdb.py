@@ -249,6 +249,43 @@ def test_load_database_account_associated_locations(neo4j_session):
     assert actual_nodes == expected_nodes
 
 
+def test_load_database_account_associated_iprules(neo4j_session):
+    # Create Test Azure Database Account
+    cosmosdb.load_database_account_data(
+        neo4j_session,
+        TEST_SUBSCRIPTION_ID,
+        DESCRIBE_DATABASE_ACCOUNTS,
+        TEST_UPDATE_TAG,
+    )
+    accounts = deepcopy(DESCRIBE_DATABASE_ACCOUNTS)
+    for database_account in accounts:
+        cosmosdb._load_database_account_associated_iprules(
+            neo4j_session,
+            database_account,
+            TEST_UPDATE_TAG,
+        )
+    expected = {
+        (
+            "34.34.14.01"
+        ),
+        (
+            "56.89.88.01"
+        ),
+
+    }
+    # Fetch relationships
+    result = neo4j_session.run(
+        """
+        MATCH (n1:AzureFirewallRule)-[:FIREWALL_RULE]->(n2:AzureCosmosDBAccount) RETURN n1.id, n2.id;
+        """,
+    )
+
+    actual = {
+        (r['n1.id'], r['n2.id']) for r in result
+    }
+    assert actual == expected
+
+
 def test_load_database_account_associated_locations_relationships(neo4j_session):
     # Create Test Azure Database Account
     cosmosdb.load_database_account_data(
@@ -257,7 +294,6 @@ def test_load_database_account_associated_locations_relationships(neo4j_session)
         DESCRIBE_DATABASE_ACCOUNTS,
         TEST_UPDATE_TAG,
     )
-
     accounts = deepcopy(DESCRIBE_DATABASE_ACCOUNTS)
     for database_account in accounts:
         cosmosdb._load_database_account_associated_locations(

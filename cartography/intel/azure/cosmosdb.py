@@ -5,7 +5,7 @@ from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Tuple
-
+import ipaddress
 import neo4j
 from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
@@ -77,7 +77,7 @@ def transform_database_account_data(database_account_list: List[Dict]) -> List[D
             capabilities = [x['name'] for x in database_account['capabilities']]
         if 'ip_rules' in database_account and len(database_account['ip_rules']) > 0:
             iprules = [x['ip_address_or_range'] for x in database_account['ip_rules']]
-        database_account['ipruleslist'] = iprules
+        database_account['ipruleslist'] = [ip for ip in iprules if not ipaddress.ip_address(str(ip)).is_private]
         database_account['list_of_capabilities'] = capabilities
 
     return database_account_list
@@ -161,18 +161,42 @@ def _load_database_account_associated_iprules(neo4j_session: neo4j.Session, data
     """Relationship between Azure Cosmos DB And Public Ip Addresses in Cartography """
     ingest_iprules = """
         UNWIND $ip_rules_list as ip_rule
-        MATCH (ip:AzurePublicIPAddress{ipAddress: ip_rule})
-        WITH ip
+        MERGE (rule:AzureFirewallRule{id: ip_rule})
+        ON CREATE SET 
+        rule.firstseen = timestamp(),
+        rule.name=ip_rule,
+        rule.id=ip_rule,
+        rule.ipAddress=ip_rule,
+        rule.source='Azure' , 
+        rule.type='External',
+        rule.resource=$resourceType
+        WITH rule
         MATCH (d:AzureCosmosDBAccount{id: $DatabaseAccountId})
-        MERGE (d)-[r:MEMBER_PUBLIC_IP_ADDRESS]->(ip)
+        MERGE (d)-[r:FIREWALL_RULE]->(rule)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $azure_update_tag
+        with rule 
+        MERGE (ip:AzurePublicIPAddress{ipAddress:rule.id})
+        ON CREATE SET 
+        ip.firstseen = timestamp(),
+        ip.name=rule.name,
+        ip.id=rule.id,
+        ip.ipAddress=rule.ipAddress,
+        ip.type=rule.type,
+        ip.resource=rule.resource,
+        ip.source=rule.source
+        with ip,rule
+        MERGE (rule)-[r1:MEMBER_OF_PUBLIC_IP]->(ip)
+        ON CREATE SET r1.firstseen = timestamp()
+        SET r1.lastupdated = $azure_update_tag
+        
         """
 
     neo4j_session.run(
         ingest_iprules,
         ip_rules_list=database_account.get('ipruleslist', []),
         DatabaseAccountId=database_account.get('id'),
+        resourceType=database_account.get('type'),
         azure_update_tag=azure_update_tag,
     )
 

@@ -897,10 +897,13 @@ def _load_public_ip_addresses_tx(
     UNWIND $public_ip_addresses_list AS address
     MERGE (n:AzurePublicIPAddress{id: address.id})
     ON CREATE SET n.firstseen = timestamp(),
-    n.type = address.type,
+    n.id =address.id,
     n.location = address.location,
     n.region = address.location,
     n.consolelink = address.consolelink,
+    n.source='azure',
+    n.type='Internal',
+    n.resource=address.type,
     n.isPublicFacing = true
     SET n.lastupdated = $update_tag,
     n.name = address.name,
