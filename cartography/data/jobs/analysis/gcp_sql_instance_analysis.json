@@ -15,6 +15,10 @@
 			"iterative": false
 		},
 		{
+			"query": "MATCH (:GCPPublicIpAddress)<-[:MEMBER_OF_PUBLIC_IP_ADDRESS]-(:GCPFirewall)<-[:RESOURCE]-(:GCPVpc)<-[:VPC_NETWORK]-(i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH i SET i.exposed_internet = true, (CASE WHEN NOT 'public_ip' IN coalesce(i.exposed_internet_type, []) THEN i END).exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'public_ip'",
+			"iterative": false
+		},
+		{
 			"query": "MATCH (d:GCPSQLDatabase)<-[r:HAS_DATABASE]-(i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.exposed_internet = true \nSET d.exposed_internet = true, d.exposed_internet_type = i.exposed_internet_type",
 			"iterative": false
 		}

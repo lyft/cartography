@@ -334,17 +334,18 @@ def load_public_ip_address(session: neo4j.Session, instance: List[Dict], project
 @timeit
 def _load_public_ip_address_tx(tx: neo4j.Transaction, instance: List[Dict], project_id: str, gcp_update_tag: int) -> None:
     ipAddresses = [ip.get('ipAddress') for ip in instance.get('ipAddresses') if ip.get('type') == "PRIMARY"]
-    logger.info(f"iplist=={ipAddresses}")
     ingest_public_ip = """
     UNWIND $ipAddresses as ip
-    MERGE (p:GCPPublicIPAddress{ipAddress:ip})
+    MERGE (p:GCPPublicIpAddress{ipAddress:ip})
     ON CREATE SET
-        p.firstseen = timestamp(),
-        p.ipAddress=ip,
-        p.source='Gcp',
-        p.type='Internal',
-        p.resource='sql-instance',
-        p.lastupdated = $gcp_update_tag
+        p.firstseen = timestamp()
+    SET
+       p.IpAddress=ip,
+       p.id=ip,
+       p.type='Internal',
+       p.source='GCP',
+       p.resource='SQLInstance',
+       p.lastupdated = $gcp_update_tag
     WITH p
     MATCH (i:GCPSQLInstance{id:$instanceId})
     MERGE (i)-[r:MEMBER_OF_PUBLIC_IP_ADDRESS]->(p)
