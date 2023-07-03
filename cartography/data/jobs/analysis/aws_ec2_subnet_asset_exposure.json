@@ -12,10 +12,6 @@
 		{
 			"query": "MATCH (route:EC2Route{destination_ipv6_cidr_block: '::/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation)<-[:HAS_EXPLICIT_ASSOCIATION|HAS_IMPLICIT_ASSOCIATION]-(subnet:EC2Subnet)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE route.gateway_id STARTS WITH 'igw-' SET subnet.exposed_internet = true,(CASE WHEN NOT 'public_subnet_ipv6' IN  coalesce(subnet.exposed_internet_type , []) THEN subnet END).exposed_internet_type = coalesce(subnet.exposed_internet_type , []) + 'public_subnet_ipv6';",
 			"iterative": false
-		},
-		{
-			"query": "MATCH (ig:AWSInternetGateway)-[:ATTACHED_TO]->(:AWSVpc)<-[:MEMBER_OF_AWS_VPC]-(subnet:EC2Subnet)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET subnet.exposed_internet = true,(CASE WHEN NOT 'attached_internet_gateway' IN  coalesce(subnet.exposed_internet_type , []) THEN subnet END).exposed_internet_type = coalesce(subnet.exposed_internet_type , []) + 'attached_internet_gateway';",
-			"iterative": false
 		}
 	],
 	"name": "AWS ec2 subnet asset internet exposure"

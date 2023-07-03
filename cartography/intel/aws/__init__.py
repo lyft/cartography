@@ -142,11 +142,12 @@ def _sync_one_account(
         common_job_parameters
     )  # NOTE temp solution (query has to be only executed after both subnet & route table is loaded)
 
-    run_analysis_job(
-        'aws_ec2_security_group_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters
-    )
+    # # INFO: This is not a valid implementation. Because Security Groups are not public in general. Commenting out for future review.
+    # run_analysis_job(
+    #     'aws_ec2_security_group_asset_exposure.json',
+    #     neo4j_session,
+    #     common_job_parameters
+    # )
 
     run_analysis_job(
         'aws_ec2_subnet_asset_exposure.json',
@@ -166,11 +167,12 @@ def _sync_one_account(
         common_job_parameters,
     )
 
-    run_analysis_job(
-        'aws_ec2_asg_asset_exposure.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+    # # INFO: This is not a valid implementation. Because Auto Scaling Groups are not public in general. Commenting out for future review.
+    # run_analysis_job(
+    #     'aws_ec2_asg_asset_exposure.json',
+    #     neo4j_session,
+    #     common_job_parameters,
+    # )
 
     run_analysis_job(
         'aws_ec2_keypair_analysis.json',
@@ -178,6 +180,7 @@ def _sync_one_account(
         common_job_parameters,
     )
 
+    # INFO: connect EKS to subnets via CIDR. Public facing logic can be extended to use public Subnets.
     run_analysis_job(
         'aws_eks_asset_exposure.json',
         neo4j_session,
