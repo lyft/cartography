@@ -92,16 +92,16 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
     v.ultra_ssd_enabled=vm.additional_capabilities.ultra_ssd_enabled,
     v.priority=vm.priority, v.eviction_policy=vm.eviction_policy
     WITH vm, v
+    MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
+    MERGE (owner)-[r:RESOURCE]->(v)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    WITH vm, v
     UNWIND vm.user_assigned_identities AS ua
     MATCH (i:AzureManagedIdentity{id: ua})
     MERGE (v)-[rel:HAS]->(i)
     ON CREATE SET rel.firstseen = timestamp()
     SET rel.lastupdated = $update_tag
-    WITH v
-    MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
-    MERGE (owner)-[r:RESOURCE]->(v)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $update_tag
     """
 
     neo4j_session.run(
