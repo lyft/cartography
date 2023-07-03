@@ -55,7 +55,7 @@ def load_internet_gateways(
 
         UNWIND igw.Attachments as attachment
         MATCH (vpc:AWSVpc{id: attachment.VpcId})
-        MERGE (ig)-[r:ATTACHED_TO]->(vpc)
+        MERGE (vpc)-[r:ATTACHED_TO]->(ig)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $aws_update_tag
     """
