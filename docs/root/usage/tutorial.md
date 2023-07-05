@@ -2,18 +2,8 @@
 
 Once everything has been installed and synced, you can view the Neo4j web interface at http://localhost:7474. You can view the reference on this [here](https://neo4j.com/developer/guide-neo4j-browser/#_installing_and_starting_neo4j_browser).
 
-### Permalinking Bookmarklet
-
-You can set up a bookmarklet that lets you quickly get a permalink to a Cartography query. To do so, add a bookmark with the following contents as the URL - make sure to replace `neo4j.contoso.com:7474` with your instance of Neo4j:
-
-```javascript
-javascript:(() => { const query = document.querySelectorAll('article label span')[0].innerText; if (query === ':server connect') { console.log('no query has been run!'); return; } const searchParams = new URLSearchParams(); searchParams.append('connectURL', 'bolt://neo4j:neo4j@neo4j.contoso.net:7687'); searchParams.append('cmd', 'edit'); searchParams.append('arg', query.replaceAll(/\r /g, '\r')); newURL = `http://neo4j.contoso.net:7474/browser/?${searchParams}`; window.open(newURL, '_blank', 'noopener'); })()
-```
-
-Then, any time you are in the web interface, you can click the bookmarklet to open a new tab with a permalink to your most recently executed query in the URL bar.
-
 ### ℹ️ Already know [how to query Neo4j](https://neo4j.com/developer/cypher-query-language/)?  You can skip to our reference material!
-If you already know Neo4j and just need to know what are the nodes, attributes, and graph relationships for our representation of infrastructure assets, you can skip this handholdy walkthrough and see our [sample queries](samplequeries.md).
+If you already know Neo4j and just need to know what are the nodes, attributes, and graph relationships for our representation of infrastructure assets, you can skip this handholdy walkthrough and see our [sample queries](samplequeries.html).
 
 ### What [RDS](https://aws.amazon.com/rds/) instances are installed in my [AWS](https://aws.amazon.com/) accounts?
 ```
@@ -117,3 +107,14 @@ You can add your own custom attributes and relationships without writing Python 
 
 ### Mapping AWS Access Permissions
 Cartography can map permissions between IAM Principals and resources in the graph. Here's [how](../modules/aws/permissions-mapping.html).
+
+
+### Permalinking Bookmarklet
+
+You can set up a bookmarklet that lets you quickly get a permalink to a Cartography query. To do so, add a bookmark with the following contents as the URL - make sure to replace `neo4j.contoso.com:7474` with your instance of Neo4j:
+
+```javascript
+javascript:(() => { const query = document.querySelectorAll('article label span')[0].innerText; if (query === ':server connect') { console.log('no query has been run!'); return; } const searchParams = new URLSearchParams(); searchParams.append('connectURL', 'bolt://neo4j:neo4j@neo4j.contoso.net:7687'); searchParams.append('cmd', 'edit'); searchParams.append('arg', query.replaceAll(/\r /g, '\r')); newURL = `http://neo4j.contoso.net:7474/browser/?${searchParams}`; window.open(newURL, '_blank', 'noopener'); })()
+```
+
+Then, any time you are in the web interface, you can click the bookmarklet to open a new tab with a permalink to your most recently executed query in the URL bar.
