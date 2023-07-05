@@ -78,6 +78,8 @@ RETURN a.name as AWSAccount, count(rds) as UnencryptedInstances
 
 ### What other node types are connected to a given node?
 
+Suppose we wanted to know what other assets can be connected to a DNSRecord. We would ask the graph like this:
+
 ```cypher
 match (d:DNSRecord)--(n)
 return distinct labels(n);
