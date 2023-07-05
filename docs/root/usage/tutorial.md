@@ -2,14 +2,16 @@
 
 Once everything has been installed and synced, you can view the Neo4j web interface at http://localhost:7474. You can view the reference on this [here](https://neo4j.com/developer/guide-neo4j-browser/#_installing_and_starting_neo4j_browser).
 
-### ℹ️ Already know [how to query Neo4j](https://neo4j.com/developer/cypher-query-language/)?  You can skip to our reference material!
-If you already know Neo4j and just need to know what are the nodes, attributes, and graph relationships for our representation of infrastructure assets, you can skip this handholdy walkthrough and see our [sample queries](samplequeries.html).
+If you already know Neo4j and just need to know what are the nodes, attributes, and graph relationships for our representation of infrastructure assets, you can view our [sample queries](samplequeries.html).
 
-### What [RDS](https://aws.amazon.com/rds/) instances are installed in my [AWS](https://aws.amazon.com/) accounts?
-```
+Otherwise, read on for this handhold-y tutorial filled with examples.
+
+### What [RDS](https://aws.amazon.com/rds/) instances are installed in my AWS accounts?
+```cypher
 MATCH (aws:AWSAccount)-[r:RESOURCE]->(rds:RDSInstance)
 return *
 ```
+
 ![Visualization of RDS nodes and AWS nodes](../images/accountsandrds.png)
 
 In this query we asked Neo4j to find all `[:RESOURCE]` relationships from AWSAccounts to RDSInstances, and return the nodes and the `:RESOURCE` relationships.
@@ -25,7 +27,7 @@ and then pick options on the menu that shows up at the bottom of the view like t
 
 
 ### Which RDS instances have [encryption](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html) turned off?
-```
+```cypher
 MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance{storage_encrypted:false})
 RETURN a.name, rds.id
 ```
@@ -39,7 +41,7 @@ If you want to go back to viewing the graph and not a table, simply make sure yo
 Let's look at some other AWS assets now.
 
 ### Which [EC2](https://aws.amazon.com/ec2/) instances are directly exposed to the internet?
-```
+```cypher
 MATCH (instance:EC2Instance{exposed_internet: true})
 RETURN instance.instanceid, instance.publicdnsname
 ```
@@ -50,7 +52,7 @@ These instances are open to the internet either through permissive inbound IP pe
 If you know a lot about AWS, you may have noticed that EC2 instances [don't actually have an exposed_internet field](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_Instance.html). We're able to query for this because Cartography performs some [data enrichment](#data-enrichment) to add this field to EC2Instance nodes.
 
 ### Which [S3](https://aws.amazon.com/s3/) buckets have a policy granting any level of anonymous access to the bucket?
-```
+```cypher
 MATCH (s:S3Bucket)
 WHERE s.anonymous_access = true
 RETURN s
@@ -66,12 +68,43 @@ A couple of other things to notice: instead of using the "{}" notation to filter
 
 Let's go back to analyzing RDS instances. In an earlier example we queried for RDS instances that have encryption turned off. We can aggregate this data by AWSAccount with a small change:
 
-```
+```cypher
 MATCH (a:AWSAccount)-[:RESOURCE]->(rds:RDSInstance)
 WHERE rds.storage_encrypted = false
 RETURN a.name as AWSAccount, count(rds) as UnencryptedInstances
 ```
 ![Table of unencrypted RDS instances by AWS account](../images/unencryptedcounts.png)
+
+
+### What other node types are connected to a given node?
+
+```cypher
+match (d:DNSRecord)--(n)
+return distinct labels(n);
+```
+
+This says "what are the possible labels for all nodes connected to all DNSRecord nodes `d` in my graph?" Your answer might look like this:
+
+```
+["AWSDNSRecord", "DNSRecord"]
+["AWSDNSZone", "DNSZone"]
+["LoadBalancerV2"]
+["NameServer"]
+["ESDomain"]
+["LoadBalancer"]
+["EC2Instance", "Instance"]
+```
+
+You can then make the path more specific like this:
+
+```cypher
+match (d:DNSRecord)--(:EC2Instance)--(n)
+return distinct labels(n);
+```
+
+And then you can continue building your query.
+
+We also include [full schema docs](schema.html), but this way of building a query can be faster and more interactive.
 
 ### Learning more
 If you want to learn more in depth about Neo4j and Cypher queries you can look at [this tutorial](https://neo4j.com/developer/cypher-query-language/) and see this [reference card](https://neo4j.com/docs/cypher-refcard/current/).
