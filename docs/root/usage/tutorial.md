@@ -76,7 +76,7 @@ RETURN a.name as AWSAccount, count(rds) as UnencryptedInstances
 ![Table of unencrypted RDS instances by AWS account](../images/unencryptedcounts.png)
 
 
-### What other node types are connected to a given node?
+### Given a node label, what other node labels can be connected to it?
 
 Suppose we wanted to know what other assets can be connected to a DNSRecord. We would ask the graph like this:
 
