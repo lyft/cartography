@@ -4,7 +4,7 @@ Once everything has been installed and synced, you can view the Neo4j web interf
 
 If you already know Neo4j and just need to know what are the nodes, attributes, and graph relationships for our representation of infrastructure assets, you can view our [sample queries](samplequeries.html). More sample queries are available at https://github.com/marco-lancini/cartography-queries.
 
-Otherwise, read on for this handhold-y tutorial filled with examples.
+Otherwise, read on for this handhold-y tutorial filled with examples. Suppose we wanted to find out:
 
 ### What [RDS](https://aws.amazon.com/rds/) instances are installed in my AWS accounts?
 ```cypher
@@ -107,6 +107,41 @@ return distinct labels(n);
 And then you can continue building your query.
 
 We also include [full schema docs](schema.html), but this way of building a query can be faster and more interactive.
+
+
+### Given a node label, what are the possible property names defined on it?
+
+We can find what properties are available on an S3Bucket like this:
+
+```cypher
+match (n:S3Bucket) return properties(n) limit 1;
+```
+
+The result will look like this:
+
+```
+{
+  "bucket_key_enabled": false,
+  "creationdate": "2022-05-10 00:22:52+00:00",
+  "ignore_public_acls": true,
+  "anonymous_access": false,
+  "firstseen": 1652400141863,
+  "block_public_policy": true,
+  "versioning_status": "Enabled",
+  "block_public_acls": true,
+  "anonymous_actions": [],
+  "name": "my-fake-bucket-123",
+  "lastupdated": 1688605272,
+  "encryption_algorithm": "AES256",
+  "default_encryption": true,
+  "id": "my-fake-bucket-123",
+  "arn": "arn:aws:s3:::my-fake-bucket-123",
+  "restrict_public_buckets": false
+}
+```
+
+Our [full schema docs](schema.html) describe all possible fields, but listing out properties this way lets you avoid switching between browser tabs.
+
 
 ### Learning more
 If you want to learn more in depth about Neo4j and Cypher queries you can look at [this tutorial](https://neo4j.com/developer/cypher-query-language/) and see this [reference card](https://neo4j.com/docs/cypher-refcard/current/).
