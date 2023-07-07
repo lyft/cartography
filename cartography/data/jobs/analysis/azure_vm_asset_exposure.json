@@ -26,6 +26,14 @@
 			"iterative": false
 		},
 		{
+			"query": "MATCH (ip:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.is_public_ip = ip.ipAddress,vm.is_set=true;",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (ip:AzurePrivateIPAddress)<-[:MEMBER_OF_PRIVATE_IP]-(:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.private = ip.private_ip_address,vm.is_private_set=true;",
+			"iterative": false
+		},
+		{
 			"query": "MATCH (rule:AzureNetworkSecurityRule{direction: 'Inbound', access: 'Allow'})<-[:CONTAIN]-(:AzureNetworkSecurityGroup)<-[:MEMBER_NETWORK_SECURITY_GROUP]-(:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE rule.destination_port_range IN ['0-65535', '80-8080', '111-32800'] OR '0-65535' IN rule.destination_port_ranges OR '80-8080' IN rule.destination_port_ranges OR '111-32800' IN rule.destination_port_ranges SET vm.exposed_internet = true, (CASE WHEN NOT 'inbound_public_ports' IN  coalesce(vm.exposed_internet_type , []) THEN vm END).exposed_internet_type = coalesce(vm.exposed_internet_type , []) + 'inbound_public_ports';",
 			"iterative": false
 		},

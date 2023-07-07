@@ -119,7 +119,25 @@ def _load_aks_tx(tx: neo4j.Transaction, subscription_id: str, aks_list: List[Dic
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
+    _attach_resource_group_aks(tx,aks_list,update_tag)
+    
+def _attach_resource_group_aks(tx: neo4j.Transaction, aks_list: List[Dict], update_tag: int) -> None:
+    ingest_aks_resource = """
+    UNWIND $aks_list AS aks
+    MATCH (a:AzureCluster{id: aks.id})
+    WITH a,aks
+    MATCH (rg:AzureResourceGroup{name: aks.resource_group})
+    MERGE (a)-[res:RESOURCE_GROUP]->(rg)
+    ON CREATE SET res.firstseen = timestamp()
+    SET res.lastupdated = $update_tag
+    """
 
+    tx.run(
+        ingest_aks_resource,
+        aks_list=aks_list,
+        update_tag=update_tag,
+    )
+    
 
 def cleanup_aks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_aks_cleanup.json', neo4j_session, common_job_parameters)
@@ -204,8 +222,24 @@ def _load_container_registries_tx(
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
+    _attach_resource_group_container_registry(tx,container_registries_list,update_tag)
 
+def _attach_resource_group_container_registry(tx: neo4j.Transaction, container_registries_list: List[Dict], update_tag: int) -> None:
+    ingest_container_registry = """
+    UNWIND $container_registries_list AS registry
+    MATCH (a:AzureContainerRegistry{id: registry.id})
+    WITH a,registry
+    MATCH (rg:AzureResourceGroup{name:registry.resource_group })
+    MERGE (a)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
 
+    tx.run(
+        ingest_container_registry,
+        container_registries_list=container_registries_list,
+        update_tag=update_tag,
+    )
 def cleanup_container_registries(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_container_registries_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -309,7 +343,24 @@ def _load_container_registry_replications_tx(
         container_registry_replications_list=container_registry_replications_list,
         update_tag=update_tag,
     )
+    _attach_resource_group_container_replication(tx,container_registry_replications_list,update_tag=update_tag)
+    
+def _attach_resource_group_container_replication(tx: neo4j.Transaction, container_registry_replications_list: List[Dict], update_tag: int) -> None:
+    ingest_container_replication = """
+    UNWIND $container_registry_replications_list AS replication
+        MATCH (a:AzureContainerRegistryReplication{id: replication.id})
+        WITH a,replication
+        MATCH (rg:AzureResourceGroup{name: replication.resource_group})
+        MERGE (a)-[r:RESOURCE_GROUP]->(rg)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $update_tag
+    """
 
+    tx.run(
+        ingest_container_replication,
+        container_registry_replications_list=container_registry_replications_list,
+        update_tag=update_tag,
+    )
 
 def cleanup_container_registry_replications(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_container_registry_replications_cleanup.json', neo4j_session, common_job_parameters)
@@ -385,7 +436,27 @@ def _load_container_registry_runs_tx(
         update_tag=update_tag,
     )
 
+    _attach_resource_group_container_registry_runs(tx,container_registry_runs_list,update_tag)
 
+def _attach_resource_group_container_registry_runs(
+    tx: neo4j.Transaction, container_registry_runs_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_container_run = """
+    UNWIND $container_registry_runs_list AS run
+    MATCH (a:AzureContainerRegistryRun{id: run.id})
+    WITH a,run
+    MATCH (rg:AzureResourceGroup{name: run.resource_group})
+    MERGE (a)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_container_run,
+        container_registry_runs_list=container_registry_runs_list,
+        update_tag=update_tag,
+    )
+    
 def cleanup_container_registry_runs(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_container_registry_runs_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -458,7 +529,26 @@ def _load_container_registry_tasks_tx(
         container_registry_tasks_list=container_registry_tasks_list,
         update_tag=update_tag,
     )
+    _attach_resource_group_container_task(tx,container_registry_tasks_list,update_tag)
 
+def _attach_resource_group_container_task(
+    tx: neo4j.Transaction, container_registry_tasks_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_container_task = """
+    UNWIND $container_registry_tasks_list AS task
+    MATCH (a:AzureContainerRegistryTask{id: task.id})
+    WITH a,task
+    MATCH (rg:AzureResourceGroup{id: task.resource_group})
+    MERGE (a)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_container_task,
+        container_registry_tasks_list=container_registry_tasks_list,
+        update_tag=update_tag,
+    )
 
 def cleanup_container_registry_tasks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_container_registry_tasks_cleanup.json', neo4j_session, common_job_parameters)
@@ -523,6 +613,25 @@ def _load_container_registry_webhooks_tx(
     WITH a,webhook
     MATCH (owner:AzureContainerRegistry{id: webhook.container_registry_id})
     MERGE (owner)-[r:CONTAIN]->(a)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_container_webhook,
+        container_registry_webhooks_list=container_registry_webhooks_list,
+        update_tag=update_tag,
+    )
+
+    _attach_resource_group_container_registry_webhooks(tx,container_registry_webhooks_list,update_tag)
+
+def _attach_resource_group_container_registry_webhooks( tx: neo4j.Transaction, container_registry_webhooks_list: List[Dict], update_tag: int) -> None:
+    ingest_container_webhook = """
+    UNWIND $container_registry_webhooks_list AS webhook
+    MATCH (a:AzureContainerRegistryWebhook{id: webhook.id})
+    WITH a,webhook
+    MATCH (rg:AzureResourceGroup{name: webhook.resource_group})
+    MERGE (a)-[r:RESOURCE_GROUP]->(rg)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """
@@ -599,7 +708,26 @@ def _load_container_groups_tx(
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
+    _attach_resource_group_aks_container_group(tx,container_groups_list,update_tag)
 
+def _attach_resource_group_aks_container_group(
+    tx: neo4j.Transaction,container_groups_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_container_group = """
+    UNWIND $container_groups_list AS group
+    MATCH (a:AzureContainerGroup{id: group.id})
+    WITH a,group
+    MATCH (rg:AzureResourceGroup{id: group.resource_group})
+    MERGE (a)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_container_group,
+        container_groups_list=container_groups_list,
+        update_tag=update_tag,
+    )
 
 def cleanup_container_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_container_groups_cleanup.json', neo4j_session, common_job_parameters)
@@ -675,6 +803,23 @@ def _load_containers_tx(tx: neo4j.Transaction, containers_list: List[Dict], upda
     SET r.lastupdated = $update_tag
     """
 
+    tx.run(
+        ingest_container,
+        containers_list=containers_list,
+        update_tag=update_tag,
+    )
+    _attach_resource_group_container(tx,containers_list,update_tag)
+    
+def _attach_resource_group_container(tx: neo4j.Transaction, containers_list: List[Dict], update_tag: int) -> None:
+    ingest_container = """
+    UNWIND $containers_list AS container
+    MATCH (a:AzureContainer{id: container.id})
+    WITH a,container
+    MATCH (rg:AzureResourceGroup{id: container.resource_group})
+    MERGE (a)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
     tx.run(
         ingest_container,
         containers_list=containers_list,

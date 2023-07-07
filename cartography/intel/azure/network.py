@@ -1065,7 +1065,7 @@ def _load_backend_address_pools_tx(
             bap.lastupdated = $update_tag
             WITH n, b_pool, bap
             UNWIND b_pool.backend_ip_configurations as ip_conf
-                MATCH (ipc:AzureNetworkInterfaceIPConfiguration{id: ip_conf})
+                MATCH (ipc:AzurePrivateIPAddress{id: ip_conf})
                 WITH n, bap, ipc
                 MERGE (bap)-[r:HAS]->(ipc)
                 ON CREATE SET r.firstseen = timestamp()
@@ -1087,7 +1087,7 @@ def _create_relationship_between_network_interface_and_load_balancer_tx(
 ) -> None:
     query = """
     UNWIND $load_balancers_list AS lb
-        MATCH (n:AzureNetworkLoadBalancer{id: lb.id})-[:HAS]->(:AzureLoadBalancerBackendAddressPool)-[:HAS]->(:AzureNetworkInterfaceIPConfiguration)<-[:CONTAINS]-(interface:AzureNetworkInterface)
+        MATCH (n:AzureNetworkLoadBalancer{id: lb.id})-[:HAS]->(:AzureLoadBalancerBackendAddressPool)-[:HAS]->(:AzurePrivateIPAddress)<-[:MEMBER_OF_PRIVATE_IP]-(interface:AzureNetworkInterface)
         WITH n, interface
         MERGE (interface)-[r:CONNECTED_TO]->(n)
         ON CREATE SET r.firstseen = timestamp()
@@ -1108,7 +1108,7 @@ def _load_ip_configurations_tx(
     MATCH (n:AzureNetworkInterface{id: interface.id})
     WITH n, interface
     UNWIND interface.ip_configurations AS ip_conf
-    MERGE (ipc:AzureNetworkInterfaceIPConfiguration{id: ip_conf.id})
+    MERGE (ipc:AzurePrivateIPAddress{id: ip_conf.id})
     ON CREATE SET ipc.firstseen = timestamp(),
     ipc.private_ip_address = ip_conf.private_ip_address,
     ipc.private_ip_allocation_method = ip_conf.private_ip_allocation_method,
@@ -1116,7 +1116,7 @@ def _load_ip_configurations_tx(
     SET ipc.lastupdated = $update_tag,
     ipc.name = ip_conf.name
     WITH ipc, n
-    MERGE (n)-[r:CONTAINS]->(ipc)
+    MERGE (n)-[r:MEMBER_OF_PRIVATE_IP]->(ipc)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """

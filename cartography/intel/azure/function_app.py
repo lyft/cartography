@@ -171,7 +171,23 @@ def _load_function_apps_tx(
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
-
+    _attach_resource_group_function_apps(tx,function_apps_list,update_tag)
+    
+def _attach_resource_group_function_apps(tx: neo4j.Transaction,function_apps_list: List[Dict],update_tag: int) -> None:
+    ingest_function_apps = """
+    UNWIND $function_apps_list AS function_app
+    MATCH (f:AzureFunctionApp{id: function_app.id})
+    WITH f,function_app
+    MATCH (rg:AzureResourceGroup{name: function_app.resource_group})
+    MERGE (f)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        ingest_function_apps,
+        function_apps_list=function_apps_list,
+        update_tag=update_tag
+    )
 
 def cleanup_function_apps(
     neo4j_session: neo4j.Session,
@@ -331,7 +347,27 @@ def _load_function_apps_configurations_tx(
         function_apps_conf_list=function_apps_conf_list,
         azure_update_tag=update_tag,
     )
+    _attach_resource_group_function_apps_conf(tx,function_apps_conf_list,update_tag)
 
+def _attach_resource_group_function_apps_conf(tx: neo4j.Transaction,
+    function_apps_conf_list: List[Dict],
+    update_tag: int,
+) -> None:
+    ingest_function_apps_conf = """
+    UNWIND $function_apps_conf_list as function_conf
+    MATCH (fc:AzureFunctionAppConfiguration{id: function_conf.id})
+    WITH fc, function_conf
+    MATCH (rg:AzureResourceGroup{name: function_conf.resource_group})
+    MERGE (fc)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+
+    tx.run(
+        ingest_function_apps_conf,
+        function_apps_conf_list=function_apps_conf_list,
+        azure_update_tag=update_tag,
+    )
 
 def cleanup_function_apps_conf(
     neo4j_session: neo4j.Session,
@@ -431,7 +467,27 @@ def _load_function_apps_functions_tx(
         function_apps_function_list=function_apps_function_list,
         azure_update_tag=update_tag,
     )
+    _attach_resource_group_unction_apps_function(tx,function_apps_function_list,update_tag)
+    
+def _attach_resource_group_unction_apps_function(tx: neo4j.Transaction,
+    function_apps_function_list: List[Dict],
+    update_tag: int,
+) -> None:
+    ingest_function = """
+    UNWIND $function_apps_function_list as function
+    MATCH (f:AzureFunctionAppFunction{id: function.id})
+    WITH f, function
+    MATCH (rg:AzureResourceGroup{name: function.resource_group})
+    MERGE (f)-[r:RESOURE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
 
+    tx.run(
+        ingest_function,
+        function_apps_function_list=function_apps_function_list,
+        azure_update_tag=update_tag,
+    )
 
 def cleanup_function_apps_functions(
     neo4j_session: neo4j.Session,
@@ -527,7 +583,24 @@ def _load_function_apps_deployments_tx(
         function_apps_deployments_list=function_apps_deployments_list,
         azure_update_tag=update_tag,
     )
+    _attach_resource_group_function_apps_deployments(tx,function_apps_deployments_list,update_tag)
+    
+def _attach_resource_group_function_apps_deployments(tx: neo4j.Transaction,function_apps_deployments_list: List[Dict],update_tag: int) -> None:
+    ingest_function_apps_deploy = """
+    UNWIND $function_apps_deployments_list as function_deploy
+    MATCH (f:AzureFunctionAppDeployment{id: function_deploy.id})
+    WITH f, function_deploy
+    MATCH (rg:AzureResourceGroup{name: function_deploy.resource_group})
+    MERGE (f)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
 
+    tx.run(
+        ingest_function_apps_deploy,
+        function_apps_deployments_list=function_apps_deployments_list,
+        azure_update_tag=update_tag,
+    )
 
 def cleanup_function_apps_deployments(
     neo4j_session: neo4j.Session,
@@ -624,7 +697,23 @@ def _load_function_apps_backups_tx(
         function_apps_backups_list=function_apps_backups_list,
         azure_update_tag=update_tag,
     )
+    _attach_resource_group_function_apps_backups(tx,function_apps_backups_list,update_tag)
 
+def _attach_resource_group_function_apps_backups (tx: neo4j.Transaction,function_apps_backups_list: List[Dict],update_tag: int) -> None:
+    ingest_function_apps_backup = """
+    UNWIND $function_apps_backups_list as function_backup
+    MATCH (f:AzureFunctionAppBackup{id: function_backup.id})
+    WITH f, function_backup
+    MATCH (rg:AzureResourceGroup{name: function_backup.resource_group})
+    MERGE (f)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    tx.run(
+        ingest_function_apps_backup,
+        function_apps_backups_list=function_apps_backups_list,
+        azure_update_tag=update_tag,
+    )
 
 def cleanup_function_apps_backups(
     neo4j_session: neo4j.Session,
@@ -723,7 +812,24 @@ def _load_function_apps_processes_tx(
         function_apps_processes_list=function_apps_processes_list,
         azure_update_tag=update_tag,
     )
+    _attach_resource_group_function_apps_processes(tx,function_apps_processes_list,update_tag)
 
+def _attach_resource_group_function_apps_processes(tx: neo4j.Transaction,function_apps_processes_list: List[Dict],update_tag: int) -> None:
+    ingest_function_apps_process = """
+    UNWIND $function_apps_processes_list as function_process
+    MATCH (f:AzureFunctionAppProcess{id: function_process.id})
+    WITH f, function_process
+    MATCH (rg:AzureResourceGroup{name: function_process.resource_group})
+    MERGE (f)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+
+    tx.run(
+        ingest_function_apps_process,
+        function_apps_processes_list=function_apps_processes_list,
+        azure_update_tag=update_tag,
+    )
 
 def cleanup_function_apps_processes(
     neo4j_session: neo4j.Session,
@@ -820,7 +926,24 @@ def _load_function_apps_snapshots_tx(
         function_apps_snapshots_list=function_apps_snapshots_list,
         azure_update_tag=update_tag,
     )
+    _attach_resource_group_function_apps_snapshot(tx,function_apps_snapshots_list,update_tag)
 
+def _attach_resource_group_function_apps_snapshot(tx: neo4j.Transaction,function_apps_snapshots_list: List[Dict],update_tag: int) -> None:
+    ingest_function_apps_snapshot = """
+    UNWIND $function_apps_snapshots_list as function_snapshot
+    MATCH (f:AzureFunctionAppSnapshot{id: function_snapshot.id})
+    WITH f, function_snapshot
+    MATCH (rg:AzureResourceGroup{name:function_snapshot.resource_group})
+    MERGE (f)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+
+    tx.run(
+        ingest_function_apps_snapshot,
+        function_apps_snapshots_list=function_apps_snapshots_list,
+        azure_update_tag=update_tag,
+    )
 
 def cleanup_function_apps_snapshots(
     neo4j_session: neo4j.Session,
@@ -916,8 +1039,25 @@ def _load_function_apps_webjobs_tx(
         function_apps_webjobs_list=function_apps_webjobs_list,
         azure_update_tag=update_tag,
     )
+    _attach_resoure_group_function_apps_webjobs(tx,function_apps_webjobs_list,update_tag)
 
+def _attach_resoure_group_function_apps_webjobs(tx: neo4j.Transaction,function_apps_webjobs_list: List[Dict],update_tag: int) -> None:
+    ingest_function_apps_webjob = """
+    UNWIND $function_apps_webjobs_list as function_webjob
+    MERGE (f:AzureFunctionAppWebJob{id: function_webjob.id})
+    WITH f, function_webjob
+    MATCH (rg:AzureResourceGroup{name: function_webjob.resource_group})
+    MERGE (f)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
 
+    tx.run(
+        ingest_function_apps_webjob,
+        function_apps_webjobs_list=function_apps_webjobs_list,
+        azure_update_tag=update_tag,
+    )
+    
 def cleanup_function_apps_webjobs(
     neo4j_session: neo4j.Session,
     common_job_parameters: Dict,
