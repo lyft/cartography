@@ -133,7 +133,31 @@ def _load_key_vaults_tx(
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
+    for key_vault in key_vaults_list:
+        if key_vault.get('resource_group'):
+            _attach_resource_group_key_vaults(tx,key_vault['id'],key_vault['resource_group'],update_tag)
+        else:
+            x = key_vault['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_key_vaults(tx,key_vault['id'],resource_group,update_tag)
+        
+    
+def _attach_resource_group_key_vaults( tx: neo4j.Transaction, key_vault_id:str,resource_group:str, update_tag: int) -> None:
+    ingest_vault = """
+    MATCH (k:AzureKeyVault{id: $key_vault_id})
+    WITH k
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (k)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
 
+    tx.run(
+        ingest_vault,
+        key_vault_id=key_vault_id,
+        resource_group=resource_group.upper(),
+        update_tag=update_tag,
+    )
 
 @timeit
 def get_key_vault_keys_list(client: KeyVaultManagementClient, vault: Dict) -> List[Dict]:

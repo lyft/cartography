@@ -90,7 +90,30 @@ def _load_monitor_log_profiles_tx(
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
+    for log_profile in log_profiles_list:
+        if log_profile.get('resource_group'):
+            _attach_resource_group_monitor_logs(tx,log_profile['id'],log_profile['resource_group'],update_tag)
+        else:
+            x = log_profile['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_monitor_logs(tx,log_profile['id'],resource_group,update_tag)
+            
 
+def _attach_resource_group_monitor_logs(tx: neo4j.Transaction, log_profile_id:str,resource_group:str ,update_tag: int) -> None:
+    query = """
+    MATCH (log:AzureMonitorLogProfile{id: $log_profile_id})
+    WITH log
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (log)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        query,
+        log_profile_id=log_profile_id,
+        resource_group=resource_group.upper(),
+        update_tag=update_tag,
+    )
 
 def cleanup_monitor_log_profiles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_monitor_log_profiles_cleanup.json', neo4j_session, common_job_parameters)

@@ -30,7 +30,7 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (ip:AzurePrivateIPAddress)<-[:MEMBER_OF_PRIVATE_IP]-(:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.private = ip.private_ip_address,vm.is_private_set=true;",
+			"query": "MATCH (ip:AzurePrivateIPAddress)<-[:MEMBER_OF_PRIVATE_IP_ADDRESS]-(:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.private = ip.private_ip_address,vm.is_private_set=true;",
 			"iterative": false
 		},
 		{

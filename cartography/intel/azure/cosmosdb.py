@@ -133,6 +133,30 @@ def load_database_account_data(
         AZURE_SUBSCRIPTION_ID=subscription_id,
         azure_update_tag=azure_update_tag,
     )
+    for database_account in database_account_list:
+        if database_account.get('resourceGroup'):
+            _attach_resource_group_database_account(neo4j_session,database_account['id'],database_account['resourceGroup'],azure_update_tag)
+        else:
+            x = database_account['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_database_account(neo4j_session,database_account['id'],resource_group,azure_update_tag)
+
+def _attach_resource_group_database_account(neo4j_session: neo4j.Session, database_account_id: str, resource_group: str, azure_update_tag: int) -> None:
+    ingest_database_account = """
+    MATCH (d:AzureCosmosDBAccount{id: $database_account_id})
+    WITH d
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (d)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+
+    neo4j_session.run(
+        ingest_database_account,
+        database_account_id=database_account_id,
+        resource_group=resource_group.upper(),
+        azure_update_tag=azure_update_tag,
+    )
 
 
 @timeit
@@ -442,7 +466,30 @@ def _load_cosmosdb_private_endpoint_connections(
             region=database_account.get("location", "global"),
             azure_update_tag=azure_update_tag,
         )
+        for private_endpoint_connection in private_endpoint_connections:
+            if private_endpoint_connection.get('resource_group'):
+                _attach_resource_group_private_endpoint_connection(neo4j_session,private_endpoint_connection['id'],private_endpoint_connection['resource_group'],azure_update_tag)
+            else:
+                x = private_endpoint_connection['id'].split('/')
+                resource_group = x[x.index('resourceGroups') + 1]
+                _attach_resource_group_private_endpoint_connection(neo4j_session,private_endpoint_connection['id'],resource_group,azure_update_tag)
 
+
+def _attach_resource_group_private_endpoint_connection(neo4j_session: neo4j.Session,private_endpoint_connection_id: str,resource_group:str,azure_update_tag: int) -> None:
+    ingest_endpoint_connections = """
+        MATCH (pec:AzureCDBPrivateEndpointConnection{id: $connection_id})
+        WITH pec
+        MATCH (rg:AzureResourceGroup{name: $resource_group})
+        MERGE (pec)-[r:RESOURCE_GROUP]->(rg)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $azure_update_tag
+        """
+    neo4j_session.run(
+        ingest_endpoint_connections,
+        connection_id=private_endpoint_connection_id,
+        resource_group=resource_group.upper(),
+        azure_update_tag=azure_update_tag,
+        )
 
 @timeit
 def _load_cosmosdb_virtual_network_rules(
@@ -816,6 +863,32 @@ def _load_table_resources(neo4j_session: neo4j.Session, table_resources: List[Di
         table_resources_list=table_resources,
         azure_update_tag=update_tag,
     )
+    for table_resource in table_resources:
+        if table_resource.get('resource_group'):
+            _attach_resource_group_table_resource(neo4j_session,table_resource.get('id'),table_resource.get('resource_group'),update_tag)
+        else:
+            x = table_resource['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_table_resource(neo4j_session,table_resource.get('id'),resource_group,update_tag)
+
+@timeit
+def _attach_resource_group_table_resource(neo4j_session: neo4j.Session, table_resource_id: str,resource_group:str, update_tag: int) -> None:
+    ingest_tables = """
+    MATCH (tr:AzureCosmosDBTableResource{id: $table_resource_id})
+    WITH tr
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (tr)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+
+    neo4j_session.run(
+        ingest_tables,
+        table_resource_id=table_resource_id,
+        resource_group=resource_group.upper(),
+        azure_update_tag=update_tag,
+    )
+        
 
 
 @timeit
@@ -923,7 +996,29 @@ def _load_sql_containers(neo4j_session: neo4j.Session, containers: List[Dict], u
         sql_containers_list=containers,
         azure_update_tag=update_tag,
     )
+    for container in containers:
+        if container.get('resource_group'):
+            _attach_resource_container(neo4j_session,container['id'],container['resource_group'],update_tag)
+        else:
+            x = container['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_container(neo4j_session,container['id'],resource_group,update_tag)
 
+def _attach_resource_container(neo4j_session: neo4j.Session, container_id: str,resource_group:str, update_tag: int) -> None:
+    ingest_containers = """
+    MATCH (c:AzureCosmosDBSqlContainer{id: $container_id})
+    WITH c
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (c)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_containers,
+        container_id=container_id,
+        resource_group=resource_group.upper(),
+        azure_update_tag=update_tag,
+    )
 
 @timeit
 def sync_cassandra_keyspace_details(
@@ -1029,6 +1124,32 @@ def _load_cassandra_tables(neo4j_session: neo4j.Session, cassandra_tables: List[
         cassandra_tables_list=cassandra_tables,
         azure_update_tag=update_tag,
     )
+    for cassandra_table in cassandra_tables:
+        if cassandra_table.get('resource_group'):
+            _attach_resource_cassandra_table(neo4j_session,cassandra_table['id'],cassandra_table['resource_group'],update_tag)
+        else:
+            x = cassandra_table['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_cassandra_table(neo4j_session,cassandra_table['id'],resource_group,update_tag)
+
+def _attach_resource_cassandra_table(neo4j_session: neo4j.Session, cassandra_table_id: str,resource_group:str ,update_tag: int) -> None:
+    ingest_cassandra_tables = """
+    MATCH (ct:AzureCosmosDBCassandraTable{id:$cassandra_table_id})
+    WITH ct
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (ct)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    
+    neo4j_session.run(
+        ingest_cassandra_tables,
+        cassandra_table_id=cassandra_table_id,
+        resource_group=resource_group.upper(),
+        azure_update_tag=update_tag,
+    )       
+            
+        
 
 
 @timeit
@@ -1134,6 +1255,30 @@ def _load_collections(neo4j_session: neo4j.Session, collections: List[Dict], upd
         mongodb_collections_list=collections,
         azure_update_tag=update_tag,
     )
+    for collection in collections:
+        if collection.get('resource_group'):
+            _attach_resource_group_collection(neo4j_session,collection['id'],collection['resource_group'],update_tag)
+        else:
+            x = collection['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_collection(neo4j_session,collection['id'],resource_group,update_tag)
+
+def _attach_resource_group_collection(neo4j_session: neo4j.Session, collection_id: str,resource_group:str ,update_tag: int) -> None:
+    ingest_collections = """
+    MATCH (col:AzureCosmosDBMongoDBCollection{id: $collection_id})
+    WITH col
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (col)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_collections,
+        collection_id=collection_id,
+        resource_group=resource_group.upper(),
+        azure_update_tag=update_tag,
+    )
+            
 
 
 @timeit

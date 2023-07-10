@@ -124,6 +124,8 @@ def attach_subnet_to_network_interfaces(session: neo4j.Session, data_list: List[
 def load_public_ip_network_interfaces_relationship(session: neo4j.Session, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_public_ip_network_interfaces_relationship, interface_id, data_list, update_tag)
 
+def load_private_ip_address_network_interfaces_relationship(session: neo4j.Session, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_private_ip_network_interfaces_relationship, interface_id, data_list, update_tag)
 
 def attach_public_ip_to_load_balancer(session: neo4j.Session, load_balancer_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_attach_public_ip_to_load_balancer_tx, load_balancer_id, data_list, update_tag)
@@ -194,8 +196,30 @@ def _load_networks_tx(tx: neo4j.Transaction, subscription_id: str, networks_list
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
+    for network in networks_list:
+        if network.get('resource_group'):
+            _attach_resource_group_networks(tx,network['id'],network['resource_group'],update_tag)
+        else:
+            x = network['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_networks(tx,network['id'],resource_group,update_tag)
+    
+def _attach_resource_group_networks(tx: neo4j.Transaction, network_id:str,resource_group:str, update_tag: int) -> None:
+    ingest_net = """
+    MATCH (n:AzureNetwork{id: $network_id})
+    WITH n
+    MATCH (rg:AzureResourceGroup{name:$resource_group})
+    MERGE (n)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
 
-
+    tx.run(
+        ingest_net,
+        network_id=network_id,
+        resource_group=resource_group.upper(),
+        update_tag=update_tag
+    )
 def cleanup_networks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_networks_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -309,7 +333,30 @@ def _load_networks_subnets_tx(
         update_tag=update_tag,
         SUBSCRIPTION_ID=subscription_id,
     )
+    for  networks_subnet in networks_subnets_list:
+        if  networks_subnet.get('resource_group'):
+            _attach_resource_group_networks_subnets(tx, networks_subnet['id'], networks_subnet['resource_group'],update_tag)
+        else:
+            x = networks_subnet['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_networks_subnets(tx, networks_subnet['id'], resource_group,update_tag)
+    
+def _attach_resource_group_networks_subnets(tx: neo4j.Transaction,network_subnet_id:str,resource_group:str,update_tag: int) -> None:
+    ingest_network_subnet = """
+    MATCH (n:AzureNetworkSubnet{id: $network_subnet_id})
+    WITH n
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (n)-[rel:RESOURCE_GROUP]->(rg)
+    ON CREATE SET rel.firstseen = timestamp()
+    SET rel.lastupdated = $update_tag
+    """
 
+    tx.run(
+        ingest_network_subnet,
+        network_subnet_id=network_subnet_id,
+        resource_group=resource_group.upper(),
+        update_tag=update_tag
+    )
 
 def cleanup_networks_subnets(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_networks_subnets_cleanup.json', neo4j_session, common_job_parameters)
@@ -373,7 +420,32 @@ def _load_network_routetables_tx(
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
+    for network_routetable in network_routetables_list:
+        if network_routetable.get('resource_group'):
+            _attach_resource_group_network_routetables(tx,network_routetable['id'],network_routetable['resource_group'],update_tag)
+        else:
+            x = network_routetable['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_network_routetables(tx,network_routetable['id'],resource_group,update_tag)
 
+            
+
+def _attach_resource_group_network_routetables(tx: neo4j.Transaction,network_routetable_id:str,resource_group:str ,update_tag: int) -> None:
+    ingest_routetables = """
+    MATCH (n:AzureRouteTable{id: $network_routetable_id})
+    WITH n
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (n)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_routetables,
+        network_routetable_id=network_routetable_id,
+        resource_group=resource_group.upper(),
+        update_tag=update_tag,
+    )
 
 def _load_network_bastion_hosts_tx(
     tx: neo4j.Transaction, subscription_id: str, network_bastion_host_list: List[Dict], update_tag: int,
@@ -557,7 +629,30 @@ def _load_network_routes_tx(
         network_routes_list=network_routes_list,
         azure_update_tag=update_tag,
     )
+    for network_route in network_routes_list:
+        if network_route.get('resource_group'):
+            _attach_resource_group_network_routes(tx,network_route['id'],network_route['resource_group'],update_tag)
+        else:
+            x = network_route['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_network_routes(tx,network_route['id'],resource_group,update_tag)
 
+def _attach_resource_group_network_routes(tx: neo4j.Transaction,network_routes_id:str,resource_group:str,update_tag: int) -> None:
+    ingest_network_route = """
+    MATCH (n:AzureNetworkRoute{id: $network_routes_id})
+    WITH n
+    MATCH (rg:AzureResourceGroup{name: $resource_name})
+    MERGE (n)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+
+    tx.run(
+        ingest_network_route,
+        network_routes_id=network_routes_id,
+        resource_group=resource_group.upper(),
+        azure_update_tag=update_tag,
+    )
 
 def cleanup_network_routes(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_network_routes_cleanup.json', neo4j_session, common_job_parameters)
@@ -621,6 +716,30 @@ def _load_network_security_groups_tx(
         network_security_groups_list=network_security_groups_list,
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
+    )
+    for network_security_group in network_security_groups_list:
+        if network_security_group.get('resource_group'):
+            _attach_resource_group_network_security_groups(tx,network_security_group['id'],network_security_group['resource_group'],update_tag)
+        else:
+            x = network_security_group['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_network_security_groups(tx,network_security_group['id'],resource_group,update_tag)
+            
+def _attach_resource_group_network_security_groups(tx: neo4j.Transaction, network_security_group_id:str,resource_group:str ,update_tag: int) -> None:
+    ingest_network = """
+    MATCH (n:AzureNetworkSecurityGroup{id: $network_security_group_id})
+    WITH n
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (n)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_network,
+        network_security_group_id=network_security_group_id,
+        resource_group=resource_group.upper(),
+        update_tag=update_tag
     )
 
 
@@ -742,6 +861,30 @@ def _load_network_nat_gateway_tx(
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
+    for nat_gateway in nat_gateway_list:
+        if nat_gateway.get('resource_group'):
+            _attack_resource_group_network_nat_gateway(tx,nat_gateway['id'],nat_gateway['resource_group'],update_tag)
+        else:
+            x = nat_gateway['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attack_resource_group_network_nat_gateway(tx,nat_gateway['id'],resource_group,update_tag)
+            
+    
+def _attack_resource_group_network_nat_gateway(tx: neo4j.Transaction, nat_gateway_id:str,resource_group:str, update_tag: int) -> None:
+    ingest_network = """
+    MATCH (n:AzureNatGateway{id: $nat_gateway_id})
+    WITH n
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (n)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        ingest_network,
+        nat_gateway_id=nat_gateway_id,
+        resource_group=resource_group.upper(),
+        update_tag=update_tag
+    )
 
 
 def _load_network_nat_subnet_tx(
@@ -854,6 +997,30 @@ def _load_network_security_rules_tx(
         network_security_rules_list=network_security_rules_list,
         azure_update_tag=update_tag,
     )
+    for  network_security_rule in network_security_rules_list:
+        if network_security_rule.get('resource_group'):
+            _attack_resource_group_network_security_rules(tx, network_security_rule['id'], network_security_rule['resource_group'],update_tag)
+        else:
+            x = network_security_rule['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attack_resource_group_network_security_rules(tx, network_security_rule['id'], resource_group,update_tag)
+            
+
+def _attack_resource_group_network_security_rules(tx: neo4j.Transaction,network_security_rule_id:str,resource_group:str,update_tag: int) -> None:
+    ingest_network_rule = """
+    MATCH (n:AzureNetworkSecurityRule{id: $network_security_rule_id})
+    WITH n
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (n)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    tx.run(
+        ingest_network_rule,
+        network_security_rule_id=network_security_rule_id,
+        resource_group=resource_group.upper(),
+        azure_update_tag=update_tag,
+    )
 
 
 def cleanup_network_security_rules(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
@@ -942,6 +1109,8 @@ def get_network_interfaces_list(client: NetworkManagementClient, regions: list, 
         network_interfaces_list = list(map(lambda x: x.as_dict(), client.network_interfaces.list_all()))
         interfaces_list = []
         for interface in network_interfaces_list:
+            x = interface['id'].split('/')
+            interface['resource_group'] = x[x.index('resourceGroups') + 1]
             interface['public_ip_address'] = []
             interface['subnet'] = []
             for conf in interface.get('ip_configurations', []):
@@ -970,6 +1139,8 @@ def get_load_balancers_list(client: NetworkManagementClient, regions: list, comm
         network_load_balancer_list = list(map(lambda x: x.as_dict(), client.load_balancers.list_all()))
         load_balancer_list = []
         for load_balancer in network_load_balancer_list:
+            x = load_balancer['id'].split('/')
+            load_balancer['resource_group'] = x[x.index('resourceGroups') + 1]
             load_balancer['public_ip_address'] = []
             for frontend_ip_configuration in load_balancer.get('frontend_ip_configurations', []):
                 public_ip_id = frontend_ip_configuration.get('public_ip_address', {}).get('id', None)
@@ -1021,6 +1192,30 @@ def _load_network_interfaces_tx(
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
+    for network_interface in network_interfaces_list:
+        if network_interface.get('resource_group'):
+            _attach_resource_group_network_interfaces(tx,network_interface['id'],network_interface['resource_group'],update_tag)
+        else:
+            x = network_interface['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_network_interfaces(tx,network_interface['id'],resource_group,update_tag)
+    
+def _attach_resource_group_network_interfaces(tx: neo4j.Transaction, network_interface_id: str, resource_group:str,update_tag: int) -> None:
+    ingest_interface = """
+    MATCH (n:AzureNetworkInterface{id: $network_interface_id})
+    WITH n
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (n)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        ingest_interface,
+        network_interface_id=network_interface_id,
+        resource_group=resource_group.upper(),
+        update_tag=update_tag
+    )
+
 
 
 def _load_load_balancers_tx(
@@ -1048,6 +1243,31 @@ def _load_load_balancers_tx(
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
+    for load_balancer in load_balancers_list:
+        if load_balancer.get('resource_group'):
+            _attach_resource_group_load_balancers(tx,load_balancer['id'],load_balancer['resource_group'],update_tag)
+        else:
+            x = load_balancer['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_load_balancers(tx,load_balancer['id'],resource_group,update_tag)
+            
+    
+def _attach_resource_group_load_balancers( tx: neo4j.Transaction, load_balancer_id:str,resource_group:str, update_tag: int) -> None:
+    ingest_load_balancer = """
+    MATCH (n:AzureNetworkLoadBalancer{id: $load_balancer_id})
+    WITH n
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (n)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        ingest_load_balancer,
+        load_balancer_id=load_balancer_id,
+        resource_group=resource_group.upper(),
+        update_tag=update_tag
+    )
+
 
 
 def _load_backend_address_pools_tx(
@@ -1065,7 +1285,7 @@ def _load_backend_address_pools_tx(
             bap.lastupdated = $update_tag
             WITH n, b_pool, bap
             UNWIND b_pool.backend_ip_configurations as ip_conf
-                MATCH (ipc:AzurePrivateIPAddress{id: ip_conf})
+                MATCH (ipc:AzureNetworkInterfaceIPConfiguration{id: ip_conf})
                 WITH n, bap, ipc
                 MERGE (bap)-[r:HAS]->(ipc)
                 ON CREATE SET r.firstseen = timestamp()
@@ -1087,7 +1307,7 @@ def _create_relationship_between_network_interface_and_load_balancer_tx(
 ) -> None:
     query = """
     UNWIND $load_balancers_list AS lb
-        MATCH (n:AzureNetworkLoadBalancer{id: lb.id})-[:HAS]->(:AzureLoadBalancerBackendAddressPool)-[:HAS]->(:AzurePrivateIPAddress)<-[:MEMBER_OF_PRIVATE_IP]-(interface:AzureNetworkInterface)
+        MATCH (n:AzureNetworkLoadBalancer{id: lb.id})-[:HAS]->(:AzureLoadBalancerBackendAddressPool)-[:HAS]->(:AzureNetworkInterfaceIPConfiguration)<-[:CONTAINS]-(interface:AzureNetworkInterface)
         WITH n, interface
         MERGE (interface)-[r:CONNECTED_TO]->(n)
         ON CREATE SET r.firstseen = timestamp()
@@ -1108,7 +1328,7 @@ def _load_ip_configurations_tx(
     MATCH (n:AzureNetworkInterface{id: interface.id})
     WITH n, interface
     UNWIND interface.ip_configurations AS ip_conf
-    MERGE (ipc:AzurePrivateIPAddress{id: ip_conf.id})
+    MERGE (ipc:AzureNetworkInterfaceIPConfiguration{id: ip_conf.id})
     ON CREATE SET ipc.firstseen = timestamp(),
     ipc.private_ip_address = ip_conf.private_ip_address,
     ipc.private_ip_allocation_method = ip_conf.private_ip_allocation_method,
@@ -1116,7 +1336,7 @@ def _load_ip_configurations_tx(
     SET ipc.lastupdated = $update_tag,
     ipc.name = ip_conf.name
     WITH ipc, n
-    MERGE (n)-[r:MEMBER_OF_PRIVATE_IP]->(ipc)
+    MERGE (n)-[r:CONTAINS]->(ipc)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """
@@ -1125,7 +1345,30 @@ def _load_ip_configurations_tx(
         network_interfaces_list=network_interfaces_list,
         update_tag=update_tag,
     )
-
+   
+def _load_private_ip_network_interfaces_relationship(tx: neo4j.Transaction,interface_id:str ,ip_configuration_list: List[Dict], update_tag: int) -> None:
+    query = """
+    UNWIND $ip_configuration_list AS ip_conf
+        MATCH (ni:AzureNetworkInterface{id: $interface_id})
+        with ip_conf ,ni
+        MERGE (ip:AzurePrivateIPAddress{private_ip_address:ip_conf.private_ip_address})
+            ON CREATE SET ip.firstseen = timestamp(),
+            ip.private_ip_address = ip_conf.private_ip_address,
+            ip.private_ip_allocation_method = ip_conf.private_ip_allocation_method,
+            ip.private_ip_address_version = ip_conf.private_ip_address_version
+            SET ip.lastupdated = $update_tag,
+            ip.name = ip_conf.name
+        WITH ip, ni
+        MERGE (ni)-[r:MEMBER_OF_PRIVATE_IP_ADDRESS]->(ip)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        query,
+        ip_configuration_list=ip_configuration_list,
+        interface_id=interface_id,
+        update_tag=update_tag
+    )
 
 def _attach_subnet_to_network_interfaces_tx(
         tx: neo4j.Transaction, network_interfaces_list: List[Dict], update_tag: int,
@@ -1176,6 +1419,8 @@ def sync_network_interfaces(
     for interface in network_interfaces_list:
         load_public_ip_network_interfaces_relationship(neo4j_session, interface.get(
             'id'), interface.get('public_ip_address', []), update_tag)
+        load_private_ip_address_network_interfaces_relationship(neo4j_session, interface.get('id'), interface.get('ip_configurations', []), update_tag)
+
 
 
 def sync_network_load_balancer(
@@ -1302,6 +1547,27 @@ def _load_usages_tx(
         usages_list=usages_list,
         azure_update_tag=update_tag,
     )
+    for usages in usages_list:
+        x = usages['id'].split('/')
+        resource_group = x[x.index('resourceGroups') + 1]
+        _attach_resource_network_usages(tx,usages['id'],resource_group,update_tag)
+
+def _attach_resource_network_usages(tx: neo4j.Transaction,usages_id:str,resource_group:str,update_tag: int) -> None:
+    ingest_usages = """
+    MATCH (n:AzureNetworkUsage{id: $usages_id})
+    WITH n
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (n)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    tx.run(
+        ingest_usages,
+        usages_id=usages_id,
+        resource_group=resource_group.upper(),
+        azure_update_tag=update_tag,
+    )
+
 
 
 def cleanup_usages(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:

@@ -171,21 +171,27 @@ def _load_function_apps_tx(
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
-    _attach_resource_group_function_apps(tx,function_apps_list,update_tag)
-    
-def _attach_resource_group_function_apps(tx: neo4j.Transaction,function_apps_list: List[Dict],update_tag: int) -> None:
+    for function_app in function_apps_list:
+        if function_app.get('resource_group'):
+            _attach_resource_group_function_apps(tx,function_app['id'],function_app['resource_group'],update_tag)
+        else:
+            x = function_app['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_function_apps(tx,function_app['id'],resource_group,update_tag)
+            
+def _attach_resource_group_function_apps(tx: neo4j.Transaction,function_app_id: str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps = """
-    UNWIND $function_apps_list AS function_app
-    MATCH (f:AzureFunctionApp{id: function_app.id})
-    WITH f,function_app
-    MATCH (rg:AzureResourceGroup{name: function_app.resource_group})
+    MATCH (f:AzureFunctionApp{id: $function_app_id})
+    WITH f
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
     MERGE (f)-[r:RESOURCE_GROUP]->(rg)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """
     tx.run(
         ingest_function_apps,
-        function_apps_list=function_apps_list,
+        function_app_id=function_app_id,
+        resource_group=resource_group.upper(),
         update_tag=update_tag
     )
 
@@ -347,17 +353,20 @@ def _load_function_apps_configurations_tx(
         function_apps_conf_list=function_apps_conf_list,
         azure_update_tag=update_tag,
     )
-    _attach_resource_group_function_apps_conf(tx,function_apps_conf_list,update_tag)
+    for function_apps_conf in function_apps_conf_list:
+        if function_apps_conf.get('resource_group'):
+            _attach_resource_group_function_apps_conf(tx,function_apps_conf['id'],function_apps_conf['resource_group'],update_tag)
+        else:
+            x = function_apps_conf['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_function_apps_conf(tx,function_apps_conf['id'],resource_group,update_tag)
 
-def _attach_resource_group_function_apps_conf(tx: neo4j.Transaction,
-    function_apps_conf_list: List[Dict],
-    update_tag: int,
-) -> None:
+            
+def _attach_resource_group_function_apps_conf(tx: neo4j.Transaction,function_apps_conf_id: str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_conf = """
-    UNWIND $function_apps_conf_list as function_conf
-    MATCH (fc:AzureFunctionAppConfiguration{id: function_conf.id})
-    WITH fc, function_conf
-    MATCH (rg:AzureResourceGroup{name: function_conf.resource_group})
+    MATCH (fc:AzureFunctionAppConfiguration{id: $function_conf_id})
+    WITH fc
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
     MERGE (fc)-[r:RESOURCE_GROUP]->(rg)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
@@ -365,7 +374,8 @@ def _attach_resource_group_function_apps_conf(tx: neo4j.Transaction,
 
     tx.run(
         ingest_function_apps_conf,
-        function_apps_conf_list=function_apps_conf_list,
+        function_conf_id=function_apps_conf_id,
+        resource_group=resource_group.upper(),
         azure_update_tag=update_tag,
     )
 
@@ -467,25 +477,29 @@ def _load_function_apps_functions_tx(
         function_apps_function_list=function_apps_function_list,
         azure_update_tag=update_tag,
     )
-    _attach_resource_group_unction_apps_function(tx,function_apps_function_list,update_tag)
+    for function_apps_function in function_apps_function_list:
+        if function_apps_function.get('resource_group'):
+            _attach_resource_group_unction_apps_function(tx,function_apps_function['id'],function_apps_function['resource_group'],update_tag)
+        else:
+            x = function_apps_function['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_unction_apps_function(tx,function_apps_function['id'],resource_group,update_tag)
+            
     
-def _attach_resource_group_unction_apps_function(tx: neo4j.Transaction,
-    function_apps_function_list: List[Dict],
-    update_tag: int,
-) -> None:
+def _attach_resource_group_unction_apps_function(tx: neo4j.Transaction,function_apps_function_id:str,resource_group:str,update_tag: int) -> None:
     ingest_function = """
-    UNWIND $function_apps_function_list as function
-    MATCH (f:AzureFunctionAppFunction{id: function.id})
-    WITH f, function
-    MATCH (rg:AzureResourceGroup{name: function.resource_group})
-    MERGE (f)-[r:RESOURE_GROUP]->(rg)
+    MATCH (f:AzureFunctionAppFunction{id: $function_id})
+    WITH f
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (f)-[r:RESOURCE_GROUP]->(rg)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
 
     tx.run(
         ingest_function,
-        function_apps_function_list=function_apps_function_list,
+        function_id=function_apps_function_id,
+        resource_group=resource_group.upper(),
         azure_update_tag=update_tag,
     )
 
@@ -583,14 +597,19 @@ def _load_function_apps_deployments_tx(
         function_apps_deployments_list=function_apps_deployments_list,
         azure_update_tag=update_tag,
     )
-    _attach_resource_group_function_apps_deployments(tx,function_apps_deployments_list,update_tag)
-    
-def _attach_resource_group_function_apps_deployments(tx: neo4j.Transaction,function_apps_deployments_list: List[Dict],update_tag: int) -> None:
+    for function_apps_deployment in function_apps_deployments_list:
+        if function_apps_deployment.get('resource_group'):
+            _attach_resource_group_function_apps_deployments(tx,function_apps_deployment['id'],function_apps_deployment['resource_group'],update_tag)
+        else:
+            x = function_apps_deployment['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_function_apps_deployments(tx,function_apps_deployment['id'],resource_group,update_tag)
+            
+def _attach_resource_group_function_apps_deployments(tx: neo4j.Transaction,function_apps_deployment_id:str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_deploy = """
-    UNWIND $function_apps_deployments_list as function_deploy
-    MATCH (f:AzureFunctionAppDeployment{id: function_deploy.id})
-    WITH f, function_deploy
-    MATCH (rg:AzureResourceGroup{name: function_deploy.resource_group})
+    MATCH (f:AzureFunctionAppDeployment{id: $function_deploy_id})
+    WITH f
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
     MERGE (f)-[r:RESOURCE_GROUP]->(rg)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
@@ -598,7 +617,8 @@ def _attach_resource_group_function_apps_deployments(tx: neo4j.Transaction,funct
 
     tx.run(
         ingest_function_apps_deploy,
-        function_apps_deployments_list=function_apps_deployments_list,
+        function_deploy_id=function_apps_deployment_id,
+        resource_group=resource_group.upper(),
         azure_update_tag=update_tag,
     )
 
@@ -697,21 +717,27 @@ def _load_function_apps_backups_tx(
         function_apps_backups_list=function_apps_backups_list,
         azure_update_tag=update_tag,
     )
-    _attach_resource_group_function_apps_backups(tx,function_apps_backups_list,update_tag)
+    for function_apps_backup in function_apps_backups_list:
+        if function_apps_backup.get('resource_group'):
+            _attach_resource_group_function_apps_backups(tx,function_apps_backup['id'],function_apps_backup['resource_group'],update_tag)
+        else:
+            x = function_apps_backup['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_function_apps_backups(tx,function_apps_backup['id'],resource_group,update_tag)  
 
-def _attach_resource_group_function_apps_backups (tx: neo4j.Transaction,function_apps_backups_list: List[Dict],update_tag: int) -> None:
+def _attach_resource_group_function_apps_backups (tx: neo4j.Transaction,function_apps_backup_id: str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_backup = """
-    UNWIND $function_apps_backups_list as function_backup
-    MATCH (f:AzureFunctionAppBackup{id: function_backup.id})
-    WITH f, function_backup
-    MATCH (rg:AzureResourceGroup{name: function_backup.resource_group})
+    MATCH (f:AzureFunctionAppBackup{id: $function_backup_id})
+    WITH f
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
     MERGE (f)-[r:RESOURCE_GROUP]->(rg)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
     tx.run(
         ingest_function_apps_backup,
-        function_apps_backups_list=function_apps_backups_list,
+        function_backup_id=function_apps_backup_id,
+        resource_group=resource_group.upper(),
         azure_update_tag=update_tag,
     )
 
@@ -812,14 +838,19 @@ def _load_function_apps_processes_tx(
         function_apps_processes_list=function_apps_processes_list,
         azure_update_tag=update_tag,
     )
-    _attach_resource_group_function_apps_processes(tx,function_apps_processes_list,update_tag)
+    for function_apps_process in function_apps_processes_list:
+        if function_apps_process.get('resource_group'):
+            _attach_resource_group_function_apps_processes(tx,function_apps_process['id'],function_apps_process['resource_group'],update_tag)
+        else:
+            x = function_apps_process['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_function_apps_processes(tx,function_apps_process['id'],resource_group,update_tag) 
 
-def _attach_resource_group_function_apps_processes(tx: neo4j.Transaction,function_apps_processes_list: List[Dict],update_tag: int) -> None:
+def _attach_resource_group_function_apps_processes(tx: neo4j.Transaction,function_apps_process_id: str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_process = """
-    UNWIND $function_apps_processes_list as function_process
-    MATCH (f:AzureFunctionAppProcess{id: function_process.id})
-    WITH f, function_process
-    MATCH (rg:AzureResourceGroup{name: function_process.resource_group})
+    MATCH (f:AzureFunctionAppProcess{id: $function_process_id})
+    WITH f
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
     MERGE (f)-[r:RESOURCE_GROUP]->(rg)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
@@ -827,7 +858,8 @@ def _attach_resource_group_function_apps_processes(tx: neo4j.Transaction,functio
 
     tx.run(
         ingest_function_apps_process,
-        function_apps_processes_list=function_apps_processes_list,
+        function_process_id=function_apps_process_id,
+        resource_group=resource_group.upper(),
         azure_update_tag=update_tag,
     )
 
@@ -926,14 +958,19 @@ def _load_function_apps_snapshots_tx(
         function_apps_snapshots_list=function_apps_snapshots_list,
         azure_update_tag=update_tag,
     )
-    _attach_resource_group_function_apps_snapshot(tx,function_apps_snapshots_list,update_tag)
-
-def _attach_resource_group_function_apps_snapshot(tx: neo4j.Transaction,function_apps_snapshots_list: List[Dict],update_tag: int) -> None:
+    for function_apps_snapshot in function_apps_snapshots_list:
+        if function_apps_snapshot.get('resource_group'):
+            _attach_resource_group_function_apps_snapshot(tx,function_apps_snapshot['id'],function_apps_snapshot['resource_group'],update_tag)
+        else:
+            x = function_apps_snapshot['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_function_apps_snapshot(tx,function_apps_snapshot['id'],resource_group,update_tag)
+            
+def _attach_resource_group_function_apps_snapshot(tx: neo4j.Transaction,function_apps_snapshot_id:str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_snapshot = """
-    UNWIND $function_apps_snapshots_list as function_snapshot
-    MATCH (f:AzureFunctionAppSnapshot{id: function_snapshot.id})
-    WITH f, function_snapshot
-    MATCH (rg:AzureResourceGroup{name:function_snapshot.resource_group})
+    MATCH (f:AzureFunctionAppSnapshot{id: $function_snapshot_id})
+    WITH f
+    MATCH (rg:AzureResourceGroup{name:$resource_group})
     MERGE (f)-[r:RESOURCE_GROUP]->(rg)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
@@ -941,7 +978,8 @@ def _attach_resource_group_function_apps_snapshot(tx: neo4j.Transaction,function
 
     tx.run(
         ingest_function_apps_snapshot,
-        function_apps_snapshots_list=function_apps_snapshots_list,
+        function_snapshot_id=function_apps_snapshot_id,
+        resource_group=resource_group.upper(),
         azure_update_tag=update_tag,
     )
 
@@ -1039,14 +1077,19 @@ def _load_function_apps_webjobs_tx(
         function_apps_webjobs_list=function_apps_webjobs_list,
         azure_update_tag=update_tag,
     )
-    _attach_resoure_group_function_apps_webjobs(tx,function_apps_webjobs_list,update_tag)
+    for function_apps_webjob in function_apps_webjobs_list:
+        if function_apps_webjob.get('resource_group'):
+            _attach_resource_group_function_apps_webjobs(tx,function_apps_webjob['id'],function_apps_webjob['resource_group'],update_tag)
+        else:
+            x = function_apps_webjob['id'].split('/')
+            resource_group = x[x.index('resourceGroups') + 1]
+            _attach_resource_group_function_apps_webjobs(tx,function_apps_webjob['id'],resource_group,update_tag)
 
-def _attach_resoure_group_function_apps_webjobs(tx: neo4j.Transaction,function_apps_webjobs_list: List[Dict],update_tag: int) -> None:
+def _attach_resource_group_function_apps_webjobs(tx: neo4j.Transaction,function_apps_webjob_id:str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_webjob = """
-    UNWIND $function_apps_webjobs_list as function_webjob
-    MERGE (f:AzureFunctionAppWebJob{id: function_webjob.id})
-    WITH f, function_webjob
-    MATCH (rg:AzureResourceGroup{name: function_webjob.resource_group})
+    MERGE (f:AzureFunctionAppWebJob{id: $function_webjob_id})
+    WITH f
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
     MERGE (f)-[r:RESOURCE_GROUP]->(rg)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
@@ -1054,7 +1097,8 @@ def _attach_resoure_group_function_apps_webjobs(tx: neo4j.Transaction,function_a
 
     tx.run(
         ingest_function_apps_webjob,
-        function_apps_webjobs_list=function_apps_webjobs_list,
+        function_webjob_id=function_apps_webjob_id,
+        resource_group=resource_group.upper(),
         azure_update_tag=update_tag,
     )
     
