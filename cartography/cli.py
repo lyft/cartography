@@ -638,7 +638,7 @@ class CLI:
             logger.debug(f"Reading config string for GSuite from environment variable {config.gsuite_tokens_env_var}")
             config.gsuite_config = os.environ.get(config.gsuite_tokens_env_var)
         else:
-            config.github_config = None
+            config.gsuite_tokens_env_var = None
 
         # Lastpass config
         if config.lastpass_cid_env_var:
