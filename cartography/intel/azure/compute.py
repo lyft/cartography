@@ -127,7 +127,8 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
 def _attach_vm_properties_public_ip(tx: neo4j.Transaction, vm_id: str,update_tag) ->None:         
     ingest_vm_properties="""    
     MATCH (vm:AzureVirtualMachine{id: $vm_id})-[:MEMBER_NETWORK_INTERFACE]->(:AzureNetworkInterface)-[:MEMBER_PUBLIC_IP_ADDRESS]->(ip:AzurePublicIPAddress)
-    SET (CASE WHEN NOT ip.ipAddress IN coalesce(vm.public_ip, [])THEN vm END).public_ip=coalesce(vm.public_ip,[]) + ip.ipAddress; 
+    SET vm.public_ip=ip.ipAddress,
+     vm.lastupdated= $update_tag
     """
     tx.run(
         ingest_vm_properties,
@@ -136,8 +137,9 @@ def _attach_vm_properties_public_ip(tx: neo4j.Transaction, vm_id: str,update_tag
     )
 def _attach_vm_properties_private_ip(tx: neo4j.Transaction, vm_id: str,update_tag) ->None:         
     ingest_vm_properties="""
-    MATCH (vm:AzureVirtualMachine{id: $vm_id})-[:MEMBER_NETWORK_INTERFACE]->(:AzureNetworkInterface)-[:MEMBER_OF_PRIVATE_IP_ADDRESS]->(ip:AzurePrivateIPAddress)
-    SET (CASE WHEN NOT ip.private_ip_address IN coalesce(vm.private_ip, [])THEN vm END).private_ip=coalesce(vm.private_ip,[]) + ip.private_ip_address;
+    MATCH (vm:AzureVirtualMachine{id: $vm_id})-[:MEMBER_NETWORK_INTERFACE]->(:AzureNetworkInterface)-[:CONTAINS]->(ip:AzureNetworkInterfaceIPConfiguration)
+    SET vm.private_ip=ip.private_ip_address,
+    vm.lastupdated = $update_tag
     """
     tx.run(
         ingest_vm_properties,

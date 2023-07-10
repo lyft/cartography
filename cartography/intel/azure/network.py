@@ -125,9 +125,6 @@ def attach_subnet_to_network_interfaces(session: neo4j.Session, data_list: List[
 def load_public_ip_network_interfaces_relationship(session: neo4j.Session, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_public_ip_network_interfaces_relationship, interface_id, data_list, update_tag)
 
-def load_private_ip_address_network_interfaces_relationship(session: neo4j.Session, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
-    session.write_transaction(_load_private_ip_network_interfaces_relationship, interface_id, data_list, update_tag)
-
 def attach_public_ip_to_load_balancer(session: neo4j.Session, load_balancer_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_attach_public_ip_to_load_balancer_tx, load_balancer_id, data_list, update_tag)
 
@@ -1298,29 +1295,6 @@ def _load_ip_configurations_tx(
         update_tag=update_tag,
     )
    
-def _load_private_ip_network_interfaces_relationship(tx: neo4j.Transaction,interface_id:str ,ip_configuration_list: List[Dict], update_tag: int) -> None:
-    query = """
-    UNWIND $ip_configuration_list AS ip_conf
-        MATCH (ni:AzureNetworkInterface{id: $interface_id})
-        with ip_conf ,ni
-        MERGE (ip:AzurePrivateIPAddress{private_ip_address:ip_conf.private_ip_address})
-            ON CREATE SET ip.firstseen = timestamp(),
-            ip.private_ip_address = ip_conf.private_ip_address,
-            ip.private_ip_allocation_method = ip_conf.private_ip_allocation_method,
-            ip.private_ip_address_version = ip_conf.private_ip_address_version
-            SET ip.lastupdated = $update_tag,
-            ip.name = ip_conf.name
-        WITH ip, ni
-        MERGE (ni)-[r:MEMBER_OF_PRIVATE_IP_ADDRESS]->(ip)
-            ON CREATE SET r.firstseen = timestamp()
-            SET r.lastupdated = $update_tag
-    """
-    tx.run(
-        query,
-        ip_configuration_list=ip_configuration_list,
-        interface_id=interface_id,
-        update_tag=update_tag
-    )
 
 def _attach_subnet_to_network_interfaces_tx(
         tx: neo4j.Transaction, network_interfaces_list: List[Dict], update_tag: int,
@@ -1371,7 +1345,6 @@ def sync_network_interfaces(
     for interface in network_interfaces_list:
         load_public_ip_network_interfaces_relationship(neo4j_session, interface.get(
             'id'), interface.get('public_ip_address', []), update_tag)
-        load_private_ip_address_network_interfaces_relationship(neo4j_session, interface.get('id'), interface.get('ip_configurations', []), update_tag)
 
 
 

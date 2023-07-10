@@ -26,11 +26,11 @@
 			"iterative": false
 		},
 		{
-			"query": " MATCH (ip:AzurePrivateIPAddress)<-[:MEMBER_OF_PRIVATE_IP_ADDRESS]-(:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id:$AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET (CASE WHEN NOT ip.private_ip_address IN coalesce(vm.private_ip, [])THEN vm END).private_ip=coalesce(vm.private_ip,[]) + ip.private_ip_address;",
+			"query": " MATCH (ip:AzureNetworkInterfaceIPConfiguration)<-[:CONTAINS]-(:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id:$AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.private_ip=ip.private_ip_address",
 			"iterative": false
 		},
 		{
-			"query": "MATCH (ip:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})SET (CASE WHEN NOT ip.ipAddress IN coalesce(vm.public_ip, [])THEN vm END).public_ip=coalesce(vm.public_ip,[]) + ip.ipAddress;",
+			"query": "MATCH (ip:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.public_ip= ip.ipAddress",
 			"iterative": false
 		},
 		{
