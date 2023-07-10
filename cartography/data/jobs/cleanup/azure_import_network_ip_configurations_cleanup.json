@@ -1,16 +1,6 @@
 {
 	"statements": [
 		{
-			"query": "MATCH(n:AzurePrivateIPAddress)<-[:MEMBER_OF_PRIVATE_IP_ADDRESS]-(:AzureNetworkInterfaceIPConfiguration)<-[:CONTAINS]-(:AzureNetworkInterface)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
-			"iterative": true,
-			"iterationsize": 100
-		},
-		{
-			"query": "MATCH (:AzurePrivateIPAddress)<-[r:MEMBER_OF_PRIVATE_IP_ADDRESS]-(:AzureNetworkInterfaceIPConfiguration)<-[:CONTAINS]-(:AzureNetworkInterface)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
-			"iterative": true,
-			"iterationsize": 100
-		},
-		{
 			"query": "MATCH (n:AzureNetworkInterfaceIPConfiguration)<-[:CONTAINS]-(:AzureNetworkInterface)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
@@ -21,12 +11,12 @@
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (n:AzureNetworkInterfaceIPConfiguration)<-[:CONTAINS]-(:AzureLoadBalancerBackendAddressPool)<-[:HAS]-(:AzureNetworkLoadBalancer)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (n:AzureNetworkInterfaceIPConfiguration)<-[:HAS]-(:AzureLoadBalancerBackendAddressPool)<-[:HAS]-(:AzureNetworkLoadBalancer)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:AzureNetworkInterfaceIPConfiguration)<-[r:CONTAINS]-(:AzureLoadBalancerBackendAddressPool)<-[:HAS]-(:AzureNetworkLoadBalancer)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:AzureNetworkInterfaceIPConfiguration)<-[r:HAS]-(:AzureLoadBalancerBackendAddressPool)<-[:HAS]-(:AzureNetworkLoadBalancer)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		}

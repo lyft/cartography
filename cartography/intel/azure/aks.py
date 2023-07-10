@@ -11,6 +11,7 @@ from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
+from cartography.util import get_azure_resource_group_name
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -76,8 +77,7 @@ def get_aks_list(credentials: Credentials, subscription_id: str, regions: list, 
         aks_list = list(map(lambda x: x.as_dict(), client.managed_clusters.list()))
         aks_data = []
         for aks in aks_list:
-            x = aks['id'].split('/')
-            aks['resource_group'] = x[x.index('resourcegroups') + 1]
+            aks['resource_group'] = get_azure_resource_group_name(aks.get('id'))
             aks['publicNetworkAccess'] = aks.get('properties', {}).get('public_network_access', 'Disabled')
             aks['consolelink'] = azure_console_link.get_console_link(
                 id=aks['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
@@ -120,15 +120,9 @@ def _load_aks_tx(tx: neo4j.Transaction, subscription_id: str, aks_list: List[Dic
         update_tag=update_tag,
     )
     for aks in aks_list:
-        if aks.get('resource_group'):
-            _attach_resource_group_aks(tx,aks.get('id'),aks.get('resource_group'),update_tag)
-        else:
-            x = aks['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_aks(tx,aks['id'],resource_group,update_tag)
+        resource_group=get_azure_resource_group_name(aks.get('id'))
+        _attach_resource_group_aks(tx,aks['id'],resource_group,update_tag)
 
-
-    
 def _attach_resource_group_aks(tx: neo4j.Transaction, aks_id:str,resource_group:str ,update_tag: int) -> None:
     ingest_aks_resource = """
     MATCH (a:AzureCluster{id: $aks_id})
@@ -138,11 +132,10 @@ def _attach_resource_group_aks(tx: neo4j.Transaction, aks_id:str,resource_group:
     ON CREATE SET res.firstseen = timestamp()
     SET res.lastupdated = $update_tag
     """
-
     tx.run(
         ingest_aks_resource,
         aks_id=aks_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         update_tag=update_tag,
     )
     
@@ -186,8 +179,7 @@ def get_container_registries_list(client: ContainerRegistryManagementClient, reg
         container_registries_list = list(map(lambda x: x.as_dict(), client.registries.list()))
         registry_data = []
         for registry in container_registries_list:
-            x = registry['id'].split('/')
-            registry['resource_group'] = x[x.index('resourceGroups') + 1]
+            registry['resource_group'] = get_azure_resource_group_name(registry.get('id'))
             registry['consolelink'] = azure_console_link.get_console_link(
                 id=registry['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
@@ -231,12 +223,8 @@ def _load_container_registries_tx(
         update_tag=update_tag,
     )
     for container_registries in container_registries_list:
-        if container_registries.get('resource_group'):
-            _attach_resource_group_container_registry(tx,container_registries.get('id'),container_registries.get('resource_group'),update_tag)
-        else:
-            x = container_registries['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_container_registry(tx,container_registries['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(container_registries.get('id'))
+        _attach_resource_group_container_registry(tx,container_registries['id'],resource_group,update_tag)
 
 
 def _attach_resource_group_container_registry(tx: neo4j.Transaction, container_registry_id: List[Dict],resource_group:str, update_tag: int) -> None:
@@ -248,11 +236,10 @@ def _attach_resource_group_container_registry(tx: neo4j.Transaction, container_r
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """
-
     tx.run(
         ingest_container_registry,
         container_registry_id=container_registry_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         update_tag=update_tag,
     )
 def cleanup_container_registries(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
@@ -319,8 +306,7 @@ def get_container_registry_replications_list(
                 )
 
         for replication in container_registry_replications_list:
-            x = replication['id'].split('/')
-            replication['resource_group'] = x[x.index('resourceGroups') + 1]
+            replication['resource_group'] = get_azure_resource_group_name(replication.get('id'))
             replication['container_registry_id'] = replication['id'][:replication['id'].index("/replications")]
             replication['consolelink'] = azure_console_link.get_console_link(
                 id=replication['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
@@ -359,12 +345,8 @@ def _load_container_registry_replications_tx(
         update_tag=update_tag,
     )
     for container_registry_replication in container_registry_replications_list:
-        if container_registry_replication.get('resource_group'):
-            _attach_resource_group_container_replication(tx,container_registry_replication['id'],container_registry_replication['resource_group'],update_tag=update_tag)
-        else:
-            x = container_registry_replication['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_container_replication(tx,container_registry_replication['id'],resource_group,update_tag=update_tag)
+        resource_group = get_azure_resource_group_name(container_registry_replication.get('id'))
+        _attach_resource_group_container_replication(tx,container_registry_replication['id'],resource_group,update_tag=update_tag)
     
 def _attach_resource_group_container_replication(tx: neo4j.Transaction, container_registry_replication_id:str, resource_group:str,update_tag: int) -> None:
     ingest_container_replication = """
@@ -375,11 +357,10 @@ def _attach_resource_group_container_replication(tx: neo4j.Transaction, containe
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $update_tag
     """
-
     tx.run(
         ingest_container_replication,
         container_registry_replication_id=container_registry_replication_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         update_tag=update_tag,
     )
 
@@ -416,8 +397,7 @@ def get_container_registry_runs_list(
             )
             for run in registry_runs_list:
                 run["location"] = container_registry.get("location", "global")
-                x = run['id'].split('/')
-                run['resource_group'] = x[x.index('resourceGroups') + 1]
+                run['resource_group'] = get_azure_resource_group_name(run.get('id'))
                 run['container_registry_id'] = run['id'][:run['id'].index("/runs")]
                 run['consolelink'] = azure_console_link.get_console_link(
                     id=run['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
@@ -457,12 +437,8 @@ def _load_container_registry_runs_tx(
         update_tag=update_tag,
     )
     for container_registry_run in container_registry_runs_list:
-        if container_registry_run.get('resource_group'):
-            _attach_resource_group_container_registry_runs(tx,container_registry_run['id'],container_registry_run['resource_group'],update_tag)
-        else:
-            x = container_registry_run['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_container_registry_runs(tx,container_registry_run['id'],resource_group,update_tag)
+       resource_group = get_azure_resource_group_name(container_registry_run.get('id'))
+       _attach_resource_group_container_registry_runs(tx,container_registry_run['id'],resource_group,update_tag)
 
 
 def _attach_resource_group_container_registry_runs(tx: neo4j.Transaction, container_registry_run_id:str,resource_group:str, update_tag: int) -> None:
@@ -474,11 +450,10 @@ def _attach_resource_group_container_registry_runs(tx: neo4j.Transaction, contai
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """
-
     tx.run(
         ingest_container_run,
         run_id=container_registry_run_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         update_tag=update_tag,
     )
     
@@ -515,8 +490,7 @@ def get_container_registry_tasks_list(
                 )
 
         for task in container_registry_tasks_list:
-            x = task['id'].split('/')
-            task['resource_group'] = x[x.index('resourceGroups') + 1]
+            task['resource_group'] = get_azure_resource_group_name(task.get('id'))
             task['container_registry_id'] = task['id'][:task['id'].index("/tasks")]
             task['consolelink'] = azure_console_link.get_console_link(
                 id=task['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
@@ -555,12 +529,8 @@ def _load_container_registry_tasks_tx(
         update_tag=update_tag,
     )
     for container_registry_task in container_registry_tasks_list:
-        if container_registry_task.get('resource_group'):
-            _attach_resource_group_container_task(tx,container_registry_task['id'],container_registry_task['resource_group'],update_tag)
-        else:
-            x = container_registry_task['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_container_task(tx,container_registry_task['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(container_registry_task.get('id'))
+        _attach_resource_group_container_task(tx,container_registry_task['id'],resource_group,update_tag)
 
 
 def _attach_resource_group_container_task(
@@ -574,11 +544,10 @@ def _attach_resource_group_container_task(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """
-
     tx.run(
         ingest_container_task,
         container_registry_task_id=container_registry_task_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         update_tag=update_tag,
     )
 
@@ -615,8 +584,7 @@ def get_container_registry_webhooks_list(
                 )
 
         for webhook in container_registry_webhooks_list:
-            x = webhook['id'].split('/')
-            webhook['resource_group'] = x[x.index('resourceGroups') + 1]
+            webhook['resource_group'] = get_azure_resource_group_name(webhook.get('id'))
             webhook['container_registry_id'] = webhook['id'][:webhook['id'].index("/webhooks")]
             webhook['consolelink'] = azure_console_link.get_console_link(
                 id=webhook['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
@@ -655,16 +623,9 @@ def _load_container_registry_webhooks_tx(
         update_tag=update_tag,
     )
     for container_registry_webhook in container_registry_webhooks_list:
-        if container_registry_webhook.get('resource_group'):
-            _attach_resource_group_container_registry_webhooks(tx,container_registry_webhook['id'],container_registry_webhook['resource_group'],update_tag)
-        else:
-            x = container_registry_webhook['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_container_registry_webhooks(tx,container_registry_webhook['id'],resource_group,update_tag)
-
-            
-            
-
+        resource_group = get_azure_resource_group_name(container_registry_webhook.get('id'))
+        _attach_resource_group_container_registry_webhooks(tx,container_registry_webhook['id'],resource_group,update_tag)
+           
 def _attach_resource_group_container_registry_webhooks( tx: neo4j.Transaction, container_registry_webhook_id: str,resource_group:str ,update_tag: int) -> None:
     ingest_container_webhook = """
     MATCH (a:AzureContainerRegistryWebhook{id:$container_registry_webhook_id})
@@ -674,11 +635,10 @@ def _attach_resource_group_container_registry_webhooks( tx: neo4j.Transaction, c
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """
-
     tx.run(
         ingest_container_webhook,
         container_registry_webhook_id=container_registry_webhook_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         update_tag=update_tag,
     )
 
@@ -704,8 +664,7 @@ def get_container_groups_list(client: ContainerInstanceManagementClient, regions
         container_groups_list = list(map(lambda x: x.as_dict(), client.container_groups.list()))
         group_data = []
         for group in container_groups_list:
-            x = group['id'].split('/')
-            group['resource_group'] = x[x.index('resourceGroups') + 1]
+            group['resource_group'] = get_azure_resource_group_name(group.get('id'))
             group['consolelink'] = azure_console_link.get_console_link(
                 id=group['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
@@ -749,14 +708,9 @@ def _load_container_groups_tx(
         update_tag=update_tag,
     )
     for container_group in container_groups_list:
-        if container_group.get('resource_group'):
-            _attach_resource_group_aks_container_group(tx,container_group['id'],container_group['resource_group'].upper(),update_tag)
-        else:
-            x = container_group['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_aks_container_group(tx,container_group['id'],resource_group,update_tag)
-
-            
+        resource_group = get_azure_resource_group_name(container_group.get('id'))
+        _attach_resource_group_aks_container_group(tx,container_group['id'],resource_group,update_tag)
+          
 def _attach_resource_group_aks_container_group(
     tx: neo4j.Transaction,container_group_id: str,resource_group:str, update_tag: int,
 ) -> None:
@@ -768,11 +722,10 @@ def _attach_resource_group_aks_container_group(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """
-
     tx.run(
         ingest_container_group,
         group_id=container_group_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         update_tag=update_tag,
     )
 
@@ -856,12 +809,8 @@ def _load_containers_tx(tx: neo4j.Transaction, containers_list: List[Dict], upda
         update_tag=update_tag,
     )
     for container in containers_list:
-        if container.get('resource_group'):
-            _attach_resource_group_container(tx,container['id'],container['resource_group'],update_tag)
-        else:
-            x = container['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_container(tx,container['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(container.get('id'))
+        _attach_resource_group_container(tx,container['id'],resource_group,update_tag)
 
             
     
@@ -877,7 +826,7 @@ def _attach_resource_group_container(tx: neo4j.Transaction, container_id: str, r
     tx.run(
         ingest_container,
         container_id=container_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group(),
         update_tag=update_tag,
     )
 

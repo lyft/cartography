@@ -9,6 +9,7 @@ from azure.mgmt.security import SecurityCenter
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
+from cartography.util import get_azure_resource_group_name
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -39,8 +40,7 @@ def get_security_contacts_list(client: SecurityCenter) -> List[Dict]:
 def transform_security_contacts(security_contacts: List[Dict], subscription_id: str, common_job_parameters: str) -> List[Dict]:
     security_contacts_data = []
     for contact in security_contacts:
-        x = contact['id'].split('/')
-        contact['resource_group'] = x[x.index('resourceGroups') + 1]
+        contact['resource_group'] = get_azure_resource_group_name(contact.get('id'))
         contact['subscriptionid'] = subscription_id
         contact['region'] = 'global'
         contact['consolelink'] = azure_console_link.get_console_link(
@@ -76,12 +76,8 @@ def _load_security_contacts_tx(
         update_tag=update_tag,
     )
     for security_contact in security_contacts:
-        if security_contact.get('resource_group'):
-            _attach_resource_group_security_contacts(tx, security_contact['id'], security_contact['resource_group'],update_tag)
-        else:
-            x = security_contact['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_security_contacts(tx, security_contact['id'], resource_group,update_tag)
+        resource_group=get_azure_resource_group_name(security_contact.get('id'))
+        _attach_resource_group_security_contacts(tx, security_contact['id'], resource_group,update_tag)
             
     
 def _attach_resource_group_security_contacts(tx: neo4j.Transaction, security_contact_id:str,resource_group:str ,update_tag: int) -> None:
@@ -96,7 +92,7 @@ def _attach_resource_group_security_contacts(tx: neo4j.Transaction, security_con
     tx.run(
         ingest_contacts,
         security_contact_id=security_contact_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         update_tag=update_tag
     )
 

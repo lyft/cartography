@@ -13,7 +13,7 @@ from azure.mgmt.storage import StorageManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
-from cartography.util import run_cleanup_job
+from cartography.util import run_cleanup_job,get_azure_resource_group_name
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -50,8 +50,7 @@ def get_storage_account_list(credentials: Credentials, subscription_id: str, reg
         return []
     account_list = []
     for storage_account in storage_account_list:
-        x = storage_account['id'].split('/')
-        storage_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
+        storage_account['resourceGroup'] = get_azure_resource_group_name(storage_account.get('id'))
         storage_account['allowBlobPublicAccess'] = storage_account.get(
             'properties', {}).get('allow_blob_public_access', False)
         storage_account['consolelink'] = azure_console_link.get_console_link(
@@ -107,12 +106,8 @@ def load_storage_account_data(
         azure_update_tag=azure_update_tag,
     )
     for storage in storage_account_list:
-        if storage.get('resourceGroup'):
-            _attach_resource_group_storage_account(neo4j_session, storage.get('id'), storage.get('resourceGroup'),azure_update_tag)
-        else:
-            x = storage['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_storage_account(neo4j_session, storage.get('id'), resource_group,azure_update_tag)
+        resource_group=get_azure_resource_group_name(storage.get('id'))
+        _attach_resource_group_storage_account(neo4j_session, storage.get('id'), resource_group,azure_update_tag)
             
             
 def _attach_resource_group_storage_account(neo4j_session: neo4j.Session, storage_account_id: str,resource_group:str,azure_update_tag: int,) -> None:
@@ -127,7 +122,7 @@ def _attach_resource_group_storage_account(neo4j_session: neo4j.Session, storage
     neo4j_session.run(
         ingest_storage_account,
         account_id=storage_account_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=azure_update_tag
     )
 
@@ -349,8 +344,7 @@ def _load_queue_services(
         azure_update_tag=update_tag,
     )
     for queue_service in queue_services:
-        x = queue_service['id'].split('/')
-        resource_group = x[x.index('resourceGroups') + 1]
+        resource_group=get_azure_resource_group_name(queue_service.get('id'))
         _attach_resource_queue_service(neo4j_session,queue_service['id'],resource_group,update_tag)
 
 def _attach_resource_queue_service(neo4j_session: neo4j.Session, queue_service_id: str,resource_group:str, update_tag: int) -> None:
@@ -362,11 +356,10 @@ def _attach_resource_queue_service(neo4j_session: neo4j.Session, queue_service_i
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     neo4j_session.run(
         ingest_queue_services,
         queue_service_id=queue_service_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag
     )
 
@@ -400,8 +393,7 @@ def _load_table_services(
         azure_update_tag=update_tag,
     )
     for table_service in table_services:
-        x = table_service['id'].split('/')
-        resource_group = x[x.index('resourceGroups') + 1]
+        resource_group=get_azure_resource_group_name(table_service.get('id'))
         _attach_resource_storage_table_service(neo4j_session,table_service['id'],resource_group,update_tag)
 
 def _attach_resource_storage_table_service(neo4j_session: neo4j.Session, table_service_id:str, resource_group:str,update_tag: int) -> None:
@@ -417,7 +409,7 @@ def _attach_resource_storage_table_service(neo4j_session: neo4j.Session, table_s
     neo4j_session.run(
         ingest_table_services,
         tservice_id=table_service_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag
     )
 
@@ -451,8 +443,7 @@ def _load_file_services(
         azure_update_tag=update_tag,
     )
     for file_service in file_services:
-        x = file_service['id'].split('/')
-        resource_group = x[x.index('resourceGroups') + 1]
+        resource_group=get_azure_resource_group_name(file_service.get('id'))
         _attach_resource_storage_file_service(neo4j_session,file_service['id'],resource_group,update_tag)
 
 def _attach_resource_storage_file_service(neo4j_session: neo4j.Session, file_service_id:str,resource_group :str,update_tag: int) -> None:
@@ -467,7 +458,7 @@ def _attach_resource_storage_file_service(neo4j_session: neo4j.Session, file_ser
     neo4j_session.run(
         ingest_file_services,
         fservice_id=file_service_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
     
@@ -502,8 +493,7 @@ def _load_blob_services(
         azure_update_tag=update_tag,
     )
     for blob_service in blob_services:
-        x = blob_service['id'].split('/')
-        resource_group = x[x.index('resourceGroups') + 1]
+        resource_group=get_azure_resource_group_name(blob_service.get('id'))
         _attach_resource_storage_blob_service(neo4j_session,blob_service['id'],resource_group,update_tag)
 
 def _attach_resource_storage_blob_service (neo4j_session: neo4j.Session, blob_service_id: str, resource_group:str,update_tag: int) -> None:
@@ -515,11 +505,10 @@ def _attach_resource_storage_blob_service (neo4j_session: neo4j.Session, blob_se
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     neo4j_session.run(
         ingest_blob_services,
         bservice_id=blob_service_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
     
@@ -622,8 +611,7 @@ def _load_queues(neo4j_session: neo4j.Session, queues: List[Dict], update_tag: i
         azure_update_tag=update_tag,
     )
     for queue in queues:
-        x = queue['id'].split('/')
-        resource_group = x[x.index('resourceGroups') + 1]
+        resource_group=get_azure_resource_group_name(queue.get('id'))
         _attach_resource_storage_queue(neo4j_session,queue['id'],resource_group,update_tag)
 
 def _attach_resource_storage_queue(neo4j_session: neo4j.Session, queue_id:str,resource_group:str, update_tag: int) -> None:
@@ -639,7 +627,7 @@ def _attach_resource_storage_queue(neo4j_session: neo4j.Session, queue_id:str,re
     neo4j_session.run(
         ingest_queues,
         queue_id=queue_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -742,8 +730,7 @@ def _load_tables(neo4j_session: neo4j.Session, tables: List[Dict], update_tag: i
         azure_update_tag=update_tag,
     )
     for table in tables:
-        x = table['id'].split('/')
-        resource_group = x[x.index('resourceGroups') + 1]
+        resource_group=get_azure_resource_group_name(table.get('id'))
         _attach_resource_storage_table(neo4j_session,table['id'],resource_group,update_tag)
 
 def _attach_resource_storage_table(neo4j_session: neo4j.Session, table_id:str, resource_group:str,update_tag: int) -> None:
@@ -762,7 +749,7 @@ def _attach_resource_storage_table(neo4j_session: neo4j.Session, table_id:str, r
     neo4j_session.run(
         ingest_tables,
         table_id=table_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -875,8 +862,7 @@ def _load_shares(neo4j_session: neo4j.Session, shares: List[Dict], update_tag: i
         azure_update_tag=update_tag,
     )
     for share in shares:
-        x = share['id'].split('/')
-        resource_group = x[x.index('resourceGroups') + 1]
+        resource_group=get_azure_resource_group_name(share.get('id'))
         _attach_resource_storage_share(neo4j_session,share['id'],resource_group,update_tag)
 
 def _attach_resource_storage_share(neo4j_session: neo4j.Session, share_id:str,resource_group:str ,update_tag: int) -> None:
@@ -888,11 +874,10 @@ def _attach_resource_storage_share(neo4j_session: neo4j.Session, share_id:str,re
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     neo4j_session.run(
         ingest_shares,
         share_id=share_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -1009,8 +994,7 @@ def _load_blob_containers(
         azure_update_tag=update_tag,
     )
     for blob_container in blob_containers:
-        x = blob_container['id'].split('/')
-        resource_group = x[x.index('resourceGroups') + 1]
+        resource_group=get_azure_resource_group_name(blob_container.get('id'))
         _attach_resource_storage_blob_container(neo4j_session,blob_container['id'],resource_group,update_tag)
 
 def _attach_resource_storage_blob_container(neo4j_session: neo4j.Session, blob_container_id: str,resource_group:str ,update_tag: int) -> None:
@@ -1022,11 +1006,10 @@ def _attach_resource_storage_blob_container(neo4j_session: neo4j.Session, blob_c
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     neo4j_session.run(
         ingest_blob_containers,
         blob_id=blob_container_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 

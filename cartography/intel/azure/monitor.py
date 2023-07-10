@@ -12,6 +12,7 @@ from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
+from cartography.util import get_azure_resource_group_name
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -48,8 +49,7 @@ def get_log_profiles_list(client: MonitorManagementClient, regions: List, common
 def transform_log_profiles(log_profiles: List[Dict], regions: List, common_job_parameters: str):
     log_profiles_data = []
     for log in log_profiles:
-        x = log['id'].split('/')
-        log['resource_group'] = x[x.index('resourceGroups') + 1]
+        log['resource_group'] = get_azure_resource_group_name(log.get('id'))
         log['consolelink'] = azure_console_link.get_console_link(
             id=log['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
         if regions is None:
@@ -91,12 +91,8 @@ def _load_monitor_log_profiles_tx(
         update_tag=update_tag,
     )
     for log_profile in log_profiles_list:
-        if log_profile.get('resource_group'):
-            _attach_resource_group_monitor_logs(tx,log_profile['id'],log_profile['resource_group'],update_tag)
-        else:
-            x = log_profile['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_monitor_logs(tx,log_profile['id'],resource_group,update_tag)
+        resource_group=get_azure_resource_group_name(log_profile.get('id'))
+        _attach_resource_group_monitor_logs(tx,log_profile['id'],resource_group,update_tag)
             
 
 def _attach_resource_group_monitor_logs(tx: neo4j.Transaction, log_profile_id:str,resource_group:str ,update_tag: int) -> None:
@@ -111,7 +107,7 @@ def _attach_resource_group_monitor_logs(tx: neo4j.Transaction, log_profile_id:st
     tx.run(
         query,
         log_profile_id=log_profile_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         update_tag=update_tag,
     )
 

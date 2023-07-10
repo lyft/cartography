@@ -10,6 +10,7 @@ from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
+from cartography.util import get_azure_resource_group_name
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -115,8 +116,7 @@ def get_function_apps_list(client: WebSiteManagementClient, regions: list, commo
         )
         function_list = []
         for function in function_app_list:
-            x = function['id'].split('/')
-            function['resource_group'] = x[x.index('resourceGroups') + 1]
+            function['resource_group'] = get_azure_resource_group_name(function.get('id'))
             function['hostNamesDisabled'] = function.get('properties', {}).get('host_names_disabled', True)
             function['location'] = function.get('location', '').replace(" ", "").lower()
             function['consolelink'] = azure_console_link.get_console_link(
@@ -172,12 +172,8 @@ def _load_function_apps_tx(
         update_tag=update_tag,
     )
     for function_app in function_apps_list:
-        if function_app.get('resource_group'):
-            _attach_resource_group_function_apps(tx,function_app['id'],function_app['resource_group'],update_tag)
-        else:
-            x = function_app['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_function_apps(tx,function_app['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(function_app.get('id'))
+        _attach_resource_group_function_apps(tx,function_app['id'],resource_group,update_tag)
             
 def _attach_resource_group_function_apps(tx: neo4j.Transaction,function_app_id: str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps = """
@@ -191,7 +187,7 @@ def _attach_resource_group_function_apps(tx: neo4j.Transaction,function_app_id: 
     tx.run(
         ingest_function_apps,
         function_app_id=function_app_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         update_tag=update_tag
     )
 
@@ -287,8 +283,7 @@ def get_function_apps_configuration_list(
             )
 
             for conf in apps_conf_list:
-                x = conf['id'].split('/')
-                conf['resource_group'] = x[x.index('resourceGroups') + 1]
+                conf['resource_group'] = get_azure_resource_group_name(conf.get('id'))
                 conf['function_app_id'] = conf['id'][
                     :conf['id'].
                     index("/config/web")
@@ -354,12 +349,8 @@ def _load_function_apps_configurations_tx(
         azure_update_tag=update_tag,
     )
     for function_apps_conf in function_apps_conf_list:
-        if function_apps_conf.get('resource_group'):
-            _attach_resource_group_function_apps_conf(tx,function_apps_conf['id'],function_apps_conf['resource_group'],update_tag)
-        else:
-            x = function_apps_conf['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_function_apps_conf(tx,function_apps_conf['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(function_apps_conf.get('id'))
+        _attach_resource_group_function_apps_conf(tx,function_apps_conf['id'],resource_group,update_tag)
 
             
 def _attach_resource_group_function_apps_conf(tx: neo4j.Transaction,function_apps_conf_id: str,resource_group:str,update_tag: int) -> None:
@@ -371,11 +362,10 @@ def _attach_resource_group_function_apps_conf(tx: neo4j.Transaction,function_app
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     tx.run(
         ingest_function_apps_conf,
         function_conf_id=function_apps_conf_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -431,8 +421,7 @@ def get_function_apps_functions_list(
                 functions_list = []
 
             for fun in functions_list:
-                x = fun['id'].split('/')
-                fun['resource_group'] = x[x.index('resourceGroups') + 1]
+                fun['resource_group'] = get_azure_resource_group_name(fun.get('id'))
                 fun['function_app_id'] = fun['id'][
                     :fun['id'].
                     index("/functions")
@@ -478,12 +467,8 @@ def _load_function_apps_functions_tx(
         azure_update_tag=update_tag,
     )
     for function_apps_function in function_apps_function_list:
-        if function_apps_function.get('resource_group'):
-            _attach_resource_group_unction_apps_function(tx,function_apps_function['id'],function_apps_function['resource_group'],update_tag)
-        else:
-            x = function_apps_function['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_unction_apps_function(tx,function_apps_function['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(function_apps_function.get('id'))
+        _attach_resource_group_unction_apps_function(tx,function_apps_function['id'],resource_group,update_tag)
             
     
 def _attach_resource_group_unction_apps_function(tx: neo4j.Transaction,function_apps_function_id:str,resource_group:str,update_tag: int) -> None:
@@ -495,11 +480,10 @@ def _attach_resource_group_unction_apps_function(tx: neo4j.Transaction,function_
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     tx.run(
         ingest_function,
         function_id=function_apps_function_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -556,10 +540,9 @@ def get_function_apps_deployments_list(
 def transform_deployments(deployments_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_deployments_list: List[Dict] = []
     for deployment in deployments_list:
-        x = deployment['id'].split('/')
         deployment['consolelink'] = azure_console_link.get_console_link(id=deployment['id'],
                                                                         primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-        deployment['resource_group'] = x[x.index('resourceGroups') + 1]
+        deployment['resource_group'] = get_azure_resource_group_name(deployment.get('id'))
         deployment['function_app_id'] = deployment[
             'id'
         ][:deployment['id'].index("/deployments")]
@@ -598,12 +581,8 @@ def _load_function_apps_deployments_tx(
         azure_update_tag=update_tag,
     )
     for function_apps_deployment in function_apps_deployments_list:
-        if function_apps_deployment.get('resource_group'):
-            _attach_resource_group_function_apps_deployments(tx,function_apps_deployment['id'],function_apps_deployment['resource_group'],update_tag)
-        else:
-            x = function_apps_deployment['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_function_apps_deployments(tx,function_apps_deployment['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(function_apps_deployment.get('id'))
+        _attach_resource_group_function_apps_deployments(tx,function_apps_deployment['id'],resource_group,update_tag)
             
 def _attach_resource_group_function_apps_deployments(tx: neo4j.Transaction,function_apps_deployment_id:str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_deploy = """
@@ -614,11 +593,10 @@ def _attach_resource_group_function_apps_deployments(tx: neo4j.Transaction,funct
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     tx.run(
         ingest_function_apps_deploy,
         function_deploy_id=function_apps_deployment_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -675,10 +653,9 @@ def get_function_apps_backups_list(
 def transform_backups(backups_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_backups_list: List[Dict] = []
     for backup in backups_list:
-        x = backup['id'].split('/')
         backup['consolelink'] = azure_console_link.get_console_link(id=backup['id'],
                                                                     primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-        backup['resource_group'] = x[x.index('resourceGroups') + 1]
+        backup['resource_group'] = get_azure_resource_group_name(backup.get('id'))
         backup['function_app_id'] = backup['id'][
             :backup['id'].
             index("/backups")
@@ -718,12 +695,8 @@ def _load_function_apps_backups_tx(
         azure_update_tag=update_tag,
     )
     for function_apps_backup in function_apps_backups_list:
-        if function_apps_backup.get('resource_group'):
-            _attach_resource_group_function_apps_backups(tx,function_apps_backup['id'],function_apps_backup['resource_group'],update_tag)
-        else:
-            x = function_apps_backup['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_function_apps_backups(tx,function_apps_backup['id'],resource_group,update_tag)  
+        resource_group=get_azure_resource_group_name(function_apps_backup.get('id'))
+        _attach_resource_group_function_apps_backups(tx,function_apps_backup['id'],resource_group,update_tag)  
 
 def _attach_resource_group_function_apps_backups (tx: neo4j.Transaction,function_apps_backup_id: str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_backup = """
@@ -737,7 +710,7 @@ def _attach_resource_group_function_apps_backups (tx: neo4j.Transaction,function
     tx.run(
         ingest_function_apps_backup,
         function_backup_id=function_apps_backup_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -796,10 +769,9 @@ def get_function_apps_processes_list(
 def transform_processes(processes_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_processes_list: List[Dict] = []
     for process in processes_list:
-        x = process['id'].split('/')
         process['consolelink'] = azure_console_link.get_console_link(id=process['id'],
                                                                      primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-        process['resource_group'] = x[x.index('resourceGroups') + 1]
+        process['resource_group'] = get_azure_resource_group_name(process.get('id'))
         process['function_app_id'] = process['id'][
             :process['id'].
             index("/processes")
@@ -839,12 +811,8 @@ def _load_function_apps_processes_tx(
         azure_update_tag=update_tag,
     )
     for function_apps_process in function_apps_processes_list:
-        if function_apps_process.get('resource_group'):
-            _attach_resource_group_function_apps_processes(tx,function_apps_process['id'],function_apps_process['resource_group'],update_tag)
-        else:
-            x = function_apps_process['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_function_apps_processes(tx,function_apps_process['id'],resource_group,update_tag) 
+        resource_group=get_azure_resource_group_name(function_apps_process.get('id'))
+        _attach_resource_group_function_apps_processes(tx,function_apps_process['id'],resource_group,update_tag) 
 
 def _attach_resource_group_function_apps_processes(tx: neo4j.Transaction,function_apps_process_id: str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_process = """
@@ -855,11 +823,10 @@ def _attach_resource_group_function_apps_processes(tx: neo4j.Transaction,functio
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     tx.run(
         ingest_function_apps_process,
         function_process_id=function_apps_process_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -917,9 +884,8 @@ def get_function_apps_snapshots_list(
 def transform_snapshots(snapshots_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_snapshots_list: List[Dict] = []
     for snapshot in snapshots_list:
-        x = snapshot['id'].split('/')
         snapshot['consolelink'] = azure_console_link.get_console_link(id=snapshot['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-        snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
+        snapshot['resource_group'] = get_azure_resource_group_name(snapshot.get('id'))
         snapshot['function_app_id'] = snapshot['id'][
             :snapshot['id'].
             index("/snapshots")
@@ -959,12 +925,8 @@ def _load_function_apps_snapshots_tx(
         azure_update_tag=update_tag,
     )
     for function_apps_snapshot in function_apps_snapshots_list:
-        if function_apps_snapshot.get('resource_group'):
-            _attach_resource_group_function_apps_snapshot(tx,function_apps_snapshot['id'],function_apps_snapshot['resource_group'],update_tag)
-        else:
-            x = function_apps_snapshot['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_function_apps_snapshot(tx,function_apps_snapshot['id'],resource_group,update_tag)
+        resource_group=get_azure_resource_group_name(function_apps_snapshot.get('id'))
+        _attach_resource_group_function_apps_snapshot(tx,function_apps_snapshot['id'],resource_group,update_tag)
             
 def _attach_resource_group_function_apps_snapshot(tx: neo4j.Transaction,function_apps_snapshot_id:str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_snapshot = """
@@ -975,11 +937,10 @@ def _attach_resource_group_function_apps_snapshot(tx: neo4j.Transaction,function
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     tx.run(
         ingest_function_apps_snapshot,
         function_snapshot_id=function_apps_snapshot_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -1036,9 +997,8 @@ def get_function_apps_webjobs_list(
 def transform_webjobs(webjobs_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_webjobs_list: List[Dict] = []
     for webjob in webjobs_list:
-        x = webjob['id'].split('/')
         webjob['consolelink'] = azure_console_link.get_console_link(id=webjob['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-        webjob['resource_group'] = x[x.index('resourceGroups') + 1]
+        webjob['resource_group'] = get_azure_resource_group_name(webjob.get('id'))
         webjob['function_app_id'] = webjob['id'][
             :webjob['id'].
             index("/webjobs")
@@ -1078,12 +1038,8 @@ def _load_function_apps_webjobs_tx(
         azure_update_tag=update_tag,
     )
     for function_apps_webjob in function_apps_webjobs_list:
-        if function_apps_webjob.get('resource_group'):
-            _attach_resource_group_function_apps_webjobs(tx,function_apps_webjob['id'],function_apps_webjob['resource_group'],update_tag)
-        else:
-            x = function_apps_webjob['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_function_apps_webjobs(tx,function_apps_webjob['id'],resource_group,update_tag)
+        resource_group=get_azure_resource_group_name(function_apps_webjob.get('id'))
+        _attach_resource_group_function_apps_webjobs(tx,function_apps_webjob['id'],resource_group,update_tag)
 
 def _attach_resource_group_function_apps_webjobs(tx: neo4j.Transaction,function_apps_webjob_id:str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_webjob = """
@@ -1094,11 +1050,10 @@ def _attach_resource_group_function_apps_webjobs(tx: neo4j.Transaction,function_
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     tx.run(
         ingest_function_apps_webjob,
         function_webjob_id=function_apps_webjob_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
     

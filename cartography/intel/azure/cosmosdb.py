@@ -15,6 +15,7 @@ from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
+from cartography.util import get_azure_resource_group_name
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -51,8 +52,7 @@ def get_database_account_list(credentials: Credentials, subscription_id: str, re
         return []
     account_list = []
     for database_account in database_account_list:
-        x = database_account['id'].split('/')
-        database_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
+        database_account['resourceGroup'] = get_azure_resource_group_name(database_account.get('id'))
         database_account['publicNetworkAccess'] = database_account.get(
             'properties', {}).get('public_network_access', 'Disabled')
         database_account['consolelink'] = azure_console_link.get_console_link(
@@ -133,13 +133,9 @@ def load_database_account_data(
         AZURE_SUBSCRIPTION_ID=subscription_id,
         azure_update_tag=azure_update_tag,
     )
-    for database_account in database_account_list:
-        if database_account.get('resourceGroup'):
-            _attach_resource_group_database_account(neo4j_session,database_account['id'],database_account['resourceGroup'],azure_update_tag)
-        else:
-            x = database_account['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_database_account(neo4j_session,database_account['id'],resource_group,azure_update_tag)
+    for database_account in database_account_list:  
+        resource_group = get_azure_resource_group_name(database_account.get('id'))
+        _attach_resource_group_database_account(neo4j_session,database_account['id'],resource_group,azure_update_tag)
 
 def _attach_resource_group_database_account(neo4j_session: neo4j.Session, database_account_id: str, resource_group: str, azure_update_tag: int) -> None:
     ingest_database_account = """
@@ -150,11 +146,10 @@ def _attach_resource_group_database_account(neo4j_session: neo4j.Session, databa
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     neo4j_session.run(
         ingest_database_account,
         database_account_id=database_account_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=azure_update_tag,
     )
 
@@ -467,12 +462,8 @@ def _load_cosmosdb_private_endpoint_connections(
             azure_update_tag=azure_update_tag,
         )
         for private_endpoint_connection in private_endpoint_connections:
-            if private_endpoint_connection.get('resource_group'):
-                _attach_resource_group_private_endpoint_connection(neo4j_session,private_endpoint_connection['id'],private_endpoint_connection['resource_group'],azure_update_tag)
-            else:
-                x = private_endpoint_connection['id'].split('/')
-                resource_group = x[x.index('resourceGroups') + 1]
-                _attach_resource_group_private_endpoint_connection(neo4j_session,private_endpoint_connection['id'],resource_group,azure_update_tag)
+            resource_group = get_azure_resource_group_name(private_endpoint_connection.get('id'))
+            _attach_resource_group_private_endpoint_connection(neo4j_session,private_endpoint_connection['id'],resource_group,azure_update_tag)
 
 
 def _attach_resource_group_private_endpoint_connection(neo4j_session: neo4j.Session,private_endpoint_connection_id: str,resource_group:str,azure_update_tag: int) -> None:
@@ -487,7 +478,7 @@ def _attach_resource_group_private_endpoint_connection(neo4j_session: neo4j.Sess
     neo4j_session.run(
         ingest_endpoint_connections,
         connection_id=private_endpoint_connection_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=azure_update_tag,
         )
 
@@ -864,12 +855,8 @@ def _load_table_resources(neo4j_session: neo4j.Session, table_resources: List[Di
         azure_update_tag=update_tag,
     )
     for table_resource in table_resources:
-        if table_resource.get('resource_group'):
-            _attach_resource_group_table_resource(neo4j_session,table_resource.get('id'),table_resource.get('resource_group'),update_tag)
-        else:
-            x = table_resource['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_table_resource(neo4j_session,table_resource.get('id'),resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(table_resource.get('id'))
+        _attach_resource_group_table_resource(neo4j_session,table_resource.get('id'),resource_group,update_tag)
 
 @timeit
 def _attach_resource_group_table_resource(neo4j_session: neo4j.Session, table_resource_id: str,resource_group:str, update_tag: int) -> None:
@@ -881,11 +868,10 @@ def _attach_resource_group_table_resource(neo4j_session: neo4j.Session, table_re
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-
     neo4j_session.run(
         ingest_tables,
         table_resource_id=table_resource_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
         
@@ -997,12 +983,8 @@ def _load_sql_containers(neo4j_session: neo4j.Session, containers: List[Dict], u
         azure_update_tag=update_tag,
     )
     for container in containers:
-        if container.get('resource_group'):
-            _attach_resource_container(neo4j_session,container['id'],container['resource_group'],update_tag)
-        else:
-            x = container['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_container(neo4j_session,container['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(container.get('id'))
+        _attach_resource_container(neo4j_session,container['id'],resource_group,update_tag)
 
 def _attach_resource_container(neo4j_session: neo4j.Session, container_id: str,resource_group:str, update_tag: int) -> None:
     ingest_containers = """
@@ -1016,7 +998,7 @@ def _attach_resource_container(neo4j_session: neo4j.Session, container_id: str,r
     neo4j_session.run(
         ingest_containers,
         container_id=container_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -1125,12 +1107,8 @@ def _load_cassandra_tables(neo4j_session: neo4j.Session, cassandra_tables: List[
         azure_update_tag=update_tag,
     )
     for cassandra_table in cassandra_tables:
-        if cassandra_table.get('resource_group'):
-            _attach_resource_cassandra_table(neo4j_session,cassandra_table['id'],cassandra_table['resource_group'],update_tag)
-        else:
-            x = cassandra_table['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_cassandra_table(neo4j_session,cassandra_table['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(cassandra_table.get('id'))
+        _attach_resource_cassandra_table(neo4j_session,cassandra_table['id'],resource_group,update_tag)
 
 def _attach_resource_cassandra_table(neo4j_session: neo4j.Session, cassandra_table_id: str,resource_group:str ,update_tag: int) -> None:
     ingest_cassandra_tables = """
@@ -1141,11 +1119,10 @@ def _attach_resource_cassandra_table(neo4j_session: neo4j.Session, cassandra_tab
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag
     """
-    
     neo4j_session.run(
         ingest_cassandra_tables,
         cassandra_table_id=cassandra_table_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )       
             
@@ -1256,12 +1233,8 @@ def _load_collections(neo4j_session: neo4j.Session, collections: List[Dict], upd
         azure_update_tag=update_tag,
     )
     for collection in collections:
-        if collection.get('resource_group'):
-            _attach_resource_group_collection(neo4j_session,collection['id'],collection['resource_group'],update_tag)
-        else:
-            x = collection['id'].split('/')
-            resource_group = x[x.index('resourceGroups') + 1]
-            _attach_resource_group_collection(neo4j_session,collection['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(collection.get('id'))
+        _attach_resource_group_collection(neo4j_session,collection['id'],resource_group,update_tag)
 
 def _attach_resource_group_collection(neo4j_session: neo4j.Session, collection_id: str,resource_group:str ,update_tag: int) -> None:
     ingest_collections = """
@@ -1275,7 +1248,7 @@ def _attach_resource_group_collection(neo4j_session: neo4j.Session, collection_i
     neo4j_session.run(
         ingest_collections,
         collection_id=collection_id,
-        resource_group=resource_group.upper(),
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
             
