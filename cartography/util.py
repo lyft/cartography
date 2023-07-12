@@ -37,6 +37,15 @@ STATUS_FAILURE = 1
 STATUS_KEYBOARD_INTERRUPT = 130
 DEFAULT_BATCH_SIZE = 1000
 
+def get_azure_resource_group_name(id:str)->None:
+    resource_group=''
+    id=id.lower()
+    if id is not None and 'resourcegroups' in id:
+        x = id.split('/')
+        resource_group = x[x.index('resourcegroups') + 1]
+        return resource_group  
+    return resource_group
+
 
 def run_analysis_job(
     filename: str,

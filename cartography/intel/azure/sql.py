@@ -4,7 +4,7 @@ from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Tuple
-
+import ipaddress
 import neo4j
 from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
@@ -17,10 +17,11 @@ from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
+from cartography.util import get_azure_resource_group_name
 from cartography.util import timeit
 from . import network
 
-from netaddr import iter_iprange
+from netaddr import *
 
 logger = logging.getLogger(__name__)
 azure_console_link = AzureLinker()
@@ -56,8 +57,7 @@ def get_server_list(credentials: Credentials, subscription_id: str, regions: lis
         return []
     server_data = []
     for server in server_list:
-        x = server['id'].split('/')
-        server['resourceGroup'] = x[x.index('resourceGroups') + 1]
+        server['resourceGroup'] = get_azure_resource_group_name(server.get('id'))
         server['publicNetworkAccess'] = server.get('properties', {}).get('public_network_access', 'Disabled')
         server['consolelink'] = azure_console_link.get_console_link(
             id=server['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
@@ -104,6 +104,25 @@ def load_server_data(
         AZURE_SUBSCRIPTION_ID=subscription_id,
         azure_update_tag=azure_update_tag,
     )
+    for server in server_list:
+        resource_group=get_azure_resource_group_name(server.get('id'))
+        _attach_resource_group_server(neo4j_session,server.get('id'),resource_group,azure_update_tag)
+    
+def _attach_resource_group_server( neo4j_session: neo4j.Session,  server_id: str,server_resource_group:str,azure_update_tag: int) -> None:
+    ingest_server = """
+    MATCH (s:AzureSQLServer{id: $server_id})
+    WITH s
+    MATCH (rg:AzureResourceGroup{name: $server_resource_group})
+    MERGE (s)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_server,
+        server_id=server_id,
+        server_resource_group=server_resource_group,
+        azure_update_tag=azure_update_tag
+    )
 
 
 def load_server_private_endpoint_connection(neo4j_session: neo4j.Session, server_list: List[Dict], azure_update_tag: int) -> None:
@@ -129,7 +148,26 @@ def load_server_private_endpoint_connection(neo4j_session: neo4j.Session, server
             private_endpoint_connections=server.get('private_endpoint_connections', []),
             azure_update_tag=azure_update_tag,
         )
+        for private_endpoint_connection in server.get('private_endpoint_connections', []):
+            resource_group=get_azure_resource_group_name(private_endpoint_connection.get('id'))
+            _attach_resource_group_server_private_endpoint_connections(neo4j_session,private_endpoint_connection['id'],resource_group,azure_update_tag)
+    
 
+def _attach_resource_group_server_private_endpoint_connections(neo4j_session: neo4j.Session,private_endpoint_connection_id:str, resource_group:str,azure_update_tag: int) -> None:
+    ingest_attach_private_endpoint_connection = """
+    MATCH (aspec:AzureServerPrivateEndpointConnection{id: $aspec_id})
+    WITH aspec,
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (aspec)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_attach_private_endpoint_connection,
+        aspec_id=private_endpoint_connection_id,
+        resource_group=resource_group,
+        azure_update_tag=azure_update_tag
+        )
 
 @timeit
 def sync_server_details(
@@ -467,7 +505,9 @@ def load_server_details(
 
         for ip in ip_range:
             if str(ip) in public_ips:
-                attach_firewall_rule_to_public_ip(neo4j_session, fw_rule['id'], str(ip), update_tag)
+                attach_firewall_rule_to_public_ip(neo4j_session, fw_rule, str(ip), "Azure", "Internal", update_tag)
+            elif not ipaddress.ip_address(str(ip)).is_private:
+                attach_firewall_rule_to_public_ip(neo4j_session, fw_rule, str(ip), "Azure", "External", update_tag)
 
     sync_database_details(neo4j_session, credentials, subscription_id, databases, update_tag, common_job_parameters)
 
@@ -501,7 +541,25 @@ def _load_server_dns_aliases(
         dns_aliases_list=dns_aliases,
         azure_update_tag=update_tag,
     )
+    for dns_aliases in dns_aliases:
+        resource_group=get_azure_resource_group_name(dns_aliases.get('id'))
+        _attach_resource_group_dns_alias(neo4j_session,dns_aliases['id'],resource_group,update_tag)
 
+def _attach_resource_group_dns_alias(neo4j_session: neo4j.Session, dns_alias_id:str, resource_group:str,update_tag: int) -> None:
+    ingest_dns_aliases = """
+    MATCH (alias:AzureServerDNSAlias{id: $dns_alias_id})
+    WITH alias
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (alias)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_dns_aliases,
+        dns_alias_id=dns_alias_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag
+    )
 
 @timeit
 def _load_firewall_rules(neo4j_session: neo4j.Session, fw_rules: List[Dict], update_tag: int) -> None:
@@ -529,26 +587,55 @@ def _load_firewall_rules(neo4j_session: neo4j.Session, fw_rules: List[Dict], upd
         fw_rules=fw_rules,
         azure_update_tag=update_tag,
     )
+    for fw_rule in fw_rules:
+        resource_group=get_azure_resource_group_name(fw_rule.get('id'))
+        _attach_resource_group_fw_rule(neo4j_session,fw_rule['id'],resource_group,update_tag)
+
+def _attach_resource_group_fw_rule(neo4j_session: neo4j.Session, fw_rule_id:str,resource_group:str, update_tag: int) -> None:
+    ingest_firewall_rules = """
+    MATCH (rule:AzureFirewallRule{id: $fw_rule_id})
+    WITH rule
+    MATCH (rg: AzureResourceGroup{name: $resource_group})
+    MERGE (rule)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_firewall_rules,
+        fw_rule_id=fw_rule_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag,
+    )
+
+def attach_firewall_rule_to_public_ip(session: neo4j.Session, fw_rule: Dict, public_ip: str, source: str, type: str, update_tag: int) -> None:
+    session.write_transaction(_attach_firewall_rule_to_public_ip_tx, fw_rule, public_ip, source, type, update_tag)
 
 
-def attach_firewall_rule_to_public_ip(session: neo4j.Session, fw_rule, public_ip: str, update_tag: int) -> None:
-    session.write_transaction(_attach_firewall_rule_to_public_ip_tx, fw_rule, public_ip, update_tag)
-
-
-def _attach_firewall_rule_to_public_ip_tx(tx: neo4j.Transaction, fw_rule: str, public_ip: str, update_tag: int) -> None:
+def _attach_firewall_rule_to_public_ip_tx(tx: neo4j.Transaction, fw_rule: Dict, public_ip: str, source: str, type: str, update_tag: int) -> None:
     ingest_address = """
     MATCH (fwr:AzureFirewallRule{id: $fw_rule})
     WITH fwr
-    MATCH (ip:AzurePublicIPAddress{ipAddress: $public_ip})
+    MERGE (ip:AzurePublicIPAddress{ipAddress: $public_ip})
+    ON CREATE SET ip.firstseen = timestamp()
+    SET
+        ip.id =$public_ip,
+        ip.name=$public_ip,
+        ip.source =$source,
+        ip.type=$type,
+        ip.resource=$resource,
+        ip.ipAddress=$public_ip
     MERGE (fwr)-[r:MEMBER_PUBLIC_IP_ADDRESS]->(ip)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
     """
     tx.run(
         ingest_address,
-        fw_rule=fw_rule,
+        fw_rule=fw_rule['id'],
         public_ip=public_ip,
-        update_tag=update_tag,
+        source=source,
+        type=type,
+        resource=fw_rule['type'],
+        update_tag=update_tag
     )
 
 
@@ -582,7 +669,25 @@ def _load_server_ad_admins(
         ad_admins_list=ad_admins,
         azure_update_tag=update_tag,
     )
+    for ad_admin in ad_admins:
+        resource_group=get_azure_resource_group_name(ad_admin.get('id'))
+        _attach_resource_group_ad_admin(neo4j_session,ad_admin['id'],resource_group,update_tag)
 
+def _attach_resource_group_ad_admin(neo4j_session: neo4j.Session, ad_admin_id:str,resource_group:str, update_tag: int) -> None:
+    ingest_ad_admins = """
+    MATCH (a:AzureServerADAdministrator{id: $ad_admin_id})
+    WITH a
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (a)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_ad_admins,
+        ad_admin_id=ad_admin_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag
+    )     
 
 @timeit
 def _load_recoverable_databases(
@@ -615,7 +720,25 @@ def _load_recoverable_databases(
         region='global',
         azure_update_tag=update_tag,
     )
+    for recoverable_database in recoverable_databases:
+        resource_group=get_azure_resource_group_name(recoverable_database.get('id'))
+        _attach_resource_group_recoverable_database(neo4j_session,recoverable_database['id'],resource_group,update_tag)
 
+def _attach_resource_group_recoverable_database( neo4j_session: neo4j.Session, recoverable_database_id:str, resource_group:str,update_tag: int) -> None:
+    ingest_recoverable_databases = """
+    MATCH (rd:AzureRecoverableDatabase{id: $rec_db_id})
+    WITH rd
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (rd)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_recoverable_databases,
+        rec_db_id=recoverable_database_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag,
+    )
 
 @timeit
 def _load_restorable_dropped_databases(
@@ -651,7 +774,26 @@ def _load_restorable_dropped_databases(
         restorable_dropped_databases_list=restorable_dropped_databases,
         azure_update_tag=update_tag,
     )
+    for restorable_dropped_database in restorable_dropped_databases:
+        resource_group=get_azure_resource_group_name(restorable_dropped_database.get('id'))
+        _attach_resource_group_restorable_dropped_database(neo4j_session,restorable_dropped_database['id'],resource_group,update_tag)
 
+
+def _attach_resource_group_restorable_dropped_database(neo4j_session: neo4j.Session, restorable_dropped_database_id: str,resource_group:str, update_tag: int) -> None:
+    ingest_restorable_dropped_databases = """
+    MATCH (rdd:AzureRestorableDroppedDatabase{id: $res_dropped_db_id})
+    WITH rdd
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (rdd)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_restorable_dropped_databases,
+        res_dropped_db_id=restorable_dropped_database_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag,
+    )
 
 @timeit
 def _load_failover_groups(
@@ -681,7 +823,25 @@ def _load_failover_groups(
         failover_groups_list=failover_groups,
         azure_update_tag=update_tag,
     )
+    for failover_group in failover_groups:
+        resource_group=get_azure_resource_group_name(failover_group.get('id'))
+        _attach_resource_group_restorable_failover_group(neo4j_session,failover_group['id'],resource_group,update_tag)
 
+def _attach_resource_group_restorable_failover_group(neo4j_session: neo4j.Session, failover_group_id:str,resource_group:str, update_tag: int) -> None:
+    ingest_failover_groups = """
+    MATCH (f:AzureFailoverGroup{id: $fg_id})
+    WITH f
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (f)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_failover_groups,
+        fg_id=failover_group_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag,
+    )
 
 @timeit
 def _load_elastic_pools(
@@ -715,6 +875,25 @@ def _load_elastic_pools(
         ingest_elastic_pools,
         elastic_pools_list=elastic_pools,
         azure_update_tag=update_tag,
+    )
+    for elastic_pool in elastic_pools:
+        resource_group=get_azure_resource_group_name(elastic_pool.get('id'))
+        _attach_resource_group_restorable_elastic_pool(neo4j_session,elastic_pool['id'],resource_group,update_tag)
+
+def _attach_resource_group_restorable_elastic_pool(neo4j_session: neo4j.Session, elastic_pool_id:str,resource_group:str,update_tag: int) -> None:
+    ingest_elastic_pools = """
+    MATCH (e:AzureElasticPool{id: $ep_id})
+    WITH e
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (e)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_elastic_pools,
+        ep_id=elastic_pool_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag
     )
 
 
@@ -755,6 +934,25 @@ def _load_databases(
     neo4j_session.run(
         ingest_databases,
         databases_list=databases,
+        azure_update_tag=update_tag,
+    )
+    for database in databases:
+        resource_group=get_azure_resource_group_name(database.get('id'))
+        _attach_resource_group_restorable_database(neo4j_session,database['id'],resource_group,update_tag)
+
+def _attach_resource_group_restorable_database(neo4j_session: neo4j.Session, database_id:str,resource_group:str ,update_tag: int,) -> None:
+    ingest_databases = """
+    MATCH (d:AzureSQLDatabase{id: $database_id})
+    WITH d
+    MATCH (s:AzureResourceGroup{name: $resource_group})
+    MERGE (d)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_databases,
+        database_id=database_id,
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -1004,6 +1202,25 @@ def _load_replication_links(
         replication_links_list=replication_links,
         azure_update_tag=update_tag,
     )
+    for replication_link in replication_links:
+        resource_group=get_azure_resource_group_name(replication_link.get('id'))
+        _attach_resource_group_replication_link(neo4j_session,replication_link['id'],resource_group,update_tag)
+
+def _attach_resource_group_replication_link(neo4j_session: neo4j.Session, replication_link_id:str,resource_group:str ,update_tag: int) -> None:
+    ingest_replication_links = """
+    MATCH (rl:AzureReplicationLink{id: $replication_link_id})
+    WITH rl
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (rl)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_replication_links,
+        replication_link_id=replication_link_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag
+    )
 
 
 @timeit
@@ -1043,7 +1260,25 @@ def _load_db_threat_detection_policies(
         threat_detection_policies_list=threat_detection_policies,
         azure_update_tag=update_tag,
     )
+    for threat_detection in threat_detection_policies:
+        resource_group=get_azure_resource_group_name(threat_detection.get('id'))
+        _attach_resource_group_threat_detection(neo4j_session,threat_detection['id'],resource_group,update_tag)
 
+def _attach_resource_group_threat_detection(neo4j_session: neo4j.Session, threat_detection_id:str, resource_group:str,update_tag: int) -> None:
+    ingest_threat_detection_policies = """
+    MATCH (policy:AzureDatabaseThreatDetectionPolicy{id: $threat_detection_id})
+    WITH policy
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (policy)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_threat_detection_policies,
+        threat_detection_id=threat_detection_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag,
+    )
 
 @timeit
 def _load_restore_points(
@@ -1076,6 +1311,25 @@ def _load_restore_points(
         restore_points_list=restore_points,
         azure_update_tag=update_tag,
     )
+    for restore_point in restore_points:
+        resource_group=get_azure_resource_group_name(restore_point.get('id'))
+        _attach_resource_group_restore_point(neo4j_session,restore_point['id'],resource_group,update_tag)
+
+def _attach_resource_group_restore_point(neo4j_session: neo4j.Session, restore_point_id:str, resource_group:str,update_tag: int) -> None:
+    ingest_restore_points = """
+    MATCH (point:AzureRestorePoint{id: $restore_point_id})
+    WITH point
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (point)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_restore_points,
+        restore_point_id=restore_point_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag,
+    )
 
 
 @timeit
@@ -1105,6 +1359,25 @@ def _load_transparent_data_encryptions(
     neo4j_session.run(
         ingest_data_encryptions,
         transparent_data_encryptions_list=encryptions_list,
+        azure_update_tag=update_tag,
+    )
+    for encryption in encryptions_list:
+        resource_group=get_azure_resource_group_name(encryption.get('id'))
+        _attach_resource_group_encryption(neo4j_session,encryption['id'],resource_group,update_tag)
+
+def _attach_resource_group_encryption( neo4j_session: neo4j.Session, encryption_id: str,resource_group:str, update_tag: int)-> None:
+    ingest_data_encryptions = """
+    MATCH (tae:AzureTransparentDataEncryption{id: $encryption_id})
+    WITH tae
+    MATCH (d:AzureResourceGroup{name: $resource_group})
+    MERGE (tae)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_data_encryptions,
+        encryption_id=encryption_id,
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 

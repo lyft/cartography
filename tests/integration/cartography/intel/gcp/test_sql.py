@@ -1,5 +1,7 @@
 import cartography.intel.gcp.sql
 import tests.data.gcp.sql
+import tests.data.gcp.compute
+import cartography.intel.gcp.compute
 from cartography.util import run_analysis_job
 
 TEST_WORKSPACE_ID = '1223344'
@@ -138,6 +140,76 @@ def test_sql_instance_relationships(neo4j_session):
         (r['n1.id'], r['n2.id']) for r in result
     }
 
+    assert actual == expected
+
+
+def test_load_public_ip_address(neo4j_session):
+    # Load test SQL Instances
+    data = tests.data.gcp.sql.CLOUD_SQL_INSTANCES
+    cartography.intel.gcp.sql.load_sql_instances(
+        neo4j_session,
+        data,
+        TEST_PROJECT_NUMBER,
+        TEST_UPDATE_TAG,
+    )
+
+    
+    for inst in data:
+        cartography.intel.gcp.sql.load_public_ip_address(
+            neo4j_session,
+            inst,
+            TEST_PROJECT_NUMBER,
+            TEST_UPDATE_TAG,
+            )
+
+        expected = {
+            ('instance123', '103.34.34.1'),
+            ('instance456', '104.34.34.1')
+            }
+    # Fetch relationships
+    result = neo4j_session.run(
+        """
+        MATCH (n1:GCPSQLInstance)-[r:MEMBER_OF_PUBLIC_IP_ADDRESS]->(n2:GCPPublicIpAddress) RETURN n1.id, n2.ipAddress;
+        """,
+    )
+
+    actual = {
+        (r['n1.id'], r['n2.ipAddress']) for r in result
+    }
+    assert actual == expected
+
+
+def test_load_sql_instances_vpc_network(neo4j_session):
+    # Load test SQL Instances
+    data = tests.data.gcp.sql.CLOUD_SQL_INSTANCES
+    cartography.intel.gcp.sql.load_sql_instances(
+        neo4j_session,
+        data,
+        TEST_PROJECT_NUMBER,
+        TEST_UPDATE_TAG,
+    )
+ # vpc 
+    vpc_res = tests.data.gcp.compute.VPC_RESPONSE
+    vpc_list = cartography.intel.gcp.compute.transform_gcp_vpcs(vpc_res)
+    
+    cartography.intel.gcp.compute.load_gcp_vpcs(neo4j_session, vpc_list, TEST_UPDATE_TAG)
+    for insta in data:
+        cartography.intel.gcp.sql.load_sql_instances_vpc_network(neo4j_session, insta,TEST_PROJECT_NUMBER, TEST_UPDATE_TAG)
+    expected = {
+        ('instance123', 'projects/project-abc/global/networks/default'),
+        ('instance456', 'projects/project-abc/global/networks/default'),
+    }
+
+    # Fetch relationships
+    result = neo4j_session.run(
+        """
+        MATCH (n1:GCPSQLInstance)-[:VPC_NETWORK]->(n2:GCPVpc) RETURN n1.id, n2.id;
+        """,
+    )
+   
+    actual = {
+        (r['n1.id'], r['n2.id']) for r in result
+    }
     assert actual == expected
 
 

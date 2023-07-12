@@ -13,6 +13,26 @@
 			"__comment__": "Remove GCP GCPSQLUser-to-Instance relationships that are out of date."
 		},
 		{
+			"query": "MATCH (vpc:GCPVpc)<-[:VPC_NETWORK]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE vpc.lastupdated <> $UPDATE_TAG WITH vpc LIMIT $LIMIT_SIZE DETACH DELETE (vpc) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (:GCPVpc)<-[r:VPC_NETWORK]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (ip:GCPPublicIpAddress)<-[:MEMBER_OF_PUBLIC_IP_ADDRESS]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE ip.lastupdated <> $UPDATE_TAG WITH ip LIMIT $LIMIT_SIZE DETACH DELETE (ip) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (:GCPPublicIpAddress)<-[r:MEMBER_OF_PUBLIC_IP_ADDRESS]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
 			"query": "MATCH (d:GCPSQLDatabase)<-[:HAS_DATABASE]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE d.lastupdated <> $UPDATE_TAG WITH d LIMIT $LIMIT_SIZE DETACH DELETE (d) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100,

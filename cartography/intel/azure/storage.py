@@ -13,7 +13,7 @@ from azure.mgmt.storage import StorageManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
-from cartography.util import run_cleanup_job
+from cartography.util import run_cleanup_job,get_azure_resource_group_name
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -50,8 +50,7 @@ def get_storage_account_list(credentials: Credentials, subscription_id: str, reg
         return []
     account_list = []
     for storage_account in storage_account_list:
-        x = storage_account['id'].split('/')
-        storage_account['resourceGroup'] = x[x.index('resourceGroups') + 1]
+        storage_account['resourceGroup'] = get_azure_resource_group_name(storage_account.get('id'))
         storage_account['allowBlobPublicAccess'] = storage_account.get(
             'properties', {}).get('allow_blob_public_access', False)
         storage_account['consolelink'] = azure_console_link.get_console_link(
@@ -106,7 +105,26 @@ def load_storage_account_data(
         AZURE_SUBSCRIPTION_ID=subscription_id,
         azure_update_tag=azure_update_tag,
     )
-
+    for storage in storage_account_list:
+        resource_group=get_azure_resource_group_name(storage.get('id'))
+        _attach_resource_group_storage_account(neo4j_session, storage.get('id'), resource_group,azure_update_tag)
+            
+            
+def _attach_resource_group_storage_account(neo4j_session: neo4j.Session, storage_account_id: str,resource_group:str,azure_update_tag: int,) -> None:
+    ingest_storage_account = """
+    MATCH (s:AzureStorageAccount{id: $account_id})
+    WITH s
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (s)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_storage_account,
+        account_id=storage_account_id,
+        resource_group=resource_group,
+        azure_update_tag=azure_update_tag
+    )
 
 @timeit
 def sync_storage_account_details(
@@ -325,6 +343,25 @@ def _load_queue_services(
         queue_services_list=queue_services,
         azure_update_tag=update_tag,
     )
+    for queue_service in queue_services:
+        resource_group=get_azure_resource_group_name(queue_service.get('id'))
+        _attach_resource_queue_service(neo4j_session,queue_service['id'],resource_group,update_tag)
+
+def _attach_resource_queue_service(neo4j_session: neo4j.Session, queue_service_id: str,resource_group:str, update_tag: int) -> None:
+    ingest_queue_services = """
+    MATCH (qs:AzureStorageQueueService{id: $queue_service_id})
+    WITH qs
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (qs)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_queue_services,
+        queue_service_id=queue_service_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag
+    )
 
 
 @timeit
@@ -354,6 +391,26 @@ def _load_table_services(
         region="global",
         table_services_list=table_services,
         azure_update_tag=update_tag,
+    )
+    for table_service in table_services:
+        resource_group=get_azure_resource_group_name(table_service.get('id'))
+        _attach_resource_storage_table_service(neo4j_session,table_service['id'],resource_group,update_tag)
+
+def _attach_resource_storage_table_service(neo4j_session: neo4j.Session, table_service_id:str, resource_group:str,update_tag: int) -> None:
+    ingest_table_services = """
+    MATCH (ts:AzureStorageTableService{id: $tservice_id})
+    WITH ts
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (ts)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+
+    neo4j_session.run(
+        ingest_table_services,
+        tservice_id=table_service_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag
     )
 
 
@@ -385,6 +442,26 @@ def _load_file_services(
         file_services_list=file_services,
         azure_update_tag=update_tag,
     )
+    for file_service in file_services:
+        resource_group=get_azure_resource_group_name(file_service.get('id'))
+        _attach_resource_storage_file_service(neo4j_session,file_service['id'],resource_group,update_tag)
+
+def _attach_resource_storage_file_service(neo4j_session: neo4j.Session, file_service_id:str,resource_group :str,update_tag: int) -> None:
+    ingest_file_services = """
+    MATCH (fs:AzureStorageFileService{id: $fservice_id})
+    WITH fs
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (fs)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_file_services,
+        fservice_id=file_service_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag,
+    )
+    
 
 
 @timeit
@@ -415,6 +492,26 @@ def _load_blob_services(
         blob_services_list=blob_services,
         azure_update_tag=update_tag,
     )
+    for blob_service in blob_services:
+        resource_group=get_azure_resource_group_name(blob_service.get('id'))
+        _attach_resource_storage_blob_service(neo4j_session,blob_service['id'],resource_group,update_tag)
+
+def _attach_resource_storage_blob_service (neo4j_session: neo4j.Session, blob_service_id: str, resource_group:str,update_tag: int) -> None:
+    ingest_blob_services = """
+    MATCH (bs:AzureStorageBlobService{id: $bservice_id})
+    WITH bs
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (bs)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_blob_services,
+        bservice_id=blob_service_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag,
+    )
+    
 
 
 @timeit
@@ -511,6 +608,26 @@ def _load_queues(neo4j_session: neo4j.Session, queues: List[Dict], update_tag: i
         ingest_queues,
         region="global",
         queues_list=queues,
+        azure_update_tag=update_tag,
+    )
+    for queue in queues:
+        resource_group=get_azure_resource_group_name(queue.get('id'))
+        _attach_resource_storage_queue(neo4j_session,queue['id'],resource_group,update_tag)
+
+def _attach_resource_storage_queue(neo4j_session: neo4j.Session, queue_id:str,resource_group:str, update_tag: int) -> None:
+    ingest_queues = """
+    MATCH (q:AzureStorageQueue{id: $queue_id})
+    WITH q
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (q)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+
+    neo4j_session.run(
+        ingest_queues,
+        queue_id=queue_id,
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -610,6 +727,29 @@ def _load_tables(neo4j_session: neo4j.Session, tables: List[Dict], update_tag: i
         ingest_tables,
         region="global",
         tables_list=tables,
+        azure_update_tag=update_tag,
+    )
+    for table in tables:
+        resource_group=get_azure_resource_group_name(table.get('id'))
+        _attach_resource_storage_table(neo4j_session,table['id'],resource_group,update_tag)
+
+def _attach_resource_storage_table(neo4j_session: neo4j.Session, table_id:str, resource_group:str,update_tag: int) -> None:
+    """
+    Ingest Table details into neo4j.
+    """
+    ingest_tables = """
+    MATCH (t:AzureStorageTable{id: $table_id})
+    WITH t
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (t)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+
+    neo4j_session.run(
+        ingest_tables,
+        table_id=table_id,
+        resource_group=resource_group,
         azure_update_tag=update_tag,
     )
 
@@ -721,7 +861,25 @@ def _load_shares(neo4j_session: neo4j.Session, shares: List[Dict], update_tag: i
         shares_list=shares,
         azure_update_tag=update_tag,
     )
+    for share in shares:
+        resource_group=get_azure_resource_group_name(share.get('id'))
+        _attach_resource_storage_share(neo4j_session,share['id'],resource_group,update_tag)
 
+def _attach_resource_storage_share(neo4j_session: neo4j.Session, share_id:str,resource_group:str ,update_tag: int) -> None:
+    ingest_shares = """
+    MATCH (share:AzureStorageFileShare{id: $share_id})
+    WITH share
+    MATCH (rg:AzureResourceGroup{name:$resource_group})
+    MERGE (share)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_shares,
+        share_id=share_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag,
+    )
 
 @timeit
 def sync_blob_services_details(
@@ -835,7 +993,25 @@ def _load_blob_containers(
         blob_containers_list=blob_containers,
         azure_update_tag=update_tag,
     )
+    for blob_container in blob_containers:
+        resource_group=get_azure_resource_group_name(blob_container.get('id'))
+        _attach_resource_storage_blob_container(neo4j_session,blob_container['id'],resource_group,update_tag)
 
+def _attach_resource_storage_blob_container(neo4j_session: neo4j.Session, blob_container_id: str,resource_group:str ,update_tag: int) -> None:
+    ingest_blob_containers = """
+    MATCH (bc:AzureStorageBlobContainer{id: $blob_id})
+    WITH bc
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
+    MERGE (bc)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $azure_update_tag
+    """
+    neo4j_session.run(
+        ingest_blob_containers,
+        blob_id=blob_container_id,
+        resource_group=resource_group,
+        azure_update_tag=update_tag,
+    )
 
 @timeit
 def cleanup_azure_storage_accounts(

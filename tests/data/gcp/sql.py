@@ -13,9 +13,18 @@ CLOUD_SQL_INSTANCES = [
         'gceZone': 'us-west-1a',
         'secondaryGceZone': 'us-west-1b',
         'satisfiesPzs': True,
+        'settings':{
+            "ipConfiguration":{
+                "privateNetwork":"projects/project-abc/global/networks/default"
+                }
+                },
         'authorizedNetworksList': [
             '0.0.0.0/0', '192.168.10.1',
         ],
+        'ipAddresses':[{
+            'type':'PRIMARY',
+            'ipAddress':'103.34.34.1'
+        }],
         'createTime': '2021-10-15T16:19:00.094Z',
     },
     {
@@ -32,11 +41,22 @@ CLOUD_SQL_INSTANCES = [
         'gceZone': 'us-east-1a',
         'secondaryGceZone': 'us-east-1b',
         'satisfiesPzs': True,
+        'settings':{
+            "ipConfiguration":{
+                "privateNetwork":"projects/project-abc/global/networks/default"
+                }
+                },
+        'ipAddresses':[{
+            'type':'PRIMARY',
+            'ipAddress':'104.34.34.1'
+        }],
         'authorizedNetworksList': [
             '192.168.10.1',
         ],
         'createTime': '2021-9-9T16:19:00.094Z',
     },
+    
+    
 ]
 
 CLOUD_SQL_USERS = [

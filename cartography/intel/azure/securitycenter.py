@@ -9,6 +9,7 @@ from azure.mgmt.security import SecurityCenter
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
+from cartography.util import get_azure_resource_group_name
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -39,8 +40,7 @@ def get_security_contacts_list(client: SecurityCenter) -> List[Dict]:
 def transform_security_contacts(security_contacts: List[Dict], subscription_id: str, common_job_parameters: str) -> List[Dict]:
     security_contacts_data = []
     for contact in security_contacts:
-        x = contact['id'].split('/')
-        contact['resource_group'] = x[x.index('resourceGroups') + 1]
+        contact['resource_group'] = get_azure_resource_group_name(contact.get('id'))
         contact['subscriptionid'] = subscription_id
         contact['region'] = 'global'
         contact['consolelink'] = azure_console_link.get_console_link(
@@ -75,7 +75,26 @@ def _load_security_contacts_tx(
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
-
+    for security_contact in security_contacts:
+        resource_group=get_azure_resource_group_name(security_contact.get('id'))
+        _attach_resource_group_security_contacts(tx, security_contact['id'], resource_group,update_tag)
+            
+    
+def _attach_resource_group_security_contacts(tx: neo4j.Transaction, security_contact_id:str,resource_group:str ,update_tag: int) -> None:
+    ingest_contacts = """
+    MATCH(c:AzureSecurityContact{id: $security_contact_id})
+    WITH c
+    MATCH (rg:AzureResourceGroup{name:$resoure_group})
+    MERGE (c)-[r:RESOURCE_GROUP]->(rg)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        ingest_contacts,
+        security_contact_id=security_contact_id,
+        resource_group=resource_group,
+        update_tag=update_tag
+    )
 
 def cleanup_security_contacts(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_security_contacts_cleanup.json', neo4j_session, common_job_parameters)
