@@ -123,25 +123,6 @@ def sync_monitor_log_profiles(
     log_profiles = get_log_profiles_list(client, regions, common_job_parameters)
     log_profiles_list = transform_log_profiles(log_profiles, regions, common_job_parameters)
 
-    if common_job_parameters.get('pagination', {}).get('log_profiles', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("log_profiles", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("log_profiles", None)["pageSize"]
-        totalPages = len(log_profiles_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for log_profiles {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('log_profiles', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('log_profiles', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('log_profiles', {})['pageSize']
-        if page_end > len(log_profiles_list) or page_end == len(log_profiles_list):
-            log_profiles_list = log_profiles_list[page_start:]
-        else:
-            has_next_page = True
-            log_profiles_list = log_profiles_list[page_start:page_end]
-            common_job_parameters['pagination']['log_profiles']['hasNextPage'] = has_next_page
-
     load_monitor_log_profiles(neo4j_session, subscription_id, log_profiles_list, update_tag)
     cleanup_monitor_log_profiles(neo4j_session, common_job_parameters)
 

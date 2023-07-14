@@ -19,3 +19,5 @@ azure
 cloudformation
 docs
 tests
+
+tmp

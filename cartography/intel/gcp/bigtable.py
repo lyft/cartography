@@ -45,27 +45,6 @@ def get_bigtable_instances(bigtable: Resource, project_id: str, common_job_param
                     )
                     bigtable_instances.append(instance)
             request = bigtable.projects().instances().list_next(previous_request=request, previous_response=response)
-        if common_job_parameters.get('pagination', {}).get('bigtable', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("bigtable", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("bigtable", None)["pageSize"]
-            totalPages = len(bigtable_instances) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for bigtable instances {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('bigtable', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('bigtable', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('bigtable', None)['pageSize']
-            if page_end > len(bigtable_instances) or page_end == len(bigtable_instances):
-                bigtable_instances = bigtable_instances[page_start:]
-            else:
-                has_next_page = True
-                bigtable_instances = bigtable_instances[page_start:page_end]
-                common_job_parameters['pagination']['bigtable']['hasNextPage'] = has_next_page
 
         return bigtable_instances
     except HttpError as e:

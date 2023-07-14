@@ -95,28 +95,6 @@ def sync(
 
     logger.info(f"Total CloudTrail Trails: {len(trails)}")
 
-    if common_job_parameters.get('pagination', {}).get('cloudtrail', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("cloudtrail", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("cloudtrail", None)["pageSize"]
-        totalPages = len(trails) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for cloudtrail trails {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('cloudtrail', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudtrail', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudtrail', {})['pageSize']
-        if page_end > len(trails) or page_end == len(trails):
-            trails = trails[page_start:]
-
-        else:
-            has_next_page = True
-            trails = trails[page_start:page_end]
-            common_job_parameters['pagination']['cloudtrail']['hasNextPage'] = has_next_page
-
     trails = transform_trails(trails)
 
     load_trails(neo4j_session, trails, current_aws_account_id, update_tag)

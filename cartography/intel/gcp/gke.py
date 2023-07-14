@@ -45,27 +45,7 @@ def get_gke_clusters(container: Resource, project_id: str, regions: list, common
             else:
                 if get_region_from_location(item['zone']) in regions:
                     data.append(item)
-        if common_job_parameters.get('pagination', {}).get('gke', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("gke", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("gke", None)["pageSize"]
-            totalPages = len(data) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for gke Cluster {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('gke', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('gke', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('gke', None)['pageSize']
-            if page_end > len(data) or page_end == len(data):
-                data = data[page_start:]
-            else:
-                has_next_page = True
-                data = data[page_start:page_end]
-                common_job_parameters['pagination']['gke']['hasNextPage'] = has_next_page
+
         return data
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']

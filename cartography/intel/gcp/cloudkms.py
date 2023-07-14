@@ -47,27 +47,7 @@ def get_kms_locations(kms: Resource, project_id: str, regions: list, common_job_
                         if location['locationId'] in regions or location['locationId'] == 'global':
                             locations.append(location)
             request = kms.projects().locations().list_next(previous_request=request, previous_response=response)
-        if common_job_parameters.get('pagination', {}).get('cloudkms', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("cloudkms", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("cloudkms", None)["pageSize"]
-            totalPages = len(locations) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for cloudkms locations {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('cloudkms', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('cloudkms', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudkms', None)['pageSize']
-            if page_end > len(locations) or page_end == len(locations):
-                locations = locations[page_start:]
-            else:
-                has_next_page = True
-                locations = locations[page_start:page_end]
-                common_job_parameters['pagination']['cloudkms']['hasNextPage'] = has_next_page
+
         return locations
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']

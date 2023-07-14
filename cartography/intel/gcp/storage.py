@@ -39,27 +39,7 @@ def get_gcp_buckets(storage: Resource, project_id: str, common_job_parameters) -
             if res.get('items', []):
                 buckets_list.extend(res.get('items', []))
             req = storage.buckets().list_next(previous_request=req, previous_response=res)
-        if common_job_parameters.get('pagination', {}).get('storage', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("storage", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("storage", None)["pageSize"]
-            totalPages = len(res.get('items', [])) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for storage buckets {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('storage', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('storage', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('storage', None)['pageSize']
-            if page_end > len(res.get('items', [])) or len(res.get('items', [])) == page_end:
-                res['items'] = res.get('items', [])[page_start:]
-            else:
-                has_next_page = True
-                res['items'] = res.get('items', [])[page_start:page_end]
-                common_job_parameters['pagination']['storage']['hasNextPage'] = has_next_page
+
         return buckets_list
     except HttpError as e:
         reason = compute._get_error_reason(e)

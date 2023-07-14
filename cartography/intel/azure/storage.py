@@ -1027,26 +1027,6 @@ def sync(
 ) -> None:
     logger.info("Syncing Azure Storage for subscription '%s'.", subscription_id)
     storage_account_list = get_storage_account_list(credentials, subscription_id, regions, common_job_parameters)
-
-    if common_job_parameters.get('pagination', {}).get('storage', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("storage", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("storage", None)["pageSize"]
-        totalPages = len(storage_account_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for storage account {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('storage', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('storage', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('storage', {})['pageSize']
-        if page_end > len(storage_account_list) or page_end == len(storage_account_list):
-            storage_account_list = storage_account_list[page_start:]
-        else:
-            has_next_page = True
-            storage_account_list = storage_account_list[page_start:page_end]
-            common_job_parameters['pagination']['storage']['hasNextPage'] = has_next_page
-
     load_storage_account_data(neo4j_session, subscription_id, storage_account_list, sync_tag)
     sync_storage_account_details(neo4j_session, credentials, subscription_id,
                                  storage_account_list, sync_tag, common_job_parameters)

@@ -113,25 +113,6 @@ def sync_subnets(
 
     logger.info(f"Total Subnets: {len(data)}")
 
-    if common_job_parameters.get('pagination', {}).get('ec2:subnet', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("ec2:subnet", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("ec2:subnet", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for ec2:subnet {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('ec2:subnet', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:subnet', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:subnet', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['ec2:subnet']['hasNextPage'] = has_next_page
-
     load_subnets(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_subnets(neo4j_session, common_job_parameters)
 

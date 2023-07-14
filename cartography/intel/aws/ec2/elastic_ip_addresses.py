@@ -123,25 +123,6 @@ def sync_elastic_ip_addresses(
 
     logger.info(f"Total Elastic IP Addresses: {len(addresses)}")
 
-    if common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("elastic_ip_addresses", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("elastic_ip_addresses", None)["pageSize"]
-        totalPages = len(addresses) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for elastic_ip_addresses {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('elastic_ip_addresses', {})['pageSize']
-        if page_end > len(addresses) or page_end == len(addresses):
-            addresses = addresses[page_start:]
-        else:
-            has_next_page = True
-            addresses = addresses[page_start:page_end]
-            common_job_parameters['pagination']['elastic_ip_addresses']['hasNextPage'] = has_next_page
-
     addresses = transform_elastic_ip_addresses(addresses, current_aws_account_id)
     load_elastic_ip_addresses(neo4j_session, addresses, current_aws_account_id, update_tag)
     cleanup_elastic_ip_addresses(neo4j_session, common_job_parameters)

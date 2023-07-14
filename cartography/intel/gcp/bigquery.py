@@ -39,27 +39,6 @@ def get_bigquery_dataset(bigquery: Resource, project_id: str, common_job_paramet
             if 'datasets' in response:
                 datasets.extend(response.get('datasets', []))
             request = bigquery.datasets().list_next(previous_request=request, previous_response=response)
-        if common_job_parameters.get('pagination', {}).get('bigquery', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("bigquery", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("bigquery", None)["pageSize"]
-            totalPages = len(datasets) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for datasets {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('bigquery', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('bigquery', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('bigquery', None)['pageSize']
-            if page_end > len(datasets) or page_end == len(datasets):
-                datasets = datasets[page_start:]
-            else:
-                has_next_page = True
-                datasets = datasets[page_start:page_end]
-                common_job_parameters['pagination']['bigquery']['hasNextPage'] = has_next_page
 
         return datasets
     except HttpError as e:

@@ -124,28 +124,6 @@ def get_pubsub_topics(pubsub: Resource, project_id: str, regions: list, common_j
                 topics.extend(res.get('topics', []))
             req = pubsub.projects().topics().list_next(previous_request=req, previous_response=res)
 
-        if common_job_parameters.get('pagination', {}).get('pubsub', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("pubsub", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("pubsub", None)["pageSize"]
-            totalPages = len(topics) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for pubsub topics {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('pubsub', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('pubsub', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('pubsub', None)['pageSize']
-            if page_end > len(topics) or page_end == len(topics):
-                topics = topics[page_start:]
-            else:
-                has_next_page = True
-                topics = topics[page_start:page_end]
-                common_job_parameters['pagination']['pubsub']['hasNextPage'] = has_next_page
-
         return topics
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -235,28 +213,15 @@ def sync(
         common_job_parameters, 'pubsub_topics', 'GCPPubsubTopic',
     )
 
-    if common_job_parameters.get('pagination', {}).get('pubsub', None):
-        if not common_job_parameters.get('pagination', {}).get('pubsub', {}).get('hasNextPage', False):
-            subs = get_pubsub_subscriptions(pubsub, project_id, regions, common_job_parameters)
-            subscriptions = transform_subscriptions(subs, project_id)
-            load_pubsub_subscriptions(neo4j_session, subscriptions, project_id, gcp_update_tag)
+    subs = get_pubsub_subscriptions(pubsub, project_id, regions, common_job_parameters)
+    subscriptions = transform_subscriptions(subs, project_id)
+    load_pubsub_subscriptions(neo4j_session, subscriptions, project_id, gcp_update_tag)
 
-            cleanup_pubsub_subscriptions(neo4j_session, common_job_parameters)
-            label.sync_labels(
-                neo4j_session, subscriptions, gcp_update_tag,
-                common_job_parameters, 'pubsub_subscription', 'GCPPubsubSubscription',
-            )
-
-    else:
-        subs = get_pubsub_subscriptions(pubsub, project_id, regions, common_job_parameters)
-        subscriptions = transform_subscriptions(subs, project_id)
-        load_pubsub_subscriptions(neo4j_session, subscriptions, project_id, gcp_update_tag)
-
-        cleanup_pubsub_subscriptions(neo4j_session, common_job_parameters)
-        label.sync_labels(
-            neo4j_session, subscriptions, gcp_update_tag,
-            common_job_parameters, 'pubsub_subscription', 'GCPPubsubSubscription',
-        )
+    cleanup_pubsub_subscriptions(neo4j_session, common_job_parameters)
+    label.sync_labels(
+        neo4j_session, subscriptions, gcp_update_tag,
+        common_job_parameters, 'pubsub_subscription', 'GCPPubsubSubscription',
+    )
 
     cleanup_pubsub_topics(neo4j_session, common_job_parameters)
 

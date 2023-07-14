@@ -186,28 +186,6 @@ def sync(
 
     logger.info(f"Total SNS Topics: {len(topics)}")
 
-    if common_job_parameters.get('pagination', {}).get('sns', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("sns", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("sns", None)["pageSize"]
-        totalPages = len(topics) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for SNS topics {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('sns', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sns', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('sns', {})['pageSize']
-        if page_end > len(topics) or page_end == len(topics):
-            topics = topics[page_start:]
-
-        else:
-            has_next_page = True
-            topics = topics[page_start:page_end]
-            common_job_parameters['pagination']['sns']['hasNextPage'] = has_next_page
-
     load_sns_topic(neo4j_session, topics, current_aws_account_id, update_tag)
 
     for topic in topics:

@@ -109,28 +109,6 @@ def sync(
 
     logger.info(f"Total Cloudformation Stacks: {len(stacks)}")
 
-    if common_job_parameters.get('pagination', {}).get('cloudformation', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("cloudformation", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("cloudformation", None)["pageSize"]
-        totalPages = len(stacks) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for Cloudformation stacks {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('cloudformation', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudformation', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudformation', {})['pageSize']
-        if page_end > len(stacks) or page_end == len(stacks):
-            stacks = stacks[page_start:]
-
-        else:
-            has_next_page = True
-            stacks = stacks[page_start:page_end]
-            common_job_parameters['pagination']['cloudformation']['hasNextPage'] = has_next_page
-
     load_cloudformation_stack(neo4j_session, stacks, current_aws_account_id, update_tag)
 
     cleanup_cloudformation_stack(neo4j_session, common_job_parameters)

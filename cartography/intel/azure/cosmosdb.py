@@ -1286,26 +1286,6 @@ def sync(
 ) -> None:
     logger.info("Syncing Azure CosmosDB for subscription '%s'.", subscription_id)
     database_account_list = get_database_account_list(credentials, subscription_id, regions, common_job_parameters)
-
-    if common_job_parameters.get('pagination', {}).get('cosmosdb', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("cosmosdb", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("cosmosdb", None)["pageSize"]
-        totalPages = len(database_account_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for cosmosdb database_account {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('cosmosdb', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cosmosdb', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('cosmosdb', {})['pageSize']
-        if page_end > len(database_account_list) or page_end == len(database_account_list):
-            database_account_list = database_account_list[page_start:]
-        else:
-            has_next_page = True
-            database_account_list = database_account_list[page_start:page_end]
-            common_job_parameters['pagination']['cosmosdb']['hasNextPage'] = has_next_page
-
     database_account_list = transform_database_account_data(database_account_list)
     load_database_account_data(neo4j_session, subscription_id, database_account_list, sync_tag)
     sync_database_account_data_resources(neo4j_session, subscription_id, database_account_list, sync_tag, common_job_parameters)

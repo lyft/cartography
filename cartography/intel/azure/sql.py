@@ -1396,26 +1396,6 @@ def sync(
 ) -> None:
     logger.info("Syncing Azure SQL for subscription '%s'.", subscription_id)
     server_list = get_server_list(credentials, subscription_id, regions, common_job_parameters)
-
-    if common_job_parameters.get('pagination', {}).get('sql', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("sql", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("sql", None)["pageSize"]
-        totalPages = len(server_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for sql server {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('sql', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sql', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('sql', {})['pageSize']
-        if page_end > len(server_list) or page_end == len(server_list):
-            server_list = server_list[page_start:]
-        else:
-            has_next_page = True
-            server_list = server_list[page_start:page_end]
-            common_job_parameters['pagination']['sql']['hasNextPage'] = has_next_page
-
     load_server_data(neo4j_session, subscription_id, server_list, sync_tag)
     load_server_private_endpoint_connection(neo4j_session, server_list, sync_tag)
     sync_server_details(neo4j_session, credentials, subscription_id, server_list, sync_tag, common_job_parameters)

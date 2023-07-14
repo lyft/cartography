@@ -109,25 +109,6 @@ def sync_rds_reserved_db_instances(
 
     logger.info(f"Total RDS Reserved Instances: {len(data)}")
 
-    if common_job_parameters.get('pagination', {}).get('rds', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for rds reserved db instance {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
-
     load_rds_reserved_db_instances(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_rds_reserved_db_instances(neo4j_session, common_job_parameters)
 
@@ -229,25 +210,6 @@ def sync_rds_security_groups(
 
     logger.info(f"Total RDS Security Groups: {len(data)}")
 
-    if common_job_parameters.get('pagination', {}).get('rds', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for rds security group {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
-
     load_rds_security_groups(neo4j_session, data, current_aws_account_id, update_tag)
     for db_sg in data:
         attach_db_security_groups_to_ec2_security_groups(neo4j_session, db_sg.get(
@@ -315,25 +277,6 @@ def sync_rds_snapshots(
         data = transform_snapshots(snps, region)
 
     logger.info(f"Total RDS Snapshots: {len(data)}")
-
-    if common_job_parameters.get('pagination', {}).get('rds', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for rds snapshots {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
 
     load_rds_snapshots(neo4j_session, data, current_aws_account_id, update_tag)
     load_rds_snapshot_attributes(neo4j_session, attributes, update_tag)
@@ -944,25 +887,6 @@ def sync_rds_clusters(
 
     logger.info(f"Total RDS Clusters: {len(data)}")
 
-    if common_job_parameters.get('pagination', {}).get('rds', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for rds cluster {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
-
     load_rds_clusters(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_rds_clusters(neo4j_session, common_job_parameters)
 
@@ -981,25 +905,6 @@ def sync_rds_instances(
         data.extend(get_rds_instance_data(boto3_session, region))
 
     logger.info(f"Total RDS Instances: {len(data)}")
-
-    if common_job_parameters.get('pagination', {}).get('rds', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("rds", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("rds", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for rds instance {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('rds', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('rds', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['rds']['hasNextPage'] = has_next_page
 
     load_rds_instances(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_rds_instances_and_db_subnet_groups(neo4j_session, common_job_parameters)

@@ -53,27 +53,6 @@ def get_sql_instances(sql: Resource, project_id: str, regions: list, common_job_
                             sql_instances.append(item)
             request = sql.instances().list_next(previous_request=request, previous_response=response)
 
-        # if common_job_parameters.get('pagination', {}).get('sql', None):
-        #     pageNo = common_job_parameters.get("pagination", {}).get("sql", None)["pageNo"]
-        #     pageSize = common_job_parameters.get("pagination", {}).get("sql", None)["pageSize"]
-        #     totalPages = len(sql_instances) / pageSize
-        #     if int(totalPages) != totalPages:
-        #         totalPages = totalPages + 1
-        #     totalPages = int(totalPages)
-        #     if pageNo < totalPages or pageNo == totalPages:
-        #         logger.info(f'pages process for sql instances {pageNo}/{totalPages} pageSize is {pageSize}')
-        #     page_start = (
-        #         common_job_parameters.get('pagination', {}).get('sql', None)[
-        #             'pageNo'
-        #         ] - 1
-        #     ) * common_job_parameters.get('pagination', {}).get('sql', None)['pageSize']
-        #     page_end = page_start + common_job_parameters.get('pagination', {}).get('sql', None)['pageSize']
-        #     if page_end > len(sql_instances) or page_end == len(sql_instances):
-        #         sql_instances = sql_instances[page_start:]
-        #     else:
-        #         has_next_page = True
-        #         sql_instances = sql_instances[page_start:page_end]
-        #         common_job_parameters['pagination']['sql']['hasNextPage'] = has_next_page
         return sql_instances
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']

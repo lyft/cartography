@@ -39,27 +39,6 @@ def get_dns_zones(dns: Resource, project_id: str, common_job_parameters) -> List
             if 'managedZones' in response:
                 zones.extend(response.get('managedZone', []))
             request = dns.managedZones().list_next(previous_request=request, previous_response=response)
-        if common_job_parameters.get('pagination', {}).get('dns', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("dns", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("dns", None)["pageSize"]
-            totalPages = len(zones) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for dns zones {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('dns', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
-            if page_end > len(zones) or page_end == len(zones):
-                zones = zones[page_start:]
-            else:
-                has_next_page = True
-                zones = zones[page_start:page_end]
-                common_job_parameters['pagination']['dns']['hasNextPage'] = has_next_page
 
         return zones
     except HttpError as e:
@@ -220,27 +199,7 @@ def get_dns_policies(dns: Resource, project_id: str, common_job_parameters) -> L
             if 'policies' in response:
                 policies.extend(response['policies'])
             request = dns.policies().list_next(previous_request=request, previous_response=response)
-        if common_job_parameters.get('pagination', {}).get('dns', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("dns", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("dns", None)["pageSize"]
-            totalPages = len(policies) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for dns zones {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('dns', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('dns', None)['pageSize']
-            if page_end > len(policies) or page_end == len(policies):
-                policies = policies[page_start:]
-            else:
-                has_next_page = True
-                policies = policies[page_start:page_end]
-                common_job_parameters['pagination']['dns']['hasNextPage'] = has_next_page
+
         return policies
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']

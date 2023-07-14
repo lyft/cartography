@@ -47,27 +47,7 @@ def get_firestore_databases(firestore: Resource, project_id: str, regions: list,
                 else:
                     if database['locationId'] in regions or database['locationId'] == 'global':
                         firestore_databases.append(database)
-        if common_job_parameters.get('pagination', {}).get('firestore', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("firestore", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("firestore", None)["pageSize"]
-            totalPages = len(firestore_databases) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for firestore databases {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (
-                common_job_parameters.get('pagination', {}).get('firestore', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination', {}).get('firestore', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('firestore', None)['pageSize']
-            if page_end > len(firestore_databases) or page_end == len(firestore_databases):
-                firestore_databases = firestore_databases[page_start:]
-            else:
-                has_next_page = True
-                firestore_databases = firestore_databases[page_start:page_end]
-                common_job_parameters['pagination']['firestore']['hasNextPage'] = has_next_page
+
         return firestore_databases
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']

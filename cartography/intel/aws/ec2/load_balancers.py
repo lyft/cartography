@@ -211,25 +211,6 @@ def sync_load_balancers(
 
     logger.info(f"Total Load Balancers: {len(data)}")
 
-    if common_job_parameters.get('pagination', {}).get('ec2:load_balancer', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("ec2:load_balancer", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("ec2:load_balancer", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for ec2:load_balancer {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:load_balancer', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['ec2:load_balancer']['hasNextPage'] = has_next_page
-
     load_load_balancers(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_load_balancers(neo4j_session, common_job_parameters)
 

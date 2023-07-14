@@ -104,25 +104,6 @@ def sync_redshift_reserved_node(
 
     logger.info(f"Total Redshift Reserved Nodes: {len(data)}")
 
-    if common_job_parameters.get('pagination', {}).get('redshift', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("redshift", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("redshift", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for redshift_reserved_node {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('redshift', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['redshift']['hasNextPage'] = has_next_page
-
     load_redshift_reserved_node(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_redshift_reserved_node(neo4j_session, common_job_parameters)
 
@@ -329,25 +310,6 @@ def sync_redshift_clusters(
         data.extend(get_redshift_cluster_data(boto3_session, region))
 
     logger.info(f"Total Redshift Clusters: {len(data)}")
-
-    if common_job_parameters.get('pagination', {}).get('redshift', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("redshift", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("redshift", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for redshift cluster {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('redshift', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('redshift', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['redshift']['hasNextPage'] = has_next_page
 
     transform_redshift_cluster_data(data, current_aws_account_id)
     load_redshift_cluster_data(neo4j_session, data, current_aws_account_id, aws_update_tag)

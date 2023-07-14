@@ -312,25 +312,6 @@ def sync_lambda_functions(
 
     logger.info(f"Total Lambdas: {len(data)}")
 
-    # if common_job_parameters.get('pagination', {}).get('lambda_function', None):
-    #     pageNo = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageNo"]
-    #     pageSize = common_job_parameters.get("pagination", {}).get("lambda_function", None)["pageSize"]
-    #     totalPages = len(data) / pageSize
-    #     if int(totalPages) != totalPages:
-    #         totalPages = totalPages + 1
-    #     totalPages = int(totalPages)
-    #     if pageNo < totalPages or pageNo == totalPages:
-    #         logger.info(f'pages process for lambda_function {pageNo}/{totalPages} pageSize is {pageSize}')
-    #     page_start = (common_job_parameters.get('pagination', {}).get('lambda_function', {})[
-    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
-    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('lambda_function', {})['pageSize']
-    #     if page_end > len(data) or page_end == len(data):
-    #         data = data[page_start:]
-    #     else:
-    #         has_next_page = True
-    #         data = data[page_start:page_end]
-    #         common_job_parameters['pagination']['lambda_function']['hasNextPage'] = has_next_page
-
     load_lambda_functions(neo4j_session, data, current_aws_account_id, aws_update_tag)
     lambda_function_details = get_lambda_function_details(boto3_session, data)
     load_lambda_function_details(neo4j_session, lambda_function_details, aws_update_tag, current_aws_account_id)

@@ -101,28 +101,6 @@ def sync(
 
     logger.info(f"Total Cloudfront Distributions: {len(distributions)}")
 
-    if common_job_parameters.get('pagination', {}).get('cloudfront', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("cloudfront", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("cloudfront", None)["pageSize"]
-        totalPages = len(distributions) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for Cloudfront distributions {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('cloudfront', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('cloudfront', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloudfront', {})['pageSize']
-        if page_end > len(distributions) or page_end == len(distributions):
-            distributions = distributions[page_start:]
-
-        else:
-            has_next_page = True
-            distributions = distributions[page_start:page_end]
-            common_job_parameters['pagination']['cloudfront']['hasNextPage'] = has_next_page
-
     load_cloudfront_distributions(neo4j_session, distributions, current_aws_account_id, update_tag)
 
     cleanup_cloudfront_distributions(neo4j_session, common_job_parameters)

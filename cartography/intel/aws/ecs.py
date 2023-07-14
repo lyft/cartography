@@ -562,31 +562,6 @@ def sync(
 
     logger.info(f"Total ECS Clusters: {len(cluster_arns)}")
 
-    if common_job_parameters.get('pagination', {}).get('ecs', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("ecs", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("ecs", None)["pageSize"]
-        totalPages = len(cluster_arns) / pageSize
-
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for ecs cluster_arns {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('ecs', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ecs', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('ecs', {})['pageSize']
-
-        if page_end > len(cluster_arns) or page_end == len(cluster_arns):
-            cluster_arns = cluster_arns[page_start:]
-
-        else:
-            has_next_page = True
-            cluster_arns = cluster_arns[page_start:page_end]
-            common_job_parameters['pagination']['ecs']['hasNextPage'] = has_next_page
-
     # TODO: also include attachment info, and make relationships between the attachments
     # and the cluster.
     clusters: List[Dict[str, Any]] = []

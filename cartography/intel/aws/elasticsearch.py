@@ -342,48 +342,9 @@ def sync(
 
     logger.info(f"Total ElasticSearch Reserved Instances: {len(data)}")
 
-    if common_job_parameters.get('pagination', {}).get('elasticsearch', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("elasticsearch", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("elasticsearch", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for elasticsearch domains {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('elasticsearch', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elasticsearch', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('elasticsearch', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['elasticsearch']['hasNextPage'] = has_next_page
-
     _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
-
-    if common_job_parameters.get('pagination', {}).get('elasticsearch', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("elasticsearch", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("elasticsearch", None)["pageSize"]
-        totalPages = len(reserved_instances) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(
-                f'pages process for elasticsearch reserved instances {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('elasticsearch', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('elasticsearch', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('elasticsearch', {})['pageSize']
-        if page_end > len(reserved_instances) or page_end == len(reserved_instances):
-            reserved_instances = reserved_instances[page_start:]
-        else:
-            has_next_page = True
-            reserved_instances = reserved_instances[page_start:page_end]
-            common_job_parameters['pagination']['elasticsearch']['hasNextPage'] = has_next_page
 
     load_elasticsearch_reserved_instances(neo4j_session, reserved_instances, current_aws_account_id, update_tag)
     cleanup_elasticsearch_reserved_instances(neo4j_session, common_job_parameters)

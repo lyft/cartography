@@ -106,26 +106,6 @@ def sync_client_certificates(
 
     logger.info(f"Total API Gateway Certificates: {len(data)}")
 
-    if common_job_parameters.get('pagination', {}).get('apigateway', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(
-                f'pages process for apigateway client certificates {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('apigateway', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['apigateway']['hasNextPage'] = has_next_page
-
     load_client_certificates(neo4j_session, data, current_aws_account_id, aws_update_tag)
 
     cleanup_client_certificates(neo4j_session, common_job_parameters)
@@ -549,25 +529,6 @@ def sync_apigateway_rest_apis(
         data.extend(get_apigateway_rest_apis(boto3_session, region))
 
     logger.info(f"Total API Gateway APIs: {len(data)}")
-
-    if common_job_parameters.get('pagination', {}).get('apigateway', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("apigateway", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for apigateway apis {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('apigateway', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('apigateway', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('apigateway', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['apigateway']['hasNextPage'] = has_next_page
 
     load_apigateway_rest_apis(neo4j_session, data, current_aws_account_id, aws_update_tag)
 

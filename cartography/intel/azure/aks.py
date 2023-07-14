@@ -150,25 +150,6 @@ def sync_aks(
 ) -> None:
     aks_list = get_aks_list(credentials, subscription_id, regions, common_job_parameters)
 
-    if common_job_parameters.get('pagination', {}).get('aks', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("aks", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("aks", None)["pageSize"]
-        totalPages = len(aks_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for aks {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('aks', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
-        if page_end > len(aks_list) or page_end == len(aks_list):
-            aks_list = aks_list[page_start:]
-        else:
-            has_next_page = True
-            aks_list = aks_list[page_start:page_end]
-            common_job_parameters['pagination']['aks']['hasNextPage'] = has_next_page
-
     load_aks(neo4j_session, subscription_id, aks_list, update_tag)
     cleanup_aks(neo4j_session, common_job_parameters)
 
@@ -252,25 +233,6 @@ def sync_container_registries(
 ) -> None:
     client = get_container_registry_Client(credentials, subscription_id)
     container_registries_list = get_container_registries_list(client, regions, common_job_parameters)
-
-    if common_job_parameters.get('pagination', {}).get('aks', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("aks", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("aks", None)["pageSize"]
-        totalPages = len(container_registries_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for aks container_registries {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('aks', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
-        if page_end > len(container_registries_list) or page_end == len(container_registries_list):
-            container_registries_list = container_registries_list[page_start:]
-        else:
-            has_next_page = True
-            container_registries_list = container_registries_list[page_start:page_end]
-            common_job_parameters['pagination']['aks']['hasNextPage'] = has_next_page
 
     load_container_registries(neo4j_session, subscription_id, container_registries_list, update_tag)
     cleanup_container_registries(neo4j_session, common_job_parameters)
@@ -739,25 +701,6 @@ def sync_container_groups(
 ) -> None:
     client = get_container_instance_Client(credentials, subscription_id)
     container_groups_list = get_container_groups_list(client, regions, common_job_parameters)
-
-    if common_job_parameters.get('pagination', {}).get('aks', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("aks", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("aks", None)["pageSize"]
-        totalPages = len(container_groups_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for aks container_groups {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('aks', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('aks', {})['pageSize']
-        if page_end > len(container_groups_list) or page_end == len(container_groups_list):
-            container_groups_list = container_groups_list[page_start:]
-        else:
-            has_next_page = True
-            container_groups_list = container_groups_list[page_start:page_end]
-            common_job_parameters['pagination']['aks']['hasNextPage'] = has_next_page
 
     load_container_groups(neo4j_session, subscription_id, container_groups_list, update_tag)
     cleanup_container_groups(neo4j_session, common_job_parameters)

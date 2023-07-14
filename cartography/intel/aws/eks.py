@@ -128,25 +128,6 @@ def sync(
 
     logger.info(f"Total EKS Clusters: {len(clusters)}")
 
-    if common_job_parameters.get('pagination', {}).get('eks', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("eks", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("eks", None)["pageSize"]
-        totalPages = len(clusters) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for eks clusters {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('eks', {})[
-            'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('eks', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('eks', {})['pageSize']
-        if page_end > len(clusters) or page_end == len(clusters):
-            clusters = clusters[page_start:]
-        else:
-            has_next_page = True
-            clusters = clusters[page_start:page_end]
-            common_job_parameters['pagination']['eks']['hasNextPage'] = has_next_page
-
     cluster_data: Dict = {}
     for cluster in clusters:
         cluster_data[cluster['name']] = get_eks_describe_cluster(boto3_session, cluster['region'], cluster['name'])

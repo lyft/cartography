@@ -172,25 +172,6 @@ def sync(
 
     logger.info(f"Total SQS Queues: {len(data)}")
 
-    if common_job_parameters.get('pagination', {}).get('sqs', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("sqs", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("sqs", None)["pageSize"]
-        totalPages = len(data) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for sqs queue_urls {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('sqs', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('sqs', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('sqs', {})['pageSize']
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['sqs']['hasNextPage'] = has_next_page
-
     queue_attributes = get_sqs_queue_attributes(boto3_session, queue_urls)
     load_sqs_queues(neo4j_session, queue_attributes, current_aws_account_id, update_tag)
     cleanup_sqs_queues(neo4j_session, common_job_parameters)

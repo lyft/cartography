@@ -170,25 +170,6 @@ def sync(
 
     logger.info(f"Total ECR Repositories: {len(repositories)}")
 
-    if common_job_parameters.get('pagination', {}).get('ecr', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("ecr", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("ecr", None)["pageSize"]
-        totalPages = len(repositories) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for ecr repositories {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('ecr', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ecr', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('ecr', {})['pageSize']
-        if page_end > len(repositories) or page_end == len(repositories):
-            repositories = repositories[page_start:]
-        else:
-            has_next_page = True
-            repositories = repositories[page_start:page_end]
-            common_job_parameters['pagination']['ecr']['hasNextPage'] = has_next_page
-
     load_ecr_repositories(neo4j_session, repositories, current_aws_account_id, update_tag)
 
     image_data = {}

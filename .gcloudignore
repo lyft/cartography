@@ -42,3 +42,6 @@ setup.cfg
 setup.py
 setupenv.sh
 test-requirements.txt
+
+tmp
+scripts

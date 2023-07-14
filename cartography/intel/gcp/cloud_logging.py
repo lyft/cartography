@@ -103,28 +103,6 @@ def sync_logging_metrics(
 
     metrics = get_logging_metrics(logging, project_id)
 
-    if common_job_parameters.get('pagination', {}).get('cloud_logging', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("cloud_logging", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("cloud_logging", None)["pageSize"]
-        totalPages = len(metrics) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for logging metrics {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (
-            common_job_parameters.get('pagination', {}).get('cloud_logging', None)[
-                'pageNo'
-            ] - 1
-        ) * common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
-        if page_end > len(metrics) or page_end == len(metrics):
-            metrics = metrics[page_start:]
-        else:
-            has_next_page = True
-            metrics = metrics[page_start:page_end]
-            common_job_parameters['pagination']['cloud_logging']['hasNextPage'] = has_next_page
-
     load_logging_metrics(neo4j_session, metrics, project_id, gcp_update_tag)
     cleanup_logging_metrics(neo4j_session, common_job_parameters)
 
@@ -213,28 +191,6 @@ def sync_logging_sinks(
 ) -> None:
 
     sinks = get_logging_sinks(logging, project_id)
-
-    if common_job_parameters.get('pagination', {}).get('cloud_logging', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("cloud_logging", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("cloud_logging", None)["pageSize"]
-        totalPages = len(sinks) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for logging sinks {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (
-            common_job_parameters.get('pagination', {}).get('cloud_logging', None)[
-                'pageNo'
-            ] - 1
-        ) * common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('cloud_logging', None)['pageSize']
-        if page_end > len(sinks) or page_end == len(sinks):
-            sinks = sinks[page_start:]
-        else:
-            has_next_page = True
-            sinks = sinks[page_start:page_end]
-            common_job_parameters['pagination']['cloud_logging']['hasNextPage'] = has_next_page
 
     load_logging_sinks(neo4j_session, sinks, project_id, gcp_update_tag)
     cleanup_logging_sinks(neo4j_session, common_job_parameters)

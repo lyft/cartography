@@ -223,25 +223,6 @@ def sync_tenant_users(
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
     tenant_users_list = list_tenant_users(client, tenant_id)
-    
-    # if common_job_parameters.get('pagination', {}).get('iam', None):
-    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-    #     totalPages = len(tenant_users_list) / pageSize
-    #     if int(totalPages) != totalPages:
-    #         totalPages = totalPages + 1
-    #     totalPages = int(totalPages)
-    #     if pageNo < totalPages or pageNo == totalPages:
-    #         logger.info(f'pages process for iam users {pageNo}/{totalPages} pageSize is {pageSize}')
-    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     if page_end > len(tenant_users_list) or page_end == len(tenant_users_list):
-    #         tenant_users_list = tenant_users_list[page_start:]
-    #     else:
-    #         has_next_page = True
-    #         tenant_users_list = tenant_users_list[page_start:page_end]
-    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_users(neo4j_session, tenant_id, tenant_users_list, update_tag)
     cleanup_tenant_users(neo4j_session, common_job_parameters)
@@ -310,25 +291,6 @@ def sync_tenant_groups(
     client = get_graph_client(credentials, tenant_id)
     tenant_groups_list = get_tenant_groups_list(client, tenant_id)
 
-    # if common_job_parameters.get('pagination', {}).get('iam', None):
-    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-    #     totalPages = len(tenant_groups_list) / pageSize
-    #     if int(totalPages) != totalPages:
-    #         totalPages = totalPages + 1
-    #     totalPages = int(totalPages)
-    #     if pageNo < totalPages or pageNo == totalPages:
-    #         logger.info(f'pages process for iam groups {pageNo}/{totalPages} pageSize is {pageSize}')
-    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     if page_end > len(tenant_groups_list) or page_end == len(tenant_groups_list):
-    #         tenant_groups_list = tenant_groups_list[page_start:]
-    #     else:
-    #         has_next_page = True
-    #         tenant_groups_list = tenant_groups_list[page_start:page_end]
-    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
-
     load_tenant_groups(neo4j_session, tenant_id, tenant_groups_list, update_tag)
     cleanup_tenant_groups(neo4j_session, common_job_parameters)
 
@@ -392,25 +354,6 @@ def sync_tenant_applications(
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
     tenant_applications_list = get_tenant_applications_list(client, tenant_id)
-
-    # if common_job_parameters.get('pagination', {}).get('iam', None):
-    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-    #     totalPages = len(tenant_applications_list) / pageSize
-    #     if int(totalPages) != totalPages:
-    #         totalPages = totalPages + 1
-    #     totalPages = int(totalPages)
-    #     if pageNo < totalPages or pageNo == totalPages:
-    #         logger.info(f'pages process for iam applications {pageNo}/{totalPages} pageSize is {pageSize}')
-    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     if page_end > len(tenant_applications_list) or page_end == len(tenant_applications_list):
-    #         tenant_applications_list = tenant_applications_list[page_start:]
-    #     else:
-    #         has_next_page = True
-    #         tenant_applications_list = tenant_applications_list[page_start:page_end]
-    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_applications(neo4j_session, tenant_id, tenant_applications_list, update_tag)
     cleanup_tenant_applications(neo4j_session, common_job_parameters)
@@ -480,25 +423,6 @@ def sync_tenant_service_accounts(
     client = get_graph_client(credentials, tenant_id)
     tenant_service_accounts_list = get_tenant_service_accounts_list(client, tenant_id)
 
-    # if common_job_parameters.get('pagination', {}).get('iam', None):
-    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-    #     totalPages = len(tenant_service_accounts_list) / pageSize
-    #     if int(totalPages) != totalPages:
-    #         totalPages = totalPages + 1
-    #     totalPages = int(totalPages)
-    #     if pageNo < totalPages or pageNo == totalPages:
-    #         logger.info(f'pages process for iam service_accounts {pageNo}/{totalPages} pageSize is {pageSize}')
-    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     if page_end > len(tenant_service_accounts_list) or page_end == len(tenant_service_accounts_list):
-    #         tenant_service_accounts_list = tenant_service_accounts_list[page_start:]
-    #     else:
-    #         has_next_page = True
-    #         tenant_service_accounts_list = tenant_service_accounts_list[page_start:page_end]
-    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
-
     load_tenant_service_accounts(neo4j_session, tenant_id, tenant_service_accounts_list, update_tag)
     cleanup_tenant_service_accounts(neo4j_session, common_job_parameters)
 
@@ -563,25 +487,6 @@ def sync_tenant_domains(
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
     tenant_domains_list = get_tenant_domains_list(client, tenant_id)
-
-    # if common_job_parameters.get('pagination', {}).get('iam', None):
-    #     pageNo = common_job_parameters.get("pagination", {}).get("iam", None)["pageNo"]
-    #     pageSize = common_job_parameters.get("pagination", {}).get("iam", None)["pageSize"]
-    #     totalPages = len(tenant_domains_list) / pageSize
-    #     if int(totalPages) != totalPages:
-    #         totalPages = totalPages + 1
-    #     totalPages = int(totalPages)
-    #     if pageNo < totalPages or pageNo == totalPages:
-    #         logger.info(f'pages process for iam domains {pageNo}/{totalPages} pageSize is {pageSize}')
-    #     page_start = (common_job_parameters.get('pagination', {}).get('iam', {})[
-    #                   'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     page_end = page_start + common_job_parameters.get('pagination', {}).get('iam', {})['pageSize']
-    #     if page_end > len(tenant_domains_list) or page_end == len(tenant_domains_list):
-    #         tenant_domains_list = tenant_domains_list[page_start:]
-    #     else:
-    #         has_next_page = True
-    #         tenant_domains_list = tenant_domains_list[page_start:page_end]
-    #         common_job_parameters['pagination']['iam']['hasNextPage'] = has_next_page
 
     load_tenant_domains(neo4j_session, tenant_id, tenant_domains_list, update_tag)
     cleanup_tenant_domains(neo4j_session, common_job_parameters)
@@ -788,13 +693,7 @@ def sync(
             tenant_id, update_tag, common_job_parameters,
         )
         sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
-        # if common_job_parameters.get('pagination', {}).get('iam', None):
-        #     if not common_job_parameters.get('pagination', {}).get('iam', {}).get('hasNextPage', False):
-        #         sync_roles(
-        #             neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
-        #         )
-        #         set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
-        # else:
+
         sync_managed_identity(
             neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
         )

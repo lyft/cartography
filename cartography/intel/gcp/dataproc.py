@@ -100,28 +100,6 @@ def sync_dataproc_clusters(
 
     clusters = get_dataproc_clusters(dataproc, project_id, regions)
 
-    if common_job_parameters.get('pagination', {}).get('dataproc', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("dataproc", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("dataproc", None)["pageSize"]
-        totalPages = len(clusters) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for dataproc clusters {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (
-            common_job_parameters.get('pagination', {}).get('dataproc', None)[
-            'pageNo'
-            ] - 1
-        ) * common_job_parameters.get('pagination', {}).get('dataproc', None)['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('dataproc', None)['pageSize']
-        if page_end > len(clusters) or page_end == len(clusters):
-            clusters = clusters[page_start:]
-        else:
-            has_next_page = True
-            clusters = clusters[page_start:page_end]
-            common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
-
     load_dataproc_clusters(neo4j_session, clusters, project_id, gcp_update_tag)
     cleanup_dataproc_clusters(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, clusters, gcp_update_tag, common_job_parameters, 'dataproc_cluster', 'GCPDataprocCluster')

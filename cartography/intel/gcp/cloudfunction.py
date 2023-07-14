@@ -83,19 +83,7 @@ def get_gcp_functions(function: Resource, project_id: str, regions: list, common
                     previous_request=request,
                     previous_response=response,
                 )
-        if common_job_parameters.get('pagination').get('cloudfunction', None):
-            page_start = (
-                common_job_parameters.get('pagination').get('cloudfunction', None)[
-                    'pageNo'
-                ] - 1
-            ) * common_job_parameters.get('pagination').get('cloudfunction', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination').get('cloudfunction', None)['pageSize']
-            if page_end > len(functions) or page_end == len(functions):
-                functions = functions[page_start:]
-            else:
-                has_next_page = True
-                functions = functions[page_start:page_end]
-                common_job_parameters['pagination']['cloudfunction']['hasNextPage'] = has_next_page
+
         return functions
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']

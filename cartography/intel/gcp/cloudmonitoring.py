@@ -100,28 +100,6 @@ def sync_monitoring_alertpolicies(
 
     policies = get_monitoring_alertpolicies(monitoring, project_id)
 
-    if common_job_parameters.get('pagination', {}).get('monitoring', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("monitoring", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("monitoring", None)["pageSize"]
-        totalPages = len(policies) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for monitoring alertpolicies {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (
-            common_job_parameters.get('pagination', {}).get('monitoring', None)[
-                'pageNo'
-            ] - 1
-        ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
-        if page_end > len(policies) or page_end == len(policies):
-            policies = policies[page_start:]
-        else:
-            has_next_page = True
-            policies = policies[page_start:page_end]
-            common_job_parameters['pagination']['monitoring']['hasNextPage'] = has_next_page
-
     load_monitoring_alertpolicies(neo4j_session, policies, project_id, gcp_update_tag)
     cleanup_monitoring_alertpolicies(neo4j_session, common_job_parameters)
     label.sync_labels(
@@ -219,28 +197,6 @@ def sync_monitoring_metric_descriptors(
     metric_des = get_monitoring_metric_descriptors(monitoring, project_id)
     metric_descriptors = transform_metric_descriptors(metric_des, project_id)
 
-    if common_job_parameters.get('pagination', {}).get('monitoring', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("monitoring", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("monitoring", None)["pageSize"]
-        totalPages = len(metric_descriptors) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for monitoring metric descriptors {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (
-            common_job_parameters.get('pagination', {}).get('monitoring', None)[
-                'pageNo'
-            ] - 1
-        ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
-        if page_end > len(metric_descriptors) or page_end == len(metric_descriptors):
-            metric_descriptors = metric_descriptors[page_start:]
-        else:
-            has_next_page = True
-            metric_descriptors = metric_descriptors[page_start:page_end]
-            common_job_parameters['pagination']['monitoring']['hasNextPage'] = has_next_page
-
     load_monitoring_metric_descriptors(neo4j_session, metric_descriptors, project_id, gcp_update_tag)
     cleanup_monitoring_metric_descriptors(neo4j_session, common_job_parameters)
 
@@ -327,28 +283,6 @@ def sync_monitoring_notification_channels(
 ) -> None:
 
     channels = get_monitoring_notification_channels(monitoring, project_id)
-
-    if common_job_parameters.get('pagination', {}).get('monitoring', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("monitoring", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("monitoring", None)["pageSize"]
-        totalPages = len(channels) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for monitoring notification channels {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (
-            common_job_parameters.get('pagination', {}).get('monitoring', None)[
-                'pageNo'
-            ] - 1
-        ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
-        if page_end > len(channels) or page_end == len(channels):
-            channels = channels[page_start:]
-        else:
-            has_next_page = True
-            channels = channels[page_start:page_end]
-            common_job_parameters['pagination']['monitoring']['hasNextPage'] = has_next_page
 
     load_monitoring_notification_channels(neo4j_session, channels, project_id, gcp_update_tag)
     cleanup_monitoring_notification_channels(neo4j_session, common_job_parameters)
@@ -442,28 +376,6 @@ def sync_monitoring_uptimecheckconfigs(
 ) -> None:
 
     configs = get_monitoring_uptimecheckconfigs(monitoring, project_id)
-
-    if common_job_parameters.get('pagination', {}).get('monitoring', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("monitoring", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("monitoring", None)["pageSize"]
-        totalPages = len(configs) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for monitoring uptimecheckconfigs {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (
-            common_job_parameters.get('pagination', {}).get('monitoring', None)[
-                'pageNo'
-            ] - 1
-        ) * common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('monitoring', None)['pageSize']
-        if page_end > len(configs) or page_end == len(configs):
-            configs = configs[page_start:]
-        else:
-            has_next_page = True
-            configs = configs[page_start:page_end]
-            common_job_parameters['pagination']['monitoring']['hasNextPage'] = has_next_page
 
     load_monitoring_uptimecheckconfigs(neo4j_session, configs, project_id, gcp_update_tag)
     cleanup_monitoring_uptimecheckconfigs(neo4j_session, common_job_parameters)

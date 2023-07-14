@@ -223,25 +223,6 @@ def sync_networks(
     client = get_network_client(credentials, subscription_id)
     networks_list = get_networks_list(client, regions, common_job_parameters)
 
-    if common_job_parameters.get('pagination', {}).get('network', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("network", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("network", None)["pageSize"]
-        totalPages = len(networks_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for network {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('network', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
-        if page_end > len(networks_list) or page_end == len(networks_list):
-            networks_list = networks_list[page_start:]
-        else:
-            has_next_page = True
-            networks_list = networks_list[page_start:page_end]
-            common_job_parameters['pagination']['network']['hasNextPage'] = has_next_page
-
     load_networks(neo4j_session, subscription_id, networks_list, update_tag)
     cleanup_networks(neo4j_session, common_job_parameters)
     sync_networks_subnets(neo4j_session, networks_list, client, subscription_id, update_tag, common_job_parameters)
@@ -722,25 +703,6 @@ def sync_network_security_groups(
 ) -> None:
     network_security_groups_list = get_network_security_groups_list(client, regions, common_job_parameters)
 
-    if common_job_parameters.get('pagination', {}).get('network', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("network", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("network", None)["pageSize"]
-        totalPages = len(network_security_groups_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for network security_groups {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('network', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
-        if page_end > len(network_security_groups_list) or page_end == len(network_security_groups_list):
-            network_security_groups_list = network_security_groups_list[page_start:]
-        else:
-            has_next_page = True
-            network_security_groups_list = network_security_groups_list[page_start:page_end]
-            common_job_parameters['pagination']['network']['hasNextPage'] = has_next_page
-
     load_network_security_groups(neo4j_session, subscription_id, network_security_groups_list, update_tag)
     cleanup_network_security_groups(neo4j_session, common_job_parameters)
     sync_network_security_rules(neo4j_session, network_security_groups_list, client, update_tag, common_job_parameters)
@@ -751,25 +713,6 @@ def sync_nat_gateway(
     common_job_parameters: Dict, regions: list
 ) -> None:
     nat_gateway_list = get_network_nat_gateway(client, regions, common_job_parameters)
-
-    if common_job_parameters.get('pagination', {}).get('network', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("network", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("network", None)["pageSize"]
-        totalPages = len(nat_gateway_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for network nat gateway list  {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('network', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('network', {})['pageSize']
-        if page_end > len(nat_gateway_list) or page_end == len(nat_gateway_list):
-            nat_gateway_list = nat_gateway_list[page_start:]
-        else:
-            has_next_page = True
-            nat_gateway_list = nat_gateway_list[page_start:page_end]
-            common_job_parameters['pagination']['network']['hasNextPage'] = has_next_page
 
     load_network_nat_gateway(neo4j_session, subscription_id, nat_gateway_list, update_tag)
     for nat_gateway in nat_gateway_list:

@@ -516,31 +516,6 @@ def sync_ec2_instances(
 
     logger.info(f"Total EC2 Reservations: {len(data)}")
 
-    if common_job_parameters.get('pagination', {}).get('ec2:instance', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("ec2:instance", {}).get("pageNo")
-        pageSize = common_job_parameters.get("pagination", {}).get("ec2:instance", {}).get("pageSize")
-        totalPages = len(data) / pageSize
-
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for ec2:instance {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('ec2:instance', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ec2:instance', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('ec2:instance', {})['pageSize']
-
-        if page_end > len(data) or page_end == len(data):
-            data = data[page_start:]
-
-        else:
-            has_next_page = True
-            data = data[page_start:page_end]
-            common_job_parameters['pagination']['ec2:instance']['hasNextPage'] = has_next_page
-
     load_ec2_instances(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_instances(neo4j_session, common_job_parameters)
 

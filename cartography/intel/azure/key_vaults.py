@@ -354,24 +354,6 @@ def sync_key_vaults(
     key_vaults = get_key_vaults_list(client)
     key_vaults_list = transform_key_vaults(key_vaults, regions, common_job_parameters)
 
-    if common_job_parameters.get('pagination', {}).get('key_vaults', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("key_vaults", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("key_vaults", None)["pageSize"]
-        totalPages = len(key_vaults_list) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for key_vaults {pageNo}/{totalPages} pageSize is {pageSize}')
-        page_start = (common_job_parameters.get('pagination', {}).get('key_vaults', {})[
-                      'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('key_vaults', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('key_vaults', {})['pageSize']
-        if page_end > len(key_vaults_list) or page_end == len(key_vaults_list):
-            key_vaults_list = key_vaults_list[page_start:]
-        else:
-            has_next_page = True
-            key_vaults_list = key_vaults_list[page_start:page_end]
-            common_job_parameters['pagination']['key_vaults']['hasNextPage'] = has_next_page
     load_key_vaults(neo4j_session, subscription_id, key_vaults_list, update_tag)
     for key_vault in key_vaults_list:
         # KEY VAULT KEYS

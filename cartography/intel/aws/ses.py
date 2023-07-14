@@ -122,28 +122,6 @@ def sync(
 
     logger.info(f"Total SES Identities: {len(identities)}")
 
-    if common_job_parameters.get('pagination', {}).get('ses', None):
-        pageNo = common_job_parameters.get("pagination", {}).get("ses", None)["pageNo"]
-        pageSize = common_job_parameters.get("pagination", {}).get("ses", None)["pageSize"]
-        totalPages = len(identities) / pageSize
-        if int(totalPages) != totalPages:
-            totalPages = totalPages + 1
-
-        totalPages = int(totalPages)
-        if pageNo < totalPages or pageNo == totalPages:
-            logger.info(f'pages process for SES identities {pageNo}/{totalPages} pageSize is {pageSize}')
-
-        page_start = (common_job_parameters.get('pagination', {}).get('ses', {})[
-            'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('ses', {})['pageSize']
-        page_end = page_start + common_job_parameters.get('pagination', {}).get('ses', {})['pageSize']
-        if page_end > len(identities) or page_end == len(identities):
-            identities = identities[page_start:]
-
-        else:
-            has_next_page = True
-            identities = identities[page_start:page_end]
-            common_job_parameters['pagination']['ses']['hasNextPage'] = has_next_page
-
     load_ses_identity(neo4j_session, identities, current_aws_account_id, update_tag)
     cleanup_ses_identities(neo4j_session, common_job_parameters)
 

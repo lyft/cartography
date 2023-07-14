@@ -52,24 +52,6 @@ def get_global_health_checks(compute: Resource, project_id: str, common_job_para
             if 'items' in res:
                 global_health_checks.extend(res['items'])
             req = compute.healthChecks().list_next(previous_request=req, previous_response=res)
-        if common_job_parameters.get('pagination', {}).get('compute', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
-            totalPages = len(global_health_checks) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for global health checks {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            if page_end > len(global_health_checks) or page_end == len(global_health_checks):
-                global_health_checks = global_health_checks[page_start:]
-            else:
-                has_next_page = True
-                global_health_checks = global_health_checks[page_start:page_end]
-                common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
         return global_health_checks
     except HttpError as e:
@@ -108,25 +90,6 @@ def get_regional_health_checks(compute: Resource, project_id: str, region: str, 
             if 'items' in res:
                 regional_health_checks.extend(res['items'])
             req = compute.regionHealthChecks().list_next(previous_request=req, previous_response=res)
-
-        if common_job_parameters.get('pagination', {}).get('compute', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
-            totalPages = len(regional_health_checks) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for regional health checks {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            if page_end > len(regional_health_checks) or page_end == len(regional_health_checks):
-                regional_health_checks = regional_health_checks[page_start:]
-            else:
-                has_next_page = True
-                regional_health_checks = regional_health_checks[page_start:page_end]
-                common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
         return regional_health_checks
     except HttpError as e:
@@ -239,25 +202,6 @@ def get_global_instance_groups(compute: Resource, project_id: str, zone: Dict, c
                 global_instance_groups.extend(res['items'])
             req = compute.instanceGroups().list_next(previous_request=req, previous_response=res)
 
-        if common_job_parameters.get('pagination', {}).get('compute', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
-            totalPages = len(global_instance_groups) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for global instance groups {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            if page_end > len(global_instance_groups) or page_end == len(global_instance_groups):
-                global_instance_groups = global_instance_groups[page_start:]
-            else:
-                has_next_page = True
-                global_instance_groups = global_instance_groups[page_start:page_end]
-                common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
-
         return global_instance_groups
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -295,25 +239,6 @@ def get_regional_instance_groups(compute: Resource, project_id: str, region: str
             if 'items' in res:
                 regional_instance_groups.extend(res['items'])
             req = compute.regionInstanceGroups().list_next(previous_request=req, previous_response=res)
-
-        if common_job_parameters.get('pagination', {}).get('compute', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
-            totalPages = len(regional_instance_groups) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for regional instance groups {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            if page_end > len(regional_instance_groups) or page_end == len(regional_instance_groups):
-                regional_instance_groups = regional_instance_groups[page_start:]
-            else:
-                has_next_page = True
-                regional_instance_groups = regional_instance_groups[page_start:page_end]
-                common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
         return regional_instance_groups
     except HttpError as e:
@@ -426,25 +351,6 @@ def get_global_url_maps(compute: Resource, project_id: str, common_job_parameter
                 global_url_maps.extend(res['items'])
             req = compute.urlMaps().list_next(previous_request=req, previous_response=res)
 
-        if common_job_parameters.get('pagination', {}).get('compute', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
-            totalPages = len(global_url_maps) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for global url maps {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            if page_end > len(global_url_maps) or page_end == len(global_url_maps):
-                global_url_maps = global_url_maps[page_start:]
-            else:
-                has_next_page = True
-                global_url_maps = global_url_maps[page_start:page_end]
-                common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
-
         return global_url_maps
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -482,24 +388,6 @@ def get_regional_url_maps(compute: Resource, project_id: str, region: str, commo
                 regional_url_maps.extend(res['items'])
             req = compute.regionUrlMaps().list_next(previous_request=req, previous_response=res)
 
-        if common_job_parameters.get('pagination', {}).get('compute', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
-            totalPages = len(regional_url_maps) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for global url maps {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            if page_end > len(regional_url_maps) or page_end == len(regional_url_maps):
-                regional_url_maps = regional_url_maps[page_start:]
-            else:
-                has_next_page = True
-                regional_url_maps = regional_url_maps[page_start:page_end]
-                common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
         return regional_url_maps
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -607,25 +495,6 @@ def get_ssl_policies(compute: Resource, project_id: str, common_job_parameters) 
             if 'items' in res:
                 ssl_policies.extend(res['items'])
             req = compute.sslPolicies().list_next(previous_request=req, previous_response=res)
-
-        if common_job_parameters.get('pagination', {}).get('compute', None):
-            pageNo = common_job_parameters.get("pagination", {}).get("compute", None)["pageNo"]
-            pageSize = common_job_parameters.get("pagination", {}).get("compute", None)["pageSize"]
-            totalPages = len(ssl_policies) / pageSize
-            if int(totalPages) != totalPages:
-                totalPages = totalPages + 1
-            totalPages = int(totalPages)
-            if pageNo < totalPages or pageNo == totalPages:
-                logger.info(f'pages process for global url maps {pageNo}/{totalPages} pageSize is {pageSize}')
-            page_start = (common_job_parameters.get('pagination', {}).get('compute', None)[
-                'pageNo'] - 1) * common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            page_end = page_start + common_job_parameters.get('pagination', {}).get('compute', None)['pageSize']
-            if page_end > len(ssl_policies) or page_end == len(ssl_policies):
-                ssl_policies = ssl_policies[page_start:]
-            else:
-                has_next_page = True
-                ssl_policies = ssl_policies[page_start:page_end]
-                common_job_parameters['pagination']['dataproc']['hasNextPage'] = has_next_page
 
         return ssl_policies
     except HttpError as e:
