@@ -17,7 +17,7 @@ from cartography.models.aws.ec2.networkinterfaces import EC2NetworkInterfaceSche
 from cartography.models.aws.ec2.reservations import EC2ReservationSchema
 from cartography.models.aws.ec2.securitygroups import EC2SecurityGroupSchema
 from cartography.models.aws.ec2.subnets import EC2SubnetSchema
-from cartography.models.aws.ec2.volumes import EBSVolumeSchema
+from cartography.models.aws.ec2.volumes import EBSVolumeInstanceSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
 
@@ -273,7 +273,7 @@ def load_ec2_instance_ebs_volumes(
 ) -> None:
     load(
         neo4j_session,
-        EBSVolumeSchema(),
+        EBSVolumeInstanceSchema(),
         ebs_data,
         Region=region,
         AWS_ID=current_aws_account_id,
