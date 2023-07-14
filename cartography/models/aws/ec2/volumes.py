@@ -83,14 +83,13 @@ class EBSVolumeSchema(CartographyNodeSchema):
 class EBSVolumeInstanceProperties(CartographyNodeProperties):
     """
     EBS Volume properties as known by an EC2 instance.
-    The EC2 instance API response includes a `deleteontermination` field and a snapshot id.
+    The EC2 instance API response includes a `deleteontermination` field and the volume id.
     """
     arn: PropertyRef = PropertyRef('Arn', extra_index=True)
     id: PropertyRef = PropertyRef('VolumeId')
     volumeid: PropertyRef = PropertyRef('VolumeId', extra_index=True)
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     deleteontermination: PropertyRef = PropertyRef('DeleteOnTermination')
-    snapshotid: PropertyRef = PropertyRef('SnapshotId')
 
 
 @dataclass(frozen=True)

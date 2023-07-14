@@ -95,6 +95,22 @@ def test_sync_ebs_volumes_e2e(mock_get_vols, mock_get_instances, neo4j_session):
         ('i-04', 'vol-04'),
     }
 
+    # Assert that we created the account to volume rels correctly
+    assert check_rels(
+        neo4j_session,
+        'AWSAccount',
+        'id',
+        'EBSVolume',
+        'volumeid',
+        'RESOURCE',
+        rel_direction_right=True,
+    ) == {
+        ('000000000000', 'vol-03'),
+        ('000000000000', 'vol-04'),
+        ('000000000000', 'vol-09'),
+        ('000000000000', 'vol-0df'),
+    }
+
     # Act
     sync_ebs_volumes(
         neo4j_session,
@@ -132,7 +148,7 @@ def test_sync_ebs_volumes_e2e(mock_get_vols, mock_get_instances, neo4j_session):
         ('i-04', 'vol-04'),
     }
 
-    # Assert that the account to volume rels exist
+    # Assert that the account to volume rels still exist
     assert check_rels(
         neo4j_session,
         'AWSAccount',
