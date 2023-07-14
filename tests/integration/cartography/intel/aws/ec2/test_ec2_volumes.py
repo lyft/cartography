@@ -71,7 +71,7 @@ def test_sync_ebs_volumes_e2e(mock_get_vols, mock_get_instances, neo4j_session):
         {'UPDATE_TAG': TEST_UPDATE_TAG, 'AWS_ID': TEST_ACCOUNT_ID},
     )
 
-    # Assert that deleteontermination is set by sync_ec2_instances
+    # Assert that deleteontermination is set by sync_ec2_instances. The encrypted property isn't returned by this API.
     assert check_nodes(neo4j_session, 'EBSVolume', ['id', 'deleteontermination', 'encrypted']) == {
         ('vol-03', True, None),
         ('vol-04', True, None),
