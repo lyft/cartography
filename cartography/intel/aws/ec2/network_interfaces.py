@@ -161,7 +161,7 @@ def load_network_interface_elbv2_relations(
     ingest_network_interface_elb2_relations = """
     UNWIND $elb_associations AS elb_association
         MATCH (netinf:NetworkInterface{id: elb_association.netinf_id}),
-            (elb:LoadBalancerV2{id: elb_association.elb_id})
+            (elb:LoadBalancerV2{id: elb_association.elb_arn})
         MERGE (elb)-[r:NETWORK_INTERFACE]->(netinf)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $update_tag
@@ -235,11 +235,17 @@ def load(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_accoun
 
     for network_interface in data:
         # https://aws.amazon.com/premiumsupport/knowledge-center/elb-find-load-balancer-IP/
-        matchObj = re.match(r'^ELB (?:net|app)/([^\/]+)\/(.*)', network_interface.get('Description', ''))
+        matchObj = re.match(r'^ELB (?:net|app|gwy)/([^\/]+)\/(.*)', network_interface.get('Description', ''))
         if matchObj:
+            # get the end of arn from network interface description
+            elb_name_id = network_interface.get('Description').split(' ')[1]
+            # ELBV2 arn that is id of every LoadBalancerV2 and will be used to make
+            # (:LoadBalancerV2)-[:NETWORK_INTERFACE]->(:NetworkInterface)
+            elb_arn = f'arn:aws:elasticloadbalancing:{region}:{aws_account_id}:loadbalancer/{elb_name_id}'
             elb_associations_v2.append({
                 'netinf_id': network_interface['NetworkInterfaceId'],
-                'elb_id': f'{matchObj[1]}-{matchObj[2]}.elb.{region}.amazonaws.com',
+                'elb_dnsname': f'{matchObj[1]}-{matchObj[2]}.elb.{region}.amazonaws.com',
+                'elb_arn': elb_arn
             })
         else:
             matchObj = re.match(r'^ELB (.*)', network_interface.get('Description', ''))

@@ -77,14 +77,19 @@ def load_load_balancer_v2s(
     SET r.lastupdated = $update_tag
     """
     for lb in data:
-        load_balancer_id = lb["DNSName"]
+        # every load balancer has an arn that can be used as unique id instead of DNSName
+        # LoadBalancers V2 of type gateway do not contain a DNSName field
+        load_balancer_id = lb["LoadBalancerArn"]
+        
+        # if a load balancer has dns name, it'll return the value else it won't set in Neo4j
+        dns_name = lb.get("DNSName", None)
 
         neo4j_session.run(
             ingest_load_balancer_v2,
             ID=load_balancer_id,
             CREATED_TIME=str(lb["CreatedTime"]),
             NAME=lb["LoadBalancerName"],
-            DNS_NAME=load_balancer_id,
+            DNS_NAME=dns_name,
             HOSTED_ZONE_NAME_ID=lb.get("CanonicalHostedZoneNameID"),
             ELBv2_TYPE=lb.get("Type"),
             SCHEME=lb.get("Scheme"),
