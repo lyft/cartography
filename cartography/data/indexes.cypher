@@ -321,10 +321,6 @@ CREATE INDEX IF NOT EXISTS FOR (n:SpotlightVulnerability) ON (n.host_info_local_
 CREATE INDEX IF NOT EXISTS FOR (n:SpotlightVulnerability) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:SQSQueue) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:SQSQueue) ON (n.lastupdated);
-CREATE INDEX IF NOT EXISTS FOR (n:SSMInstanceInformation) ON (n.id);
-CREATE INDEX IF NOT EXISTS FOR (n:SSMInstanceInformation) ON (n.lastupdated);
-CREATE INDEX IF NOT EXISTS FOR (n:SSMInstancePatch) ON (n.id);
-CREATE INDEX IF NOT EXISTS FOR (n:SSMInstancePatch) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:User) ON (n.arn);
 CREATE INDEX IF NOT EXISTS FOR (n:User) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:AzureTenant) ON (n.id);
