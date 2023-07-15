@@ -34,7 +34,9 @@ def get_instance_ids(neo4j_session: neo4j.Session, region: str, current_aws_acco
 @timeit
 @aws_handle_regions
 def get_instance_information(
-    boto3_session: boto3.session.Session, region: str, instance_ids: List[str],
+        boto3_session: boto3.session.Session,
+        region: str,
+        instance_ids: List[str],
 ) -> List[Dict[str, Any]]:
     client = boto3_session.client('ssm', region_name=region)
     instance_information: List[Dict[str, Any]] = []
@@ -61,7 +63,9 @@ def transform_instance_information(data_list: List[Dict[str, Any]]) -> List[Dict
 @timeit
 @aws_handle_regions
 def get_instance_patches(
-    boto3_session: boto3.session.Session, region: str, instance_ids: List[str],
+        boto3_session: boto3.session.Session,
+        region: str,
+        instance_ids: List[str],
 ) -> List[Dict[str, Any]]:
     client = boto3_session.client('ssm', region_name=region)
     instance_patches: List[Dict[str, Any]] = []
@@ -124,7 +128,7 @@ def load_instance_patches(
 
 
 @timeit
-def cleanup_ssm(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+def cleanup_ssm(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any]) -> None:
     logger.info("Running SSM cleanup")
     GraphJob.from_node_schema(SSMInstanceInformationSchema(), common_job_parameters).run(neo4j_session)
     GraphJob.from_node_schema(SSMInstancePatchSchema(), common_job_parameters).run(neo4j_session)
@@ -132,8 +136,12 @@ def cleanup_ssm(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+        neo4j_session: neo4j.Session,
+        boto3_session: boto3.session.Session,
+        regions: List[str],
+        current_aws_account_id: str,
+        update_tag: int,
+        common_job_parameters: Dict[str, Any],
 ) -> None:
     for region in regions:
         logger.info("Syncing SSM for region '%s' in account '%s'.", region, current_aws_account_id)
