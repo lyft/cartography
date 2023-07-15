@@ -89,6 +89,10 @@ LOAD_BALANCER_LISTENERS = [
 LOAD_BALANCER_DATA = [
     {
         'DNSName': 'myawesomeloadbalancer.amazonaws.com',
+        'LoadBalancerArn': (
+            "arn:aws:ec2:elasticloadbalancing:us-east-1:000000000000:"
+            "loadbalancer/app/myawesomeloadbalancer/someid"
+        ),
         'CreatedTime': '10-27-2019 12:35AM',
         'LoadBalancerName': 'myawesomeloadbalancer',
         'Type': 'application',

@@ -245,7 +245,7 @@ def load(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_accoun
             elb_associations_v2.append({
                 'netinf_id': network_interface['NetworkInterfaceId'],
                 'elb_dnsname': f'{matchObj[1]}-{matchObj[2]}.elb.{region}.amazonaws.com',
-                'elb_arn': elb_arn
+                'elb_arn': elb_arn,
             })
         else:
             matchObj = re.match(r'^ELB (.*)', network_interface.get('Description', ''))

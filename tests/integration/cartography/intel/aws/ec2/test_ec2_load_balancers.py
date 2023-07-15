@@ -11,7 +11,10 @@ def test_load_load_balancer_v2s(neo4j_session, *args):
     ec2_instance_id = 'i-0f76fade'
     sg_group_id = 'sg-123456'
     sg_group_id_2 = 'sg-234567'
-    load_balancer_id = "myawesomeloadbalancer.amazonaws.com"
+    load_balancer_id = (
+        "arn:aws:ec2:elasticloadbalancing:us-east-1:000000000000:"
+        "loadbalancer/app/myawesomeloadbalancer/someid"
+    )
 
     # an ec2instance and AWSAccount must exist
     neo4j_session.run(

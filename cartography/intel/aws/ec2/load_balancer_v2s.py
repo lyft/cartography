@@ -80,7 +80,7 @@ def load_load_balancer_v2s(
         # every load balancer has an arn that can be used as unique id instead of DNSName
         # LoadBalancers V2 of type gateway do not contain a DNSName field
         load_balancer_id = lb["LoadBalancerArn"]
-        
+
         # if a load balancer has dns name, it'll return the value else it won't set in Neo4j
         dns_name = lb.get("DNSName", None)
 
