@@ -19,6 +19,12 @@ LOAD_BALANCER_LISTENERS = [
         'Protocol': 'HTTPS',
         'TargetGroupArn': 'arn:aws:ec2:us-east-1:012345678912:targetgroup',
     },
+    {
+        'ListenerArn': "arn:aws:elasticloadbalancing:us-east-1:000000000000:listener/gwy/mytestgwy/gwyLBId/gwyListId",
+        'Port': 500,
+        'Protocol': 'GENEVE',
+        'TargetGroupArn': 'arn:aws:ec2:us-east-1:012345678912:targetgroup',
+    },
 ]
 
 # Listener fields
@@ -110,6 +116,34 @@ LOAD_BALANCER_DATA = [
             },
         ],
         'SecurityGroups': ['sg-123456', 'sg-234567'],
+        'Listeners': LOAD_BALANCER_LISTENERS,
+        'TargetGroups': TARGET_GROUPS,
+    },
+    {
+        'LoadBalancerArn': (
+            'arn:aws:elasticloadbalancing:eu-north-1:167992319538'
+            ':loadbalancer/gwy/test-gateway-load-balancer/180ff0c1e66f6754'
+        ),
+        'CreatedTime': '2023-07-14 17:27:50.495000+00:00',
+        'LoadBalancerName': 'test-gateway-load-balancer',
+        'VpcId': 'vpc-03e880ef713e1f725',
+        'State': {
+            'Code': 'active',
+        },
+        'Type': 'gateway',
+        'AvailabilityZones': [
+            {
+                'ZoneName': 'myAZ',
+                'SubnetId': 'mysubnetIdA',
+                'LoadBalancerAddresses': [
+                    {
+                        'IpAddress': '50.0.1.0',
+                        'AllocationId': 'someId',
+                    },
+                ],
+            },
+        ],
+        'IpAddressType': 'ipv4',
         'Listeners': LOAD_BALANCER_LISTENERS,
         'TargetGroups': TARGET_GROUPS,
     },

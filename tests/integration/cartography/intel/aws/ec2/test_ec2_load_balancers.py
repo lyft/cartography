@@ -6,6 +6,75 @@ TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
 
 
+def test_load_gwy_load_balancers_v2(neo4j_session, *args):
+    # gateway load balancers do not have security groups
+    load_balancer_data = tests.data.aws.ec2.load_balancers.LOAD_BALANCER_DATA
+    ec2_instance_id = 'i-0f76fade'
+    gwy_load_balancer_id = (
+        'arn:aws:elasticloadbalancing:eu-north-1:167992319538:'
+        'loadbalancer/gwy/test-gateway-load-balancer/180ff0c1e66f6754'
+    )
+
+    # an ec2instance and AWSAccount must exist but Security Groups aren't needed since
+    # gateway type load balancers do not have them
+    neo4j_session.run(
+        """
+        MERGE (ec2:EC2Instance{instanceid: $ec2_instance_id})
+        ON CREATE SET ec2.firstseen = timestamp()
+        SET ec2.lastupdated = $aws_update_tag
+
+        MERGE (aws:AWSAccount{id: $aws_account_id})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = $aws_update_tag
+        """,
+        ec2_instance_id=ec2_instance_id,
+        aws_account_id=TEST_ACCOUNT_ID,
+        aws_update_tag=TEST_UPDATE_TAG,
+    )
+
+    # Makes elbv2
+    # (aa)-[r:RESOURCE]->(elbv2)
+    # also makes
+    # (elbv2)->[RESOURCE]->(EC2Subnet)
+    # should not make relationship with SecurityGroup
+    cartography.intel.aws.ec2.load_balancer_v2s.load_load_balancer_v2s(
+        neo4j_session,
+        load_balancer_data,
+        TEST_REGION,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
+            -[r1:RESOURCE]->(elbv2:LoadBalancerV2{id: $ID})
+            -[r2:ELBV2_LISTENER]->(l:ELBV2Listener{id: $LISTENER_ARN})
+        RETURN aa.id, elbv2.id, l.id
+        """,
+        AWS_ACCOUNT_ID=TEST_ACCOUNT_ID,
+        ID=gwy_load_balancer_id,
+        LISTENER_ARN="arn:aws:elasticloadbalancing:us-east-1:000000000000:listener/gwy/mytestgwy/gwyLBId/gwyListId",
+    )
+
+    expected_nodes = {
+        (
+            TEST_ACCOUNT_ID,
+            gwy_load_balancer_id,
+            "arn:aws:elasticloadbalancing:us-east-1:000000000000:listener/gwy/mytestgwy/gwyLBId/gwyListId",
+        ),
+    }
+    actual_nodes = {
+        (
+            n['aa.id'],
+            n['elbv2.id'],
+            n['l.id'],
+        )
+        for n in nodes
+    }
+    assert actual_nodes == expected_nodes
+
+
 def test_load_load_balancer_v2s(neo4j_session, *args):
     load_balancer_data = tests.data.aws.ec2.load_balancers.LOAD_BALANCER_DATA
     ec2_instance_id = 'i-0f76fade'

@@ -238,7 +238,7 @@ def load(neo4j_session: neo4j.Session, data: List[Dict], region: str, aws_accoun
         matchObj = re.match(r'^ELB (?:net|app|gwy)/([^\/]+)\/(.*)', network_interface.get('Description', ''))
         if matchObj:
             # get the end of arn from network interface description
-            elb_name_id = network_interface.get('Description').split(' ')[1]
+            elb_name_id: str = network_interface.get('Description', '').split(' ')[1]
             # ELBV2 arn that is id of every LoadBalancerV2 and will be used to make
             # (:LoadBalancerV2)-[:NETWORK_INTERFACE]->(:NetworkInterface)
             elb_arn = f'arn:aws:elasticloadbalancing:{region}:{aws_account_id}:loadbalancer/{elb_name_id}'
