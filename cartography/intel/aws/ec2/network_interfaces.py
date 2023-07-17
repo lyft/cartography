@@ -100,7 +100,7 @@ def transform_network_interface_data(data_list: List[Dict[str, Any]], region: st
                 sg_list.append(
                     {
                         'GroupId': group['GroupId'],
-                        'Id': network_interface_id,
+                        'NetworkInterfaceId': network_interface_id,
                     },
                 )
 

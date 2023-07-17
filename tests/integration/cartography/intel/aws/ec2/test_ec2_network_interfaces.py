@@ -94,4 +94,18 @@ def test_load_network_interfaces(mock_get_network_interfaces, neo4j_session):
         ('eni-0d9877f559c240362', 'subnet-0fa10e76eeb24dbe7'),
         ('eni-0e106a07c15ff7d14', 'subnet-0fa10e76eeb24dbe7'),
     }
-    # TODO add test for security group to nic
+
+    # Assert NetworkInterface to security group rels exist
+    assert check_rels(
+        neo4j_session,
+        'NetworkInterface',
+        'id',
+        'EC2SecurityGroup',
+        'id',
+        'MEMBER_OF_EC2_SECURITY_GROUP',
+        rel_direction_right=True,
+    ) == {
+        ('eni-04b4289e1be7634e4', 'sg-0e866e64db0c84705'),
+        ('eni-0d9877f559c240362', 'sg-0e866e64db0c84705'),
+        ('eni-0e106a07c15ff7d14', 'sg-0e866e64db0c84705'),
+    }
