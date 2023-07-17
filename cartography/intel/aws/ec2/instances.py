@@ -13,10 +13,10 @@ from cartography.graph.job import GraphJob
 from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.models.aws.ec2.instances import EC2InstanceSchema
 from cartography.models.aws.ec2.keypairs import EC2KeyPairSchema
-from cartography.models.aws.ec2.networkinterfaces import EC2NetworkInterfaceSchema
+from cartography.models.aws.ec2.networkinterface_instance import EC2NetworkInterfaceInstanceSchema
 from cartography.models.aws.ec2.reservations import EC2ReservationSchema
-from cartography.models.aws.ec2.securitygroups import EC2SecurityGroupSchema
-from cartography.models.aws.ec2.subnets import EC2SubnetSchema
+from cartography.models.aws.ec2.securitygroup_instance import EC2SecurityGroupInstanceSchema
+from cartography.models.aws.ec2.subnet_instance import EC2SubnetInstanceSchema
 from cartography.models.aws.ec2.volumes import EBSVolumeInstanceSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
@@ -183,7 +183,7 @@ def load_ec2_subnets(
 ) -> None:
     load(
         neo4j_session,
-        EC2SubnetSchema(),
+        EC2SubnetInstanceSchema(),
         subnet_list,
         Region=region,
         AWS_ID=current_aws_account_id,
@@ -219,7 +219,7 @@ def load_ec2_security_groups(
 ) -> None:
     load(
         neo4j_session,
-        EC2SecurityGroupSchema(),
+        EC2SecurityGroupInstanceSchema(),
         sg_list,
         Region=region,
         AWS_ID=current_aws_account_id,
@@ -237,7 +237,7 @@ def load_ec2_network_interfaces(
 ) -> None:
     load(
         neo4j_session,
-        EC2NetworkInterfaceSchema(),
+        EC2NetworkInterfaceInstanceSchema(),
         network_interface_list,
         Region=region,
         AWS_ID=current_aws_account_id,
