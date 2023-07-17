@@ -38,6 +38,9 @@ class EC2SubnetToNetworkInterface(CartographyRelSchema):
 
 @dataclass(frozen=True)
 class EC2SubnetNetworkInterfaceSchema(CartographyNodeSchema):
+    """
+    Subnet as known by describe-network-interfaces
+    """
     label: str = 'EC2Subnet'
     properties: EC2SubnetNetworkInterfaceNodeProperties = EC2SubnetNetworkInterfaceNodeProperties()
     sub_resource_relationship: EC2SubnetToAWSAccount = EC2SubnetToAWSAccount()

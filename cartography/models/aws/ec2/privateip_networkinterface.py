@@ -12,7 +12,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 
 @dataclass(frozen=True)
-class EC2NetworkInterfacePrivateIpNodeProperties(CartographyNodeProperties):
+class EC2PrivateIpNetworkInterfaceNodeProperties(CartographyNodeProperties):
     """
     Selection of properties of a private IP as known by an EC2 network interface
     """
@@ -47,7 +47,7 @@ class EC2NetworkInterfaceToPrivateIpRelProperties(CartographyRelProperties):
 
 
 @dataclass(frozen=True)
-class EC2NetworkInterfaceToPrivateIp(CartographyRelSchema):
+class EC2PrivateIpToNetworkInterface(CartographyRelSchema):
     target_node_label: str = 'NetworkInterface'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'id': PropertyRef('NetworkInterfaceId')},
@@ -63,10 +63,10 @@ class EC2PrivateIpNetworkInterfaceSchema(CartographyNodeSchema):
     PrivateIp as known by a Network Interface
     """
     label: str = 'EC2PrivateIp'
-    properties: EC2NetworkInterfacePrivateIpNodeProperties = EC2NetworkInterfacePrivateIpNodeProperties()
+    properties: EC2PrivateIpNetworkInterfaceNodeProperties = EC2PrivateIpNetworkInterfaceNodeProperties()
     sub_resource_relationship: EC2PrivateIpToAWSAccount = EC2PrivateIpToAWSAccount()
     other_relationships: OtherRelationships = OtherRelationships(
         [
-            EC2NetworkInterfaceToPrivateIp(),
+            EC2PrivateIpToNetworkInterface(),
         ],
     )

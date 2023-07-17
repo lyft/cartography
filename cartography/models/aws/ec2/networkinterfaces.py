@@ -21,21 +21,21 @@ class EC2NetworkInterfaceNodeProperties(CartographyNodeProperties):
     Network interface properties
     """
     id: PropertyRef = PropertyRef('NetworkInterfaceId')
-    status: PropertyRef = PropertyRef('Status')
-    mac_address: PropertyRef = PropertyRef('MacAddress')
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     description: PropertyRef = PropertyRef('Description')
+    mac_address: PropertyRef = PropertyRef('MacAddress')
     private_dns_name: PropertyRef = PropertyRef('PrivateDnsName')
     private_ip_address: PropertyRef = PropertyRef('PrivateIpAddress')
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    status: PropertyRef = PropertyRef('Status')
 
-    # Properties only returned by describe network interfaces
-    subnetid: PropertyRef = PropertyRef('SubnetId')
+    # Properties only returned by describe-network-interfaces
     interface_type: PropertyRef = PropertyRef('InterfaceType')
-    requester_managed: PropertyRef = PropertyRef('RequesterManaged')
-    requester_id: PropertyRef = PropertyRef('RequesterId')
-    source_dest_check: PropertyRef = PropertyRef('SourceDestCheck')
     public_ip: PropertyRef = PropertyRef('PublicIp')
+    requester_id: PropertyRef = PropertyRef('RequesterId')
+    requester_managed: PropertyRef = PropertyRef('RequesterManaged')
+    source_dest_check: PropertyRef = PropertyRef('SourceDestCheck')
+    subnetid: PropertyRef = PropertyRef('SubnetId')
 
 
 @dataclass(frozen=True)
@@ -73,7 +73,7 @@ class EC2NetworkInterfaceToElbV2(CartographyRelSchema):
 @dataclass(frozen=True)
 class EC2NetworkInterfaceSchema(CartographyNodeSchema):
     """
-    Network interface as known from describe network interfaces.
+    Network interface as known by describe-network-interfaces.
     """
     label: str = 'NetworkInterface'
     properties: EC2NetworkInterfaceNodeProperties = EC2NetworkInterfaceNodeProperties()

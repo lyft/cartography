@@ -14,7 +14,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 @dataclass(frozen=True)
 class EC2SecurityGroupNetworkInterfaceNodeProperties(CartographyNodeProperties):
-    # arn: PropertyRef = PropertyRef('Arn', extra_index=True) # TODO decide on this
+    # arn: PropertyRef = PropertyRef('Arn', extra_index=True) # TODO use arn; issue #1024
     id: PropertyRef = PropertyRef('GroupId')
     groupid: PropertyRef = PropertyRef('GroupId', extra_index=True)
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
@@ -39,6 +39,9 @@ class EC2SecurityGroupToNetworkInterface(CartographyRelSchema):
 
 @dataclass(frozen=True)
 class EC2SecurityGroupNetworkInterfaceSchema(CartographyNodeSchema):
+    """
+    Security groups as known by describe-network-interfaces.
+    """
     label: str = 'EC2SecurityGroup'
     properties: EC2SecurityGroupNetworkInterfaceNodeProperties = EC2SecurityGroupNetworkInterfaceNodeProperties()
     sub_resource_relationship: EC2SecurityGroupToAWSAccount = EC2SecurityGroupToAWSAccount()

@@ -11,8 +11,6 @@ import neo4j
 from .util import get_botocore_config
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
-from cartography.intel.aws.ec2.instances import load_ec2_security_groups
-from cartography.intel.aws.ec2.instances import load_ec2_subnets
 from cartography.models.aws.ec2.networkinterfaces import EC2NetworkInterfaceSchema
 from cartography.models.aws.ec2.privateip_networkinterface import EC2PrivateIpNetworkInterfaceSchema
 from cartography.models.aws.ec2.securitygroup_networkinterface import EC2SecurityGroupNetworkInterfaceSchema
@@ -62,7 +60,7 @@ def transform_network_interface_data(data_list: List[Dict[str, Any]], region: st
             elb_match = re.match(r'^ELB (.*)', network_interface.get('Description', ''))
             if elb_match:
                 elb_v2_id = elb_match[1]
-        # TODO change this to arn when ready
+        # TODO issue #1024 change this to arn when ready
         network_interface_id = network_interface['NetworkInterfaceId']
         network_interface_list.append(
             {
@@ -110,7 +108,7 @@ def transform_network_interface_data(data_list: List[Dict[str, Any]], region: st
         if subnet_id:
             subnet_list.append(
                 {
-                    'Id': network_interface_id,
+                    'NetworkInterfaceId': network_interface_id,
                     'SubnetId': subnet_id,
                 },
             )
@@ -131,7 +129,7 @@ def load_network_interfaces(
         aws_account_id: str,
         update_tag: int,
 ) -> None:
-    logger.info("Loading %d network interfaces in %s.", len(data), region)
+    logger.info(f"Loading {len(data)} network interfaces in {region}.")
     load(
         neo4j_session,
         EC2NetworkInterfaceSchema(),
@@ -143,14 +141,17 @@ def load_network_interfaces(
 
 
 @timeit
-def load_private_ips(
+def load_private_ip_network_interface(
         neo4j_session: neo4j.Session,
         data: List[Dict[str, Any]],
         region: str,
         aws_account_id: str,
         update_tag: int,
 ) -> None:
-    logger.info("Loading %d private IPs in %s.", len(data), region)
+    """
+    Private IPs as known by describe-network-interfaces.
+    """
+    logger.info(f"Loading {len(data)} private IPs in {region}.")
     load(
         neo4j_session,
         EC2PrivateIpNetworkInterfaceSchema(),
@@ -169,7 +170,10 @@ def load_security_group_network_interface(
         aws_account_id: str,
         update_tag: int,
 ) -> None:
-    logger.info("Loading %d security groups in %s.", len(data), region)
+    """
+    Security groups as known by describe-network-interfaces.
+    """
+    logger.info(f"Loading {len(data)} security groups in {region}.")
     load(
         neo4j_session,
         EC2SecurityGroupNetworkInterfaceSchema(),
@@ -188,7 +192,10 @@ def load_subnet_network_interface(
         aws_account_id: str,
         update_tag: int,
 ) -> None:
-    logger.info("Loading %d subnets in %s.", len(data), region)
+    """
+    Subnets as known by describe-network-interfaces.
+    """
+    logger.info(f"Loading {len(data)} subnets in {region}.")
     load(
         neo4j_session,
         EC2SubnetNetworkInterfaceSchema(),
@@ -210,9 +217,9 @@ def load_network_data(
         sg_list: List[Dict[str, Any]],
 ) -> None:
     load_network_interfaces(neo4j_session, network_interface_list, region, current_aws_account_id, update_tag)
-    load_private_ips(neo4j_session, private_ip_list, region, current_aws_account_id, update_tag)
-    load_ec2_subnets(neo4j_session, subnet_list, region, current_aws_account_id, update_tag)
-    load_ec2_security_groups(neo4j_session, sg_list, region, current_aws_account_id, update_tag)
+    load_private_ip_network_interface(neo4j_session, private_ip_list, region, current_aws_account_id, update_tag)
+    load_subnet_network_interface(neo4j_session, subnet_list, region, current_aws_account_id, update_tag)
+    load_security_group_network_interface(neo4j_session, sg_list, region, current_aws_account_id, update_tag)
 
 
 @timeit
@@ -236,7 +243,7 @@ def sync_network_interfaces(
         common_job_parameters: Dict,
 ) -> None:
     for region in regions:
-        logger.info("Syncing EC2 network interfaces for region '%s' in account '%s'.", region, current_aws_account_id)
+        logger.info(f"Syncing EC2 network interfaces for region '{region}' in account '{current_aws_account_id}'.")
         data = get_network_interface_data(boto3_session, region)
         ec2_network_data = transform_network_interface_data(data, region)
         load_network_data(

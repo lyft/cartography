@@ -16,7 +16,7 @@ class EC2NetworkInterfaceInstanceNodeProperties(CartographyNodeProperties):
     """
     Selection of properties of a network interface as known by an EC2 instance
     """
-    # arn: PropertyRef = PropertyRef('Arn', extra_index=True) TODO decide this
+    # arn: PropertyRef = PropertyRef('Arn', extra_index=True) TODO use arn; issue #1024
     id: PropertyRef = PropertyRef('NetworkInterfaceId')
     status: PropertyRef = PropertyRef('Status')
     mac_address: PropertyRef = PropertyRef('MacAddress')
