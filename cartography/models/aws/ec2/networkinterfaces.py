@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
-from cartography.models.aws.ec2.networkinterface_instance import EC2NetworkInterfaceToAWSAccount, \
-    EC2NetworkInterfaceToEC2Subnet, EC2NetworkInterfaceToEC2SecurityGroup, EC2NetworkInterfaceToEC2Instance
+from cartography.models.aws.ec2.networkinterface_instance import EC2NetworkInterfaceToAWSAccount
+from cartography.models.aws.ec2.networkinterface_instance import EC2NetworkInterfaceToEC2Instance
+from cartography.models.aws.ec2.networkinterface_instance import EC2NetworkInterfaceToEC2SecurityGroup
+from cartography.models.aws.ec2.networkinterface_instance import EC2NetworkInterfaceToEC2Subnet
 from cartography.models.core.common import PropertyRef
 from cartography.models.core.nodes import CartographyNodeProperties
 from cartography.models.core.nodes import CartographyNodeSchema

@@ -70,4 +70,3 @@ class EC2PrivateIpNetworkInterfaceSchema(CartographyNodeSchema):
             EC2NetworkInterfaceToPrivateIp(),
         ],
     )
-
