@@ -500,6 +500,15 @@ class CLI:
                 'The Duo api hostname'
             ),
         )
+        parser.add_argument(
+            '--semgrep-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Semgrep app token key'
+                'Required if you are using the Semgrep intel module. Ignored otherwise.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -668,6 +677,13 @@ class CLI:
         else:
             config.duo_api_key = None
             config.duo_api_secret = None
+
+        # Semgrep config
+        if config.semgrep_env_var:
+            logger.debug(f"Reading config string for Semgrep App Token from environment variable {config.semgrep_env_var}")
+            config.semgrep_app_token = os.environ.get(config.semgrep_env_var)
+        else:
+            config.semgrep_app_token = None
 
         # Run cartography
         try:
