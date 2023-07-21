@@ -680,7 +680,7 @@ class CLI:
 
         # Semgrep config
         if config.semgrep_env_var:
-            logger.debug(f"Reading config string for Semgrep App Token from environment variable {config.semgrep_env_var}")
+            logger.debug(f"Reading Semgrep App Token from environment variable {config.semgrep_env_var}")
             config.semgrep_app_token = os.environ.get(config.semgrep_env_var)
         else:
             config.semgrep_app_token = None

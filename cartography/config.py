@@ -157,6 +157,7 @@ class Config:
         duo_api_key=None,
         duo_api_secret=None,
         duo_api_hostname=None,
+        semgrep_app_token=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -208,3 +209,4 @@ class Config:
         self.duo_api_key = duo_api_key
         self.duo_api_secret = duo_api_secret
         self.duo_api_hostname = duo_api_hostname
+        self.semgrep_app_token = semgrep_app_token
