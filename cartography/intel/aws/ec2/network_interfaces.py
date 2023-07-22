@@ -16,7 +16,6 @@ from cartography.models.aws.ec2.privateip_networkinterface import EC2PrivateIpNe
 from cartography.models.aws.ec2.securitygroup_networkinterface import EC2SecurityGroupNetworkInterfaceSchema
 from cartography.models.aws.ec2.subnet_networkinterface import EC2SubnetNetworkInterfaceSchema
 from cartography.util import aws_handle_regions
-from cartography.util import run_scoped_analysis_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -110,6 +109,8 @@ def transform_network_interface_data(data_list: List[Dict[str, Any]], region: st
                 {
                     'NetworkInterfaceId': network_interface_id,
                     'SubnetId': subnet_id,
+                    'ElbV1Id': elb_v1_id,
+                    'ElbV2Id': elb_v2_id,
                 },
             )
 
@@ -223,11 +224,6 @@ def load_network_data(
 
 
 @timeit
-def load_subnet_membership_relations(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any]) -> None:
-    run_scoped_analysis_job('aws_ec2_subnet_membership.json', neo4j_session, common_job_parameters)
-
-
-@timeit
 def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     GraphJob.from_node_schema(EC2NetworkInterfaceSchema(), common_job_parameters).run(neo4j_session)
     GraphJob.from_node_schema(EC2PrivateIpNetworkInterfaceSchema(), common_job_parameters).run(neo4j_session)
@@ -256,5 +252,4 @@ def sync_network_interfaces(
             ec2_network_data.subnet_list,
             ec2_network_data.sg_list,
         )
-        load_subnet_membership_relations(neo4j_session, common_job_parameters)
     cleanup_network_interfaces(neo4j_session, common_job_parameters)

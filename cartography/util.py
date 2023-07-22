@@ -68,24 +68,6 @@ def run_analysis_job(
     )
 
 
-def run_scoped_analysis_job(
-    filename: str,
-    neo4j_session: neo4j.Session,
-    common_job_parameters: Dict,
-) -> None:
-    """
-    Enriches existing graph data scoped to a given sub resource - e.g. the current AWS account.
-    Runs the queries in the cartography.data.jobs.scoped_analysis directory for the given `filename`. View the queries
-    in cartography.data.jobs.scoped_analysis for specifics.
-    """
-    GraphJob.run_from_json(
-        neo4j_session,
-        read_text('cartography.data.jobs.scoped_analysis', filename),
-        common_job_parameters,
-        get_job_shortname(filename),
-    )
-
-
 def run_analysis_and_ensure_deps(
         analysis_job_name: str,
         resource_dependencies: Set[str],
