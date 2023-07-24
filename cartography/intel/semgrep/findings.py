@@ -126,10 +126,10 @@ def transform_sca_vulns(raw_vulns: List[Dict[str, Any]]) -> List[Dict[str, Any]]
             # Take the first CVE
             sca_vuln["cveId"] = vuln["advisory"]["references"]["cveIds"][0]
         if vuln.get('closestSafeDependency'):
-            dependency_fix = f"{vuln['closestSafeDependency']['name']}|{vuln['closestSafeDependency']['versionSpecifier']}"
+            dep_fix = f"{vuln['closestSafeDependency']['name']}|{vuln['closestSafeDependency']['versionSpecifier']}"
         else:
-            dependency_fix = None
-        sca_vuln["closestSafeDependency"] = dependency_fix
+            dep_fix = None
+        sca_vuln["closestSafeDependency"] = dep_fix
         ref_urls = vuln["advisory"].get("references", {}).get("urls", [])
         if ref_urls:
             sca_vuln["ref_urls"] = ",".join(ref_urls)
