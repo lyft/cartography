@@ -56,7 +56,7 @@ def transform(domains: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List
             })
         if "gandilivedns" in dom['services']:
             # Extract records
-            for rec in dom['records']:
+            for rec in dom.get('records', []):
                 # No value
                 if len(rec['rrset_values']) == 0:
                     records.append(rec)
