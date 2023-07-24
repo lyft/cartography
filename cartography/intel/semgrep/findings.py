@@ -113,17 +113,23 @@ def transform_sca_vulns(raw_vulns: List[Dict[str, Any]]) -> List[Dict[str, Any]]
         sca_vuln["description"] = vuln["advisory"]["description"]
         sca_vuln["ecosystem"] = vuln["advisory"]["ecosystem"]
         sca_vuln["severity"] = vuln["advisory"]["severity"]
-        sca_vuln["cveId"] = vuln["advisory"]["references"]["cveIds"][0]
         sca_vuln["reachability"] = vuln["advisory"]["reachability"]
         sca_vuln["reachableIf"] = vuln["advisory"]["reachableIf"]
         sca_vuln["exposureType"] = vuln["exposureType"]
         dependency = f"{vuln['matchedDependency']['name']}|{vuln['matchedDependency']['versionSpecifier']}"
         sca_vuln["matchedDependency"] = dependency
-        dependency_fix = f"{vuln['closestSafeDependency']['name']}|{vuln['closestSafeDependency']['versionSpecifier']}"
-        sca_vuln["closestSafeDependency"] = dependency_fix
         sca_vuln["dependencyFileLocation_path"] = vuln["dependencyFileLocation"]["path"]
         sca_vuln["dependencyFileLocation_url"] = vuln["dependencyFileLocation"]["url"]
         # Optional fields
+        cves = vuln.get("advisory", {}).get("references", {}).get("cveIds")
+        if len(cves) > 0:
+            # Take the first CVE
+            sca_vuln["cveId"] = vuln["advisory"]["references"]["cveIds"][0]
+        if vuln.get('closestSafeDependency'):
+            dependency_fix = f"{vuln['closestSafeDependency']['name']}|{vuln['closestSafeDependency']['versionSpecifier']}"
+        else:
+            dependency_fix = None
+        sca_vuln["closestSafeDependency"] = dependency_fix
         ref_urls = vuln["advisory"].get("references", {}).get("urls", [])
         if ref_urls:
             sca_vuln["ref_urls"] = ",".join(ref_urls)
