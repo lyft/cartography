@@ -54,9 +54,12 @@ Thank you for considering contributing to Cartography!
 Legal stuff: This project is governed by [Lyft's code of conduct](https://github.com/lyft/code-of-conduct).
 All contributors and participants agree to abide by its terms.
 
+### Bug reports and feature requests and discussions
+Submit a GitHub issue to report a bug or request a new feature. If we decide that the issue needs more discussion - usually because the scope is too large or we need to make careful decision - we will convert the issue to a [GitHub Discussion](https://github.com/lyft/cartography/discussions).
+
 ### Developing Cartography
 
-Get started with our [developer documentation](https://lyft.github.io/cartography/dev/developer-guide.html).
+Get started with our [developer documentation](https://lyft.github.io/cartography/dev/developer-guide.html). Please feel free to submit your own PRs to update documentation if you've found a better way to explain something.
 
 #### Sign the Contributor License Agreement (CLA)
 
