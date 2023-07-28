@@ -142,7 +142,7 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
         ) ==
         expected_sca_location_nodes
     )
-    expected_resource_relationships = {
+    expected_findings_resource_relationships = {
         (
             "123456",
             "yourorg/yourrepo|ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590",
@@ -157,7 +157,28 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
             "id",
             "RESOURCE",
         ) ==
-        expected_resource_relationships
+        expected_findings_resource_relationships
+    )
+    expected_locations_resource_relationships = {
+        (
+            "123456",
+            "20128504",
+        ),
+        (
+            "123456",
+            "20128505",
+        ),
+    }
+    assert (
+        check_rels(
+            neo4j_session,
+            "SemgrepDeployment",
+            "id",
+            "SemgrepSCALocation",
+            "id",
+            "RESOURCE",
+        ) ==
+        expected_locations_resource_relationships
     )
     expected_found_in_relationships = {
         (

@@ -176,6 +176,7 @@ def load_semgrep_sca_vulns(
 def load_semgrep_sca_usages(
     neo4j_session: neo4j.Session,
     usages: List[Dict[str, Any]],
+    deployment_id: str,
     update_tag: int,
 ) -> None:
     logger.info(f"Loading {len(usages)} Semgrep SCA usages info into the graph.")
@@ -184,6 +185,7 @@ def load_semgrep_sca_usages(
         SemgrepSCALocationSchema(),
         usages,
         lastupdated=update_tag,
+        DEPLOYMENT_ID=deployment_id,
     )
 
 
@@ -217,7 +219,7 @@ def sync(
     raw_vulns = get_sca_vulns(semgrep_app_token, semgrep_deployment["id"])
     vulns, usages = transform_sca_vulns(raw_vulns)
     load_semgrep_sca_vulns(neo4j_sesion, vulns, semgrep_deployment["id"], update_tag)
-    load_semgrep_sca_usages(neo4j_sesion, usages, update_tag)
+    load_semgrep_sca_usages(neo4j_sesion, usages, semgrep_deployment["id"], update_tag)
     cleanup(neo4j_sesion, common_job_parameters)
     merge_module_sync_metadata(
         neo4j_session=neo4j_sesion,
