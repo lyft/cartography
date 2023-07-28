@@ -4,12 +4,10 @@ import neo4j
 
 from cartography.config import Config
 from cartography.intel.semgrep.findings import sync
-from cartography.stats import get_stats_client
 from cartography.util import timeit
 
 
 logger = logging.getLogger(__name__)
-stat_handler = get_stats_client(__name__)
 
 
 @timeit

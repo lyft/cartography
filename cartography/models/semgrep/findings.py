@@ -34,14 +34,6 @@ class SemgrepSCAFindingNodeProperties(CartographyNodeProperties):
 
 
 @dataclass(frozen=True)
-class SemgrepDeploymentProperties(CartographyNodeProperties):
-    id: PropertyRef = PropertyRef('id')
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    name: PropertyRef = PropertyRef('name')
-    slug: PropertyRef = PropertyRef('slug')
-
-
-@dataclass(frozen=True)
 class SemgrepSCAFindingToSemgrepDeploymentRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
@@ -76,12 +68,6 @@ class SemgrepSCAFindingToGithubRepoRel(CartographyRelSchema):
 
 
 @dataclass(frozen=True)
-class SemgrepDeploymentSchema(CartographyNodeSchema):
-    label: str = 'SemgrepDeployment'
-    properties: SemgrepDeploymentProperties = SemgrepDeploymentProperties()
-
-
-@dataclass(frozen=True)
 class SemgrepSCAFindingSchema(CartographyNodeSchema):
     label: str = 'SemgrepSCAFinding'
     properties: SemgrepSCAFindingNodeProperties = SemgrepSCAFindingNodeProperties()
@@ -91,39 +77,3 @@ class SemgrepSCAFindingSchema(CartographyNodeSchema):
             SemgrepSCAFindingToGithubRepoRel(),
         ],
     )
-
-
-@dataclass(frozen=True)
-class SemgrepSCALocationProperties(CartographyNodeProperties):
-    id: PropertyRef = PropertyRef('findingId')
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    path: PropertyRef = PropertyRef('path')
-    start_line: PropertyRef = PropertyRef('startLine')
-    start_col: PropertyRef = PropertyRef('startCol')
-    end_line: PropertyRef = PropertyRef('endLine')
-    end_col: PropertyRef = PropertyRef('endCol')
-    url: PropertyRef = PropertyRef('url')
-
-
-@dataclass(frozen=True)
-class SemgrepSCALocToSemgrepSCAFindingRelProperties(CartographyRelProperties):
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-
-
-@dataclass(frozen=True)
-# (:SemgrepSCALocation)<-[:LOCATED_AT]-(:SemgrepSCAFinding)
-class SemgrepSCALocToSemgrepSCAFindingRelSchema(CartographyRelSchema):
-    target_node_label: str = 'SemgrepSCAFinding'
-    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('SCA_ID', set_in_kwargs=True)},
-    )
-    direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "LOCATED_AT"
-    properties: SemgrepSCALocToSemgrepSCAFindingRelProperties = SemgrepSCALocToSemgrepSCAFindingRelProperties()
-
-
-@dataclass(frozen=True)
-class SemgrepSCALocationSchema(CartographyNodeSchema):
-    label: str = 'SemgrepSCALocation'
-    properties: SemgrepSCALocationProperties = SemgrepSCALocationProperties()
-    sub_resource_relationship: SemgrepSCALocToSemgrepSCAFindingRelSchema = SemgrepSCALocToSemgrepSCAFindingRelSchema()

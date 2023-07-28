@@ -501,11 +501,11 @@ class CLI:
             ),
         )
         parser.add_argument(
-            '--semgrep-env-var',
+            '--semgrep-app-token-env-var',
             type=str,
             default=None,
             help=(
-                'The name of environment variable containing the Semgrep app token key'
+                'The name of environment variable containing the Semgrep app token key. '
                 'Required if you are using the Semgrep intel module. Ignored otherwise.'
             ),
         )
@@ -679,9 +679,9 @@ class CLI:
             config.duo_api_secret = None
 
         # Semgrep config
-        if config.semgrep_env_var:
-            logger.debug(f"Reading Semgrep App Token from environment variable {config.semgrep_env_var}")
-            config.semgrep_app_token = os.environ.get(config.semgrep_env_var)
+        if config.semgrep_app_token_env_var:
+            logger.debug(f"Reading Semgrep App Token from environment variable {config.semgrep_app_token_env_var}")
+            config.semgrep_app_token = os.environ.get(config.semgrep_app_token_env_var)
         else:
             config.semgrep_app_token = None
 

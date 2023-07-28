@@ -1,10 +1,8 @@
-DEPLOYMENTS = [
-    {
-        "id": "123456",
-        "name": "YourOrg",
-        "slug": "yourorg",
-    },
-]
+DEPLOYMENTS = {
+    "id": "123456",
+    "name": "YourOrg",
+    "slug": "yourorg",
+}
 
 SCA_RESPONSE = {
     "vulns": [
@@ -94,3 +92,26 @@ SCA_RESPONSE = {
 }
 
 RAW_VULNS = SCA_RESPONSE["vulns"]
+VULN_ID = "yourorg/yourrepo|ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590"
+USAGES = [
+                {
+                    "SCA_ID": VULN_ID,
+                    "findingId": "20128504",
+                    "path": "src/packages/directory/file1.go",
+                    "startLine": "24",
+                    "startCol": "57",
+                    "endLine": "24",
+                    "endCol": "78",
+                    "url": "https://github.com/yourorg/yourrepo/blame/6fdee8f2727f4506cfbbe553e23b895e27956588/src/packages/directory/file1.go.ts#L24",  # noqa E501
+                },
+                {
+                    "SCA_ID": VULN_ID,
+                    "findingId": "20128505",
+                    "path": "src/packages/directory/file2.go",
+                    "startLine": "24",
+                    "startCol": "37",
+                    "endLine": "24",
+                    "endCol": "54",
+                    "url": "https://github.com/yourorg/yourrepo/blame/6fdee8f2727f4506cfbbe553e23b895e27956588/src/packages/directory/file2.go.ts#L24",  # noqa E501
+                },
+]

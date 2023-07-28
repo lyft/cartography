@@ -103,6 +103,8 @@ class Config:
     :param duo_api_key: The Duo api secret. Optional.
     :type duo_api_hostname: str
     :param duo_api_hostname: The Duo api hostname, e.g. "api-abc123.duosecurity.com". Optional.
+    :param semgrep_app_token: The Semgrep api token. Optional.
+    :type semgrep_app_token: str
     """
 
     def __init__(

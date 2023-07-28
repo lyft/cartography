@@ -2,22 +2,26 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Tuple
 
 import neo4j
 import requests
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
-from cartography.models.semgrep.findings import SemgrepDeploymentSchema
+from cartography.models.semgrep.deployment import SemgrepDeploymentSchema
 from cartography.models.semgrep.findings import SemgrepSCAFindingSchema
-from cartography.models.semgrep.findings import SemgrepSCALocationSchema
+from cartography.models.semgrep.locations import SemgrepSCALocationSchema
+from cartography.stats import get_stats_client
+from cartography.util import merge_module_sync_metadata
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+stat_handler = get_stats_client(__name__)
 
 
 @timeit
-def get_deployment(semgrep_app_token: str) -> List[Dict[str, Any]]:
+def get_deployment(semgrep_app_token: str) -> Dict[str, Any]:
     """
     Gets the deployment associated with the passed Semgrep App token.
     param: semgrep_app_token: The Semgrep App token to use for authentication.
@@ -39,14 +43,11 @@ def get_deployment(semgrep_app_token: str) -> List[Dict[str, Any]]:
     except requests.RequestException as e:
         logger.error(
             "Could not complete request to the deployments Semgrep API: %s",
-            e,
+            deployment_url,
             exc_info=e,
         )
         raise e
-    except Exception as e:
-        logger.error("Erorr retrieving Semgrep deployment info: %s", e, exc_info=e)
-        raise e
-    return [deployment]
+    return deployment
 
 
 @timeit
@@ -60,7 +61,6 @@ def get_sca_vulns(semgrep_app_token: str, deployment_id: str) -> List[Dict[str, 
     sca_url = f"https://semgrep.dev/api/sca/deployments/{deployment_id}/vulns"
     has_more = True
     cursor = ""
-    prev_request = None
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {semgrep_app_token}",
@@ -73,12 +73,6 @@ def get_sca_vulns(semgrep_app_token: str, deployment_id: str) -> List[Dict[str, 
         try:
             response = requests.get(sca_url, params=params, headers=headers)
             response.raise_for_status()
-            if prev_request == response.request.url:
-                logger.warning(
-                    "Duplicate request detected. Breaking the loop to avoid infinite requests.",
-                )
-                break
-            prev_request = response.request.url
             if response.status_code == 200:
                 data = response.json()
                 vulns = data["vulns"]
@@ -87,21 +81,20 @@ def get_sca_vulns(semgrep_app_token: str, deployment_id: str) -> List[Dict[str, 
                 all_vulns.extend(vulns)
         except requests.RequestException as e:
             logger.error(
-                "Could not complete request to the SCA Semgrep API: %s", e, exc_info=e,
+                "Could not complete request to the SCA Semgrep API: %s", sca_url, exc_info=e,
             )
             raise e
-        except Exception as e:
-            logger.error("Erorr retrieving Semgrep SCA vulns info: %s", e, exc_info=e)
-            raise e
+
     return all_vulns
 
 
-def transform_sca_vulns(raw_vulns: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def transform_sca_vulns(raw_vulns: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List[Dict[str, str]]]:
     """
     Transforms the raw SCA vulns response from Semgrep API into a list of dicts
     that can be used to create the SemgrepSCAFinding nodes.
     """
     vulns = []
+    usages = []
     for vuln in raw_vulns:
         sca_vuln: Dict[str, Any] = {}
         # Mandatory fields
@@ -134,9 +127,9 @@ def transform_sca_vulns(raw_vulns: List[Dict[str, Any]]) -> List[Dict[str, Any]]
         if ref_urls:
             sca_vuln["ref_urls"] = ",".join(ref_urls)
         sca_vuln["openedAt"] = vuln.get("openedAt", None)
-        usages_list = []
         for usage in vuln.get("usages", []):
             usage_dict = {}
+            usage_dict["SCA_ID"] = unique_id
             usage_dict["findingId"] = usage["findingId"]
             usage_dict["path"] = usage["location"]["path"]
             usage_dict["startLine"] = usage["location"]["startLine"]
@@ -144,21 +137,20 @@ def transform_sca_vulns(raw_vulns: List[Dict[str, Any]]) -> List[Dict[str, Any]]
             usage_dict["endLine"] = usage["location"]["endLine"]
             usage_dict["endCol"] = usage["location"]["endCol"]
             usage_dict["url"] = usage["location"]["url"]
-            usages_list.append(usage_dict)
-        sca_vuln["usages"] = usages_list
+            usages.append(usage_dict)
         vulns.append(sca_vuln)
-    return vulns
+    return vulns, usages
 
 
 @timeit
 def load_semgrep_deployment(
-    neo4j_session: neo4j.Session, deployment: List[Dict[str, Any]], update_tag: int,
+    neo4j_session: neo4j.Session, deployment: Dict[str, Any], update_tag: int,
 ) -> None:
     logger.info(f"Loading Semgrep deployment info {deployment} into the graph...")
     load(
         neo4j_session,
         SemgrepDeploymentSchema(),
-        deployment,
+        [deployment],
         lastupdated=update_tag,
     )
 
@@ -178,15 +170,21 @@ def load_semgrep_sca_vulns(
         lastupdated=update_tag,
         DEPLOYMENT_ID=deployment_id,
     )
-    for vuln in vulns:
-        if vuln.get("usages"):
-            load(
-                neo4j_session,
-                SemgrepSCALocationSchema(),
-                vuln["usages"],
-                lastupdated=update_tag,
-                SCA_ID=vuln["id"],
-            )
+
+
+@timeit
+def load_semgrep_sca_usages(
+    neo4j_session: neo4j.Session,
+    usages: List[Dict[str, Any]],
+    update_tag: int,
+) -> None:
+    logger.info(f"Loading {len(usages)} Semgrep SCA usages info into the graph.")
+    load(
+        neo4j_session,
+        SemgrepSCALocationSchema(),
+        usages,
+        lastupdated=update_tag,
+    )
 
 
 @timeit
@@ -210,8 +208,17 @@ def sync(
     logger.info("Running Semgrep SCA findings sync job.")
     semgrep_deployment = get_deployment(semgrep_app_token)
     load_semgrep_deployment(neo4j_sesion, semgrep_deployment, update_tag)
-    common_job_parameters["DEPLOYMENT_ID"] = semgrep_deployment[0]["id"]
-    raw_vulns = get_sca_vulns(semgrep_app_token, semgrep_deployment[0]["id"])
-    vulns = transform_sca_vulns(raw_vulns)
-    load_semgrep_sca_vulns(neo4j_sesion, vulns, semgrep_deployment[0]["id"], update_tag)
+    common_job_parameters["DEPLOYMENT_ID"] = semgrep_deployment["id"]
+    raw_vulns = get_sca_vulns(semgrep_app_token, semgrep_deployment["id"])
+    vulns, usages = transform_sca_vulns(raw_vulns)
+    load_semgrep_sca_vulns(neo4j_sesion, vulns, semgrep_deployment["id"], update_tag)
+    load_semgrep_sca_usages(neo4j_sesion, usages, update_tag)
     cleanup(neo4j_sesion, common_job_parameters)
+    merge_module_sync_metadata(
+        neo4j_session=neo4j_sesion,
+        group_type='Semgrep',
+        group_id=common_job_parameters["DEPLOYMENT_ID"],
+        synced_type='SCA',
+        update_tag=update_tag,
+        stat_handler=stat_handler,
+    )
