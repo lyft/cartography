@@ -192,10 +192,15 @@ def cleanup(
     neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any],
 ) -> None:
     logger.info("Running Semgrep SCA findings cleanup job.")
-    cleanup_job = GraphJob.from_node_schema(
+    findings_cleanup_job = GraphJob.from_node_schema(
         SemgrepSCAFindingSchema(), common_job_parameters,
     )
-    cleanup_job.run(neo4j_session)
+    findings_cleanup_job.run(neo4j_session)
+    logger.info("Running Semgrep SCA Locations cleanup job.")
+    locations_cleanup_job = GraphJob.from_node_schema(
+        SemgrepSCALocationSchema(), common_job_parameters,
+    )
+    locations_cleanup_job.run(neo4j_session)
 
 
 @timeit
