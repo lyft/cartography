@@ -1,0 +1,21 @@
+CLEVERCLOUD_ORGANIZATION = {
+    "id": "orga_f3b3bb57-db31-4dff-8708-0dd91cc31826",
+    "name": "Dummy",
+    "description": "Dummy Corp",
+    "billingEmail": "invoices@domain.tld",
+    "address": "404, avenue Nowere",
+    "city": "Paris",
+    "zipcode": "75000",
+    "country": "FRANCE",
+    "company": "Dummy",
+    "VAT": "FR12345678911",
+    "avatar": "https://ccapiavatars.cellar-c2.services.clever-cloud.com/"
+              "orga_f3b3bb57-db31-4dff-8708-0dd91cc31826/avatar.png",
+    "vatState": "VALID",
+    "customerFullName": "John Doe",
+    "canPay": True,
+    "cleverEnterprise": False,
+    "emergencyNumber": None,
+    "canSEPA": True,
+    "isTrusted": False,
+}

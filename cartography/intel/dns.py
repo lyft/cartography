@@ -7,6 +7,7 @@ from typing import Optional
 import dns.rdatatype
 import dns.resolver
 import neo4j
+import tldextract
 
 from cartography.util import timeit
 
@@ -42,6 +43,8 @@ def ingest_dns_record_by_fqdn(
     """
     fqdn_data = get_dns_resolution_by_fqdn(fqdn)
     record_type = get_dns_record_type(fqdn_data)
+    parsed_domain = tldextract.extract(fqdn)
+    registered_domain = f"{parsed_domain.domain}.{parsed_domain.suffix}"
 
     if record_type == 'A':
         ip_list = []
@@ -51,7 +54,7 @@ def ingest_dns_record_by_fqdn(
 
         value = ",".join(ip_list)
         record_id = ingest_dns_record(
-            neo4j_session, fqdn, value, record_type, update_tag, points_to_record,
+            neo4j_session, fqdn, value, record_type, registered_domain, update_tag, points_to_record,
             record_label, dns_node_additional_label,  # type: ignore
         )
         _link_ip_to_A_record(neo4j_session, update_tag, ip_list, record_id)
@@ -99,8 +102,8 @@ def _link_ip_to_A_record(neo4j_session: neo4j.Session, update_tag: int, ip_list:
 
 @timeit
 def ingest_dns_record(
-    neo4j_session: neo4j.Session, name: neo4j.Session, value: str, type: str, update_tag: int, points_to_record: str,
-    record_label: str, dns_node_additional_label: str,
+    neo4j_session: neo4j.Session, name: neo4j.Session, value: str, type: str, registered_domain: str,
+    update_tag: int, points_to_record: str, record_label: str, dns_node_additional_label: str,
 ) -> str:
     """
     Ingest a new DNS record
@@ -109,6 +112,7 @@ def ingest_dns_record(
     :param name: record name
     :param value: record value
     :param type: record type
+    :param registered_domain: registered domain for FQDN
     :param update_tag: Update tag to set the node with and childs
     :param points_to_record: parent record to set DNS_POINTS_TO relationship to. Can be None
     :param record_label: the label of the node to attach to a DNS record
@@ -118,7 +122,7 @@ def ingest_dns_record(
     template = Template("""
     MERGE (record:DNSRecord:$dns_node_additional_label{id: $Id})
     ON CREATE SET record.firstseen = timestamp(), record.name = $Name, record.type = $Type
-    SET record.lastupdated = $update_tag, record.value = $Value
+    SET record.lastupdated = $update_tag, record.value = $Value, record.registered_domain = $RegisteredDomain
     WITH record
     MATCH (n:$record_label{id: $PointsToId})
     MERGE (record)-[r:DNS_POINTS_TO]->(n)
@@ -134,6 +138,7 @@ def ingest_dns_record(
         Name=name,
         Type=type,
         Value=value,
+        RegisteredDomain=registered_domain,
         PointsToId=points_to_record,
         update_tag=update_tag,
     )

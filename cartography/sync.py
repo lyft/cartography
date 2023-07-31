@@ -15,6 +15,7 @@ import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.azure
 import cartography.intel.bigfix
+import cartography.intel.clevercloud
 import cartography.intel.create_indexes
 import cartography.intel.crowdstrike
 import cartography.intel.crxcavator.crxcavator
@@ -53,6 +54,7 @@ TOP_LEVEL_MODULES = OrderedDict({  # preserve order so that the default sync alw
     'lastpass': cartography.intel.lastpass.start_lastpass_ingestion,
     'bigfix': cartography.intel.bigfix.start_bigfix_ingestion,
     'duo': cartography.intel.duo.start_duo_ingestion,
+    'clevercloud': cartography.intel.clevercloud.start_clevercloud_ingestion,
     'analysis': cartography.intel.analysis.run,
 })
 

@@ -500,6 +500,15 @@ class CLI:
                 'The Duo api hostname'
             ),
         )
+        parser.add_argument(
+            '--clevercloud-config-env-var',
+            type=str,
+            default=None,
+            help=(
+                'Name of an environment variable containing a Base64 encoded Clevercloud config.'
+                'Required if you are using the Clevercloud intel module. Ignored otherwise.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -668,6 +677,16 @@ class CLI:
         else:
             config.duo_api_key = None
             config.duo_api_secret = None
+
+        # Clevercloud config
+        if config.clevercloud_config_env_var:
+            logger.debug(
+                "Reading config string for Clevercloud from environment variable %s",
+                config.clevercloud_config_env_var,
+            )
+            config.clevercloud_config = os.environ.get(config.clevercloud_config_env_var)
+        else:
+            config.clevercloud_config = None
 
         # Run cartography
         try:
