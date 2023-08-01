@@ -145,7 +145,8 @@ def load_resource_binary(package: str, resource_name: str) -> BinaryIO:
     return open_binary(package, resource_name)
 
 
-F = TypeVar('F', bound=Callable[..., Any])
+R = TypeVar('R')
+F = TypeVar('F', bound=Callable[..., R])
 
 
 def timeit(method: F) -> F:
@@ -156,12 +157,12 @@ def timeit(method: F) -> F:
     """
     # Allow access via `inspect` to the wrapped function. This is used in integration tests to standardize param names.
     @wraps(method)
-    def timed(*args, **kwargs):  # type: ignore
+    def timed(*args, **kwargs) -> R:  # type: ignore
         stats_client = get_stats_client(method.__module__)
         if stats_client.is_enabled():
             timer = stats_client.timer(method.__name__)
             timer.start()
-            result = method(*args, **kwargs)
+            result: R = method(*args, **kwargs)
             timer.stop()
             return result
         else:
@@ -303,10 +304,12 @@ def batch(items: Iterable, size: int = DEFAULT_BATCH_SIZE) -> List[List]:
     ]
 
 
-def to_async(func: Callable, *args: Any, **kwargs: Any) -> asyncio.Future:
+def to_async(func: F, *args: Any, **kwargs: Any) -> Awaitable[R]:
     '''
     Returns a Future that will run a function in the default threadpool.
     Helper until we start using pytohn 3.9's asyncio.to_thread
+
+    Calls are also wrapped within a backoff decorator to handle throttling errors.
 
     example:
     future = to_async(my_func, my_arg, my_arg2)
@@ -316,7 +319,21 @@ def to_async(func: Callable, *args: Any, **kwargs: Any) -> asyncio.Future:
     # import nest_asyncio
     # nest_asyncio.apply()
     '''
-    call = partial(func, *args, **kwargs)
+    CartographyThrottlingException = type('CartographyThrottlingException', (Exception,), {})
+    throttling_error_codes = ['LimitExceededException', 'Throttling']
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        try:
+            return func(*args, **kwargs)
+        except botocore.exceptions.ClientError as error:
+            if error.response['Error']['Code'] in throttling_error_codes:
+                raise CartographyThrottlingException from error
+            raise
+
+    # don't use @backoff as decorator, to preserve typing
+    wrapped = backoff.on_exception(backoff.expo, CartographyThrottlingException)(wrapper)
+    call = partial(wrapped, *args, **kwargs)
     return asyncio.get_event_loop().run_in_executor(None, call)
 
 
