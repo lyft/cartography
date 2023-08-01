@@ -1,4 +1,4 @@
-## Duo Configuration
+## Semgrep Configuration
 
 .. _semgrep_config:
 
