@@ -59,5 +59,8 @@
 ## SyncMetadata
 - Click [here](syncmetadata.md)
 
+## Semgrep
+- Click [here](semgrep.md)
+
 ## More to come!
 👍

@@ -25,6 +25,7 @@ class SemgrepSCAFindingNodeProperties(CartographyNodeProperties):
     reachability_check: PropertyRef = PropertyRef('reachability')
     reachability_condition: PropertyRef = PropertyRef('reachableIf')
     reachability: PropertyRef = PropertyRef('exposureType')
+    transitivity: PropertyRef = PropertyRef('transitivity')
     dependency: PropertyRef = PropertyRef('matchedDependency')
     dependency_fix: PropertyRef = PropertyRef('closestSafeDependency')
     ref_urls: PropertyRef = PropertyRef('ref_urls')

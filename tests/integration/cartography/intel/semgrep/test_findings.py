@@ -72,6 +72,7 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
             "CVE-2023-37897",
             "MANUAL_REVIEW_REACHABLE",
             "REACHABLE",
+            "DIRECT",
             "grav|1.7.42.0",
             "grav|1.7.42.2",
             "go.mod",
@@ -96,6 +97,7 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
                 "cve_id",
                 "reachability_check",
                 "reachability",
+                "transitivity",
                 "dependency",
                 "dependency_fix",
                 "dependency_file",
@@ -215,7 +217,7 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
             "id",
             "SemgrepSCALocation",
             "id",
-            "LOCATED_AT",
+            "USAGE_AT",
         ) ==
         expected_location_relationships
     )

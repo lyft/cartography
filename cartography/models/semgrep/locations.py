@@ -29,14 +29,14 @@ class SemgrepSCALocToSemgrepSCAFindingRelProperties(CartographyRelProperties):
 
 
 @dataclass(frozen=True)
-# (:SemgrepSCALocation)<-[:LOCATED_AT]-(:SemgrepSCAFinding)
+# (:SemgrepSCALocation)<-[:USAGE_AT]-(:SemgrepSCAFinding)
 class SemgrepSCALocToSemgrepSCAFindingRelSchema(CartographyRelSchema):
     target_node_label: str = 'SemgrepSCAFinding'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'id': PropertyRef('SCA_ID')},
     )
     direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "LOCATED_AT"
+    rel_label: str = "USAGE_AT"
     properties: SemgrepSCALocToSemgrepSCAFindingRelProperties = SemgrepSCALocToSemgrepSCAFindingRelProperties()
 
 

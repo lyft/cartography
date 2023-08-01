@@ -18,6 +18,7 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
+_TIMEOUT = (60, 60)
 
 
 @timeit
@@ -32,21 +33,14 @@ def get_deployment(semgrep_app_token: str) -> Dict[str, Any]:
         "Content-Type": "application/json",
         "Authorization": f"Bearer {semgrep_app_token}",
     }
-    response = requests.get(deployment_url, headers=headers)
+    response = requests.get(deployment_url, headers=headers, timeout=_TIMEOUT)
     response.raise_for_status()
-    try:
-        if response.status_code == 200:
-            data = response.json()
-            deployment["id"] = data["deployments"][0]["id"]
-            deployment["name"] = data["deployments"][0]["name"]
-            deployment["slug"] = data["deployments"][0]["slug"]
-    except requests.RequestException as e:
-        logger.error(
-            "Could not complete request to the deployments Semgrep API: %s",
-            deployment_url,
-            exc_info=e,
-        )
-        raise e
+
+    data = response.json()
+    deployment["id"] = data["deployments"][0]["id"]
+    deployment["name"] = data["deployments"][0]["name"]
+    deployment["slug"] = data["deployments"][0]["slug"]
+
     return deployment
 
 
@@ -70,20 +64,14 @@ def get_sca_vulns(semgrep_app_token: str, deployment_id: str) -> List[Dict[str, 
         params = {}
         if cursor:
             params = {"cursor": cursor}
-        try:
-            response = requests.get(sca_url, params=params, headers=headers)
-            response.raise_for_status()
-            if response.status_code == 200:
-                data = response.json()
-                vulns = data["vulns"]
-                cursor = data.get("cursor")
-                has_more = data.get("hasMore", False)
-                all_vulns.extend(vulns)
-        except requests.RequestException as e:
-            logger.error(
-                "Could not complete request to the SCA Semgrep API: %s", sca_url, exc_info=e,
-            )
-            raise e
+
+        response = requests.get(sca_url, params=params, headers=headers, timeout=_TIMEOUT)
+        response.raise_for_status()
+        data = response.json()
+        vulns = data["vulns"]
+        cursor = data.get("cursor")
+        has_more = data.get("hasMore", False)
+        all_vulns.extend(vulns)
 
     return all_vulns
 
@@ -114,6 +102,7 @@ def transform_sca_vulns(raw_vulns: List[Dict[str, Any]]) -> Tuple[List[Dict[str,
         sca_vuln["dependencyFileLocation_path"] = vuln["dependencyFileLocation"]["path"]
         sca_vuln["dependencyFileLocation_url"] = vuln["dependencyFileLocation"]["url"]
         # Optional fields
+        sca_vuln["transitivity"] = vuln.get("transitivity", None)
         cves = vuln.get("advisory", {}).get("references", {}).get("cveIds")
         if len(cves) > 0:
             # Take the first CVE

@@ -20,6 +20,4 @@ def start_semgrep_ingestion(
     if not config.semgrep_app_token:
         logger.info('Semgrep import is not configured - skipping this module. See docs to configure.')
         return
-    if not config.github_config:
-        logger.info('GitHub import is not configured - No relationship with GitHub repositories will be created.')
     sync(neo4j_session, config.semgrep_app_token, config.update_tag, common_job_parameters)
