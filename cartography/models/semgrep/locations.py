@@ -15,7 +15,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 class SemgrepSCALocationProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('findingId')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    path: PropertyRef = PropertyRef('path')
+    path: PropertyRef = PropertyRef('path', extra_index=True)
     start_line: PropertyRef = PropertyRef('startLine')
     start_col: PropertyRef = PropertyRef('startCol')
     end_line: PropertyRef = PropertyRef('endLine')

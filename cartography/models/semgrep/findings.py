@@ -17,7 +17,7 @@ class SemgrepSCAFindingNodeProperties(CartographyNodeProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     rule_id: PropertyRef = PropertyRef('ruleId', extra_index=True)
     repository: PropertyRef = PropertyRef('repositoryName', extra_index=True)
-    summary: PropertyRef = PropertyRef('title')
+    summary: PropertyRef = PropertyRef('title', extra_index=True)
     description: PropertyRef = PropertyRef('description')
     package_manager: PropertyRef = PropertyRef('ecosystem')
     severity: PropertyRef = PropertyRef('severity')
@@ -29,8 +29,8 @@ class SemgrepSCAFindingNodeProperties(CartographyNodeProperties):
     dependency: PropertyRef = PropertyRef('matchedDependency')
     dependency_fix: PropertyRef = PropertyRef('closestSafeDependency')
     ref_urls: PropertyRef = PropertyRef('ref_urls')
-    dependency_file: PropertyRef = PropertyRef('dependencyFileLocation_path')
-    dependency_file_url: PropertyRef = PropertyRef('dependencyFileLocation_url')
+    dependency_file: PropertyRef = PropertyRef('dependencyFileLocation_path', extra_index=True)
+    dependency_file_url: PropertyRef = PropertyRef('dependencyFileLocation_url', extra_index=True)
     scan_time: PropertyRef = PropertyRef('openedAt')
 
 

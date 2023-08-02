@@ -9,8 +9,8 @@ from cartography.models.core.nodes import CartographyNodeSchema
 class SemgrepDeploymentProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    name: PropertyRef = PropertyRef('name')
-    slug: PropertyRef = PropertyRef('slug')
+    name: PropertyRef = PropertyRef('name', extra_index=True)
+    slug: PropertyRef = PropertyRef('slug', extra_index=True)
 
 
 @dataclass(frozen=True)

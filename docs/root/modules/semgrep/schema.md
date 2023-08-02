@@ -85,7 +85,7 @@ Represents the location in a repository where a vulnerable dependency is used in
 | **id** | Unique id identifying the location of the finding |
 | path | Path of the file where the usage was discovered |
 | start_line | Line where the usage starts |
-| start_column | Column where the usage starts |
+| start_col | Column where the usage starts |
 | end_line | Line where the usage ends |
-| end_column | Column where the usage ends |
+| end_col | Column where the usage ends |
 | url | URL of the file where the usage was discovered |

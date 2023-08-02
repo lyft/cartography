@@ -1,4 +1,8 @@
+from string import Template
+from typing import List
 from unittest.mock import patch
+
+import neo4j
 
 import cartography.intel.semgrep.findings
 import tests.data.semgrep.sca
@@ -10,6 +14,21 @@ TEST_REPO_ID = "https://github.com/yourorg/yourrepo"
 TEST_REPO_FULL_NAME = "yourorg/yourrepo"
 TEST_REPO_NAME = "yourrepo"
 TEST_UPDATE_TAG = 123456789
+
+
+def _check_nodes_as_list(neo4j_session: neo4j.Session, node_label: str, attrs: List[str]):
+    """
+    Like tests.integration.util.check_nodes()` but returns a list instead of a set.
+    """
+    if not attrs:
+        raise ValueError("`attrs` passed to check_nodes() must have at least one element.")
+
+    attrs = ", ".join(f"n.{attr}" for attr in attrs)
+    query_template = Template("MATCH (n:$NodeLabel) RETURN $Attrs")
+    result = neo4j_session.run(
+        query_template.safe_substitute(NodeLabel=node_label, Attrs=attrs),
+    )
+    return sum([row.values() for row in result], [])
 
 
 def _create_github_repos(neo4j_session):
@@ -59,30 +78,28 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
         ) ==
         expected_deployment_nodes
     )
-    expected_sca_vuln_nodes = {
-        (
-            "yourorg/yourrepo|ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590",
-            TEST_UPDATE_TAG,
-            "yourorg/yourrepo",
-            "ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590",
-            "Reachable vuln",
-            "description",
-            "go",
-            "HIGH",
-            "CVE-2023-37897",
-            "MANUAL_REVIEW_REACHABLE",
-            "REACHABLE",
-            "DIRECT",
-            "grav|1.7.42.0",
-            "grav|1.7.42.2",
-            "go.mod",
-            "https://github.com/yourorg/yourrepo/blame/71bbed12f950de8335006d7f91112263d8504f1b/go.mod#L111",
-            "https://github.com/advisories//GHSA-9436-3gmp-4f53,https://nvd.nist.gov/vuln/detail/CVE-2023-37897",
-            "2023-07-19T12:51:53Z",
-        ),
-    }
+    expected_sca_vuln_nodes = [
+        "yourorg/yourrepo|ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590",
+        TEST_UPDATE_TAG,
+        "yourorg/yourrepo",
+        "ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590",
+        "Reachable vuln",
+        "description",
+        "go",
+        "HIGH",
+        "CVE-2023-37897",
+        "MANUAL_REVIEW_REACHABLE",
+        "REACHABLE",
+        "DIRECT",
+        "grav|1.7.42.0",
+        "grav|1.7.42.2",
+        "go.mod",
+        "https://github.com/yourorg/yourrepo/blame/71bbed12f950de8335006d7f91112263d8504f1b/go.mod#L111",
+        "https://github.com/advisories//GHSA-9436-3gmp-4f53,https://nvd.nist.gov/vuln/detail/CVE-2023-37897",
+        "2023-07-19T12:51:53Z",
+    ]
     assert (
-        check_nodes(
+        _check_nodes_as_list(
             neo4j_session,
             "SemgrepSCAFinding",
             [
