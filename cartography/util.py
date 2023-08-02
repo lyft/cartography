@@ -146,7 +146,7 @@ def load_resource_binary(package: str, resource_name: str) -> BinaryIO:
 
 
 R = TypeVar('R')
-F = TypeVar('F', bound=Callable[..., R])
+F = TypeVar('F', bound=Callable[..., Any])
 
 
 def timeit(method: F) -> F:
@@ -157,12 +157,12 @@ def timeit(method: F) -> F:
     """
     # Allow access via `inspect` to the wrapped function. This is used in integration tests to standardize param names.
     @wraps(method)
-    def timed(*args, **kwargs) -> R:  # type: ignore
+    def timed(*args, **kwargs):  # type: ignore
         stats_client = get_stats_client(method.__module__)
         if stats_client.is_enabled():
             timer = stats_client.timer(method.__name__)
             timer.start()
-            result: R = method(*args, **kwargs)
+            result = method(*args, **kwargs)
             timer.stop()
             return result
         else:
@@ -304,7 +304,7 @@ def batch(items: Iterable, size: int = DEFAULT_BATCH_SIZE) -> List[List]:
     ]
 
 
-def to_async(func: F, *args: Any, **kwargs: Any) -> Awaitable[R]:
+def to_async(func: Callable[..., R], *args: Any, **kwargs: Any) -> Awaitable[R]:
     '''
     Returns a Future that will run a function in the default threadpool.
     Helper until we start using pytohn 3.9's asyncio.to_thread
@@ -323,7 +323,7 @@ def to_async(func: F, *args: Any, **kwargs: Any) -> Awaitable[R]:
     throttling_error_codes = ['LimitExceededException', 'Throttling']
 
     @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
+    def wrapper(*args: Any, **kwargs: Any) -> R:
         try:
             return func(*args, **kwargs)
         except botocore.exceptions.ClientError as error:

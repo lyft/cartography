@@ -141,6 +141,24 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     logger.debug("Running ECR cleanup job.")
     run_cleanup_job('aws_import_ecr_cleanup.json', neo4j_session, common_job_parameters)
 
+# get the image_data given a list of repositores
+
+
+def _get_image_data(boto3_session: boto3.session.Session, region: str, repositories: List[Dict]) -> Dict:
+    '''
+    Given a list of repositories, get the image data for each repository,
+     return as a mapping from repositoryUri to image object
+    '''
+    image_data = {}
+    repositories = get_ecr_repositories(boto3_session, region)
+
+    async def async_get_images(repo: Dict[str, Any]) -> None:
+        repo_image_obj = await to_async(get_ecr_repository_images, boto3_session, region, repo['repositoryName'])
+        image_data[repo['repositoryUri']] = repo_image_obj
+    to_sync(*[async_get_images(repo) for repo in repositories])
+
+    return image_data
+
 
 @timeit
 def sync(
@@ -151,12 +169,7 @@ def sync(
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
         image_data = {}
         repositories = get_ecr_repositories(boto3_session, region)
-
-        async def async_get_images(repo: Dict[str, Any]) -> None:
-            repo_image_obj = await to_async(get_ecr_repository_images, boto3_session, region, repo['repositoryName'])
-            image_data[repo['repositoryUri']] = repo_image_obj
-        to_sync(*[async_get_images(repo) for repo in repositories])
-
+        image_data = _get_image_data(boto3_session, region, repositories)
         load_ecr_repositories(neo4j_session, repositories, region, current_aws_account_id, update_tag)
         repo_images_list = transform_ecr_repository_images(image_data)
         load_ecr_repository_images(neo4j_session, repo_images_list, region, update_tag)
