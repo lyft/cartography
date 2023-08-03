@@ -95,7 +95,7 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
         "grav|1.7.42.2",
         "go.mod",
         "https://github.com/yourorg/yourrepo/blame/71bbed12f950de8335006d7f91112263d8504f1b/go.mod#L111",
-        "https://github.com/advisories//GHSA-9436-3gmp-4f53,https://nvd.nist.gov/vuln/detail/CVE-2023-37897",
+        ["https://github.com/advisories//GHSA-9436-3gmp-4f53", "https://nvd.nist.gov/vuln/detail/CVE-2023-37897"],
         "2023-07-19T12:51:53Z",
     ]
     assert (

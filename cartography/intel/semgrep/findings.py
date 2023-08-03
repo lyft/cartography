@@ -110,9 +110,8 @@ def transform_sca_vulns(raw_vulns: List[Dict[str, Any]]) -> Tuple[List[Dict[str,
         if vuln.get('closestSafeDependency'):
             dep_fix = f"{vuln['closestSafeDependency']['name']}|{vuln['closestSafeDependency']['versionSpecifier']}"
             sca_vuln["closestSafeDependency"] = dep_fix
-        ref_urls = vuln["advisory"].get("references", {}).get("urls", [])
-        if ref_urls:
-            sca_vuln["ref_urls"] = ",".join(ref_urls)
+        if vuln["advisory"].get("references", {}).get("urls", []):
+            sca_vuln["ref_urls"] = vuln["advisory"].get("references", {}).get("urls", [])
         sca_vuln["openedAt"] = vuln.get("openedAt", None)
         for usage in vuln.get("usages", []):
             usage_dict = {}
