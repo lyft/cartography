@@ -21,8 +21,8 @@ from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cartography.util import to_async
-from cartography.util import to_sync
+from cartography.util import to_asynchronous
+from cartography.util import to_synchronous
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
@@ -75,15 +75,15 @@ def get_s3_bucket_details(
             versioning,
             public_access_block,
         ) = await asyncio.gather(
-            to_async(get_acl, bucket, client),
-            to_async(get_policy, bucket, client),
-            to_async(get_encryption, bucket, client),
-            to_async(get_versioning, bucket, client),
-            to_async(get_public_access_block, bucket, client),
+            to_asynchronous(get_acl, bucket, client),
+            to_asynchronous(get_policy, bucket, client),
+            to_asynchronous(get_encryption, bucket, client),
+            to_asynchronous(get_versioning, bucket, client),
+            to_asynchronous(get_public_access_block, bucket, client),
         )
         return bucket['Name'], acl, policy, encryption, versioning, public_access_block
 
-    bucket_details = to_sync(*[_get_bucket_detail(bucket) for bucket in bucket_data['Buckets']])
+    bucket_details = to_synchronous(*[_get_bucket_detail(bucket) for bucket in bucket_data['Buckets']])
     yield from bucket_details
 
 

@@ -10,8 +10,8 @@ from cartography.util import aws_handle_regions
 from cartography.util import batch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cartography.util import to_async
-from cartography.util import to_sync
+from cartography.util import to_asynchronous
+from cartography.util import to_synchronous
 
 logger = logging.getLogger(__name__)
 
@@ -150,9 +150,9 @@ def _get_image_data(boto3_session: boto3.session.Session, region: str, repositor
     image_data = {}
 
     async def async_get_images(repo: Dict[str, Any]) -> None:
-        repo_image_obj = await to_async(get_ecr_repository_images, boto3_session, region, repo['repositoryName'])
+        repo_image_obj = await to_asynchronous(get_ecr_repository_images, boto3_session, region, repo['repositoryName'])
         image_data[repo['repositoryUri']] = repo_image_obj
-    to_sync(*[async_get_images(repo) for repo in repositories])
+    to_synchronous(*[async_get_images(repo) for repo in repositories])
 
     return image_data
 

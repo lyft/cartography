@@ -304,7 +304,7 @@ def batch(items: Iterable, size: int = DEFAULT_BATCH_SIZE) -> List[List]:
     ]
 
 
-def to_async(func: Callable[..., R], *args: Any, **kwargs: Any) -> Awaitable[R]:
+def to_asynchronous(func: Callable[..., R], *args: Any, **kwargs: Any) -> Awaitable[R]:
     '''
     Returns a Future that will run a function in the default threadpool.
     Helper until we start using pytohn 3.9's asyncio.to_thread
@@ -337,7 +337,7 @@ def to_async(func: Callable[..., R], *args: Any, **kwargs: Any) -> Awaitable[R]:
     return asyncio.get_event_loop().run_in_executor(None, call)
 
 
-def to_sync(*awaitables: Awaitable[Any]) -> Any:
+def to_synchronous(*awaitables: Awaitable[Any]) -> Any:
     '''
     Waits for the Awaitable(s) to complete and returns their result(s).
     See https://docs.python.org/3.8/library/asyncio-task.html#asyncio-awaitables
