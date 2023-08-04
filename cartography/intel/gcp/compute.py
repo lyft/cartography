@@ -132,6 +132,7 @@ def sync_compute_disks(
     load_compute_disks(neo4j_session, disks, project_id, gcp_update_tag)
     cleanup_compute_disks(neo4j_session, common_job_parameters)
 
+
 @timeit
 def get_https_proxies(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
     https_proxies = []
@@ -157,6 +158,7 @@ def get_https_proxies(compute: Resource, project_id: str, common_job_parameters)
         else:
             raise
 
+
 @timeit
 def transform_https_proxies(proxies: List, project_id: str) -> List[Resource]:
     list_proxies = []
@@ -167,6 +169,7 @@ def transform_https_proxies(proxies: List, project_id: str) -> List[Resource]:
         list_proxies.append(proxy)
 
     return list_proxies
+
 
 @timeit
 def get_ssl_proxies(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
@@ -193,6 +196,7 @@ def get_ssl_proxies(compute: Resource, project_id: str, common_job_parameters) -
         else:
             raise
 
+
 @timeit
 def transform_ssl_proxies(proxies: List, project_id: str) -> List[Resource]:
     list_proxies = []
@@ -204,9 +208,11 @@ def transform_ssl_proxies(proxies: List, project_id: str) -> List[Resource]:
 
     return list_proxies
 
+
 @timeit
 def load_proxies(session: neo4j.Session, proxies: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_proxies_tx, proxies, project_id, update_tag)
+
 
 @timeit
 def load_proxies_tx(
@@ -242,6 +248,7 @@ def load_proxies_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def attach_compute_disks_to_instance(session: neo4j.Session, data_list: List[Dict], instance_id: str, update_tag: int) -> None:
     session.write_transaction(attach_compute_disks_to_instance_tx, data_list, instance_id, update_tag)
@@ -273,7 +280,6 @@ def attach_compute_disks_to_instance_tx(
         InstanceId=instance_id,
         gcp_update_tag=gcp_update_tag,
     )
-
 
 
 def _get_error_reason(http_error: HttpError) -> str:
@@ -490,6 +496,7 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
 
         prefix_fields = _parse_instance_uri_prefix(prefix)
 
+        res['instance_id'] = res['id']
         res['id'] = f"projects/{prefix_fields.project_id}/zones/{prefix_fields.zone_name}/instances/{res['name']}"
         res['partial_uri'] = res['id']
 
@@ -503,7 +510,7 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
         )
         x = res['zone_name'].split('-')
         res['region'] = f"{x[0]}-{x[1]}"
-        
+
         for nic in res.get('networkInterfaces', []):
             res['networkIP'] = nic.get('networkIP', None)
             nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
@@ -863,7 +870,6 @@ def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_u
         _attach_gcp_nics(session, instance, gcp_update_tag)
         _attach_gcp_vpc(session, instance['partial_uri'], gcp_update_tag)
         _attach_instance_service_account(session, instance, gcp_update_tag)
-        
 
 
 @timeit
@@ -887,6 +893,7 @@ def load_gcp_instances_tx(tx: neo4j.Transaction, instances: Dict, gcp_update_tag
     i.partial_uri = instance.partial_uri
     SET i.self_link = instance.selfLink,
     i.instancename = instance.name,
+    i.instance_id = instance.instance_id,
     i.hostname = instance.hostname,
     i.region = instance.region,
     i.zone_name = instance.zone_name,
@@ -1318,7 +1325,6 @@ def _attach_gcp_vpc(neo4j_session: neo4j.Session, instance_id: str, gcp_update_t
     )
 
 
-
 @timeit
 def _attach_instance_service_account(neo4j_session: neo4j.Session, instance: Resource, gcp_update_tag: int) -> None:
     """
@@ -1403,9 +1409,10 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
         _attach_target_tags(neo4j_session, fw, gcp_update_tag)
         _attach_firewall_public_ip_address(neo4j_session, fw, gcp_update_tag)
 
+
 @timeit
 def _attach_firewall_public_ip_address(neo4j_session: neo4j.Session, fw: Resource, gcp_update_tag: int) -> None:
-    ingest_public_ip_address="""
+    ingest_public_ip_address = """
     UNWIND $PublicIpAddress as ip
         MERGE (i:GCPPublicIpAddress{ipAddress:ip})
             ON CREATE SET i.firstseen = timestamp()
@@ -1424,14 +1431,15 @@ def _attach_firewall_public_ip_address(neo4j_session: neo4j.Session, fw: Resourc
          SET
          r.lastupdated = $gcp_update_tag       
     """
-    public_ip_address=[ip for ip in fw.get('sourceRanges',[]) if not ipaddress.IPv4Network(str(ip).split('/')[0]).is_private]
+    public_ip_address = [ip for ip in fw.get('sourceRanges', []) if not ipaddress.IPv4Network(str(ip).split('/')[0]).is_private]
     neo4j_session.run(
         query=ingest_public_ip_address,
         PublicIpAddress=public_ip_address,
         FwId=fw['id'],
         gcp_update_tag=gcp_update_tag,
     )
-    
+
+
 @timeit
 def _attach_firewall_rules(neo4j_session: neo4j.Session, fw: Resource, gcp_update_tag: int) -> None:
     """
@@ -1639,6 +1647,7 @@ def sync_gcp_ssl_proxies(
     cleanup_gcp_proxies(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, ssl_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
 
+
 @timeit
 def cleanup_gcp_proxies(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
@@ -1652,6 +1661,7 @@ def cleanup_gcp_proxies(neo4j_session: neo4j.Session, common_job_parameters: Dic
 
     except ClientError as ex:
         logger.error("error while syncing gcp proxies", ex)
+
 
 @timeit
 def sync_gcp_https_proxies(
@@ -1675,6 +1685,7 @@ def sync_gcp_https_proxies(
     cleanup_gcp_proxies(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, https_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
 
+
 @timeit
 def sync_gcp_ssl_proxies(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
@@ -1696,6 +1707,7 @@ def sync_gcp_ssl_proxies(
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_proxies(neo4j_session, common_job_parameters)
     label.sync_labels(neo4j_session, ssl_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
+
 
 @timeit
 def sync_gcp_instances(
@@ -1728,7 +1740,6 @@ def sync_gcp_instances(
             disk['id'] = f"projects/{project_id}/disks/{disk.get('initializeParams', {}).get('diskName', '')}"
             disks.append(disk)
         attach_compute_disks_to_instance(neo4j_session, disks, instance['partial_uri'], gcp_update_tag)
-
 
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)

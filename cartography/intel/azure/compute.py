@@ -39,6 +39,7 @@ def load_vm_security_groups_relationship(session: neo4j.Session, vm_id: str, dat
 def load_vm_network_interfaces_relationship(session: neo4j.Session, vm_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_vm_network_interfaces_relationship, vm_id, data_list, update_tag)
 
+
 def get_client(credentials: Credentials, subscription_id: str) -> ComputeManagementClient:
     client = ComputeManagementClient(credentials, subscription_id)
     return client
@@ -85,6 +86,7 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
     v.consolelink = vm.consolelink,
     v.resourcegroup = vm.resource_group
     SET v.lastupdated = $update_tag, v.name = vm.name,
+    v.vm_id = vm.vm_id,
     v.plan = vm.plan.product, v.size = vm.hardware_profile.vm_size,
     v.license_type=vm.license_type, v.computer_name=vm.os_profile.computer_name,
     v.identity_type=vm.identity.type, v.zones=vm.zones,
@@ -120,12 +122,13 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
         if vm.get('network_interfaces', []) != []:
             load_vm_network_interfaces_relationship(neo4j_session, vm['id'], vm.get('network_interfaces'), update_tag)
         resource_group = get_azure_resource_group_name(vm.get('id'))
-        _attach_vm_resource_group(neo4j_session, vm['id'],resource_group, update_tag)
-        _attach_vm_properties_public_ip(neo4j_session,vm['id'],update_tag)
-        _attach_vm_properties_private_ip(neo4j_session,vm['id'],update_tag)
+        _attach_vm_resource_group(neo4j_session, vm['id'], resource_group, update_tag)
+        _attach_vm_properties_public_ip(neo4j_session, vm['id'], update_tag)
+        _attach_vm_properties_private_ip(neo4j_session, vm['id'], update_tag)
 
-def _attach_vm_properties_public_ip(tx: neo4j.Transaction, vm_id: str,update_tag) ->None:         
-    ingest_vm_properties="""    
+
+def _attach_vm_properties_public_ip(tx: neo4j.Transaction, vm_id: str, update_tag) -> None:
+    ingest_vm_properties = """    
     MATCH (vm:AzureVirtualMachine{id: $vm_id})-[:MEMBER_NETWORK_INTERFACE]->(:AzureNetworkInterface)-[:MEMBER_PUBLIC_IP_ADDRESS]->(ip:AzurePublicIPAddress)
     SET vm.public_ip=ip.ipAddress,
     vm.lastupdated= $update_tag
@@ -135,8 +138,10 @@ def _attach_vm_properties_public_ip(tx: neo4j.Transaction, vm_id: str,update_tag
         vm_id=vm_id,
         update_tag=update_tag
     )
-def _attach_vm_properties_private_ip(tx: neo4j.Transaction, vm_id: str,update_tag) ->None:         
-    ingest_vm_properties="""
+
+
+def _attach_vm_properties_private_ip(tx: neo4j.Transaction, vm_id: str, update_tag) -> None:
+    ingest_vm_properties = """
     MATCH (vm:AzureVirtualMachine{id: $vm_id})-[:MEMBER_NETWORK_INTERFACE]->(:AzureNetworkInterface)-[:CONTAINS]->(ip:AzureNetworkInterfaceIPConfiguration)
     SET vm.private_ip=ip.private_ip_address,
     vm.lastupdated = $update_tag
@@ -146,6 +151,7 @@ def _attach_vm_properties_private_ip(tx: neo4j.Transaction, vm_id: str,update_ta
         vm_id=vm_id,
         update_tag=update_tag
     )
+
 
 def _load_vm_security_groups_relationship(tx: neo4j.Transaction, vm_id: str, data_list: List[Dict], update_tag: int) -> None:
     ingest_vm_sg = """
@@ -183,7 +189,8 @@ def _load_vm_network_interfaces_relationship(tx: neo4j.Transaction, vm_id: str, 
         update_tag=update_tag,
     )
 
-def _attach_vm_resource_group(tx: neo4j.Transaction, vm_id: str,resource_group:str, update_tag: int) -> None:
+
+def _attach_vm_resource_group(tx: neo4j.Transaction, vm_id: str, resource_group: str, update_tag: int) -> None:
     ingest_vm = """
     match (vm:AzureVirtualMachine{id: $vm_id})
     with vm
@@ -198,6 +205,7 @@ def _attach_vm_resource_group(tx: neo4j.Transaction, vm_id: str,resource_group:s
         vm_id=vm_id,
         update_tag=update_tag,
     )
+
 
 def get_vm_extensions_list(vm_list: List[Dict], client: ComputeManagementClient, common_job_parameters: Dict) -> List[Dict]:
     try:
@@ -250,10 +258,11 @@ def _load_vm_extensions_tx(tx: neo4j.Transaction, vm_extensions_list: List[Dict]
     )
     for vm_extension in vm_extensions_list:
         resource_group = get_azure_resource_group_name(vm_extension.get('id'))
-        _attach_resource_group_vm_extensions(tx, vm_extension['id'],resource_group, update_tag)
+        _attach_resource_group_vm_extensions(tx, vm_extension['id'], resource_group, update_tag)
 
-def _attach_resource_group_vm_extensions(tx: neo4j.Transaction, vm_extension_id:str,resource_group:str, update_tag: int) -> None:
-    ingest_resource_group="""
+
+def _attach_resource_group_vm_extensions(tx: neo4j.Transaction, vm_extension_id: str, resource_group: str, update_tag: int) -> None:
+    ingest_resource_group = """
     MATCH (v:AzureVirtualMachineExtension{id: $vm_extension_id})
     WITH v
     MATCH(rg:AzureResourceGroup{name: $resource_group})
@@ -267,6 +276,7 @@ def _attach_resource_group_vm_extensions(tx: neo4j.Transaction, vm_extension_id:
         resource_group=resource_group,
         update_tag=update_tag,
     )
+
 
 def cleanup_virtual_machine_extensions(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_virtual_machines_extensions_cleanup.json', neo4j_session, common_job_parameters)
@@ -332,9 +342,10 @@ def _load_vm_available_sizes_tx(tx: neo4j.Transaction, vm_available_sizes_list: 
     )
     for vm_available_size in vm_available_sizes_list:
         resource_group = get_azure_resource_group_name(vm_available_size.get('id'))
-        _attach_resource_group_vm_available_size(tx, vm_available_size['id'],resource_group, update_tag)
+        _attach_resource_group_vm_available_size(tx, vm_available_size['id'], resource_group, update_tag)
 
-def _attach_resource_group_vm_available_size(tx: neo4j.Transaction, vm_available_size_id: str,resource_group:str ,update_tag: int) -> None:
+
+def _attach_resource_group_vm_available_size(tx: neo4j.Transaction, vm_available_size_id: str, resource_group: str, update_tag: int) -> None:
     ingest_vm_size = """
     MATCH (v:AzureVirtualMachineAvailableSize{id: $size_id})
     WITH v
@@ -350,6 +361,7 @@ def _attach_resource_group_vm_available_size(tx: neo4j.Transaction, vm_available
         resource_group=resource_group,
         update_tag=update_tag,
     )
+
 
 def cleanup_virtual_machine_available_sizes(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job(
@@ -418,23 +430,25 @@ def _load_vm_scale_sets_tx(
     )
     for vm_scale_set in vm_scale_sets_list:
         resource_group = get_azure_resource_group_name(vm_scale_set.get('id'))
-        _attach_resource_group_vm_scale_sets(tx,vm_scale_set['id'],resource_group,update_tag) 
-    
-def _attach_resource_group_vm_scale_sets( tx: neo4j.Transaction, vm_scale_set_id:str,resource_group:str ,update_tag: int) -> None:
-    ingest_resource_group="""
+        _attach_resource_group_vm_scale_sets(tx, vm_scale_set['id'], resource_group, update_tag)
+
+
+def _attach_resource_group_vm_scale_sets(tx: neo4j.Transaction, vm_scale_set_id: str, resource_group: str, update_tag: int) -> None:
+    ingest_resource_group = """
         MATCH (a:AzureVirtualMachineScaleSet{id: $set_id})
         with a
         MATCH(rg:AzureResourceGroup{name:$resource_group})
         MERGE (a)-[res:RESOURCE_GROUP]->(rg)
         ON CREATE SET res.firstseen = timestamp()
         SET res.lastupdated = $update_tag
-        """ 
+        """
     tx.run(
         ingest_resource_group,
         vm_scale_set_id=vm_scale_set_id,
         resource_group=resource_group,
         update_tag=update_tag,
     )
+
 
 def cleanup_vm_scale_sets(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_virtual_machines_scale_sets_cleanup.json', neo4j_session, common_job_parameters)
@@ -507,11 +521,11 @@ def _load_vm_scale_sets_extensions_tx(
         update_tag=update_tag,
     )
     for vm_scale_sets_extension in vm_scale_sets_extensions_list:
-        resource_group = get_azure_resource_group_name(vm_scale_sets_extension.get('id'))    
-        _attach_resource_group_vm_scale_sets_extension(tx,vm_scale_sets_extension['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(vm_scale_sets_extension.get('id'))
+        _attach_resource_group_vm_scale_sets_extension(tx, vm_scale_sets_extension['id'], resource_group, update_tag)
 
-    
-def  _attach_resource_group_vm_scale_sets_extension(tx: neo4j.Transaction, vm_scale_sets_extension_id:str,resource_group: str, update_tag: int) -> None:
+
+def _attach_resource_group_vm_scale_sets_extension(tx: neo4j.Transaction, vm_scale_sets_extension_id: str, resource_group: str, update_tag: int) -> None:
     ingest_vm_scale_sets_extension_resource_group = """
     MATCH (v:AzureVirtualMachineScaleSetExtension{id: $extension_id})
     WITH v
@@ -525,7 +539,7 @@ def  _attach_resource_group_vm_scale_sets_extension(tx: neo4j.Transaction, vm_sc
         extension_id=vm_scale_sets_extension_id,
         resource_group=resource_group,
         update_tag=update_tag,
-        
+
     )
 
 
@@ -628,9 +642,10 @@ def load_disks(neo4j_session: neo4j.Session, subscription_id: str, disk_list: Li
     )
     for disk in disk_list:
         resource_group = get_azure_resource_group_name(disk.get('id'))
-        _attach_resource_group_disk(neo4j_session,disk['id'],resource_group,update_tag)
-            
-def _attach_resource_group_disk(neo4j_session: neo4j.Session, disk_id: str,resource_group:str , update_tag: int) -> None:
+        _attach_resource_group_disk(neo4j_session, disk['id'], resource_group, update_tag)
+
+
+def _attach_resource_group_disk(neo4j_session: neo4j.Session, disk_id: str, resource_group: str, update_tag: int) -> None:
     ingest_disks = """
     MATCH (d:AzureDisk{id: $disk_id})
     WITH d
@@ -645,6 +660,7 @@ def _attach_resource_group_disk(neo4j_session: neo4j.Session, disk_id: str,resou
         resource_group=resource_group,
         update_tag=update_tag,
     )
+
 
 def cleanup_disks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_disks_cleanup.json', neo4j_session, common_job_parameters)
@@ -700,9 +716,10 @@ def load_snapshots(neo4j_session: neo4j.Session, subscription_id: str, snapshots
     )
     for snapshot in snapshots:
         resource_group = get_azure_resource_group_name(snapshot.get('id'))
-        _attach_resource_group_disk_snapshot(neo4j_session,snapshot['id'],resource_group,update_tag)
+        _attach_resource_group_disk_snapshot(neo4j_session, snapshot['id'], resource_group, update_tag)
 
-def _attach_resource_group_disk_snapshot(neo4j_session: neo4j.Session, snapshot_id: str, resource_group:str, update_tag: int) -> None:
+
+def _attach_resource_group_disk_snapshot(neo4j_session: neo4j.Session, snapshot_id: str, resource_group: str, update_tag: int) -> None:
     ingest_snapshots = """
     MATCH (s:AzureSnapshot{id: $snapshot_id})
     WITH s
@@ -717,6 +734,7 @@ def _attach_resource_group_disk_snapshot(neo4j_session: neo4j.Session, snapshot_
         resource_group=resource_group,
         update_tag=update_tag,
     )
+
 
 def cleanup_snapshot(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_snapshots_cleanup.json', neo4j_session, common_job_parameters)
