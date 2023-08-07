@@ -312,7 +312,7 @@ def load_public_ip_address(session: neo4j.Session, instance: List[Dict], project
 
 @timeit
 def _load_public_ip_address_tx(tx: neo4j.Transaction, instance: List[Dict], project_id: str, gcp_update_tag: int) -> None:
-    ipAddresses = [ip.get('ipAddress') for ip in instance.get('ipAddresses') if ip.get('type') == "PRIMARY"]
+    ipAddresses = [ip.get('ipAddress') for ip in instance.get('ipAddresses', []) if ip.get('type') == "PRIMARY"]
     ingest_public_ip = """
     UNWIND $ipAddresses as ip
     MERGE (p:GCPPublicIpAddress{ipAddress:ip})

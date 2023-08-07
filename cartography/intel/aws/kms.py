@@ -222,8 +222,7 @@ def load_kms_key_details(
     for key, policy, alias, grant, region in policy_alias_grants_data:
         parsed_policy = parse_policy(key, policy)
         if parsed_policy is not None:
-            for poli in parsed_policy:
-                poli['region'] = region
+            parsed_policy['region'] = region
             policies.append(parsed_policy)
         if len(alias) > 0:
             for ali in alias:

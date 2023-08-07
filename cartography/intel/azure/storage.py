@@ -13,7 +13,7 @@ from azure.mgmt.storage import StorageManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
-from cartography.util import run_cleanup_job,get_azure_resource_group_name
+from cartography.util import run_cleanup_job, get_azure_resource_group_name
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -106,11 +106,11 @@ def load_storage_account_data(
         azure_update_tag=azure_update_tag,
     )
     for storage in storage_account_list:
-        resource_group=get_azure_resource_group_name(storage.get('id'))
-        _attach_resource_group_storage_account(neo4j_session, storage.get('id'), resource_group,azure_update_tag)
-            
-            
-def _attach_resource_group_storage_account(neo4j_session: neo4j.Session, storage_account_id: str,resource_group:str,azure_update_tag: int,) -> None:
+        resource_group = get_azure_resource_group_name(storage.get('id'))
+        _attach_resource_group_storage_account(neo4j_session, storage.get('id'), resource_group, azure_update_tag)
+
+
+def _attach_resource_group_storage_account(neo4j_session: neo4j.Session, storage_account_id: str, resource_group: str, azure_update_tag: int,) -> None:
     ingest_storage_account = """
     MATCH (s:AzureStorageAccount{id: $account_id})
     WITH s
@@ -125,6 +125,7 @@ def _attach_resource_group_storage_account(neo4j_session: neo4j.Session, storage
         resource_group=resource_group,
         azure_update_tag=azure_update_tag
     )
+
 
 @timeit
 def sync_storage_account_details(
@@ -344,10 +345,11 @@ def _load_queue_services(
         azure_update_tag=update_tag,
     )
     for queue_service in queue_services:
-        resource_group=get_azure_resource_group_name(queue_service.get('id'))
-        _attach_resource_queue_service(neo4j_session,queue_service['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(queue_service.get('id'))
+        _attach_resource_queue_service(neo4j_session, queue_service['id'], resource_group, update_tag)
 
-def _attach_resource_queue_service(neo4j_session: neo4j.Session, queue_service_id: str,resource_group:str, update_tag: int) -> None:
+
+def _attach_resource_queue_service(neo4j_session: neo4j.Session, queue_service_id: str, resource_group: str, update_tag: int) -> None:
     ingest_queue_services = """
     MATCH (qs:AzureStorageQueueService{id: $queue_service_id})
     WITH qs
@@ -393,10 +395,11 @@ def _load_table_services(
         azure_update_tag=update_tag,
     )
     for table_service in table_services:
-        resource_group=get_azure_resource_group_name(table_service.get('id'))
-        _attach_resource_storage_table_service(neo4j_session,table_service['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(table_service.get('id'))
+        _attach_resource_storage_table_service(neo4j_session, table_service['id'], resource_group, update_tag)
 
-def _attach_resource_storage_table_service(neo4j_session: neo4j.Session, table_service_id:str, resource_group:str,update_tag: int) -> None:
+
+def _attach_resource_storage_table_service(neo4j_session: neo4j.Session, table_service_id: str, resource_group: str, update_tag: int) -> None:
     ingest_table_services = """
     MATCH (ts:AzureStorageTableService{id: $tservice_id})
     WITH ts
@@ -443,10 +446,11 @@ def _load_file_services(
         azure_update_tag=update_tag,
     )
     for file_service in file_services:
-        resource_group=get_azure_resource_group_name(file_service.get('id'))
-        _attach_resource_storage_file_service(neo4j_session,file_service['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(file_service.get('id'))
+        _attach_resource_storage_file_service(neo4j_session, file_service['id'], resource_group, update_tag)
 
-def _attach_resource_storage_file_service(neo4j_session: neo4j.Session, file_service_id:str,resource_group :str,update_tag: int) -> None:
+
+def _attach_resource_storage_file_service(neo4j_session: neo4j.Session, file_service_id: str, resource_group: str, update_tag: int) -> None:
     ingest_file_services = """
     MATCH (fs:AzureStorageFileService{id: $fservice_id})
     WITH fs
@@ -461,7 +465,6 @@ def _attach_resource_storage_file_service(neo4j_session: neo4j.Session, file_ser
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
-    
 
 
 @timeit
@@ -493,10 +496,11 @@ def _load_blob_services(
         azure_update_tag=update_tag,
     )
     for blob_service in blob_services:
-        resource_group=get_azure_resource_group_name(blob_service.get('id'))
-        _attach_resource_storage_blob_service(neo4j_session,blob_service['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(blob_service.get('id'))
+        _attach_resource_storage_blob_service(neo4j_session, blob_service['id'], resource_group, update_tag)
 
-def _attach_resource_storage_blob_service (neo4j_session: neo4j.Session, blob_service_id: str, resource_group:str,update_tag: int) -> None:
+
+def _attach_resource_storage_blob_service(neo4j_session: neo4j.Session, blob_service_id: str, resource_group: str, update_tag: int) -> None:
     ingest_blob_services = """
     MATCH (bs:AzureStorageBlobService{id: $bservice_id})
     WITH bs
@@ -511,7 +515,6 @@ def _attach_resource_storage_blob_service (neo4j_session: neo4j.Session, blob_se
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
-    
 
 
 @timeit
@@ -611,10 +614,11 @@ def _load_queues(neo4j_session: neo4j.Session, queues: List[Dict], update_tag: i
         azure_update_tag=update_tag,
     )
     for queue in queues:
-        resource_group=get_azure_resource_group_name(queue.get('id'))
-        _attach_resource_storage_queue(neo4j_session,queue['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(queue.get('id'))
+        _attach_resource_storage_queue(neo4j_session, queue['id'], resource_group, update_tag)
 
-def _attach_resource_storage_queue(neo4j_session: neo4j.Session, queue_id:str,resource_group:str, update_tag: int) -> None:
+
+def _attach_resource_storage_queue(neo4j_session: neo4j.Session, queue_id: str, resource_group: str, update_tag: int) -> None:
     ingest_queues = """
     MATCH (q:AzureStorageQueue{id: $queue_id})
     WITH q
@@ -730,10 +734,11 @@ def _load_tables(neo4j_session: neo4j.Session, tables: List[Dict], update_tag: i
         azure_update_tag=update_tag,
     )
     for table in tables:
-        resource_group=get_azure_resource_group_name(table.get('id'))
-        _attach_resource_storage_table(neo4j_session,table['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(table.get('id'))
+        _attach_resource_storage_table(neo4j_session, table['id'], resource_group, update_tag)
 
-def _attach_resource_storage_table(neo4j_session: neo4j.Session, table_id:str, resource_group:str,update_tag: int) -> None:
+
+def _attach_resource_storage_table(neo4j_session: neo4j.Session, table_id: str, resource_group: str, update_tag: int) -> None:
     """
     Ingest Table details into neo4j.
     """
@@ -862,10 +867,11 @@ def _load_shares(neo4j_session: neo4j.Session, shares: List[Dict], update_tag: i
         azure_update_tag=update_tag,
     )
     for share in shares:
-        resource_group=get_azure_resource_group_name(share.get('id'))
-        _attach_resource_storage_share(neo4j_session,share['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(share.get('id'))
+        _attach_resource_storage_share(neo4j_session, share['id'], resource_group, update_tag)
 
-def _attach_resource_storage_share(neo4j_session: neo4j.Session, share_id:str,resource_group:str ,update_tag: int) -> None:
+
+def _attach_resource_storage_share(neo4j_session: neo4j.Session, share_id: str, resource_group: str, update_tag: int) -> None:
     ingest_shares = """
     MATCH (share:AzureStorageFileShare{id: $share_id})
     WITH share
@@ -880,6 +886,7 @@ def _attach_resource_storage_share(neo4j_session: neo4j.Session, share_id:str,re
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
+
 
 @timeit
 def sync_blob_services_details(
@@ -994,10 +1001,11 @@ def _load_blob_containers(
         azure_update_tag=update_tag,
     )
     for blob_container in blob_containers:
-        resource_group=get_azure_resource_group_name(blob_container.get('id'))
-        _attach_resource_storage_blob_container(neo4j_session,blob_container['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(blob_container.get('id'))
+        _attach_resource_storage_blob_container(neo4j_session, blob_container['id'], resource_group, update_tag)
 
-def _attach_resource_storage_blob_container(neo4j_session: neo4j.Session, blob_container_id: str,resource_group:str ,update_tag: int) -> None:
+
+def _attach_resource_storage_blob_container(neo4j_session: neo4j.Session, blob_container_id: str, resource_group: str, update_tag: int) -> None:
     ingest_blob_containers = """
     MATCH (bc:AzureStorageBlobContainer{id: $blob_id})
     WITH bc
@@ -1012,6 +1020,7 @@ def _attach_resource_storage_blob_container(neo4j_session: neo4j.Session, blob_c
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
+
 
 @timeit
 def cleanup_azure_storage_accounts(
