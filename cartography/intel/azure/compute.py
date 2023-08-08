@@ -444,7 +444,7 @@ def _attach_resource_group_vm_scale_sets(tx: neo4j.Transaction, vm_scale_set_id:
         """
     tx.run(
         ingest_resource_group,
-        vm_scale_set_id=vm_scale_set_id,
+        set_id=vm_scale_set_id,
         resource_group=resource_group,
         update_tag=update_tag,
     )
