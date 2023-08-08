@@ -142,7 +142,11 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('aws_import_ecr_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def _get_image_data(boto3_session: boto3.session.Session, region: str, repositories: List[Dict]) -> Dict:
+def _get_image_data(
+    boto3_session: boto3.session.Session,
+    region: str,
+    repositories: List[Dict[str, Any]],
+) -> Dict[str, Any]:
     '''
     Given a list of repositories, get the image data for each repository,
      return as a mapping from repositoryUri to image object
