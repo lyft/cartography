@@ -84,7 +84,7 @@ def _attach_resource_group_security_contacts(tx: neo4j.Transaction, security_con
     ingest_contacts = """
     MATCH(c:AzureSecurityContact{id: $security_contact_id})
     WITH c
-    MATCH (rg:AzureResourceGroup{name:$resoure_group})
+    MATCH (rg:AzureResourceGroup{name:$resource_group})
     MERGE (c)-[r:RESOURCE_GROUP]->(rg)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
