@@ -304,31 +304,58 @@ def batch(items: Iterable, size: int = DEFAULT_BATCH_SIZE) -> List[List]:
     ]
 
 
+def is_throttling_exception(exc: Exception) -> bool:
+    '''
+    Returns True if the exception is caused by a client libraries throttling mechanism
+    '''
+    # https://boto3.amazonaws.com/v1/documentation/api/1.19.9/guide/error-handling.html
+    if isinstance(exc, botocore.exceptions.ClientError):
+        if exc.response['Error']['Code'] in ['LimitExceededException', 'Throttling']:
+            return True
+    # add other exceptions here, if needed, like:
+    # https://cloud.google.com/python/docs/reference/storage/1.39.0/retry_timeout#configuring-retries
+    # if isinstance(exc, google.api_core.exceptions.TooManyRequests):
+    #     return True
+    return False
+
+
 def to_asynchronous(func: Callable[..., R], *args: Any, **kwargs: Any) -> Awaitable[R]:
     '''
-    Returns a Future that will run a function in the default threadpool.
-    Helper until we start using pytohn 3.9's asyncio.to_thread
+    Returns a Future that will run a function and its arguments in the default threadpool.
+    Helper until we start using python 3.9's asyncio.to_thread
 
     Calls are also wrapped within a backoff decorator to handle throttling errors.
 
     example:
-    future = to_async(my_func, my_arg, my_arg2)
-    to_sync(future)
+    def my_func(arg1, arg2, kwarg1):
+        return arg1 + arg2 + kwarg1
+
+    # normal synchronous call:
+    result = my_func(1, 2, kwarg1=3)
+
+    # asynchronous call:
+    future = to_asynchronous(my_func, 1, 2, kwarg1=3)
+
+    # the result is stored in the future, and can be retrieved
+    # from within another async function with:
+    await future
+
+    # or from within a synchronous function with our helper:
+    to_synchronous(future)
 
     NOTE: to use this in a Jupyter notebook, you need to do:
     # import nest_asyncio
     # nest_asyncio.apply()
     '''
     CartographyThrottlingException = type('CartographyThrottlingException', (Exception,), {})
-    throttling_error_codes = ['LimitExceededException', 'Throttling']
 
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> R:
         try:
             return func(*args, **kwargs)
-        except botocore.exceptions.ClientError as error:
-            if error.response['Error']['Code'] in throttling_error_codes:
-                raise CartographyThrottlingException from error
+        except Exception as exc:
+            if is_throttling_exception(exc):
+                raise CartographyThrottlingException from exc
             raise
 
     # don't use @backoff as decorator, to preserve typing
@@ -337,12 +364,25 @@ def to_asynchronous(func: Callable[..., R], *args: Any, **kwargs: Any) -> Awaita
     return asyncio.get_event_loop().run_in_executor(None, call)
 
 
-def to_synchronous(*awaitables: Awaitable[Any]) -> Any:
+def to_synchronous(*awaitables: Awaitable[Any]) -> List[Any]:
     '''
-    Waits for the Awaitable(s) to complete and returns their result(s).
+    Synchronously waits for the Awaitable(s) to complete and returns their result(s).
     See https://docs.python.org/3.8/library/asyncio-task.html#asyncio-awaitables
 
     example:
-    result = to_sync(my_async_func(my_arg), another_async(my_arg2)))
+    async def my_async_func(my_arg):
+        return my_arg
+
+    async def another_async_func(my_arg2):
+        return my_arg2
+
+    remember that an invocation of an async function returns a Future (Awaitable),
+    which needs to be awaited to get the result. You cannot await a Future from within
+    a non-async function, so you could use this helper to get the result from a Future
+
+    future_1 = my_async_func(1)
+    future_2 = another_async_func(2)
+
+    results = to_synchronous(future_1, future_2)
     '''
     return asyncio.get_event_loop().run_until_complete(asyncio.gather(*awaitables))
