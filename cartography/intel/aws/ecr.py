@@ -149,7 +149,7 @@ def _get_image_data(
 ) -> Dict[str, Any]:
     '''
     Given a list of repositories, get the image data for each repository,
-     return as a mapping from repositoryUri to image object
+    return as a mapping from repositoryUri to image object
     '''
     image_data = {}
 
