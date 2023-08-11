@@ -36,19 +36,19 @@ def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_ac
         volume_id = volume['VolumeId']
         raw_vol = ({
             'Arn': build_arn('ec2', current_aws_account_id, 'volume', volume_id, region),
-            'AvailabilityZone': volume['AvailabilityZone'],
-            'CreateTime': volume['CreateTime'],
-            'Encrypted': volume['Encrypted'],
-            'Size': volume['Size'],
-            'State': volume['State'],
-            'OutpostArn': volume['OutpostArn'],
-            'SnapshotId': volume['SnapshotId'],
-            'Iops': volume['Iops'],
-            'FastRestored': volume['FastRestored'],
-            'MultiAttachEnabled': volume['MultiAttachEnabled'],
-            'VolumeType': volume['VolumeType'],
+            'AvailabilityZone': volume.get('AvailabilityZone'),
+            'CreateTime': volume('CreateTime'),
+            'Encrypted': volume('Encrypted'),
+            'Size': volume('Size'),
+            'State': volume('State'),
+            'OutpostArn': volume('OutpostArn'),
+            'SnapshotId': volume('SnapshotId'),
+            'Iops': volume('Iops'),
+            'FastRestored': volume('FastRestored'),
+            'MultiAttachEnabled': volume('MultiAttachEnabled'),
+            'VolumeType': volume('VolumeType'),
             'VolumeId': volume_id,
-            'KmsKeyId': volume['KmsKeyId'],
+            'KmsKeyId': volume('KmsKeyId'),
         })
 
         if not active_attachments:
