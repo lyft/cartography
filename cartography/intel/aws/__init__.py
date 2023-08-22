@@ -59,12 +59,13 @@ def _sync_one_account(
     if common_job_parameters["aws_region"] is not None:
         if common_job_parameters["aws_region"].startswith('['):
             regionsList = json.loads(common_job_parameters["aws_region"].replace("'", "\""))
-            syncRegions = []
-            for region in regionsList:
-                if region in regions:
-                    syncRegions.append(region)
-            regions.clear()
-            regions.extend(syncRegions)
+            if len(regionsList) > 1:
+                syncRegions = []
+                for region in regionsList:
+                    if region in regions:
+                        syncRegions.append(region)
+                regions.clear()
+                regions.extend(syncRegions)
 
     for func_name in aws_requested_syncs:
         if func_name in RESOURCE_FUNCTIONS:
