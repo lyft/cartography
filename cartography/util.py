@@ -373,7 +373,8 @@ def to_synchronous(*awaitables: Awaitable[Any]) -> List[Any]:
     Synchronously waits for the Awaitable(s) to complete and returns their result(s).
     See https://docs.python.org/3.8/library/asyncio-task.html#asyncio-awaitables
 
-    :param awaitables: a series of Awaitable objects, with each object being its own argument. i.e., not a single list of Awaitables
+    :param awaitables: a series of Awaitable objects, with each object being its own argument.
+        i.e., not a single list of Awaitables
 
     example:
     async def my_async_func(my_arg):
