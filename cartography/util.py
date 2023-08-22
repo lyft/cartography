@@ -327,8 +327,8 @@ def to_asynchronous(func: Callable[..., R], *args: Any, **kwargs: Any) -> Awaita
     Calls are also wrapped within a backoff decorator to handle throttling errors.
 
     :param func: the function to be wrapped by the Future
-    :param args: a series of argumnets to be passed into func
-    :param kwards: a series of keyword arguments to be passed into func
+    :param args: a series of arguments to be passed into func
+    :param kwargs: a series of keyword arguments to be passed into func
     
     example:
     def my_func(arg1, arg2, kwarg1):
@@ -373,7 +373,7 @@ def to_synchronous(*awaitables: Awaitable[Any]) -> List[Any]:
     Synchronously waits for the Awaitable(s) to complete and returns their result(s).
     See https://docs.python.org/3.8/library/asyncio-task.html#asyncio-awaitables
 
-    :param awaitables: a series of Awaitable objects, with each object being its own parameter. i.e., not a single list of Awaitables
+    :param awaitables: a series of Awaitable objects, with each object being its own argument. i.e., not a single list of Awaitables
 
     example:
     async def my_async_func(my_arg):
