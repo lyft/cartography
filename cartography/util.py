@@ -329,7 +329,7 @@ def to_asynchronous(func: Callable[..., R], *args: Any, **kwargs: Any) -> Awaita
     :param func: the function to be wrapped by the Future
     :param args: a series of arguments to be passed into func
     :param kwargs: a series of keyword arguments to be passed into func
-    
+
     example:
     def my_func(arg1, arg2, kwarg1):
         return arg1 + arg2 + kwarg1
