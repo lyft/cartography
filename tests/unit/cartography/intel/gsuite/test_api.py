@@ -107,6 +107,14 @@ def test_load_gsuite_groups():
         UNWIND $GroupData as group
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
+        g.group_id = group.id,
+        g.admin_created = group.adminCreated,
+        g.description = group.description,
+        g.direct_members_count = group.directMembersCount,
+        g.email = group.email,
+        g.etag = group.etag,
+        g.kind = group.kind,
+        g.name = group.name,
         g.firstseen = $UpdateTag
         ON MATCH SET
         g.group_id = group.id,
@@ -135,6 +143,31 @@ def test_load_gsuite_users():
         UNWIND $UserData as user
         MERGE (u:GSuiteUser{id: user.id})
         ON CREATE SET
+        u.user_id = user.id,
+        u.agreed_to_terms = user.agreedToTerms,
+        u.archived = user.archived,
+        u.change_password_at_next_login = user.changePasswordAtNextLogin,
+        u.creation_time = user.creationTime,
+        u.customer_id = user.customerId,
+        u.etag = user.etag,
+        u.include_in_global_address_list = user.includeInGlobalAddressList,
+        u.ip_whitelisted = user.ipWhitelisted,
+        u.is_admin = user.isAdmin,
+        u.is_delegated_admin =  user.isDelegatedAdmin,
+        u.is_enforced_in_2_sv = user.isEnforcedIn2Sv,
+        u.is_enrolled_in_2_sv = user.isEnrolledIn2Sv,
+        u.is_mailbox_setup = user.isMailboxSetup,
+        u.kind = user.kind,
+        u.last_login_time = user.lastLoginTime,
+        u.name = user.name.fullName,
+        u.family_name = user.name.familyName,
+        u.given_name = user.name.givenName,
+        u.org_unit_path = user.orgUnitPath,
+        u.primary_email = user.primaryEmail,
+        u.email = user.primaryEmail,
+        u.suspended = user.suspended,
+        u.thumbnail_photo_etag = user.thumbnailPhotoEtag,
+        u.thumbnail_photo_url = user.thumbnailPhotoUrl,
         u.firstseen = $UpdateTag
         ON MATCH SET
         u.user_id = user.id,
