@@ -135,8 +135,8 @@ def test_load_gsuite_users():
         UNWIND $UserData as user
         MERGE (u:GSuiteUser{id: user.id})
         ON CREATE SET
-        u.firstseen = $UpdateTag,
-        u.user_id = user.id
+        u.user_id = user.id,
+        u.firstseen = $UpdateTag
         SET
         u.agreed_to_terms = user.agreedToTerms,
         u.archived = user.archived,
