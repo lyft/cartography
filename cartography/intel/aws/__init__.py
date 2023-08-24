@@ -45,16 +45,16 @@ def _sync_one_account(
     regions: List[str] = [],
     aws_requested_syncs: Iterable[str] = RESOURCE_FUNCTIONS.keys(),
 ) -> None:
+    print('common_job_parameters: ', common_job_parameters)
+
     if not regions:
         regions = _autodiscover_account_regions(boto3_session, current_aws_account_id)
+        print('INISDE 1st if: ', regions)
 
     if common_job_parameters["aws_region"] is not None and common_job_parameters["aws_region"] in regions:
         logger.info("Running syncs for region %s", common_job_parameters["aws_region"])
         regions.clear()
         regions.append(common_job_parameters["aws_region"])
-    sync_args = _build_aws_sync_kwargs(
-        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
-    )
 
     if common_job_parameters["aws_region"] is not None:
         if common_job_parameters["aws_region"].startswith('['):
@@ -66,6 +66,13 @@ def _sync_one_account(
                         syncRegions.append(region)
                 regions.clear()
                 regions.extend(syncRegions)
+                ('INSIDE 2nd if: ', regions)
+
+    print('final regions: ', regions)
+
+    sync_args = _build_aws_sync_kwargs(
+        neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
+    )
 
     for func_name in aws_requested_syncs:
         if func_name in RESOURCE_FUNCTIONS:
