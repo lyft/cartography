@@ -1,6 +1,6 @@
 GANDI_DNS_ZONES = [
     {
-        "fqdn": "evilcorp.com",
+        "fqdn": "lyft.com",
         "tld": "com",
         "status": [
             "clientTransferProhibited",
@@ -39,7 +39,7 @@ GANDI_DNS_ZONES = [
                 "2023-12-28T17:09:16Z",
             ],
             "org_id": "1aeab22b-1c3e-4829-a64f-a51d52014073",
-            "href": "https://api.gandi.net/v5/domain/domains/evilcorp.com/autorenew",
+            "href": "https://api.gandi.net/v5/domain/domains/lyft.com/autorenew",
             "enabled": True,
         },
         "contacts": {
@@ -55,9 +55,9 @@ GANDI_DNS_ZONES = [
             "type": "organization",
             "reseller": False,
         },
-        "href": "https://api.gandi.net/v5/domain/domains/evilcorp.com",
+        "href": "https://api.gandi.net/v5/domain/domains/lyft.com",
         "reachability": "done",
-        "fqdn_unicode": "evilcorp.com",
+        "fqdn_unicode": "lyft.com",
         "records": [
             {
                 "rrset_name": "@",
@@ -66,7 +66,7 @@ GANDI_DNS_ZONES = [
                 "rrset_values": [
                     "1.1.1.1",
                 ],
-                "rrset_href": "https://api.gandi.net/v5/livedns/domains/evilcorp.com/records/%40/A",
+                "rrset_href": "https://api.gandi.net/v5/livedns/domains/lyft.com/records/%40/A",
             },
             {
                 "rrset_name": "@",
@@ -75,16 +75,16 @@ GANDI_DNS_ZONES = [
                 "rrset_values": [
                     "\"v=spf1 include:spf.mailjet.com ?all\"",
                 ],
-                "rrset_href": "https://api.gandi.net/v5/livedns/domains/evilcorp.com/records/%40/TXT",
+                "rrset_href": "https://api.gandi.net/v5/livedns/domains/lyft.com/records/%40/TXT",
             },
             {
                 "rrset_name": "_DMARC",
                 "rrset_type": "CNAME",
                 "rrset_ttl": 10800,
                 "rrset_values": [
-                    "v=DMARC1;p=reject;pct=100;rua=mailto:postmaster@evilcorp.com",
+                    "v=DMARC1;p=reject;pct=100;rua=mailto:postmaster@lyft.com",
                 ],
-                "rrset_href": "https://api.gandi.net/v5/livedns/domains/evilcorp.com/records/_DMARC/CNAME",
+                "rrset_href": "https://api.gandi.net/v5/livedns/domains/lyft.com/records/_DMARC/CNAME",
             },
         ],
     },

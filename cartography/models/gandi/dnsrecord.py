@@ -20,7 +20,7 @@ class GandiDNSRecordProperties(CartographyNodeProperties):
     name: PropertyRef = PropertyRef('rrset_name', extra_index=True)
     type: PropertyRef = PropertyRef('rrset_type')
     ttl: PropertyRef = PropertyRef('rrset_ttl')
-    value: PropertyRef = PropertyRef('rrset_value')
+    values: PropertyRef = PropertyRef('rrset_values')
     registered_domain: PropertyRef = PropertyRef('registered_domain')
 
 
@@ -30,14 +30,14 @@ class ZoneToRecordRelProperties(CartographyRelProperties):
 
 
 @dataclass(frozen=True)
-# (:GandiDNSZone)<-[:MEMBER_OF_DNS_ZONE]-(:GandiDNSRecord)
+# (:GandiDNSZone)-[:RESOURCE]->(:GandiDNSRecord)
 class ZoneToRecordRel(CartographyRelSchema):
     target_node_label: str = 'GandiDNSZone'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'name': PropertyRef('registered_domain')},
     )
-    direction: LinkDirection = LinkDirection.OUTWARD
-    rel_label: str = "MEMBER_OF_DNS_ZONE"
+    direction: LinkDirection = LinkDirection.INWARD
+    rel_label: str = "RESOURCE"
     properties: ZoneToRecordRelProperties = ZoneToRecordRelProperties()
 
 
@@ -69,4 +69,4 @@ class GandiDNSRecordSchema(CartographyNodeSchema):
             RecordToIpRel(),
         ],
     )
-    # TODO: Link to organization: sub_resource_relationship: XXXRel = XXXRel()
+    sub_resource_relationship: ZoneToRecordRel = ZoneToRecordRel()

@@ -1,4 +1,5 @@
 import logging
+from hashlib import md5
 from typing import Any
 from typing import Dict
 from typing import List
@@ -48,7 +49,7 @@ def transform(domains: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List
         # Create record from nameservers
         for ns in dom['nameservers']:
             records.append({
-                "id": f"{ns}+NS",
+                "id": md5(f"{ns}+NS".encode()).hexdigest(),
                 "rsset_name": "@",
                 "rrset_type": "NS",
                 "rsset_value": ns,
@@ -57,17 +58,17 @@ def transform(domains: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], List
         if "gandilivedns" in dom['services']:
             # Extract records
             for rec in dom.get('records', []):
-                # No value
+                record_id = md5(f"{rec['rrset_name']}.{dom['fqdn']}+{rec['rrset_type']}".encode())
+                # No value
                 if len(rec['rrset_values']) == 0:
+                    rec['id'] = record_id.hexdigest()
                     records.append(rec)
                     continue
-                # 1 or more values
+                # 1 or more values
                 for value in rec['rrset_values']:
+                    record_id.update(value.encode())
                     rec_single = rec.copy()
-                    if rec_single['rrset_name'] == '@':
-                        rec_single['id'] = value
-                    else:
-                        rec_single['id'] = f"{rec['rrset_name']}.{dom['fqdn']}+{rec['rrset_type']}"
+                    rec_single['id'] = record_id.hexdigest()
                     rec_single['registered_domain'] = dom['fqdn']
                     # Split on IPs
                     if rec['rrset_type'] in ['A', 'AAAA']:
