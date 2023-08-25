@@ -436,6 +436,79 @@ class CLI:
                 'The name of environment variable containing secrets for GSuite authentication.'
             ),
         )
+        parser.add_argument(
+            '--lastpass-cid-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Lastpass CID for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--lastpass-provhash-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Lastpass provhash for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--bigfix-username',
+            type=str,
+            default=None,
+            help=(
+                'The BigFix username for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--bigfix-password-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the BigFix password for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--bigfix-root-url',
+            type=str,
+            default=None,
+            help=(
+                'The BigFix Root URL, a.k.a the BigFix API URL'
+            ),
+        )
+        parser.add_argument(
+            '--duo-api-key-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Duo api key'
+            ),
+        )
+        parser.add_argument(
+            '--duo-api-secret-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Duo api secret'
+            ),
+        )
+        parser.add_argument(
+            '--duo-api-hostname',
+            type=str,
+            default=None,
+            help=(
+                'The Duo api hostname'
+            ),
+        )
+        parser.add_argument(
+            '--semgrep-app-token-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Semgrep app token key. '
+                'Required if you are using the Semgrep intel module. Ignored otherwise.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -574,7 +647,43 @@ class CLI:
             logger.debug(f"Reading config string for GSuite from environment variable {config.gsuite_tokens_env_var}")
             config.gsuite_config = os.environ.get(config.gsuite_tokens_env_var)
         else:
-            config.github_config = None
+            config.gsuite_tokens_env_var = None
+
+        # Lastpass config
+        if config.lastpass_cid_env_var:
+            logger.debug(f"Reading CID for Lastpass from environment variable {config.lastpass_cid_env_var}")
+            config.lastpass_cid = os.environ.get(config.lastpass_cid_env_var)
+        else:
+            config.lastpass_cid = None
+        if config.lastpass_provhash_env_var:
+            logger.debug(f"Reading provhash for Lastpass from environment variable {config.lastpass_provhash_env_var}")
+            config.lastpass_provhash = os.environ.get(config.lastpass_provhash_env_var)
+        else:
+            config.lastpass_provhash = None
+
+        # BigFix config
+        if config.bigfix_username and config.bigfix_password_env_var and config.bigfix_root_url:
+            logger.debug(f"Reading BigFix password from environment variable {config.bigfix_password_env_var}")
+            config.bigfix_password = os.environ.get(config.bigfix_password_env_var)
+
+        # Duo config
+        if config.duo_api_key_env_var and config.duo_api_secret_env_var and config.duo_api_hostname:
+            logger.debug(
+                f"Reading Duo api key and secret from environment variables {config.duo_api_key_env_var}"
+                f", {config.duo_api_secret_env_var}",
+            )
+            config.duo_api_key = os.environ.get(config.duo_api_key_env_var)
+            config.duo_api_secret = os.environ.get(config.duo_api_secret_env_var)
+        else:
+            config.duo_api_key = None
+            config.duo_api_secret = None
+
+        # Semgrep config
+        if config.semgrep_app_token_env_var:
+            logger.debug(f"Reading Semgrep App Token from environment variable {config.semgrep_app_token_env_var}")
+            config.semgrep_app_token = os.environ.get(config.semgrep_app_token_env_var)
+        else:
+            config.semgrep_app_token = None
 
         # Run cartography
         try:
