@@ -69,13 +69,13 @@ class SlackTeamToSlackGroupRelProperties(CartographyRelProperties):
 
 
 @dataclass(frozen=True)
-# (:SlackTeam)<-[:RESOURCE]-(:SlackGroup)
+# (:SlackTeam)-[:RESOURCE]->(:SlackGroup)
 class SlackTeamToGroupRel(CartographyRelSchema):
     target_node_label: str = 'SlackTeam'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'id': PropertyRef('TEAM_ID', set_in_kwargs=True)},
     )
-    direction: LinkDirection = LinkDirection.OUTWARD
+    direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RESOURCE"
     properties: SlackTeamToSlackGroupRelProperties = SlackTeamToSlackGroupRelProperties()
 
