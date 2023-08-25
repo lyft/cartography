@@ -516,6 +516,13 @@ class CLI:
                 'The Slack Team ID to sync, comma separated.'
             ),
         )
+        parser.add_argument(
+            '--slack-channels-memberships',
+            action='store_true',
+            help=(
+                'Pull memberships for Slack Channels (can be time consuming).'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:

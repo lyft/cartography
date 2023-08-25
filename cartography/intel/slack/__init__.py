@@ -32,6 +32,7 @@ def start_slack_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
 
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
+        "CHANNELS_MEMBERSHIPS": config.slack_channels_memberships,
     }
 
     rate_limit_handler = RateLimitErrorRetryHandler(max_retry_count=1)

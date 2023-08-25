@@ -107,6 +107,8 @@ class Config:
     :param slack_token: Slack API Token. Optional.
     :type slack_teams: str
     :param slack_teams: Comma-separated list of Slack teams to sync. Optional.
+    :type slack_channels_memberships: bool
+    :param slack_channels_memberships: If True, sync Slack channel memberships. Optional.
     """
 
     def __init__(
@@ -163,6 +165,7 @@ class Config:
         duo_api_hostname=None,
         slack_token=None,
         slack_teams=None,
+        slack_channels_memberships=False,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -216,3 +219,4 @@ class Config:
         self.duo_api_hostname = duo_api_hostname
         self.slack_token = slack_token
         self.slack_teams = slack_teams
+        self.slack_channels_memberships = slack_channels_memberships

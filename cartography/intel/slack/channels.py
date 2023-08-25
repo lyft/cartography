@@ -23,26 +23,26 @@ def sync(
     update_tag: int,
     common_job_parameters: Dict[str, Any],
 ) -> None:
-    channels = get(slack_client, team_id)
+    channels = get(slack_client, team_id, common_job_parameters['CHANNELS_MEMBERSHIPS'])
     load_channels(neo4j_session, channels, team_id, update_tag)
     cleanup(neo4j_session, common_job_parameters)
 
 
 @timeit
-def get(slack_client: WebClient, team_id: str, cursor: Optional[str] = None) -> List[Dict[str, Any]]:
+def get(slack_client: WebClient, team_id: str, get_memberships: bool, cursor: Optional[str] = None) -> List[Dict[str, Any]]:
     channels: List[Dict[str, Any]] = []
     channels_info = slack_client.conversations_list(cursor=cursor, team_id=team_id)
     for m in channels_info['channels']:
         if m['is_archived']:
             channels.append(m)
-        else:
+        elif get_memberships:
             for i in _get_membership(slack_client, m['id']):
                 channel_m = m.copy()
                 channel_m['member_id'] = i
                 channels.append(channel_m)
     next_cursor = channels_info.get('response_metadata', {}).get('next_cursor', '')
     if next_cursor != '':
-        channels.extend(get(slack_client, team_id, cursor=next_cursor))
+        channels.extend(get(slack_client, team_id, get_memberships, cursor=next_cursor))
     return channels
 
 
