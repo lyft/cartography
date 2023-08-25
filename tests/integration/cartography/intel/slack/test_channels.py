@@ -67,7 +67,7 @@ def test_load_slack_channels(neo4j_session):
         'SlackChannel', 'id',
         'SlackTeam', 'id',
         'RESOURCE',
-        rel_direction_right=True,
+        rel_direction_right=False,
     ) == expected_rels
 
     # Assert Channels are connected to Creator

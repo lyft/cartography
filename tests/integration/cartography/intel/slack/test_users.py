@@ -84,7 +84,7 @@ def test_load_slack_users(neo4j_session):
         'SlackUser', 'id',
         'SlackTeam', 'id',
         'RESOURCE',
-        rel_direction_right=True,
+        rel_direction_right=False,
     ) == expected_rels
 
     # Assert Users are connected with Humans

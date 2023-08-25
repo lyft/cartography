@@ -77,7 +77,7 @@ def test_load_slack_groups(neo4j_session):
         'SlackGroup', 'id',
         'SlackTeam', 'id',
         'RESOURCE',
-        rel_direction_right=True,
+        rel_direction_right=False,
     ) == expected_rels
 
     # Assert groups are connected to Creator
