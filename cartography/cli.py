@@ -501,6 +501,15 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--semgrep-app-token-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Semgrep app token key. '
+                'Required if you are using the Semgrep intel module. Ignored otherwise.'
+            ),
+        )
+        parser.add_argument(
             '--slack-token-env-var',
             type=str,
             default=None,
@@ -661,7 +670,7 @@ class CLI:
             logger.debug(f"Reading config string for GSuite from environment variable {config.gsuite_tokens_env_var}")
             config.gsuite_config = os.environ.get(config.gsuite_tokens_env_var)
         else:
-            config.github_config = None
+            config.gsuite_tokens_env_var = None
 
         # Lastpass config
         if config.lastpass_cid_env_var:
@@ -688,6 +697,16 @@ class CLI:
             )
             config.duo_api_key = os.environ.get(config.duo_api_key_env_var)
             config.duo_api_secret = os.environ.get(config.duo_api_secret_env_var)
+        else:
+            config.duo_api_key = None
+            config.duo_api_secret = None
+
+        # Semgrep config
+        if config.semgrep_app_token_env_var:
+            logger.debug(f"Reading Semgrep App Token from environment variable {config.semgrep_app_token_env_var}")
+            config.semgrep_app_token = os.environ.get(config.semgrep_app_token_env_var)
+        else:
+            config.semgrep_app_token = None
 
         # Slack config
         if config.slack_token_env_var:

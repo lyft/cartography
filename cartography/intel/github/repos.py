@@ -312,14 +312,13 @@ def _transform_python_requirements(
             continue
         try:
             req = Requirement(stripped_line)
+            parsed_list.append(req)
         except InvalidRequirement:
             # INFO and not WARN/ERROR as we intentionally don't support all ways to specify Python requirements
             logger.info(
                 f"Failed to parse line \"{line}\" in repo {repo_url}'s requirements.txt; skipping line.",
                 exc_info=True,
             )
-            continue
-        parsed_list.append(req)
 
     for req in parsed_list:
         pinned_version = None
@@ -563,5 +562,5 @@ def sync(
     logger.info("Syncing GitHub repos")
     repos_json = get(github_api_key, github_url, organization)
     repo_data = transform(repos_json)
-    load(neo4j_session, repo_data, common_job_parameters['UPDATE_TAG'])
+    load(neo4j_session, common_job_parameters, repo_data)
     run_cleanup_job('github_repos_cleanup.json', neo4j_session, common_job_parameters)

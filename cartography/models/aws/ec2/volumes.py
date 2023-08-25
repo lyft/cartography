@@ -13,10 +13,23 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 @dataclass(frozen=True)
 class EBSVolumeNodeProperties(CartographyNodeProperties):
+    arn: PropertyRef = PropertyRef('Arn', extra_index=True)
     id: PropertyRef = PropertyRef('VolumeId')
+    volumeid: PropertyRef = PropertyRef('VolumeId', extra_index=True)
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-    deleteontermination: PropertyRef = PropertyRef('DeleteOnTermination')
+    availabilityzone: PropertyRef = PropertyRef('AvailabilityZone')
+    createtime: PropertyRef = PropertyRef('CreateTime')
+    encrypted: PropertyRef = PropertyRef('Encrypted')
+    size: PropertyRef = PropertyRef('Size')
+    state: PropertyRef = PropertyRef('State')
+    outpostarn: PropertyRef = PropertyRef('OutpostArn')
+    snapshotid: PropertyRef = PropertyRef('SnapshotId')
+    iops: PropertyRef = PropertyRef('Iops')
+    fastrestored: PropertyRef = PropertyRef('FastRestored')
+    multiattachenabled: PropertyRef = PropertyRef('MultiAttachEnabled')
+    type: PropertyRef = PropertyRef('VolumeType')
+    kmskeyid: PropertyRef = PropertyRef('KmsKeyId')
 
 
 @dataclass(frozen=True)
@@ -53,8 +66,39 @@ class EBSVolumeToEC2Instance(CartographyRelSchema):
 
 @dataclass(frozen=True)
 class EBSVolumeSchema(CartographyNodeSchema):
+    """
+    EBS Volume properties as returned from the EBS Volume API response
+    """
     label: str = 'EBSVolume'
     properties: EBSVolumeNodeProperties = EBSVolumeNodeProperties()
+    sub_resource_relationship: EBSVolumeToAWSAccount = EBSVolumeToAWSAccount()
+    other_relationships: OtherRelationships = OtherRelationships(
+        [
+            EBSVolumeToEC2Instance(),
+        ],
+    )
+
+
+@dataclass(frozen=True)
+class EBSVolumeInstanceProperties(CartographyNodeProperties):
+    """
+    EBS Volume properties as known by an EC2 instance.
+    The EC2 instance API response includes a `deleteontermination` field and the volume id.
+    """
+    arn: PropertyRef = PropertyRef('Arn', extra_index=True)
+    id: PropertyRef = PropertyRef('VolumeId')
+    volumeid: PropertyRef = PropertyRef('VolumeId', extra_index=True)
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    deleteontermination: PropertyRef = PropertyRef('DeleteOnTermination')
+
+
+@dataclass(frozen=True)
+class EBSVolumeInstanceSchema(CartographyNodeSchema):
+    """
+    EBS Volume from EC2 Instance API response. This is separate from `EBSVolumeSchema` to prevent issue #1210.
+    """
+    label: str = 'EBSVolume'
+    properties: EBSVolumeInstanceProperties = EBSVolumeInstanceProperties()
     sub_resource_relationship: EBSVolumeToAWSAccount = EBSVolumeToAWSAccount()
     other_relationships: OtherRelationships = OtherRelationships(
         [
