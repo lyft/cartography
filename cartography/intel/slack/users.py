@@ -2,13 +2,13 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Optional
 
 import neo4j
 from slack_sdk import WebClient
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
+from cartography.intel.slack.utils import slack_paginate
 from cartography.models.slack.user import SlackUserSchema
 from cartography.util import timeit
 
@@ -29,15 +29,8 @@ def sync(
 
 
 @timeit
-def get(slack_client: WebClient, team_id: str, cursor: Optional[str] = None) -> List[Dict[str, Any]]:
-    result: List[Dict[str, Any]] = []
-    members_info = slack_client.users_list(cursor=cursor, team_id=team_id)
-    for m in members_info['members']:
-        result.append(m)
-    next_cursor = members_info.get('response_metadata', {}).get('next_cursor', '')
-    if next_cursor != '':
-        result.extend(get(slack_client, team_id, cursor=next_cursor))
-    return result
+def get(slack_client: WebClient, team_id: str) -> List[Dict[str, Any]]:
+    return slack_paginate(slack_client, 'users_list', 'members', team_id=team_id)
 
 
 def load_users(

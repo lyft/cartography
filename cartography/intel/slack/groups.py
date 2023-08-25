@@ -3,13 +3,13 @@ from itertools import zip_longest
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Optional
 
 import neo4j
 from slack_sdk import WebClient
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
+from cartography.intel.slack.utils import slack_paginate
 from cartography.models.slack.group import SlackGroupSchema
 from cartography.util import timeit
 
@@ -31,21 +31,16 @@ def sync(
 
 
 @timeit
-def get(slack_client: WebClient, team_id: str, cursor: Optional[str] = None) -> List[Dict[str, Any]]:
-    groups: List[Dict[str, Any]] = []
-    groups_info = slack_client.usergroups_list(
-        cursor=cursor,
+def get(slack_client: WebClient, team_id: str) -> List[Dict[str, Any]]:
+    return slack_paginate(
+        slack_client,
+        'usergroups_list',
+        'usergroups',
+        team_id=team_id,
         include_count=True,
         include_users=True,
         include_disabled=True,
-        team_id=team_id,
     )
-    for g in groups_info['usergroups']:
-        groups.append(g)
-    next_cursor = groups_info.get('response_metadata', {}).get('next_cursor', '')
-    if next_cursor != '':
-        groups.extend(get(slack_client, team_id, cursor=next_cursor))
-    return groups
 
 
 @timeit

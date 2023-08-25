@@ -9,6 +9,7 @@ from slack_sdk import WebClient
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
+from cartography.intel.slack.utils import slack_paginate
 from cartography.models.slack.channels import SlackChannelSchema
 from cartography.util import timeit
 
@@ -29,20 +30,28 @@ def sync(
 
 
 @timeit
-def get(slack_client: WebClient, team_id: str, get_memberships: bool, cursor: Optional[str] = None) -> List[Dict[str, Any]]:
+def get(slack_client: WebClient, team_id: str, get_memberships: bool) -> List[Dict[str, Any]]:
     channels: List[Dict[str, Any]] = []
-    channels_info = slack_client.conversations_list(cursor=cursor, team_id=team_id)
-    for m in channels_info['channels']:
-        if m['is_archived']:
-            channels.append(m)
+    for channel in slack_paginate(
+        slack_client,
+        'conversations_list',
+        'channels',
+        team_id=team_id,
+    ):
+        if channel['is_archived']:
+            channels.append(channel)
         elif get_memberships:
-            for i in _get_membership(slack_client, m['id']):
-                channel_m = m.copy()
-                channel_m['member_id'] = i
+            for member in slack_paginate(
+                slack_client,
+                'conversations_members',
+                'members',
+                channel=channel['id'],
+            ):
+                channel_m = channel.copy()
+                channel_m['member_id'] = member
                 channels.append(channel_m)
-    next_cursor = channels_info.get('response_metadata', {}).get('next_cursor', '')
-    if next_cursor != '':
-        channels.extend(get(slack_client, team_id, get_memberships, cursor=next_cursor))
+        else:
+            channels.append(channel)
     return channels
 
 
