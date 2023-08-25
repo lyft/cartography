@@ -9,6 +9,7 @@ import neo4j
 from dateutil import parser as dt_parse
 
 from cartography.client.core.tx import load
+from cartography.graph.job import GraphJob
 from cartography.intel.gandi.utils import GandiAPI
 from cartography.models.gandi.dnsrecord import GandiDNSRecordSchema
 from cartography.models.gandi.dnszone import GandiDNSZoneSchema
@@ -28,7 +29,7 @@ def sync(
     domains = get(gandi_session)
     zones, records, ips = transform(domains)
     load_zones(neo4j_session, zones, records, ips, update_tag)
-    # TODO: Cleanup zones & domains (when linked to organization)
+    cleanup(neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -120,3 +121,9 @@ def load_zones(
         records,
         lastupdated=update_tag,
     )
+
+
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any]) -> None:
+    #BUG: GraphJob.from_node_schema(GandiDNSZoneSchema(), common_job_parameters).run(neo4j_session)
+    #BUG: GraphJob.from_node_schema(GandiDNSRecordSchema(), common_job_parameters).run(neo4j_session)
+    pass
