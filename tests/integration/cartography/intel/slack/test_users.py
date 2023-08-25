@@ -10,6 +10,7 @@ from tests.integration.util import check_rels
 SLACK_TEAM_ID = 'TTPQ4FBPT'
 SLACK_TOKEN = 'fake-token'
 TEST_UPDATE_TAG = 123456789
+COMMON_JOB_PARAMETERS = {"UPDATE_TAG": TEST_UPDATE_TAG, "TEAM_ID": SLACK_TEAM_ID, 'CHANNELS_MEMBERSHIPS': True}
 
 
 def test_load_slack_users(neo4j_session):
@@ -49,14 +50,14 @@ def test_load_slack_users(neo4j_session):
         slack_client,
         SLACK_TEAM_ID,
         TEST_UPDATE_TAG,
-        {"UPDATE_TAG": TEST_UPDATE_TAG, "TEAM_ID": SLACK_TEAM_ID},
+        COMMON_JOB_PARAMETERS,
     )
     cartography.intel.slack.users.sync(
         neo4j_session,
         slack_client,
         SLACK_TEAM_ID,
         TEST_UPDATE_TAG,
-        {"UPDATE_TAG": TEST_UPDATE_TAG, "TEAM_ID": SLACK_TEAM_ID},
+        COMMON_JOB_PARAMETERS,
     )
 
     # Assert Human exists
