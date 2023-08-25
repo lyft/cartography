@@ -39,16 +39,13 @@ Start [here](https://lyft.github.io/cartography/install.html).
 ## Usage
 Start with our [tutorial](https://lyft.github.io/cartography/usage/tutorial.html). Our [data schema](https://lyft.github.io/cartography/usage/schema.html) is a helpful reference when you get stuck.
 
-## Contact
+## Community
 
 - Join us on `#cartography` on the [Lyft OSS Slack](https://join.slack.com/t/lyftoss/shared_invite/enQtOTYzODg5OTQwNDE2LTFiYjgwZWM3NTNhMTFkZjc4Y2IxOTI4NTdiNTdhNjQ4M2Q5NTIzMjVjOWI4NmVlNjRiZmU2YzA5NTc3MmFjYTQ).
-
-## Community Meeting
-
-Talk to us and see what we're working on at our [monthly community meeting](https://calendar.google.com/calendar/embed?src=lyft.com_p10o6ceuiieq9sqcn1ef61v1io%40group.calendar.google.com&ctz=America%2FLos_Angeles).
-- Meeting minutes are [here](https://docs.google.com/document/d/1VyRKmB0dpX185I15BmNJZpfAJ_Ooobwz0U1WIhjDxvw).
-- Recorded videos are posted [here](https://www.youtube.com/playlist?list=PLMga2YJvAGzidUWJB_fnG7EHI4wsDDsE1).
-- Our current project road map is [here](https://docs.google.com/document/d/18MOsGI-isFvag1fGk718Aht7wQPueWd4SqOI9KapBa8/edit#heading=h.15nsmgmjaaml).
+- Talk to us and see what we're working on at our [monthly community meeting](https://calendar.google.com/calendar/embed?src=lyft.com_p10o6ceuiieq9sqcn1ef61v1io%40group.calendar.google.com&ctz=America%2FLos_Angeles).
+  - Meeting minutes are [here](https://docs.google.com/document/d/1VyRKmB0dpX185I15BmNJZpfAJ_Ooobwz0U1WIhjDxvw).
+  - Recorded videos are posted [here](https://www.youtube.com/playlist?list=PLMga2YJvAGzidUWJB_fnG7EHI4wsDDsE1).
+- Our current project roadmap is [here](https://github.com/orgs/lyft/projects/26/views/1).
 
 ## Contributing
 Thank you for considering contributing to Cartography!
@@ -57,9 +54,12 @@ Thank you for considering contributing to Cartography!
 Legal stuff: This project is governed by [Lyft's code of conduct](https://github.com/lyft/code-of-conduct).
 All contributors and participants agree to abide by its terms.
 
+### Bug reports and feature requests and discussions
+Submit a GitHub issue to report a bug or request a new feature. If we decide that the issue needs more discussion - usually because the scope is too large or we need to make careful decision - we will convert the issue to a [GitHub Discussion](https://github.com/lyft/cartography/discussions).
+
 ### Developing Cartography
 
-Get started with our [developer documentation](https://lyft.github.io/cartography/dev/developer-guide.html).
+Get started with our [developer documentation](https://lyft.github.io/cartography/dev/developer-guide.html). Please feel free to submit your own PRs to update documentation if you've found a better way to explain something.
 
 #### Sign the Contributor License Agreement (CLA)
 
@@ -73,6 +73,7 @@ and follow the instructions to sign the CLA.
 1. [Thought Machine](https://thoughtmachine.net/)
 1. [MessageBird](https://messagebird.com)
 1. [Cloudanix](https://www.cloudanix.com/)
+1. [ZeusCloud](https://www.zeuscloud.io/)
 1. {Your company here} :-)
 
 If your organization uses Cartography, please file a PR and update this list. Say hi on Slack too!
