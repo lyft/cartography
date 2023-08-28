@@ -23,7 +23,7 @@ Not maintainers but are continually active in discussions and offer subject matt
 
 ## Emeritus maintainers
 
-Not actively involved in reviews, but Cartography would not be as useful as it is without them.
+Not actively involved in reviews, but Cartography would not exist without the contributions of these key community members.
 
 - Sacha Faust (https://github.com/sachafaust)
 - Andrew Johnson (https://github.com/SecPrez)
