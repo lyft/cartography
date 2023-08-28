@@ -370,7 +370,7 @@ def load_roles(
     rnode.region = $region,
     rnode.consolelink = $consolelink,
     rnode.createdate = $CreateDate
-    ON MATCH SET rnode.name = $RoleName, rnode.path = $Path,
+    SET rnode.name = $RoleName, rnode.path = $Path,
     rnode.lastuseddate = $LastUsedDate, rnode.lastusedregion = $LastUsedRegion
     SET rnode.lastupdated = $aws_update_tag
     WITH rnode

@@ -108,7 +108,7 @@ def test_load_gsuite_groups():
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
         g.firstseen = $UpdateTag
-        ON MATCH SET
+        SET
         g.group_id = group.id,
         g.admin_created = group.adminCreated,
         g.description = group.description,
@@ -136,7 +136,7 @@ def test_load_gsuite_users():
         MERGE (u:GSuiteUser{id: user.id})
         ON CREATE SET
         u.firstseen = $UpdateTag
-        ON MATCH SET
+        SET
         u.user_id = user.id,
         u.agreed_to_terms = user.agreedToTerms,
         u.archived = user.archived,

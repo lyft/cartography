@@ -131,7 +131,7 @@ def load_gsuite_groups(neo4j_session: neo4j.Session, groups: List[Dict], gsuite_
         MERGE (g:GSuiteGroup{id: group.id})
         ON CREATE SET
         g.firstseen = $UpdateTag
-        ON MATCH SET
+        SET
         g.group_id = group.id,
         g.admin_created = group.adminCreated,
         g.description = group.description,
@@ -153,7 +153,7 @@ def load_gsuite_users(neo4j_session: neo4j.Session, users: List[Dict], gsuite_up
         MERGE (u:GSuiteUser{id: user.id})
         ON CREATE SET
         u.firstseen = $UpdateTag
-        ON MATCH SET
+        SET
         u.user_id = user.id,
         u.agreed_to_terms = user.agreedToTerms,
         u.archived = user.archived,
@@ -193,7 +193,7 @@ def load_gsuite_members(neo4j_session: neo4j.Session, group: Dict, members: List
         MERGE (user)-[r:MEMBER_GSUITE_GROUP]->(group)
         ON CREATE SET
         r.firstseen = $UpdateTag
-        ON MATCH SET
+        SET
         r.lastupdated = $UpdateTag
     """
     neo4j_session.run(
@@ -208,7 +208,7 @@ def load_gsuite_members(neo4j_session: neo4j.Session, group: Dict, members: List
         MERGE (group_1)-[r:MEMBER_GSUITE_GROUP]->(group_2)
         ON CREATE SET
         r.firstseen = $UpdateTag
-        ON MATCH SET
+        SET
         r.lastupdated = $UpdateTag
     """
     neo4j_session.run(membership_qry, MemberData=members, GroupID=group.get("id"), UpdateTag=gsuite_update_tag)
