@@ -114,22 +114,26 @@ def fetch_all(
     retry = 0
 
     while has_next_page:
+        exc: Any = None
         try:
             resp = fetch_page(token, api_url, organization, query, cursor, **kwargs)
             retry = 0
-        except requests.exceptions.Timeout:
+        except requests.exceptions.Timeout as err:
             retry += 1
-        except requests.exceptions.HTTPError:
+            exc = err
+        except requests.exceptions.HTTPError as err:
             retry += 1
-        except requests.exceptions.ChunkedEncodingError:
+            exc = err
+        except requests.exceptions.ChunkedEncodingError as err:
             retry += 1
+            exc = err
 
         if retry >= retries:
             logger.error(
                 f"GitHub: Could not retrieve page of resource `{resource_type}` due to HTTP error.",
                 exc_info=True,
             )
-            raise
+            raise exc
         elif retry > 0:
             time.sleep(1 * retry)
             continue
