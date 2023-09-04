@@ -500,18 +500,23 @@ def sync_tenant_domains(
 @timeit
 def get_roles_list(client: AuthorizationManagementClient, common_job_parameters: Dict) -> List[Dict]:
     try:
-        roles_list = list(
+        role_assignments_list = list(
             map(lambda x: x.as_dict(), client.role_assignments.list()),
         )
 
-        for role in roles_list:
-            result = client.role_definitions.get_by_id(role["role_definition_id"], raw=True)
+        roles_list = []
+        for role_assignment in role_assignments_list:
+            role = {}
+            result = client.role_definitions.get_by_id(role_assignment["role_definition_id"], raw=True)
             result = result.response.json()
+            role['name'] = result.get('name', '')
+            role['id'] = role_assignment["role_definition_id"]
+            role['principal_id'] = role_assignment['principal_id']
             role['type'] = result.get('properties', {}).get('type')
             role['roleName'] = result.get('properties', {}).get('roleName', '')
             role['type'] = result.get('properties', {}).get('type')
             role['consolelink'] = azure_console_link.get_console_link(
-                id=role['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=role_assignment['role_definition_id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             role['permissions'] = []
             for permission in result.get('properties', {}).get('permissions', []):
                 for action in permission.get('actions', []):
@@ -519,6 +524,7 @@ def get_roles_list(client: AuthorizationManagementClient, common_job_parameters:
                 for data_action in permission.get('dataActions', []):
                     role['permissions'].append(data_action)
             role['permissions'] = list(set(role['permissions']))
+            roles_list.append(role)
         return roles_list
 
     except HttpResponseError as e:
@@ -559,20 +565,20 @@ def _load_roles_tx(
     i.roleName = role.roleName,
     i.permissions = role.permissions
     WITH i,role
-    MATCH (principal:AzurePrincipal) where principal.object_id = role.principal_id
-    MERGE (principal)-[r:ASSUME_ROLE]->(i)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $update_tag
-    WITH i
     MATCH (t:AzureTenant{id: $tenant_id})
     MERGE (t)-[tr:RESOURCE]->(i)
     ON CREATE SET tr.firstseen = timestamp()
     SET tr.lastupdated = $update_tag
-    WITH i
+    WITH i,role
     MATCH (sub:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (sub)<-[sr:HAS_ACCESS]-(i)
     ON CREATE SET sr.firstseen = timestamp()
     SET sr.lastupdated = $update_tag
+    WITH i,role
+    MATCH (principal:AzurePrincipal) where principal.object_id = role.principal_id
+    MERGE (principal)-[r:ASSUME_ROLE]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
     """
 
     tx.run(
