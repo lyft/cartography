@@ -506,25 +506,32 @@ def get_roles_list(client: AuthorizationManagementClient, common_job_parameters:
 
         roles_list = []
         for role_assignment in role_assignments_list:
-            role = {}
-            result = client.role_definitions.get_by_id(role_assignment["role_definition_id"], raw=True)
-            result = result.response.json()
-            role['name'] = result.get('name', '')
-            role['id'] = role_assignment["role_definition_id"]
-            role['principal_id'] = role_assignment['principal_id']
-            role['type'] = result.get('properties', {}).get('type')
-            role['roleName'] = result.get('properties', {}).get('roleName', '')
-            role['type'] = result.get('properties', {}).get('type')
-            role['consolelink'] = azure_console_link.get_console_link(
-                id=role_assignment['role_definition_id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
-            role['permissions'] = []
-            for permission in result.get('properties', {}).get('permissions', []):
-                for action in permission.get('actions', []):
-                    role['permissions'].append(action)
-                for data_action in permission.get('dataActions', []):
-                    role['permissions'].append(data_action)
-            role['permissions'] = list(set(role['permissions']))
-            roles_list.append(role)
+            role_in_roles_list = False
+            for role in roles_list:
+                if role['id'] == role_assignment["role_definition_id"]:
+                    role['principal_ids'].append(role_assignment['principal_id'])
+                    role_in_roles_list = True
+                    break
+
+            if not role_in_roles_list:
+                role = {}
+                result = client.role_definitions.get_by_id(role_assignment["role_definition_id"], raw=True)
+                result = result.response.json()
+                role['name'] = result.get('name', '')
+                role['id'] = role_assignment["role_definition_id"]
+                role['principal_ids'] = [role_assignment['principal_id']]
+                role['type'] = result.get('properties', {}).get('type')
+                role['roleName'] = result.get('properties', {}).get('roleName', '')
+                role['consolelink'] = azure_console_link.get_console_link(
+                    id=role_assignment['role_definition_id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                role['permissions'] = []
+                for permission in result.get('properties', {}).get('permissions', []):
+                    for action in permission.get('actions', []):
+                        role['permissions'].append(action)
+                    for data_action in permission.get('dataActions', []):
+                        role['permissions'].append(data_action)
+                role['permissions'] = list(set(role['permissions']))
+                roles_list.append(role)
         return roles_list
 
     except HttpResponseError as e:
@@ -574,11 +581,6 @@ def _load_roles_tx(
     MERGE (sub)<-[sr:HAS_ACCESS]-(i)
     ON CREATE SET sr.firstseen = timestamp()
     SET sr.lastupdated = $update_tag
-    WITH i,role
-    MATCH (principal:AzurePrincipal) where principal.object_id = role.principal_id
-    MERGE (principal)-[r:ASSUME_ROLE]->(i)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $update_tag
     """
 
     tx.run(
@@ -590,6 +592,24 @@ def _load_roles_tx(
         tenant_id=tenant_id,
         SUBSCRIPTION_ID=SUBSCRIPTION_ID,
     )
+
+    attach_role = """
+    UNWIND $principal_ids AS principal_id
+    MATCH (principal:AzurePrincipal{object_id: principal_id})
+    WITH principal
+    MATCH (i:AzureRole{id: $role})
+    WITH i,principal
+    MERGE (principal)-[r:ASSUME_ROLE]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    for role in roles_list:
+        tx.run(
+            attach_role,
+            role=role['id'],
+            principal_ids=role['principal_ids'],
+            update_tag=update_tag
+        )
 
 
 def _load_managed_identities_tx(
