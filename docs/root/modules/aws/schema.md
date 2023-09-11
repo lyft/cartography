@@ -151,10 +151,12 @@ Representation of an AWS [Inspector Finding](https://docs.aws.amazon.com/inspect
 |awsaccount|AWS account the finding is from|yes
 |name|The finding name|
 |instanceid|The instance ID of the EC2 instance with the issue|
+|lambdaid|The ARN of the Lambda function affected by the issue|
 |ecrimageid|The image ID of the ECR image with the issue|
 |ecrrepositoryid|The repository ID of the ECR repository with the issue|
 |severity|The finding severity|
 |firstobservedat|Date the finding was first identified|
+|lastobservedat|Date the finding was last observed|
 |updatedat|Date the finding was last updated|
 |description|The finding description|
 |type|The finding type|
@@ -163,9 +165,15 @@ Representation of an AWS [Inspector Finding](https://docs.aws.amazon.com/inspect
 |portrange|Port range affected for network findings|
 |portrangebegin|Beginning of the port range affected for network findings|
 |portrangeend|End of the port range affected for network findings|
-|vulnerabilityid|Vulnerability ID associdated with the finding for package findings|
+|impactedfilepaths|A double pipe seperated list of locations identified as containing the issue|
+|fixedinversions|A double pipe seperated list of versions where the issue has been fixed|
+|impactedpackagemanagers|A double pipe seperated list of version of the source of the vulnerable package|
+|packageremediations|A double pipe seperated list of remediation guidance for resolving the issue|
+|sourcelayerhash|Source layer hash for container images|
+|vulnerabilityid|Vulnerability ID associated with the finding for package findings|
 |referenceurls|Reference URLs for the found vulnerabilities|
 |relatedvulnerabilities|A list of any related vulnerabilities|
+|remediation|The top level remediation described by AWS|
 |source|Source for the vulnerability|
 |sourceurl|URL for the vulnerability source|
 |vendorcreatedat|Date the vulnerability notice was created by the vendor|
@@ -216,9 +224,7 @@ Representation of an AWS [Inspector Finding Package](https://docs.aws.amazon.com
 |release|Release of the package
 |epoch|Package epoch|
 |manager|Related package manager|
-|filepath|Path to the file or package|
-|fixedinversion|Version the related finding was fixed in|
-|sourcelayerhash|Source layer hash for container images|
+
 
 
 #### Relationships
