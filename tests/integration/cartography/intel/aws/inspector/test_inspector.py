@@ -5,8 +5,11 @@ from tests.data.aws.inspector import LIST_FINDINGS_EC2_PACKAGE
 from tests.data.aws.inspector import LIST_FINDINGS_NETWORK
 
 TEST_UPDATE_TAG = 123456
+TEST_ACC_ID_1 = '123456789011'
+TEST_ACC_ID_2 = '123456789012'
 
 
+# TODO delete this redundant test after #1088 is closed. I am keeping this for now to show that no existing tests break.
 def test_load_inspector_findings(neo4j_session):
     # Add some fake accounts
     neo4j_session.run(
@@ -51,9 +54,9 @@ def test_load_inspector_findings(neo4j_session):
     transformed_ec2_findings, transformed_package_findings = transform_inspector_findings(LIST_FINDINGS_EC2_PACKAGE)
 
     # Load the mock data
-    load_inspector_findings(neo4j_session, transformed_network_findings, 'us-west-2', TEST_UPDATE_TAG)
-    load_inspector_findings(neo4j_session, transformed_ec2_findings, 'us-west-2', TEST_UPDATE_TAG)
-    load_inspector_packages(neo4j_session, transformed_package_findings, 'us-west-2', TEST_UPDATE_TAG)
+    load_inspector_findings(neo4j_session, transformed_network_findings, 'us-west-2', TEST_UPDATE_TAG, TEST_ACC_ID_1)
+    load_inspector_findings(neo4j_session, transformed_ec2_findings, 'us-west-2', TEST_UPDATE_TAG, TEST_ACC_ID_2)
+    load_inspector_packages(neo4j_session, transformed_package_findings, 'us-west-2', TEST_UPDATE_TAG, TEST_ACC_ID_2)
 
     # Check Findings
     nodes = neo4j_session.run(
