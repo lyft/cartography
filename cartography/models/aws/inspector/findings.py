@@ -15,7 +15,6 @@ from cartography.models.core.relationships import TargetNodeMatcher
 @dataclass(frozen=True)
 class AWSInspectorNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')
-
     arn: PropertyRef = PropertyRef('arn')
     awsaccount: PropertyRef = PropertyRef('awsaccount')
     name: PropertyRef = PropertyRef('title')
