@@ -19,12 +19,9 @@ class AWSInspectorNodeProperties(CartographyNodeProperties):
     arn: PropertyRef = PropertyRef('arn')
     awsaccount: PropertyRef = PropertyRef('awsaccount')
     name: PropertyRef = PropertyRef('title')
-
-    # TODO consider removing
     instanceid: PropertyRef = PropertyRef('instanceid')
     ecrimage: PropertyRef = PropertyRef('ecrimageid')
     ecrrepositoryid: PropertyRef = PropertyRef('ecrrepositoryid')
-
     severity: PropertyRef = PropertyRef('severity')
     firstobservedat: PropertyRef = PropertyRef('firstobservedat')
     updatedat: PropertyRef = PropertyRef('updatedat')
