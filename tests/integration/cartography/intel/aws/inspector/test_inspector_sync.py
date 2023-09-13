@@ -72,6 +72,12 @@ def test_sync_inspector_network_findings(mock_get, neo4j_session):
 def test_sync_inspector_ec2_package_findings(mock_get, neo4j_session):
     # Arrange
     boto3_session = MagicMock()
+    # Remove everything previously put in the test graph since the fixture scope is set to module and not function.
+    neo4j_session.run(
+        """
+        MATCH (n) DETACH DELETE n;
+        """,
+    )
     # Add some fake accounts
     neo4j_session.run(
         """
