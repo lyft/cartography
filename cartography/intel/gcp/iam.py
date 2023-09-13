@@ -636,6 +636,11 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
 
 
 @timeit
+def cleanup_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_iam_users_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
 def attach_role_to_user(
     neo4j_session: neo4j.Session, role_id: str, user: Dict,
     project_id: str, gcp_update_tag: int,
@@ -930,6 +935,8 @@ def sync(
     # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
     load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
     set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
+
+    cleanup_users(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
     logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")
