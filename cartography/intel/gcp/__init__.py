@@ -23,6 +23,7 @@ from cartography.intel.gcp import crm
 from cartography.intel.gcp.auth import AuthHelper
 from cartography.intel.gcp.util.common import parse_and_validate_gcp_requested_syncs
 from cartography.util import run_analysis_job
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -520,6 +521,7 @@ def _sync_multiple_projects(
             neo4j_session, resources, requested_syncs,
             common_job_parameters["GCP_PROJECT_ID"], gcp_update_tag, common_job_parameters, config,
         )
+        run_cleanup_job('gcp_unused_cleanup.json', neo4j_session, common_job_parameters)
         run_analysis_job(
             'gcp_storage_bucket_policy_analysis.json',
             neo4j_session,

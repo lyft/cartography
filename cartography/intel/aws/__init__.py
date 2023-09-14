@@ -125,6 +125,7 @@ def _sync_one_account(
     if 'resourcegroupstaggingapi' in aws_requested_syncs:
         RESOURCE_FUNCTIONS['resourcegroupstaggingapi'](config, **sync_args)
 
+    run_cleanup_job('aws_unused_cleanup.json', neo4j_session, common_job_parameters)
     run_analysis_job(
         'aws_ec2_iaminstanceprofile.json',
         neo4j_session,

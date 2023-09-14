@@ -120,12 +120,12 @@ def process_request(context, args):
     else:
         context.logger.info(f'failed to process cartography: {resp["message"]}')
 
-    publish_response(context, body, resp)
+    publish_response(context, body, resp, args)
 
     context.logger.info(f'inventory sync aws response - {args["eventId"]}: {json.dumps(resp)}')
 
 
-def publish_response(context, req, resp):
+def publish_response(context, req, resp, args):
     if context.app_env != 'PRODUCTION':
         try:
             with open('response.json', 'w') as outfile:
@@ -163,11 +163,22 @@ def publish_response(context, req, resp):
 
             context.logger.info(f'Result not published anywhere. since we want to avoid query when inventory is refreshed')
             status = True
+            publish_request_iam_entitlement(context, args, req)
 
         else:
             context.logger.info('publishing results to CARTOGRAPHY_RESULT_TOPIC')
             status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
+            publish_request_iam_entitlement(context, args, req)
 
+        context.logger.info(f'result published to SNS with status: {status}')
+
+
+def publish_request_iam_entitlement(context, req, body):
+    if 'iamEntitlementRequestTopic' in req:
+        sns_helper = SNSLibrary(context)
+        req['credentials'] = body['credentials']
+        context.logger.info('publishing results to IAM_ENTITLEMENT_REQUEST_TOPIC')
+        status = sns_helper.publish(json.dumps(req), req['iamEntitlementRequestTopic'])
         context.logger.info(f'result published to SNS with status: {status}')
 
 
