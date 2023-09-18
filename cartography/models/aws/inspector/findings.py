@@ -26,12 +26,11 @@ class AWSInspectorNodeProperties(CartographyNodeProperties):
     updatedat: PropertyRef = PropertyRef('updatedat')
     description: PropertyRef = PropertyRef('description')
     type: PropertyRef = PropertyRef('type')
-    cvssscore: PropertyRef = PropertyRef('cvssscore')
+    cvssscore: PropertyRef = PropertyRef('cvssscore', extra_index=True)
     protocol: PropertyRef = PropertyRef('protocol')
     portrange: PropertyRef = PropertyRef('portrange')
     portrangebegin: PropertyRef = PropertyRef('portrangebegin')
     portrangeend: PropertyRef = PropertyRef('portrangeend')
-
     vulnerabilityid: PropertyRef = PropertyRef('vulnerabilityid')
     referenceurls: PropertyRef = PropertyRef('referenceurls')
     relatedvulnerabilities: PropertyRef = PropertyRef('relatedvulnerabilities')
