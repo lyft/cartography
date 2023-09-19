@@ -23,19 +23,19 @@ class EC2NetworkInterfaceNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('NetworkInterfaceId')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     description: PropertyRef = PropertyRef('Description')
-    mac_address: PropertyRef = PropertyRef('MacAddress')
+    mac_address: PropertyRef = PropertyRef('MacAddress', extra_index=True)
     private_dns_name: PropertyRef = PropertyRef('PrivateDnsName')
-    private_ip_address: PropertyRef = PropertyRef('PrivateIpAddress')
+    private_ip_address: PropertyRef = PropertyRef('PrivateIpAddress', extra_index=True)
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
     status: PropertyRef = PropertyRef('Status')
 
     # Properties only returned by describe-network-interfaces
     interface_type: PropertyRef = PropertyRef('InterfaceType')
-    public_ip: PropertyRef = PropertyRef('PublicIp')
-    requester_id: PropertyRef = PropertyRef('RequesterId')
+    public_ip: PropertyRef = PropertyRef('PublicIp', extra_index=True)
+    requester_id: PropertyRef = PropertyRef('RequesterId', extra_index=True)
     requester_managed: PropertyRef = PropertyRef('RequesterManaged')
     source_dest_check: PropertyRef = PropertyRef('SourceDestCheck')
-    subnetid: PropertyRef = PropertyRef('SubnetId')
+    subnetid: PropertyRef = PropertyRef('SubnetId', extra_index=True)
 
 
 @dataclass(frozen=True)
