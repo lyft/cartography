@@ -222,7 +222,12 @@ def _is_common_exception(e: Exception, bucket: Dict) -> bool:
 
 
 @timeit
-def _load_s3_acls(neo4j_session: neo4j.Session, acls: List[Dict[str, Any]], aws_account_id: str, update_tag: int) -> None:
+def _load_s3_acls(
+        neo4j_session: neo4j.Session,
+        acls: List[Dict[str, Any]],
+        aws_account_id: str,
+        update_tag: int,
+) -> None:
     """
     Ingest S3 ACL into neo4j.
     """
