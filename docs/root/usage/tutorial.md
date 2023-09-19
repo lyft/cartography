@@ -150,7 +150,7 @@ If you want to learn more in depth about Neo4j and Cypher queries you can look a
 
 .. _data-augmentation:
 
-Cartography adds custom attributes to nodes and relationships to point out security-related items of interest. Data augmentation jobs meant to apply to the whole graph and run at the end of a sync are stored in `cartography/data/jobs/analysis`. Jobs that are meant to apply to a subset of the graph - say, the current AWS account - are stored in `cartography/data/jobs/scoped_analysis`. Here is a summary of all of Cartography's custom attributes.
+Cartography adds custom attributes to nodes and relationships to point out security-related items of interest. Data augmentation jobs meant to apply to the whole graph and run at the end of a sync are stored in `cartography/data/jobs/analysis`. Here is a summary of all of Cartography's custom attributes.
 
 - `exposed_internet` indicates whether the asset is accessible to the public internet.
 
