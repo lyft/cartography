@@ -49,6 +49,14 @@ def run_analysis_job(
     common_job_parameters: Dict,
     package: str = 'cartography.data.jobs.analysis',
 ) -> None:
+    """
+    Enriches existing graph data with analysis jobs. This is designed for use with the sync stage
+    cartography.intel.analysis.
+    Runs the queries in the given Python `package` directory (cartography.data.jobs.analysis by default) for the given
+    `filename`. All queries in this directory are intended to be run at the end of a full graph sync. As such, they are
+    not scoped to a single sub resource. That is they will apply to _all_ AWS accounts/_all_ GCP projects/_all_ Okta
+    organizations/etc.
+    """
     GraphJob.run_from_json(
         neo4j_session,
         read_text(

@@ -12,53 +12,56 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 
 @dataclass(frozen=True)
-class EC2SubnetNodeProperties(CartographyNodeProperties):
-    # arn: PropertyRef = PropertyRef('Arn', extra_index=True) TODO decide this
-    id: PropertyRef = PropertyRef('SubnetId')
-    subnet_id: PropertyRef = PropertyRef('SubnetId', extra_index=True)
+class EC2SecurityGroupInstanceNodeProperties(CartographyNodeProperties):
+    # arn: PropertyRef = PropertyRef('Arn', extra_index=True) # TODO use arn; #1024
+    id: PropertyRef = PropertyRef('GroupId')
+    groupid: PropertyRef = PropertyRef('GroupId', extra_index=True)
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
 @dataclass(frozen=True)
-class EC2SubnetToAwsAccountRelProperties(CartographyRelProperties):
+class EC2SecurityGroupToAwsAccountRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
 @dataclass(frozen=True)
-class EC2SubnetToAWSAccount(CartographyRelSchema):
+class EC2SecurityGroupToAWSAccount(CartographyRelSchema):
     target_node_label: str = 'AWSAccount'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'id': PropertyRef('AWS_ID', set_in_kwargs=True)},
     )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RESOURCE"
-    properties: EC2SubnetToAwsAccountRelProperties = EC2SubnetToAwsAccountRelProperties()
+    properties: EC2SecurityGroupToAwsAccountRelProperties = EC2SecurityGroupToAwsAccountRelProperties()
 
 
 @dataclass(frozen=True)
-class EC2SubnetToEC2InstanceRelProperties(CartographyRelProperties):
+class EC2SecurityGroupToEC2InstanceRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
 @dataclass(frozen=True)
-class EC2SubnetToEC2Instance(CartographyRelSchema):
+class EC2SecurityGroupToEC2Instance(CartographyRelSchema):
     target_node_label: str = 'EC2Instance'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'id': PropertyRef('InstanceId')},
     )
     direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "PART_OF_SUBNET"
-    properties: EC2SubnetToEC2InstanceRelProperties = EC2SubnetToEC2InstanceRelProperties()
+    rel_label: str = "MEMBER_OF_EC2_SECURITY_GROUP"
+    properties: EC2SecurityGroupToEC2InstanceRelProperties = EC2SecurityGroupToEC2InstanceRelProperties()
 
 
 @dataclass(frozen=True)
-class EC2SubnetSchema(CartographyNodeSchema):
-    label: str = 'EC2Subnet'
-    properties: EC2SubnetNodeProperties = EC2SubnetNodeProperties()
-    sub_resource_relationship: EC2SubnetToAWSAccount = EC2SubnetToAWSAccount()
+class EC2SecurityGroupInstanceSchema(CartographyNodeSchema):
+    """
+    Security groups as known by describe-ec2-instances
+    """
+    label: str = 'EC2SecurityGroup'
+    properties: EC2SecurityGroupInstanceNodeProperties = EC2SecurityGroupInstanceNodeProperties()
+    sub_resource_relationship: EC2SecurityGroupToAWSAccount = EC2SecurityGroupToAWSAccount()
     other_relationships: OtherRelationships = OtherRelationships(
         [
-            EC2SubnetToEC2Instance(),
+            EC2SecurityGroupToEC2Instance(),
         ],
     )

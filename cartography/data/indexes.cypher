@@ -89,8 +89,6 @@ CREATE INDEX IF NOT EXISTS FOR (n:DOProject) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:EBSSnapshot) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:EBSSnapshot) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2KeyPair) ON (n.keyfingerprint);
-CREATE INDEX IF NOT EXISTS FOR (n:EC2PrivateIp) ON (n.id);
-CREATE INDEX IF NOT EXISTS FOR (n:EC2PrivateIp) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2ReservedInstance) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:EC2ReservedInstance) ON (n.lastupdated);
 CREATE INDEX IF NOT EXISTS FOR (n:ECRImage) ON (n.id);
