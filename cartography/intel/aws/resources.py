@@ -13,6 +13,7 @@ from . import iam
 from . import inspector
 from . import kms
 from . import lambda_function
+from . import lightsail
 from . import permission_relationships
 from . import rds
 from . import redshift
@@ -72,6 +73,7 @@ RESOURCE_FUNCTIONS: Dict = {
     'elastic_ip_addresses': sync_elastic_ip_addresses,
     'emr': emr.sync,
     'lambda_function': lambda_function.sync,
+    'lightsail': lightsail.sync,
     'kms': kms.sync,
     'rds': rds.sync,
     'redshift': redshift.sync,
