@@ -1,4 +1,4 @@
-#### Unused file
+# Unused file
 
 # Used by GCP Functions
 import base64
@@ -89,6 +89,7 @@ def process_request(logger, params):
             "actions": params.get('actions'),
             "resultTopic": params.get('resultTopic'),
             "requestTopic": params.get('requestTopic'),
+            "iamEntitlementRequestTopic": params.get('iamEntitlementRequestTopic'),
         },
         "services": svcs,
         "updateTag": params.get('updateTag'),
@@ -118,12 +119,12 @@ def process_request(logger, params):
     else:
         logger.info(f'failed to process cartography: {resp["message"]}')
 
-    publish_response(logger, body, resp)
+    publish_response(logger, body, resp, params)
 
     logger.info(f'inventory sync gcp response - {params.get("eventId")}: {json.dumps(resp)}')
 
 
-def publish_response(logger, req, resp):
+def publish_response(logger, req, resp, params):
     body = {
         "status": resp['status'],
         "params": req['params'],
@@ -159,11 +160,17 @@ def publish_response(logger, req, resp):
 
             logger.info(f'Result not published anywhere. since we want to avoid query when inventory is refreshed')
             status = True
+            status = pubsub_helper.publish(
+                os.environ['CDX_PROJECT_ID'], json.dumps(params), req['params']['iamEntitlementRequestTopic'],
+            )
 
         else:
             logger.info('publishing results to CARTOGRAPHY_RESULT_TOPIC')
             status = pubsub_helper.publish(
                 os.environ['CDX_PROJECT_ID'], json.dumps(body), os.environ['CARTOGRAPHY_RESULT_TOPIC'],
+            )
+            status = pubsub_helper.publish(
+                os.environ['CDX_PROJECT_ID'], json.dumps(params), req['params']['iamEntitlementRequestTopic'],
             )
 
         logger.info(f'result published to PubSub with status: {status}')

@@ -1,0 +1,17 @@
+{
+    "statements": [
+        {
+            "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(AWSPrincipal)-[r:POLICY]->(AWSPolicy) WHERE exists(r.unused_permissions) REMOVE r.unused_permissions return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete AWS principals unused permisions for policy"
+        },
+        {
+            "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(AWSPrincipal)-[r:POLICY]->(AWSPolicy) WHERE exists(r.used_permissions) REMOVE r.used_permissions return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete AWS principals used permisions for policy"
+        }
+    ],
+    "name": "cleanup AWS iam principals used and unused properties for policies"
+}
