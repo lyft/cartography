@@ -52,26 +52,40 @@ def get_sca_vulns(semgrep_app_token: str, deployment_id: str) -> List[Dict[str, 
     param: deployment_id: The Semgrep deployment id to use for retrieving SCA vulns.
     """
     all_vulns = []
-    sca_url = f"https://semgrep.dev/api/sca/deployments/{deployment_id}/vulns"
+    sca_url = f"https://semgrep.dev/api/sca/deployments/{deployment_id}/vulns2"
     has_more = True
-    cursor = ""
+    cursor = {}
+    page = 1
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {semgrep_app_token}",
     }
 
     while has_more:
-        params = {}
+        request_data = {
+            "deploymentId": deployment_id,
+            "pageSize": 100,
+            "exposure": ["UNREACHABLE", "REACHABLE", "UNKNOWN_EXPOSURE"],
+            }
         if cursor:
-            params = {"cursor": cursor}
+            request_data = {
+                "deploymentId": deployment_id,
+                "pageSize": 100,
+                "cursor": {
+                    "vulnOffset": cursor["vulnOffset"],
+                    "issueOffset": cursor["issueOffset"],
+                }
+            }
 
-        response = requests.get(sca_url, params=params, headers=headers, timeout=_TIMEOUT)
+        response = requests.post(sca_url, json=request_data, headers=headers, timeout=_TIMEOUT)
         response.raise_for_status()
         data = response.json()
         vulns = data["vulns"]
         cursor = data.get("cursor")
         has_more = data.get("hasMore", False)
         all_vulns.extend(vulns)
+        if page % 10 == 0:
+            logger.info(f"Processed {page} pages of Semgrep SCA vulnerabilities so far.")
 
     return all_vulns
 
