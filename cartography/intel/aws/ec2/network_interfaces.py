@@ -54,7 +54,7 @@ def transform_network_interface_data(data_list: List[Dict[str, Any]], region: st
         elb_v2_id = None
         elb_match = re.match(r'^ELB (?:net|app)/([^\/]+)\/(.*)', network_interface.get('Description', ''))
         if elb_match:
-            elb_v1_id = f'{elb_match[1]}-{elb_match[2]}.elb.{region}.amazonaws.com',
+            elb_v1_id = f'{elb_match[1]}-{elb_match[2]}.elb.{region}.amazonaws.com'
         else:
             elb_match = re.match(r'^ELB (.*)', network_interface.get('Description', ''))
             if elb_match:
