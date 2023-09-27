@@ -85,15 +85,15 @@ def start_okta_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     organization.sync_okta_organization(neo4j_session, common_job_parameters)
     users.sync_okta_users(okta_client, neo4j_session, common_job_parameters)
     roles.sync_okta_roles(okta_client, neo4j_session, common_job_parameters)
-    # groups.sync_okta_groups(okta_client, neo4j_session, common_job_parameters)
-    # users.sync_okta_user_types(okta_client, neo4j_session, common_job_parameters)
-    # applications.sync_okta_applications(
-    #     okta_client, neo4j_session, common_job_parameters
-    # )
-    # origins.sync_okta_origins(okta_client, neo4j_session, common_job_parameters)
-    # authenticators.sync_okta_authenticators(
-    #     okta_client, neo4j_session, common_job_parameters
-    # )
+    groups.sync_okta_groups(okta_client, neo4j_session, common_job_parameters)
+    users.sync_okta_user_types(okta_client, neo4j_session, common_job_parameters)
+    applications.sync_okta_applications(
+        okta_client, neo4j_session, common_job_parameters
+    )
+    origins.sync_okta_origins(okta_client, neo4j_session, common_job_parameters)
+    authenticators.sync_okta_authenticators(
+        okta_client, neo4j_session, common_job_parameters
+    )
 
     # TODO: Deprecate this while we determine a method of making it more generic
     # awssaml.sync_okta_aws_saml(
