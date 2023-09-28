@@ -100,7 +100,7 @@ def load_snapshot_volume_relations(
     UNWIND $snapshot_volumes_list as volume
         MERGE (v:EBSVolume{id: volume.VolumeId})
         ON CREATE SET v.firstseen = timestamp(),
-            v.borneo_id = apoc.create.uuid(),
+            v.borneo_id = apoc.create.uuid()
         SET v.lastupdated = {update_tag}, v.snapshotid = volume.SnapshotId,
         WITH v, volume
         MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
