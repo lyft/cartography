@@ -100,8 +100,7 @@ def transform_sca_vulns(raw_vulns: List[Dict[str, Any]]) -> Tuple[List[Dict[str,
     for vuln in raw_vulns:
         sca_vuln: Dict[str, Any] = {}
         # Mandatory fields
-        unique_id = f"{vuln['repositoryName']}|{vuln['advisory']['ruleId']}"
-        sca_vuln["id"] = unique_id
+        sca_vuln["id"] = vuln["groupKey"]
         sca_vuln["repositoryName"] = vuln["repositoryName"]
         sca_vuln["ruleId"] = vuln["advisory"]["ruleId"]
         sca_vuln["title"] = vuln["advisory"]["title"]
@@ -129,7 +128,7 @@ def transform_sca_vulns(raw_vulns: List[Dict[str, Any]]) -> Tuple[List[Dict[str,
         sca_vuln["openedAt"] = vuln.get("openedAt", None)
         for usage in vuln.get("usages", []):
             usage_dict = {}
-            usage_dict["SCA_ID"] = unique_id
+            usage_dict["SCA_ID"] = sca_vuln["id"]
             usage_dict["findingId"] = usage["findingId"]
             usage_dict["path"] = usage["location"]["path"]
             usage_dict["startLine"] = usage["location"]["startLine"]
