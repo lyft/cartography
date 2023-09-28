@@ -67,6 +67,35 @@ class SemgrepSCAFindingToGithubRepoRel(CartographyRelSchema):
     rel_label: str = "FOUND_IN"
     properties: SemgrepSCAFindingToGithubRepoRelProperties = SemgrepSCAFindingToGithubRepoRelProperties()
 
+@dataclass(frozen=True)
+class SemgrepSCAFindngToDependencyRelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+@dataclass(frozen=True)
+# (:SemgrepSCAFinding)-[:AFFECTS]->(:Dependency)
+class SemgrepSCAFindingToDependencyRel(CartographyRelSchema):
+    target_node_label: str = 'Dependency'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'id': PropertyRef('matchedDependency')},
+    )
+    direction: LinkDirection = LinkDirection.OUTWARD
+    rel_label: str = "AFFECTS"
+    properties: SemgrepSCAFindngToDependencyRelProperties = SemgrepSCAFindngToDependencyRelProperties()
+
+@dataclass(frozen=True)
+class SemgrepSCAFindingToCVERelProperties(CartographyRelProperties):
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
+@dataclass(frozen=True)
+# (:SemgrepSCAFinding)<-[:RELATES_TO]-(:CVE)
+class SemgrepSCAFindingToCVERel(CartographyRelSchema):
+    target_node_label: str = 'CVE'
+    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
+        {'id': PropertyRef('cveId')},
+    )
+    direction: LinkDirection = LinkDirection.INWARD
+    rel_label: str = "LINKED_TO"
+    properties: SemgrepSCAFindingToCVERelProperties = SemgrepSCAFindingToCVERelProperties()
 
 @dataclass(frozen=True)
 class SemgrepSCAFindingSchema(CartographyNodeSchema):
@@ -76,5 +105,7 @@ class SemgrepSCAFindingSchema(CartographyNodeSchema):
     other_relationships: OtherRelationships = OtherRelationships(
         [
             SemgrepSCAFindingToGithubRepoRel(),
+            SemgrepSCAFindingToDependencyRel(),
+            SemgrepSCAFindingToCVERel(),
         ],
     )
