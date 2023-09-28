@@ -70,9 +70,9 @@ def load_volumes(
     ingest_volumes = """
     UNWIND {volumes_list} as volume
         MERGE (vol:EBSVolume{id: volume.VolumeId})
-        ON CREATE SET vol.firstseen = timestamp()
+        ON CREATE SET vol.firstseen = timestamp(), 
+            vol.borneo_id = apoc.create.uuid()
         SET vol.arn = volume.VolumeArn,
-            vol.borneo_id = apoc.create.uuid(),
             vol.lastupdated = {update_tag},
             vol.availabilityzone = volume.AvailabilityZone,
             vol.createtime = volume.CreateTime,

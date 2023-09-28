@@ -181,10 +181,67 @@ def load_ec2_subnets(
         current_aws_account_id: str,
         update_tag: int,
 ) -> None:
-    load(
-        neo4j_session,
-        EC2SubnetInstanceSchema(),
-        subnet_list,
+    query = """
+        MERGE (instance:Instance:EC2Instance{id: {InstanceId}})
+        ON CREATE SET instance.firstseen = timestamp(),
+            instance.borneo_id = apoc.create.uuid()
+        SET instance.instanceid = {InstanceId},
+            instance.publicdnsname = {PublicDnsName},
+            instance.privateipaddress = {PrivateIpAddress},
+            instance.publicipaddress = {PublicIpAddress},
+            instance.imageid = {ImageId},
+            instance.instancetype = {InstanceType},
+            instance.monitoringstate = {MonitoringState},
+            instance.state = {State},
+            instance.launchtime = {LaunchTime},
+            instance.launchtimeunix = {LaunchTimeUnix},
+            instance.region = {Region},
+            instance.lastupdated = {update_tag},
+            instance.iaminstanceprofile = {IamInstanceProfile},
+            instance.availabilityzone = {AvailabilityZone},
+            instance.tenancy = {Tenancy},
+            instance.hostresourcegrouparn = {HostResourceGroupArn},
+            instance.platform = {Platform},
+            instance.architecture = {Architecture},
+            instance.ebsoptimized = {EbsOptimized},
+            instance.bootmode = {BootMode},
+            instance.instancelifecycle = {InstanceLifecycle},
+            instance.hibernationoptions = {HibernationOptions}
+        WITH instance
+        MATCH (rez:EC2Reservation{reservationid: {ReservationId}})
+        MERGE (instance)-[r:MEMBER_OF_EC2_RESERVATION]->(rez)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
+        WITH instance
+        MATCH (aa:AWSAccount{id: {AWS_ACCOUNT_ID}})
+        MERGE (aa)-[r:RESOURCE]->(instance)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = {update_tag}
+    """
+    tx.run(
+        query,
+        InstanceId=instanceid,
+        PublicDnsName=instance.get("PublicDnsName"),
+        PublicIpAddress=instance.get("PublicIpAddress"),
+        PrivateIpAddress=instance.get("PrivateIpAddress"),
+        ImageId=instance.get("ImageId"),
+        InstanceType=instance.get("InstanceType"),
+        IamInstanceProfile=instance.get("IamInstanceProfile", {}).get("Arn"),
+        ReservationId=reservation_id,
+        MonitoringState=monitoring_state,
+        LaunchTime=str(launch_time),
+        LaunchTimeUnix=launch_time_unix,
+        State=instance_state,
+        AvailabilityZone=instance.get("Placement", {}).get("AvailabilityZone"),
+        Tenancy=instance.get("Placement", {}).get("Tenancy"),
+        HostResourceGroupArn=instance.get("Placement", {}).get("HostResourceGroupArn"),
+        Platform=instance.get("Platform"),
+        Architecture=instance.get("Architecture"),
+        EbsOptimized=instance.get("EbsOptimized"),
+        BootMode=instance.get("BootMode"),
+        InstanceLifecycle=instance.get("InstanceLifecycle"),
+        HibernationOptions=instance.get("HibernationOptions", {}).get("Configured"),
+        AWS_ACCOUNT_ID=current_aws_account_id,
         Region=region,
         AWS_ID=current_aws_account_id,
         lastupdated=update_tag,
