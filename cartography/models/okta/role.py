@@ -54,8 +54,8 @@ class OktaRoleToOktaUserRel(CartographyRelSchema):
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {"id": PropertyRef("user_id")},
     )
-    direction: LinkDirection = LinkDirection.OUTWARD
-    rel_label: str = "CREATED_BY"
+    direction: LinkDirection = LinkDirection.INWARD
+    rel_label: str = "HAS_ROLE"
     properties: OktaRoleToOktaUserRelProperties = (
         OktaRoleToOktaUserRelProperties()
     )
