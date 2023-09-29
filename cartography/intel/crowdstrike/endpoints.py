@@ -76,9 +76,11 @@ def load_host_data(
     )
 
 
-def get_host_ids(client: Hosts) -> List[List[str]]:
+def get_host_ids(client: Hosts, crowdstrikeapi_limit: int = 5000, crowdstrikeapi_filter: Optional[str] = None) -> List[List[str]]:
+    if not crowdstrikeapi_filter:
+        crowdstrikeapi_filter = ''
     ids = []
-    parameters = {"filter": 'service_provider:"AWS_EC2"', "limit": 400}
+    parameters = {"filter": crowdstrikeapi_filter, "limit": crowdstrikeapi_limit}
     response = client.QueryDevicesByFilter(parameters=parameters)
     body = response.get("body", {})
     resources = body.get("resources", [])
