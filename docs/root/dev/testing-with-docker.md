@@ -11,7 +11,7 @@ Python dependencies needed by cartography and installs cartography itself to
 the image.
 
     ```bash
-    # Make sure you don't forget the '.' (represent's current directory)
+    # Make sure you don't forget the '.' (represents current directory)
     docker build -t lyft/cartography . 
     ```
 
