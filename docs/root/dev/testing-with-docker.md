@@ -7,12 +7,12 @@ without needing to install Python and without needing to install Neo4j.
 ### Usage
 
 1. Build the cartography Dockerfile. This creates a Docker image with all the
-Python dependencies needed by cartography and installs cartography itself to 
+Python dependencies needed by cartography and installs cartography itself to
 the image.
 
     ```bash
     # Make sure you don't forget the '.' (represents current directory)
-    docker build -t lyft/cartography . 
+    docker build -t lyft/cartography .
     ```
 
 1. Start up the docker-compose dev environment
