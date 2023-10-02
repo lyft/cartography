@@ -1,8 +1,8 @@
 # Testing with docker
 
 ## Using the included docker-compose support
-docker-compose lets you run cartography unit and integration tests without
-needing to install Python and without needing to install Neo4j.
+docker-compose lets you run cartography (and its unit and integration tests)
+without needing to install Python and without needing to install Neo4j.
 
 ### Usage
 
