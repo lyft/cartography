@@ -69,7 +69,7 @@ def transform_network_interface_data(data_list: List[Dict[str, Any]], region: st
                 'InstanceId': network_interface.get('Attachment', {}).get('InstanceId'),
                 'InterfaceType': network_interface['InterfaceType'],
                 'MacAddress': network_interface['MacAddress'],
-                'PrivateDnsName': network_interface['PrivateDnsName'],
+                'PrivateDnsName': network_interface.get('PrivateDnsName'),
                 'PrivateIpAddress': network_interface['PrivateIpAddress'],
                 'PublicIp': network_interface.get('Association', {}).get('PublicIp'),
                 'RequesterId': network_interface.get('RequesterId'),
