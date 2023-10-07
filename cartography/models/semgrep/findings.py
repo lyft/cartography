@@ -87,7 +87,7 @@ class SemgrepSCAFindingToCVERelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 @dataclass(frozen=True)
-# (:SemgrepSCAFinding)<-[:RELATES_TO]-(:CVE)
+# (:SemgrepSCAFinding)<-[:LINKEDT_TO]-(:CVE)
 class SemgrepSCAFindingToCVERel(CartographyRelSchema):
     target_node_label: str = 'CVE'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(

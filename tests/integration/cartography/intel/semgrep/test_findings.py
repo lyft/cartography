@@ -5,6 +5,7 @@ from unittest.mock import patch
 import neo4j
 
 import cartography.intel.semgrep.findings
+from cartography.util import run_analysis_job
 import tests.data.semgrep.sca
 from cartography.intel.semgrep.findings import sync
 from tests.integration.util import check_nodes
@@ -45,6 +46,30 @@ def _create_github_repos(neo4j_session):
         repo_name=TEST_REPO_NAME,
     )
 
+def _create_dependency_nodes(neo4j_session):
+    # Creates a set of dependency nodes in the graph
+    neo4j_session.run(
+        """
+        MERGE (dep:Dependency{id: $dep_id})
+        ON CREATE SET dep.firstseen = timestamp()
+        SET dep.lastupdated = $update_tag
+        """,
+        dep_id="grav|1.7.42.0",
+        update_tag=TEST_UPDATE_TAG,
+    )
+
+def _create_cve_nodes(neo4j_session):
+    # Creates a set of CVE nodes in the graph
+    neo4j_session.run(
+        """
+        MERGE (cve:CVE{id: $cve_id})
+        ON CREATE SET cve.firstseen = timestamp()
+        SET cve.lastupdated = $update_tag
+        """,
+        cve_id="CVE-2023-37897",
+        update_tag=TEST_UPDATE_TAG,
+    )
+
 
 @patch.object(
     cartography.intel.semgrep.findings,
@@ -59,6 +84,7 @@ def _create_github_repos(neo4j_session):
 def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
     # Arrange
     _create_github_repos(neo4j_session)
+    _create_cve_nodes(neo4j_session)
     semgrep_app_token = "your_semgrep_app_token"
     common_job_parameters = {
         "UPDATE_TAG": TEST_UPDATE_TAG,
@@ -79,7 +105,7 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
         expected_deployment_nodes
     )
     expected_sca_vuln_nodes = [
-        "yourorg/yourrepo|ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590",
+        "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
         TEST_UPDATE_TAG,
         "yourorg/yourrepo",
         "ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590",
@@ -164,7 +190,7 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
     expected_findings_resource_relationships = {
         (
             "123456",
-            "yourorg/yourrepo|ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590",
+            "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
         ),
     }
     assert (
@@ -202,7 +228,7 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
     expected_found_in_relationships = {
         (
             "yourorg/yourrepo",
-            "yourorg/yourrepo|ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590",
+            "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
         ),
     }
     assert (
@@ -219,11 +245,11 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
     )
     expected_location_relationships = {
         (
-            "yourorg/yourrepo|ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590",
+            "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
             "20128504",
         ),
         (
-            "yourorg/yourrepo|ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590",
+            "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
             "20128505",
         ),
     }
@@ -237,4 +263,68 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
             "USAGE_AT",
         ) ==
         expected_location_relationships
+    )
+
+    expected_affects_relationships = {
+        (
+            "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
+            "grav|1.7.42.0",
+        ),
+    }
+    assert (
+        check_rels(
+            neo4j_session,
+            "SemgrepSCAFinding",
+            "id",
+            "Dependency",
+            "id",
+            "AFFECTS",
+        ) ==
+        expected_affects_relationships
+    )
+
+    expected_linked_to_relationships = {
+        (
+            "CVE-2023-37897",
+            "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
+        ),
+    }
+    assert (
+        check_rels(
+            neo4j_session,
+            "CVE",
+            "id",
+            "SemgrepSCAFinding",
+            "id",
+            "LINKED_TO",
+        ) ==
+        expected_linked_to_relationships
+    )
+
+    run_analysis_job(
+        'semgrep_sca_analysis.json',
+        neo4j_session,
+        {'UPDATE_TAG': TEST_UPDATE_TAG},
+    )
+    expected_reachability_risk = {
+        (
+            "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
+            "REACHABLE",
+            "MANUAL_REVIEW_REACHABLE",
+            "HIGH",
+            "MEDIUM"
+        ),
+    }
+    assert (
+        _check_nodes_as_list(
+            neo4j_session,
+            "SemgrepSCAFinding",
+            "id",
+            "reachability",
+            "reachability_check",
+            "severity",
+            "reachability_risk",
+
+        ) ==
+        expected_reachability_risk
     )
