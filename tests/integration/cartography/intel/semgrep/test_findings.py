@@ -39,6 +39,7 @@ def _create_github_repos(neo4j_session):
         MERGE (repo:GitHubRepository{id: $repo_id, fullname: $repo_fullname, name: $repo_name})
         ON CREATE SET repo.firstseen = timestamp()
         SET repo.lastupdated = $update_tag
+        SET repo.archived = false
         """,
         repo_id=TEST_REPO_ID,
         repo_fullname=TEST_REPO_FULL_NAME,
@@ -305,7 +306,7 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
     )
 
     run_analysis_job(
-        'semgrep_sca_analysis.json',
+        'semgrep_sca_risk_analysis.json',
         neo4j_session,
         {'UPDATE_TAG': TEST_UPDATE_TAG},
     )
@@ -319,15 +320,16 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
         ),
     }
     assert (
-        _check_nodes_as_list(
+        check_nodes(
             neo4j_session,
             "SemgrepSCAFinding",
-            "id",
-            "reachability",
-            "reachability_check",
-            "severity",
-            "reachability_risk",
-
+            [
+                "id",
+                "reachability",
+                "reachability_check",
+                "severity",
+                "reachability_risk",
+            ],
         ) ==
         expected_reachability_risk
     )

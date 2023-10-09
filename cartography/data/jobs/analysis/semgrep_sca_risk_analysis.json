@@ -57,7 +57,7 @@
             "iterative": false
         },
         {
-            "__comment__": "delete SemgrepSCAFinding.risk property if not updated by the previous statements",
+            "__comment__": "delete SemgrepSCAFinding.reachability_risk property if not updated by the previous statements",
             "query": "MATCH (s:SemgrepSCAFinding) WHERE s.reachability_risk IS NOT NULL AND s.lastupdated <> $UPDATE_TAG REMOVE s.reachability_risk return COUNT(*) as TotalCompleted",
             "iterative": false
         }

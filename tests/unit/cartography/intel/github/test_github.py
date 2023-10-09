@@ -2,6 +2,7 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
+from requests import Response
 from requests.exceptions import HTTPError
 
 from cartography.intel.github.util import fetch_all
@@ -14,7 +15,9 @@ def test_fetch_all_handles_retries(mock_fetch_page: Mock) -> None:
     '''
     # Arrange
     exception = HTTPError
-    mock_fetch_page.side_effect = exception('my-error')
+    response = Response()
+    response.status_code = 500
+    mock_fetch_page.side_effect = exception('my-error', response=response)
     retries = 3
     # Act
     with pytest.raises(exception) as excinfo:

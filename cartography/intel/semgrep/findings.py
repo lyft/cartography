@@ -54,7 +54,7 @@ def get_sca_vulns(semgrep_app_token: str, deployment_id: str) -> List[Dict[str, 
     all_vulns = []
     sca_url = f"https://semgrep.dev/api/v1/deployments/{deployment_id}/ssc-vulns"
     has_more = True
-    cursor = {}
+    cursor: Dict = {}
     page = 1
     headers = {
         "Content-Type": "application/json",
