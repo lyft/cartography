@@ -5,9 +5,9 @@ from unittest.mock import patch
 import neo4j
 
 import cartography.intel.semgrep.findings
-from cartography.util import run_analysis_job
 import tests.data.semgrep.sca
 from cartography.intel.semgrep.findings import sync
+from cartography.util import run_analysis_job
 from tests.integration.util import check_nodes
 from tests.integration.util import check_rels
 
@@ -46,6 +46,7 @@ def _create_github_repos(neo4j_session):
         repo_name=TEST_REPO_NAME,
     )
 
+
 def _create_dependency_nodes(neo4j_session):
     # Creates a set of dependency nodes in the graph
     neo4j_session.run(
@@ -57,6 +58,7 @@ def _create_dependency_nodes(neo4j_session):
         dep_id="grav|1.7.42.0",
         update_tag=TEST_UPDATE_TAG,
     )
+
 
 def _create_cve_nodes(neo4j_session):
     # Creates a set of CVE nodes in the graph
@@ -312,7 +314,7 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
             "REACHABLE",
             "MANUAL_REVIEW_REACHABLE",
             "HIGH",
-            "MEDIUM"
+            "MEDIUM",
         ),
     }
     assert (

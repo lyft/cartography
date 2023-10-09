@@ -62,6 +62,5 @@
             "iterative": false
         }
 
-    ],
-    "comment": "First fill information, at the end run a cleanup statement"
+    ]
 }

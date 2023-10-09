@@ -67,9 +67,11 @@ class SemgrepSCAFindingToGithubRepoRel(CartographyRelSchema):
     rel_label: str = "FOUND_IN"
     properties: SemgrepSCAFindingToGithubRepoRelProperties = SemgrepSCAFindingToGithubRepoRelProperties()
 
+
 @dataclass(frozen=True)
 class SemgrepSCAFindngToDependencyRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
 
 @dataclass(frozen=True)
 # (:SemgrepSCAFinding)-[:AFFECTS]->(:Dependency)
@@ -82,9 +84,11 @@ class SemgrepSCAFindingToDependencyRel(CartographyRelSchema):
     rel_label: str = "AFFECTS"
     properties: SemgrepSCAFindngToDependencyRelProperties = SemgrepSCAFindngToDependencyRelProperties()
 
+
 @dataclass(frozen=True)
 class SemgrepSCAFindingToCVERelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
 
 @dataclass(frozen=True)
 # (:SemgrepSCAFinding)<-[:LINKEDT_TO]-(:CVE)
@@ -96,6 +100,7 @@ class SemgrepSCAFindingToCVERel(CartographyRelSchema):
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "LINKED_TO"
     properties: SemgrepSCAFindingToCVERelProperties = SemgrepSCAFindingToCVERelProperties()
+
 
 @dataclass(frozen=True)
 class SemgrepSCAFindingSchema(CartographyNodeSchema):
