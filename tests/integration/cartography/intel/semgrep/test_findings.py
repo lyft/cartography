@@ -86,6 +86,7 @@ def _create_cve_nodes(neo4j_session):
 def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
     # Arrange
     _create_github_repos(neo4j_session)
+    _create_dependency_nodes(neo4j_session)
     _create_cve_nodes(neo4j_session)
     semgrep_app_token = "your_semgrep_app_token"
     common_job_parameters = {
