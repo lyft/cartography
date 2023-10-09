@@ -88,7 +88,10 @@ SCA_RESPONSE = {
         },
     ],
     "hasMore": True,
-    "cursor": "123456",
+    "cursor": {
+        "vulnOffset": "1",
+        "issueOffset": "19311309",
+    },
 }
 
 RAW_VULNS = SCA_RESPONSE["vulns"]

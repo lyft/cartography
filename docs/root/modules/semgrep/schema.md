@@ -33,7 +33,7 @@ Represents a Semgrep [Deployment](https://semgrep.dev/api/v1/docs/#tag/Deploymen
 
 ### SemgrepSCAFinding
 
-Represents a [Semgre Supply Chain](https://semgrep.dev/docs/semgrep-supply-chain/overview/) finding. This is, a vulnerability in a dependency of a project discovered by Semgrep performing software composition analysis (SCA) and code reachability analysis. Before ingesting this node, make sure you have run Semgrep CI and that it's connected to Semgrep Cloud Platform [Running Semgrep CI with Semgrep Cloud Platform](https://semgrep.dev/docs/semgrep-ci/running-semgrep-ci-with-semgrep-cloud-platform/).
+Represents a [Semgre Supply Chain](https://semgrep.dev/docs/semgrep-supply-chain/overview/) finding. This is, a vulnerability in a dependency of a project discovered by Semgrep performing software composition analysis (SCA) and code reachability analysis. Before ingesting this node, make sure you have run Semgrep CI and that it's connected to Semgrep Cloud Platform [Running Semgrep CI with Semgrep Cloud Platform](https://semgrep.dev/docs/semgrep-ci/running-semgrep-ci-with-semgrep-cloud-platform/). The API called to retrieve this information is documented at https://semgrep.dev/api/v1/docs/#tag/SupplyChainService.
 
 | Field | Description |
 |-------|--------------|
@@ -71,6 +71,18 @@ Represents a [Semgre Supply Chain](https://semgrep.dev/docs/semgrep-supply-chain
 
     ```
     (SemgrepSCAFinding)-[USAGE_AT]->(SemgrepSCALocation)
+    ```
+
+- A SemgrepSCAFinding affects a Python Dependency (optional)
+
+    ```
+    (:SemgrepSCAFinding)-[:AFFECTS]->(:Dependency)
+    ```
+
+- A SemgrepSCAFinding linked to a CVE (optional)
+
+    ```
+    (:SemgrepSCAFinding)<-[:LINKED_TO]-(:CVE)
     ```
 
 
