@@ -28,3 +28,36 @@ GITHUB_ORG_DATA = {
     'url': 'https://example.com/my_org',
     'login': 'my_org',
 }
+
+USERS_WITH_RATE_LIMIT_DATA = {
+    "data": {
+        "organization": {
+            "url": "https: //github.com/my_org",
+            "login": "my_org",
+            "membersWithRole": {
+                "edges": [
+                    {
+                        "hasTwoFactorEnabled": None,
+                        "node": {
+                            "url": "https://github.com/example",
+                            "login": "usher",
+                            "name": "Ursha B",
+                            "isSiteAdmin": False,
+                            "email": "",
+                            "company": None,
+                        },
+                        "role": "MEMBER",
+                    },
+                ],
+                "pageInfo": {
+                    "endCursor": "c29yOnYyx8Q=",
+                    "hasNextPage": True,
+                },
+            },
+        },
+        "rateLimit": {
+            "remaining": 4957,
+            "resetAt": "2023-10-06T16:11:07Z",
+        },
+    },
+}
