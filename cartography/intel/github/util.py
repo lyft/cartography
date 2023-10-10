@@ -1,9 +1,6 @@
 import json
 import logging
 import time
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone as tz
 from typing import Any
 from typing import Dict
 from typing import List
@@ -11,13 +8,11 @@ from typing import NamedTuple
 from typing import Optional
 from typing import Tuple
 
-import dateutil.parser
 import requests
 
 logger = logging.getLogger(__name__)
 # Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
 _TIMEOUT = (60, 60)
-_GRAPHQL_RATE_LIMIT_REMAINING_THREASHOLD = 500
 
 
 class PaginatedGraphqlData(NamedTuple):
@@ -118,8 +113,6 @@ def fetch_all(
     data: PaginatedGraphqlData = PaginatedGraphqlData(nodes=[], edges=[])
     retry = 0
 
-    query = inject_rate_limit_query(query)
-
     while has_next_page:
         exc: Any = None
         try:
@@ -155,68 +148,5 @@ def fetch_all(
 
         cursor = resource['pageInfo']['endCursor']
         has_next_page = resource['pageInfo']['hasNextPage']
-
-        handle_rate_limit_sleep(resp)
-
     org_data = {'url': resp['data']['organization']['url'], 'login': resp['data']['organization']['login']}
     return data, org_data
-
-
-def handle_rate_limit_sleep(resp: Dict[str, Any]) -> None:
-    '''
-    sleep until we pass the reset_at timestamp, if our remaining is less than GRAPHQL_RATE_LIMIT_REMAINING_THREASHOLD
-
-    :param resp: The graphql api response object
-    '''
-    rate_limit = resp['data']['rateLimit']
-    remaining = rate_limit['remaining']
-    reset_at = dateutil.parser.parse(rate_limit['resetAt']).replace(tzinfo=tz.utc)
-    threshold = _GRAPHQL_RATE_LIMIT_REMAINING_THREASHOLD
-
-    if remaining < threshold:
-        now = datetime.now(tz.utc)
-        # add an extra minute for safety
-        sleep_duration = reset_at - now + timedelta(minutes=1)
-        logger.warning(
-            f'Github graphql ratelimit has {remaining} remaining and is under threshold {threshold},'
-            f' sleeping until reset at {reset_at} for {sleep_duration}',
-        )
-        time.sleep(sleep_duration.seconds)
-
-
-def inject_rate_limit_query(query: str) -> str:
-    '''
-    Adds the Ratelimit object to the query for client-side throttling uses
-    Example:
-    before:
-
-        query($login: String!, $cursor: String) {
-            organization(login: $login) {
-                login
-                url
-            }
-        }
-
-    after:
-
-        query($login: String!, $cursor: String) {
-            organization(login: $login) {
-                login
-                url
-            }
-            rateLimit {
-                remaining
-                resetAt
-            }
-        }
-
-    '''
-    rate_limit_subquery = '''
-rateLimit {
-    remaining
-    resetAt
-}
-'''
-    idx = query.rindex('}')
-    modified = query[:idx] + rate_limit_subquery + query[idx:]
-    return modified

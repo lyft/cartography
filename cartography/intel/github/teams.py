@@ -88,6 +88,12 @@ def _get_team_repos(org: str, api_url: str, token: str, team: str) -> PaginatedG
                 }
             }
         }
+        rateLimit {
+            limit
+            cost
+            remaining
+            resetAt
+        }
     }
     """
     team_repos, _ = fetch_all(
