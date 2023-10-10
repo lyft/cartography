@@ -72,6 +72,8 @@ def get_sca_vulns(semgrep_app_token: str, deployment_id: str) -> List[Dict[str, 
             request_data = {
                 "deploymentId": deployment_id,
                 "pageSize": 100,
+                "exposure": ["UNREACHABLE", "REACHABLE", "UNKNOWN_EXPOSURE"],
+                "refs": ["_default"],
                 "cursor": {
                     "vulnOffset": cursor["vulnOffset"],
                     "issueOffset": cursor["issueOffset"],
