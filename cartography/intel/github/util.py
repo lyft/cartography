@@ -1,6 +1,9 @@
 import json
 import logging
 import time
+from datetime import datetime
+from datetime import timedelta
+from datetime import timezone as tz
 from typing import Any
 from typing import Dict
 from typing import List
@@ -10,14 +13,41 @@ from typing import Tuple
 
 import requests
 
+
 logger = logging.getLogger(__name__)
 # Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
 _TIMEOUT = (60, 60)
+_GRAPHQL_RATE_LIMIT_REMAINING_THREASHOLD = 500
 
 
 class PaginatedGraphqlData(NamedTuple):
     nodes: List[Dict[str, Any]]
     edges: List[Dict[str, Any]]
+
+
+def handle_rate_limit_sleep(token: str) -> None:
+    '''
+    Check the remaining rate limit and sleep if remaining is below threshold
+    :param token: The Github API token as string.
+    '''
+    response = requests.get('https://api.github.com/rate_limit', headers={'Authorization': f"token {token}"})
+    response.raise_for_status()
+    response_json = response.json()
+    rate_limit_obj = response_json['resources']['graphql']
+    remaining = rate_limit_obj['remaining']
+    threshold = _GRAPHQL_RATE_LIMIT_REMAINING_THREASHOLD
+    print(remaining)
+    if remaining > threshold:
+        return
+    reset_at = datetime.fromtimestamp(rate_limit_obj['reset'], tz=tz.utc)
+    now = datetime.now(tz.utc)
+    # add an extra minute for safety
+    sleep_duration = reset_at - now + timedelta(minutes=1)
+    logger.warning(
+        f'Github graphql ratelimit has {remaining} remaining and is under threshold {threshold},'
+        f' sleeping until reset at {reset_at} for {sleep_duration}',
+    )
+    time.sleep(sleep_duration.seconds)
 
 
 def call_github_api(query: str, variables: str, token: str, api_url: str) -> Dict:
@@ -116,6 +146,7 @@ def fetch_all(
     while has_next_page:
         exc: Any = None
         try:
+            handle_rate_limit_sleep(token)
             resp = fetch_page(token, api_url, organization, query, cursor, **kwargs)
             retry = 0
         except requests.exceptions.Timeout as err:
@@ -135,7 +166,7 @@ def fetch_all(
             )
             raise exc
         elif retry > 0:
-            time.sleep(1 * retry)
+            time.sleep(2 ** retry)
             continue
 
         resource = resp['data']['organization'][resource_type]
@@ -148,5 +179,6 @@ def fetch_all(
 
         cursor = resource['pageInfo']['endCursor']
         has_next_page = resource['pageInfo']['hasNextPage']
+
     org_data = {'url': resp['data']['organization']['url'], 'login': resp['data']['organization']['login']}
     return data, org_data
