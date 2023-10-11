@@ -17,7 +17,7 @@ import requests
 logger = logging.getLogger(__name__)
 # Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
 _TIMEOUT = (60, 60)
-_GRAPHQL_RATE_LIMIT_REMAINING_THREASHOLD = 500
+_GRAPHQL_RATE_LIMIT_REMAINING_THRESHOLD = 500
 
 
 class PaginatedGraphqlData(NamedTuple):
@@ -35,7 +35,7 @@ def handle_rate_limit_sleep(token: str) -> None:
     response_json = response.json()
     rate_limit_obj = response_json['resources']['graphql']
     remaining = rate_limit_obj['remaining']
-    threshold = _GRAPHQL_RATE_LIMIT_REMAINING_THREASHOLD
+    threshold = _GRAPHQL_RATE_LIMIT_REMAINING_THRESHOLD
     if remaining > threshold:
         return
     reset_at = datetime.fromtimestamp(rate_limit_obj['reset'], tz=tz.utc)

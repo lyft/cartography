@@ -9,7 +9,7 @@ from unittest.mock import patch
 import pytest
 from requests.exceptions import HTTPError
 
-from cartography.intel.github.util import _GRAPHQL_RATE_LIMIT_REMAINING_THREASHOLD
+from cartography.intel.github.util import _GRAPHQL_RATE_LIMIT_REMAINING_THRESHOLD
 from cartography.intel.github.util import fetch_all
 from cartography.intel.github.util import handle_rate_limit_sleep
 from tests.data.github.rate_limit import RATE_LIMIT_RESPONSE_JSON
@@ -59,12 +59,12 @@ def test_handle_rate_limit_sleep(
 
     # above threoshold
     resp_0 = deepcopy(RATE_LIMIT_RESPONSE_JSON)
-    resp_0['resources']['graphql']['remaining'] = _GRAPHQL_RATE_LIMIT_REMAINING_THREASHOLD + 1
+    resp_0['resources']['graphql']['remaining'] = _GRAPHQL_RATE_LIMIT_REMAINING_THRESHOLD + 1
     resp_0['resources']['graphql']['reset'] = reset
 
     # below threhold
     resp_1 = deepcopy(RATE_LIMIT_RESPONSE_JSON)
-    resp_1['resources']['graphql']['remaining'] = _GRAPHQL_RATE_LIMIT_REMAINING_THREASHOLD - 1
+    resp_1['resources']['graphql']['remaining'] = _GRAPHQL_RATE_LIMIT_REMAINING_THRESHOLD - 1
     resp_1['resources']['graphql']['reset'] = reset
 
     mock_requests_get.side_effect = [
