@@ -36,7 +36,6 @@ def handle_rate_limit_sleep(token: str) -> None:
     rate_limit_obj = response_json['resources']['graphql']
     remaining = rate_limit_obj['remaining']
     threshold = _GRAPHQL_RATE_LIMIT_REMAINING_THREASHOLD
-    print(remaining)
     if remaining > threshold:
         return
     reset_at = datetime.fromtimestamp(rate_limit_obj['reset'], tz=tz.utc)
