@@ -23,7 +23,7 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
         {
             url
             login
-            repositories(first: 100, after: $cursor){
+            repositories(first: 50, after: $cursor){
                 pageInfo{
                     endCursor
                     hasNextPage
@@ -59,7 +59,7 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
                         login
                         __typename
                     }
-                    collaborators(affiliation: OUTSIDE, first: 100) {
+                    collaborators(affiliation: OUTSIDE, first: 50) {
                         edges {
                             permission
                         }
