@@ -57,12 +57,12 @@ def test_handle_rate_limit_sleep(
     # sleep for one extra minute for safety
     expected_sleep_seconds = timedelta(minutes=48).seconds
 
-    # above threoshold
+    # above threshold
     resp_0 = deepcopy(RATE_LIMIT_RESPONSE_JSON)
     resp_0['resources']['graphql']['remaining'] = _GRAPHQL_RATE_LIMIT_REMAINING_THRESHOLD + 1
     resp_0['resources']['graphql']['reset'] = reset
 
-    # below threhold
+    # below threshold
     resp_1 = deepcopy(RATE_LIMIT_RESPONSE_JSON)
     resp_1['resources']['graphql']['remaining'] = _GRAPHQL_RATE_LIMIT_REMAINING_THRESHOLD - 1
     resp_1['resources']['graphql']['reset'] = reset
@@ -83,7 +83,6 @@ def test_handle_rate_limit_sleep(
     mock_sleep.reset_mock()
 
     # Act
-    # mock_requests_get.return_value = Mock(json=Mock(return_value=resp_1))
     handle_rate_limit_sleep('my-token')
     # Assert
     mock_datetime.now.assert_called_once_with(tz.utc)
