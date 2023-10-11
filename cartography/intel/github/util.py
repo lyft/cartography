@@ -145,6 +145,8 @@ def fetch_all(
     while has_next_page:
         exc: Any = None
         try:
+            # In the future, we may use also use the rateLimit object from the graphql response.
+            # But we still need at least one call to the REST endpoint in case the graphql remaining is already 0
             handle_rate_limit_sleep(token)
             resp = fetch_page(token, api_url, organization, query, cursor, **kwargs)
             retry = 0
