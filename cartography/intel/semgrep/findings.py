@@ -54,31 +54,29 @@ def get_sca_vulns(semgrep_app_token: str, deployment_id: str) -> List[Dict[str, 
     all_vulns = []
     sca_url = f"https://semgrep.dev/api/v1/deployments/{deployment_id}/ssc-vulns"
     has_more = True
-    cursor: Dict = {}
+    cursor: Dict[str, str] = {}
     page = 1
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {semgrep_app_token}",
     }
 
+    request_data = {
+        "deploymentId": deployment_id,
+        "pageSize": 100,
+        "exposure": ["UNREACHABLE", "REACHABLE", "UNKNOWN_EXPOSURE"],
+        "refs": ["_default"],
+    }
+
     while has_more:
-        request_data = {
-            "deploymentId": deployment_id,
-            "pageSize": 100,
-            "exposure": ["UNREACHABLE", "REACHABLE", "UNKNOWN_EXPOSURE"],
-            "refs": ["_default"],
-        }
+
         if cursor:
-            request_data = {
-                "deploymentId": deployment_id,
-                "pageSize": 100,
-                "exposure": ["UNREACHABLE", "REACHABLE", "UNKNOWN_EXPOSURE"],
-                "refs": ["_default"],
+            request_data.update({
                 "cursor": {
                     "vulnOffset": cursor["vulnOffset"],
                     "issueOffset": cursor["issueOffset"],
                 },
-            }
+            })
 
         response = requests.post(sca_url, json=request_data, headers=headers, timeout=_TIMEOUT)
         response.raise_for_status()
