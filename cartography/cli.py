@@ -509,6 +509,14 @@ class CLI:
                 'Required if you are using the Semgrep intel module. Ignored otherwise.'
             ),
         )
+        parser.add_argument(
+            '--gandi-apikey-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the gandi API key for authentication.'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -684,6 +692,13 @@ class CLI:
             config.semgrep_app_token = os.environ.get(config.semgrep_app_token_env_var)
         else:
             config.semgrep_app_token = None
+
+        # Gandi config
+        if config.gandi_apikey_env_var:
+            logger.debug(f"Reading API key for Gandi from environment variable {config.gandi_apikey_env_var}")
+            config.gandi_apikey = os.environ.get(config.gandi_apikey_env_var)
+        else:
+            config.gandi_apikey = None
 
         # Run cartography
         try:

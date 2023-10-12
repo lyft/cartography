@@ -105,6 +105,8 @@ class Config:
     :param duo_api_hostname: The Duo api hostname, e.g. "api-abc123.duosecurity.com". Optional.
     :param semgrep_app_token: The Semgrep api token. Optional.
     :type semgrep_app_token: str
+    :type: gandi_apikey: str
+    :param gandi_apikey: API authentication key for Gandi. Optional.
     """
 
     def __init__(
@@ -160,6 +162,7 @@ class Config:
         duo_api_secret=None,
         duo_api_hostname=None,
         semgrep_app_token=None,
+        gandi_apikey=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -212,3 +215,4 @@ class Config:
         self.duo_api_secret = duo_api_secret
         self.duo_api_hostname = duo_api_hostname
         self.semgrep_app_token = semgrep_app_token
+        self.gandi_apikey = gandi_apikey
