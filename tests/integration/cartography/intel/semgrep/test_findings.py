@@ -17,14 +17,14 @@ TEST_UPDATE_TAG = 123456789
 
 
 def _check_nodes_as_list(
-    neo4j_session: neo4j.Session, node_label: str, attrs: List[str]
+    neo4j_session: neo4j.Session, node_label: str, attrs: List[str],
 ):
     """
     Like tests.integration.util.check_nodes()` but returns a list instead of a set.
     """
     if not attrs:
         raise ValueError(
-            "`attrs` passed to check_nodes() must have at least one element."
+            "`attrs` passed to check_nodes() must have at least one element.",
         )
 
     attrs = ", ".join(f"n.{attr}" for attr in attrs)
