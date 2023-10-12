@@ -105,6 +105,12 @@ class Config:
     :param duo_api_hostname: The Duo api hostname, e.g. "api-abc123.duosecurity.com". Optional.
     :param semgrep_app_token: The Semgrep api token. Optional.
     :type semgrep_app_token: str
+    :type slack_token: str
+    :param slack_token: Slack API Token. Optional.
+    :type slack_teams: str
+    :param slack_teams: Comma-separated list of Slack teams to sync. Optional.
+    :type slack_channels_memberships: bool
+    :param slack_channels_memberships: If True, sync Slack channel memberships. Optional.
     """
 
     def __init__(
@@ -160,6 +166,9 @@ class Config:
         duo_api_secret=None,
         duo_api_hostname=None,
         semgrep_app_token=None,
+        slack_token=None,
+        slack_teams=None,
+        slack_channels_memberships=False,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -212,3 +221,6 @@ class Config:
         self.duo_api_secret = duo_api_secret
         self.duo_api_hostname = duo_api_hostname
         self.semgrep_app_token = semgrep_app_token
+        self.slack_token = slack_token
+        self.slack_teams = slack_teams
+        self.slack_channels_memberships = slack_channels_memberships

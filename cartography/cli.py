@@ -509,6 +509,29 @@ class CLI:
                 'Required if you are using the Semgrep intel module. Ignored otherwise.'
             ),
         )
+        parser.add_argument(
+            '--slack-token-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the Slack Token'
+            ),
+        )
+        parser.add_argument(
+            '--slack-teams',
+            type=str,
+            default=None,
+            help=(
+                'The Slack Team ID to sync, comma separated.'
+            ),
+        )
+        parser.add_argument(
+            '--slack-channels-memberships',
+            action='store_true',
+            help=(
+                'Pull memberships for Slack Channels (can be time consuming).'
+            ),
+        )
         return parser
 
     def main(self, argv: str) -> int:
@@ -684,6 +707,13 @@ class CLI:
             config.semgrep_app_token = os.environ.get(config.semgrep_app_token_env_var)
         else:
             config.semgrep_app_token = None
+
+        # Slack config
+        if config.slack_token_env_var:
+            logger.debug(
+                f"Reading Slack token from environment variables {config.slack_token_env_var}",
+            )
+            config.slack_token = os.environ.get(config.slack_token_env_var)
 
         # Run cartography
         try:

@@ -34,6 +34,7 @@ Start [here](https://lyft.github.io/cartography/install.html).
 - [Lastpass](https://lyft.github.io/cartography/modules/lastpass/index.html) - users
 - [BigFix](https://lyft.github.io/cartography/modules/bigfix/index.html) - Computers
 - [Duo](https://lyft.github.io/cartography/modules/duo/index.html) - Users, Groups, Endpoints
+- [Slack](https://lyft.github.io/cartography/modules/slack/index.html) - Users, Groups, Channels
 
 
 ## Usage

@@ -28,6 +28,7 @@ import cartography.intel.kubernetes
 import cartography.intel.lastpass
 import cartography.intel.oci
 import cartography.intel.okta
+import cartography.intel.slack
 from cartography.config import Config
 from cartography.stats import set_stats_client
 from cartography.util import STATUS_FAILURE
@@ -54,6 +55,7 @@ TOP_LEVEL_MODULES = OrderedDict({  # preserve order so that the default sync alw
     'bigfix': cartography.intel.bigfix.start_bigfix_ingestion,
     'duo': cartography.intel.duo.start_duo_ingestion,
     'analysis': cartography.intel.analysis.run,
+    'slack': cartography.intel.slack.start_slack_ingestion,
 })
 
 
