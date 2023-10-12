@@ -215,18 +215,19 @@ def sync(
 ) -> None:
     logger.info("Running Semgrep SCA findings sync job.")
     semgrep_deployment = get_deployment(semgrep_app_token)
+    deployment_id = semgrep_deployment["id"]
     load_semgrep_deployment(neo4j_sesion, semgrep_deployment, update_tag)
-    common_job_parameters["DEPLOYMENT_ID"] = semgrep_deployment["id"]
-    raw_vulns = get_sca_vulns(semgrep_app_token, semgrep_deployment["id"])
+    common_job_parameters["DEPLOYMENT_ID"] = deployment_id
+    raw_vulns = get_sca_vulns(semgrep_app_token, deployment_id)
     vulns, usages = transform_sca_vulns(raw_vulns)
-    load_semgrep_sca_vulns(neo4j_sesion, vulns, semgrep_deployment["id"], update_tag)
-    load_semgrep_sca_usages(neo4j_sesion, usages, semgrep_deployment["id"], update_tag)
+    load_semgrep_sca_vulns(neo4j_sesion, vulns, deployment_id, update_tag)
+    load_semgrep_sca_usages(neo4j_sesion, usages, deployment_id, update_tag)
     run_analysis_job('semgrep_sca_risk_analysis.json', neo4j_sesion, common_job_parameters)
     cleanup(neo4j_sesion, common_job_parameters)
     merge_module_sync_metadata(
         neo4j_session=neo4j_sesion,
         group_type='Semgrep',
-        group_id=common_job_parameters["DEPLOYMENT_ID"],
+        group_id=deployment_id,
         synced_type='SCA',
         update_tag=update_tag,
         stat_handler=stat_handler,
