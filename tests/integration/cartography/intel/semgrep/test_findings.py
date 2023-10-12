@@ -16,12 +16,16 @@ TEST_REPO_NAME = "yourrepo"
 TEST_UPDATE_TAG = 123456789
 
 
-def _check_nodes_as_list(neo4j_session: neo4j.Session, node_label: str, attrs: List[str]):
+def _check_nodes_as_list(
+    neo4j_session: neo4j.Session, node_label: str, attrs: List[str]
+):
     """
     Like tests.integration.util.check_nodes()` but returns a list instead of a set.
     """
     if not attrs:
-        raise ValueError("`attrs` passed to check_nodes() must have at least one element.")
+        raise ValueError(
+            "`attrs` passed to check_nodes() must have at least one element."
+        )
 
     attrs = ", ".join(f"n.{attr}" for attr in attrs)
     query_template = Template("MATCH (n:$NodeLabel) RETURN $Attrs")
@@ -97,17 +101,37 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
     sync(neo4j_session, semgrep_app_token, TEST_UPDATE_TAG, common_job_parameters)
 
     # Assert
-    expected_deployment_nodes = {("123456", "YourOrg", "yourorg")}
 
-    assert (
-        check_nodes(
-            neo4j_session,
-            "SemgrepDeployment",
-            ["id", "name", "slug"],
-        ) ==
-        expected_deployment_nodes
-    )
-    expected_sca_vuln_nodes = [
+    assert check_nodes(
+        neo4j_session,
+        "SemgrepDeployment",
+        ["id", "name", "slug"],
+    ) == {("123456", "YourOrg", "yourorg")}
+
+    assert _check_nodes_as_list(
+        neo4j_session,
+        "SemgrepSCAFinding",
+        [
+            "id",
+            "lastupdated",
+            "repository",
+            "rule_id",
+            "summary",
+            "description",
+            "package_manager",
+            "severity",
+            "cve_id",
+            "reachability_check",
+            "reachability",
+            "transitivity",
+            "dependency",
+            "dependency_fix",
+            "dependency_file",
+            "dependency_file_url",
+            "ref_urls",
+            "scan_time",
+        ],
+    ) == [
         "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
         TEST_UPDATE_TAG,
         "yourorg/yourrepo",
@@ -124,37 +148,26 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
         "grav|1.7.42.2",
         "go.mod",
         "https://github.com/yourorg/yourrepo/blame/71bbed12f950de8335006d7f91112263d8504f1b/go.mod#L111",
-        ["https://github.com/advisories//GHSA-9436-3gmp-4f53", "https://nvd.nist.gov/vuln/detail/CVE-2023-37897"],
+        [
+            "https://github.com/advisories//GHSA-9436-3gmp-4f53",
+            "https://nvd.nist.gov/vuln/detail/CVE-2023-37897",
+        ],
         "2023-07-19T12:51:53Z",
     ]
-    assert (
-        _check_nodes_as_list(
-            neo4j_session,
-            "SemgrepSCAFinding",
-            [
-                "id",
-                "lastupdated",
-                "repository",
-                "rule_id",
-                "summary",
-                "description",
-                "package_manager",
-                "severity",
-                "cve_id",
-                "reachability_check",
-                "reachability",
-                "transitivity",
-                "dependency",
-                "dependency_fix",
-                "dependency_file",
-                "dependency_file_url",
-                "ref_urls",
-                "scan_time",
-            ],
-        ) ==
-        expected_sca_vuln_nodes
-    )
-    expected_sca_location_nodes = {
+
+    assert check_nodes(
+        neo4j_session,
+        "SemgrepSCALocation",
+        [
+            "id",
+            "path",
+            "start_line",
+            "start_col",
+            "end_line",
+            "end_col",
+            "url",
+        ],
+    ) == {
         (
             "20128504",
             "src/packages/directory/file1.go",
@@ -174,40 +187,29 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
             "https://github.com/yourorg/yourrepo/blame/6fdee8f2727f4506cfbbe553e23b895e27956588/src/packages/directory/file2.go.ts#L24",  # noqa E501
         ),
     }
-    assert (
-        check_nodes(
-            neo4j_session,
-            "SemgrepSCALocation",
-            [
-                "id",
-                "path",
-                "start_line",
-                "start_col",
-                "end_line",
-                "end_col",
-                "url",
-            ],
-        ) ==
-        expected_sca_location_nodes
-    )
-    expected_findings_resource_relationships = {
+
+    assert check_rels(
+        neo4j_session,
+        "SemgrepDeployment",
+        "id",
+        "SemgrepSCAFinding",
+        "id",
+        "RESOURCE",
+    ) == {
         (
             "123456",
             "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
         ),
     }
-    assert (
-        check_rels(
-            neo4j_session,
-            "SemgrepDeployment",
-            "id",
-            "SemgrepSCAFinding",
-            "id",
-            "RESOURCE",
-        ) ==
-        expected_findings_resource_relationships
-    )
-    expected_locations_resource_relationships = {
+
+    assert check_rels(
+        neo4j_session,
+        "SemgrepDeployment",
+        "id",
+        "SemgrepSCALocation",
+        "id",
+        "RESOURCE",
+    ) == {
         (
             "123456",
             "20128504",
@@ -217,36 +219,30 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
             "20128505",
         ),
     }
-    assert (
-        check_rels(
-            neo4j_session,
-            "SemgrepDeployment",
-            "id",
-            "SemgrepSCALocation",
-            "id",
-            "RESOURCE",
-        ) ==
-        expected_locations_resource_relationships
-    )
-    expected_found_in_relationships = {
+
+    assert check_rels(
+        neo4j_session,
+        "GitHubRepository",
+        "fullname",
+        "SemgrepSCAFinding",
+        "id",
+        "FOUND_IN",
+        rel_direction_right=False,
+    ) == {
         (
             "yourorg/yourrepo",
             "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
         ),
     }
-    assert (
-        check_rels(
-            neo4j_session,
-            "GitHubRepository",
-            "fullname",
-            "SemgrepSCAFinding",
-            "id",
-            "FOUND_IN",
-            rel_direction_right=False,
-        ) ==
-        expected_found_in_relationships
-    )
-    expected_location_relationships = {
+
+    assert check_rels(
+        neo4j_session,
+        "SemgrepSCAFinding",
+        "id",
+        "SemgrepSCALocation",
+        "id",
+        "USAGE_AT",
+    ) == {
         (
             "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
             "20128504",
@@ -256,55 +252,46 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
             "20128505",
         ),
     }
-    assert (
-        check_rels(
-            neo4j_session,
-            "SemgrepSCAFinding",
-            "id",
-            "SemgrepSCALocation",
-            "id",
-            "USAGE_AT",
-        ) ==
-        expected_location_relationships
-    )
 
-    expected_affects_relationships = {
+    assert check_rels(
+        neo4j_session,
+        "SemgrepSCAFinding",
+        "id",
+        "Dependency",
+        "id",
+        "AFFECTS",
+    ) == {
         (
             "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
             "grav|1.7.42.0",
         ),
     }
-    assert (
-        check_rels(
-            neo4j_session,
-            "SemgrepSCAFinding",
-            "id",
-            "Dependency",
-            "id",
-            "AFFECTS",
-        ) ==
-        expected_affects_relationships
-    )
 
-    expected_linked_to_relationships = {
+    assert check_rels(
+        neo4j_session,
+        "CVE",
+        "id",
+        "SemgrepSCAFinding",
+        "id",
+        "LINKED_TO",
+    ) == {
         (
             "CVE-2023-37897",
             "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
         ),
     }
-    assert (
-        check_rels(
-            neo4j_session,
-            "CVE",
-            "id",
-            "SemgrepSCAFinding",
-            "id",
-            "LINKED_TO",
-        ) ==
-        expected_linked_to_relationships
-    )
 
-    expected_reachability_risk = {
+    assert check_nodes(
+        neo4j_session,
+        "SemgrepSCAFinding",
+        [
+            "id",
+            "reachability",
+            "reachability_check",
+            "severity",
+            "reachability_risk",
+        ],
+    ) == {
         (
             "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",
             "REACHABLE",
@@ -313,17 +300,3 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
             "MEDIUM",
         ),
     }
-    assert (
-        check_nodes(
-            neo4j_session,
-            "SemgrepSCAFinding",
-            [
-                "id",
-                "reachability",
-                "reachability_check",
-                "severity",
-                "reachability_risk",
-            ],
-        ) ==
-        expected_reachability_risk
-    )
