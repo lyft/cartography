@@ -7,7 +7,6 @@ import neo4j
 import cartography.intel.semgrep.findings
 import tests.data.semgrep.sca
 from cartography.intel.semgrep.findings import sync
-from cartography.util import run_analysis_job
 from tests.integration.util import check_nodes
 from tests.integration.util import check_rels
 
@@ -305,11 +304,6 @@ def test_sync(mock_get_sca_vulns, mock_get_deployment, neo4j_session):
         expected_linked_to_relationships
     )
 
-    run_analysis_job(
-        'semgrep_sca_risk_analysis.json',
-        neo4j_session,
-        {'UPDATE_TAG': TEST_UPDATE_TAG},
-    )
     expected_reachability_risk = {
         (
             "132465::::ssc-92af1d99-4fb3-4d4e-a9f4-d57572cd6590::reachable",

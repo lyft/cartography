@@ -45,11 +45,12 @@ Represents a [Semgre Supply Chain](https://semgrep.dev/docs/semgrep-supply-chain
 | summary | A short title summarizing of the finding |
 | description | Description of the vulnerability. |
 | package_manager | The ecosystem of the dependency where the finding was discovered (e.g. pypi, npm, maven) |
-| severity | Severity of the finding (e.g. CRITICAL, HIGH, MEDIUM, LOW) |
+| severity | Severity of the finding based on Semgrep analysis (e.g. CRITICAL, HIGH, MEDIUM, LOW) |
 | cve_id | CVE id of the vulnerability from NVD. Check [cve_schema](../cve/schema.md) |
 | reachability_check | Whether the vulnerability reachability is confirmed, not confirmed or needs to be manually confirmed |
 | reachability_condition | Description of the reachability condition (e.g. reachable if code is used in X way) |
 | reachability | Whether the vulnerability is reachable or not |
+| reachability_risk | Risk of the vulnerability based on likelihod given by reachability (e.g. CRITICAL, HIGH, MEDIUM, LOW). Check [semgrep_sca_risk_analysis.json](https://github.com/lyft/cartography/blob/master/cartography/data/jobs/analysis/semgrep_sca_risk_analysis.json) |
 | transitivity | Whether the vulnerability is transitive or not (e.g. dependency, transitive) |
 | dependency | Dependency where the finding was discovered. Includes dependency name and version |
 | dependency_fix | Dependency version that fixes the vulnerability |

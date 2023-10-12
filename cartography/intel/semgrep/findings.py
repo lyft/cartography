@@ -13,7 +13,7 @@ from cartography.models.semgrep.deployment import SemgrepDeploymentSchema
 from cartography.models.semgrep.findings import SemgrepSCAFindingSchema
 from cartography.models.semgrep.locations import SemgrepSCALocationSchema
 from cartography.stats import get_stats_client
-from cartography.util import merge_module_sync_metadata
+from cartography.util import merge_module_sync_metadata, run_analysis_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -220,6 +220,7 @@ def sync(
     vulns, usages = transform_sca_vulns(raw_vulns)
     load_semgrep_sca_vulns(neo4j_sesion, vulns, semgrep_deployment["id"], update_tag)
     load_semgrep_sca_usages(neo4j_sesion, usages, semgrep_deployment["id"], update_tag)
+    run_analysis_job('semgrep_sca_risk_analysis.json', neo4j_sesion, common_job_parameters)
     cleanup(neo4j_sesion, common_job_parameters)
     merge_module_sync_metadata(
         neo4j_session=neo4j_sesion,
