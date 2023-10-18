@@ -27,3 +27,14 @@
   - redshift:GetClusterCredentials
   - redshift:JoinGroup
   relationship_name: CAN_ADMINISTER
+# Map principals that can read from an ECR image
+- target_label: ECRRepository
+  permissions:
+  - ecr:BatchGetImage
+  - ecr:GetDownloadUrlForLayer
+  relationship_name: CAN_READ
+# Map principals that can write to an ECR image
+- target_label: ECRRepository
+  permissions:
+  - ecr:PutImage
+  relationship_name: CAN_WRITE
