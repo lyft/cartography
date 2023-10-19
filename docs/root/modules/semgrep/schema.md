@@ -50,7 +50,7 @@ Represents a [Semgre Supply Chain](https://semgrep.dev/docs/semgrep-supply-chain
 | reachability_check | Whether the vulnerability reachability is confirmed, not confirmed or needs to be manually confirmed |
 | reachability_condition | Description of the reachability condition (e.g. reachable if code is used in X way) |
 | reachability | Whether the vulnerability is reachable or not |
-| reachability_risk | Risk of the vulnerability based on likelihod given by reachability (e.g. CRITICAL, HIGH, MEDIUM, LOW). Check [semgrep_sca_risk_analysis.json](https://github.com/lyft/cartography/blob/master/cartography/data/jobs/analysis/semgrep_sca_risk_analysis.json) |
+| reachability_risk | Risk of the vulnerability (e.g. CRITICAL, HIGH, MEDIUM, LOW) based on severity and likelihod, the latter given by reachability status and reachability check. Risk calculation was based on [NIST 800-30r1](https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-30r1.pdf) Appendix I - Riks Determination and the [reachability exposure](https://semgrep.dev/docs/semgrep-supply-chain/triage-and-remediation/#exposure-filters). See [semgrep_sca_risk_analysis.json](https://github.com/lyft/cartography/blob/master/cartography/data/jobs/scoped_analysis/semgrep_sca_risk_analysis.json) for further details |
 | transitivity | Whether the vulnerability is transitive or not (e.g. dependency, transitive) |
 | dependency | Dependency where the finding was discovered. Includes dependency name and version |
 | dependency_fix | Dependency version that fixes the vulnerability |

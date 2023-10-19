@@ -99,6 +99,25 @@ def run_analysis_and_ensure_deps(
     )
 
 
+def run_scoped_analysis_job(
+    filename: str,
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict,
+    package: str = 'cartography.data.jobs.scoped_analysis',
+) -> None:
+    """
+    Enriches existing graph data scoped to a given sub resource - e.g. the current AWS account.
+    Runs the queries in the cartography.data.jobs.scoped_analysis directory for the given `filename`. View the queries
+    in cartography.data.jobs.scoped_analysis for specifics.
+    """
+    run_analysis_job(
+        filename,
+        neo4j_session,
+        common_job_parameters,
+        package,
+    )
+
+
 def run_cleanup_job(
     filename: str, neo4j_session: neo4j.Session, common_job_parameters: Dict,
     package: str = 'cartography.data.jobs.cleanup',

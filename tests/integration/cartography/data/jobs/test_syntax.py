@@ -26,6 +26,14 @@ def test_analysis_jobs_cypher_syntax(neo4j_session):
         except Exception as e:
             pytest.fail(f"run_analysis_job failed for analysis job '{job_name}' with exception: {e}")
 
+    for job_name in contents('cartography.data.jobs.scoped_analysis'):
+        if not job_name.endswith('.json'):
+            continue
+        try:
+            cartography.util.run_scoped_analysis_job(job_name, neo4j_session, parameters)
+        except Exception as e:
+            pytest.fail(f"run_analysis_job failed for analysis job '{job_name}' with exception: {e}")
+
 
 def test_cleanup_jobs_cypher_syntax(neo4j_session):
     parameters = {
