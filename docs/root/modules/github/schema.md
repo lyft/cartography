@@ -216,3 +216,9 @@ Within a setup.cfg file, cartography will load everything from `install_requires
     ```
 
     - specifier: A string describing this library's version e.g. "<4.0,>=3.0" or "==1.0.2". This field is only present on the `:REQUIRES` edge if the repo's requirements file provided a version pin.
+
+- A Python Dependency is affected by a SemgrepSCAFinding (optional)
+
+    ```
+    (:SemgrepSCAFinding)-[:AFFECTS]->(:PythonLibrary)
+    ```

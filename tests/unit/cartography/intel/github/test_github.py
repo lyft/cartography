@@ -7,6 +7,7 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
+from requests import Response
 from requests.exceptions import HTTPError
 
 from cartography.intel.github.util import _GRAPHQL_RATE_LIMIT_REMAINING_THRESHOLD
@@ -26,7 +27,9 @@ def test_fetch_all_handles_retries(
     '''
     # Arrange
     exception = HTTPError
-    mock_fetch_page.side_effect = exception('my-error')
+    response = Response()
+    response.status_code = 500
+    mock_fetch_page.side_effect = exception('my-error', response=response)
     retries = 3
     # Act
     with pytest.raises(exception) as excinfo:

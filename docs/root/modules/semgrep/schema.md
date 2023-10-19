@@ -33,7 +33,7 @@ Represents a Semgrep [Deployment](https://semgrep.dev/api/v1/docs/#tag/Deploymen
 
 ### SemgrepSCAFinding
 
-Represents a [Semgre Supply Chain](https://semgrep.dev/docs/semgrep-supply-chain/overview/) finding. This is, a vulnerability in a dependency of a project discovered by Semgrep performing software composition analysis (SCA) and code reachability analysis. Before ingesting this node, make sure you have run Semgrep CI and that it's connected to Semgrep Cloud Platform [Running Semgrep CI with Semgrep Cloud Platform](https://semgrep.dev/docs/semgrep-ci/running-semgrep-ci-with-semgrep-cloud-platform/).
+Represents a [Semgre Supply Chain](https://semgrep.dev/docs/semgrep-supply-chain/overview/) finding. This is, a vulnerability in a dependency of a project discovered by Semgrep performing software composition analysis (SCA) and code reachability analysis. Before ingesting this node, make sure you have run Semgrep CI and that it's connected to Semgrep Cloud Platform [Running Semgrep CI with Semgrep Cloud Platform](https://semgrep.dev/docs/semgrep-ci/running-semgrep-ci-with-semgrep-cloud-platform/). The API called to retrieve this information is documented at https://semgrep.dev/api/v1/docs/#tag/SupplyChainService.
 
 | Field | Description |
 |-------|--------------|
@@ -45,11 +45,12 @@ Represents a [Semgre Supply Chain](https://semgrep.dev/docs/semgrep-supply-chain
 | summary | A short title summarizing of the finding |
 | description | Description of the vulnerability. |
 | package_manager | The ecosystem of the dependency where the finding was discovered (e.g. pypi, npm, maven) |
-| severity | Severity of the finding (e.g. CRITICAL, HIGH, MEDIUM, LOW) |
+| severity | Severity of the finding based on Semgrep analysis (e.g. CRITICAL, HIGH, MEDIUM, LOW) |
 | cve_id | CVE id of the vulnerability from NVD. Check [cve_schema](../cve/schema.md) |
 | reachability_check | Whether the vulnerability reachability is confirmed, not confirmed or needs to be manually confirmed |
 | reachability_condition | Description of the reachability condition (e.g. reachable if code is used in X way) |
 | reachability | Whether the vulnerability is reachable or not |
+| reachability_risk | Risk of the vulnerability (e.g. CRITICAL, HIGH, MEDIUM, LOW) based on severity and likelihod, the latter given by reachability status and reachability check. Risk calculation was based on [NIST 800-30r1](https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-30r1.pdf) Appendix I - Riks Determination and the [reachability exposure](https://semgrep.dev/docs/semgrep-supply-chain/triage-and-remediation/#exposure-filters). See [semgrep_sca_risk_analysis.json](https://github.com/lyft/cartography/blob/master/cartography/data/jobs/scoped_analysis/semgrep_sca_risk_analysis.json) for further details |
 | transitivity | Whether the vulnerability is transitive or not (e.g. dependency, transitive) |
 | dependency | Dependency where the finding was discovered. Includes dependency name and version |
 | dependency_fix | Dependency version that fixes the vulnerability |
@@ -71,6 +72,18 @@ Represents a [Semgre Supply Chain](https://semgrep.dev/docs/semgrep-supply-chain
 
     ```
     (SemgrepSCAFinding)-[USAGE_AT]->(SemgrepSCALocation)
+    ```
+
+- A SemgrepSCAFinding affects a Python Dependency (optional)
+
+    ```
+    (:SemgrepSCAFinding)-[:AFFECTS]->(:Dependency)
+    ```
+
+- A SemgrepSCAFinding linked to a CVE (optional)
+
+    ```
+    (:SemgrepSCAFinding)<-[:LINKED_TO]-(:CVE)
     ```
 
 

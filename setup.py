@@ -24,6 +24,9 @@ setup(
         'cartography.data.jobs.analysis': [
             '*.json',
         ],
+        'cartography.data.jobs.scoped_analysis': [
+            '*.json',
+        ],
         'cartography.data.jobs.cleanup': [
             '*.json',
         ],
