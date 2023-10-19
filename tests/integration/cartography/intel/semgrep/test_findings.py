@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 import neo4j
 
-import cartography.data.jobs.scoped_analysis
 import cartography.intel.semgrep.findings
 import tests.data.semgrep.sca
 from cartography.intel.semgrep.findings import sync
