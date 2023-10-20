@@ -12,6 +12,7 @@ import neo4j
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
 from cartography.stats import get_stats_client
+from cartography.util import is_throttling_exception
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -70,7 +71,7 @@ def get_group_policy_data(boto3_session: boto3.session.Session, group_list: List
         name = group["GroupName"]
         arn = group["Arn"]
         resource_group = resource_client.Group(name)
-        policies[arn] = policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_group.policies.all()}
+        policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_group.policies.all()}
     return policies
 
 
@@ -103,6 +104,12 @@ def get_user_policy_data(boto3_session: boto3.session.Session, user_list: List[D
             logger.warning(
                 f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
             )
+        except Exception as e:
+            if is_throttling_exception(e):
+                logger.warning(
+                    f"Could not get policies for user {name} due to Throttling exception; skipping.",
+                )
+                continue
     return policies
 
 
@@ -123,6 +130,12 @@ def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list
             logger.warning(
                 f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
             )
+        except Exception as e:
+            if is_throttling_exception(e):
+                logger.warning(
+                    f"Could not get policies for user {name} due to Throttling exception; skipping.",
+                )
+                continue
     return policies
 
 
@@ -140,6 +153,12 @@ def get_role_policy_data(boto3_session: boto3.session.Session, role_list: List[D
             logger.warning(
                 f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
             )
+        except Exception as e:
+            if is_throttling_exception(e):
+                logger.warning(
+                    f"Could not get policies for role {name} due to Throttling exception; skipping.",
+                )
+                continue
     return policies
 
 
@@ -160,6 +179,12 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
             logger.warning(
                 f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
             )
+        except Exception as e:
+            if is_throttling_exception(e):
+                logger.warning(
+                    f"Could not get policies for role {name} due to Throttling exception; skipping.",
+                )
+                continue
     return policies
 
 
