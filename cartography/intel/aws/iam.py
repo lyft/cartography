@@ -169,6 +169,7 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
     for role in role_list:
         name = role["RoleName"]
         role_arn = role["Arn"]
+        logger.debug(f"Grabbing policies for role {role_arn}...")
         resource_role = resource_client.Role(name)
         try:
             policies[role_arn] = {
