@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.85.4'
+__version__ = '0.86.0'
 
 
 setup(
