@@ -26,3 +26,8 @@ RUN pip install -e . && \
 COPY --chown=cartography:cartography . /srv/cartography
 
 USER cartography
+
+# Sets the directory as safe due to a mismatch in the user that cloned the repo
+# and the user that is going to run the unit&integ tests.
+RUN git config --global --add safe.directory /srv/cartography
+RUN /usr/bin/git config --local user.name "cartography"

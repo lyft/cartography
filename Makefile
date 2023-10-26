@@ -1,7 +1,6 @@
 test: test_lint test_unit test_integration
 
 test_lint:
-	git config --global --add safe.directory /srv/cartography
 	pre-commit run --all-files --show-diff-on-failure
 
 test_unit:
