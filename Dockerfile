@@ -4,7 +4,7 @@ WORKDIR /srv/cartography
 
 ENV PATH=/venv/bin:$PATH
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3.8-dev python3-pip python3-setuptools openssl libssl-dev gcc pkg-config libffi-dev libxml2-dev libxmlsec1-dev curl make && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3.8-dev python3-pip python3-setuptools openssl libssl-dev gcc pkg-config libffi-dev libxml2-dev libxmlsec1-dev curl make git && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -26,3 +26,8 @@ RUN pip install -e . && \
 COPY --chown=cartography:cartography . /srv/cartography
 
 USER cartography
+
+# Sets the directory as safe due to a mismatch in the user that cloned the repo
+# and the user that is going to run the unit&integ tests.
+RUN git config --global --add safe.directory /srv/cartography
+RUN /usr/bin/git config --local user.name "cartography"
