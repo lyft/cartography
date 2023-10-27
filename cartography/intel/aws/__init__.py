@@ -217,7 +217,17 @@ def _sync_one_account(
         neo4j_session,
         common_job_parameters
     )
-
+    run_analysis_job(
+        'aws_cloudfront_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+    run_analysis_job(
+        'aws_ebs_snapshot_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+   
     run_analysis_job(
         'aws_elasticache_cluster_asset_exposure.json',
         neo4j_session,

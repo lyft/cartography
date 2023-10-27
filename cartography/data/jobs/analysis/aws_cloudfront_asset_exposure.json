@@ -1,0 +1,14 @@
+{
+	"statements": [
+		{
+			"query": "MATCH (distribution:AWSCloudfrontDistribution)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE EXISTS(distribution.exposed_internet) WITH distribution LIMIT $LIMIT_SIZE REMOVE distribution.exposed_internet, distribution.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (distribution:AWSCloudfrontDistribution)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'allow-all' in distribution.viewer_protocol_policy SET distribution.exposed_internet = true ,(CASE WHEN NOT 'endpoint_type' IN coalesce(distribution.exposed_internet_type , []) THEN distribution END).exposed_internet_type = coalesce(distribution.exposed_internet_type , []) + 'cloudfront_viewer_protocol_policy';",
+            "iterative": false
+		}
+	],
+	"name": "aws cloudfront asset internet exposure"
+}

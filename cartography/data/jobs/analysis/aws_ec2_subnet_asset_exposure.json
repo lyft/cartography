@@ -6,6 +6,10 @@
 			"iterationsize": 100
 		},
 		{
+			"query": "MATCH (subnet:EC2Subnet{map_public_ip_on_launch: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET subnet.exposed_internet = true ,(CASE WHEN NOT 'endpoint_type' IN coalesce(subnet.exposed_internet_type , []) THEN subnet END).exposed_internet_type = coalesce(subnet.exposed_internet_type , []) + 'map_public_ip_on_launch';",
+            "iterative": false
+		},
+		{
 			"query": "MATCH (route:EC2Route{destination_cidr_block: '0.0.0.0/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation)<-[:HAS_EXPLICIT_ASSOCIATION|HAS_IMPLICIT_ASSOCIATION]-(subnet:EC2Subnet)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE route.gateway_id STARTS WITH 'igw-' SET subnet.exposed_internet = true,(CASE WHEN NOT 'public_subnet_ipv4' IN  coalesce(subnet.exposed_internet_type , []) THEN subnet END).exposed_internet_type = coalesce(subnet.exposed_internet_type , []) + 'public_subnet_ipv4';",
 			"iterative": false
 		},
