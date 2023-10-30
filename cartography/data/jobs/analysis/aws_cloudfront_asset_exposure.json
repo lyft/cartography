@@ -6,7 +6,7 @@
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (distribution:AWSCloudfrontDistribution)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'allow-all' in distribution.viewer_protocol_policy SET distribution.exposed_internet = true ,(CASE WHEN NOT 'endpoint_type' IN coalesce(distribution.exposed_internet_type , []) THEN distribution END).exposed_internet_type = coalesce(distribution.exposed_internet_type , []) + 'cloudfront_viewer_protocol_policy';",
+			"query": "MATCH (distribution:AWSCloudfrontDistribution)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'allow-all' in distribution.viewer_protocol_policy SET distribution.exposed_internet = true ,(CASE WHEN NOT 'cloudfront_viewer_protocol_policy' IN coalesce(distribution.exposed_internet_type , []) THEN distribution END).exposed_internet_type = coalesce(distribution.exposed_internet_type , []) + 'cloudfront_viewer_protocol_policy';",
             "iterative": false
 		}
 	],

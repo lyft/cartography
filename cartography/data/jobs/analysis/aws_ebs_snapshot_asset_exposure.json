@@ -6,7 +6,7 @@
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (snapshot:EBSSnapshot)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'all' in snapshot.volume_permissions SET snapshot.exposed_internet = true ,(CASE WHEN NOT 'endpoint_type' IN coalesce(snapshot.exposed_internet_type , []) THEN snapshot END).exposed_internet_type = coalesce(snapshot.exposed_internet_type , []) + 'ebs_volume_permissions_group';",
+			"query": "MATCH (snapshot:EBSSnapshot)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'all' in snapshot.volume_permissions SET snapshot.exposed_internet = true ,(CASE WHEN NOT 'ebs_volume_permissions_group' IN coalesce(snapshot.exposed_internet_type , []) THEN snapshot END).exposed_internet_type = coalesce(snapshot.exposed_internet_type , []) + 'ebs_volume_permissions_group';",
             "iterative": false
 		}
 	],

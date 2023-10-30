@@ -22,6 +22,7 @@ class EMRClusterNodeProperties(CartographyNodeProperties):
     log_encryption_kms_key_id: PropertyRef = PropertyRef('LogEncryptionKmsKeyId')
     log_uri: PropertyRef = PropertyRef('LogUri')
     master_public_dns_name: PropertyRef = PropertyRef('MasterPublicDnsName')
+    public_access_configuration:PropertyRef=PropertyRef('public_access_configuration')
     name: PropertyRef = PropertyRef('Name')
     outpost_arn: PropertyRef = PropertyRef('OutpostArn')
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)

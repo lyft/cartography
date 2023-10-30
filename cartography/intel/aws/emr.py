@@ -42,13 +42,14 @@ def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, 
     try:
         response = client.describe_cluster(ClusterId=cluster_id)
         cluster_details = response['Cluster']
+        public_access_configuration=client.get_block_public_access_configuration()
+        cluster_details['public_access_configuration']=public_access_configuration.get('BlockPublicAccessConfiguration',{}).get('BlockPublicSecurityGroupRules',True)
     except botocore.exceptions.ClientError as e:
         code = e.response['Error']['Code']
         msg = e.response['Error']['Message']
         logger.warning(f"Could not run EMR describe_cluster due to boto3 error {code}: {msg}. Skipping.")
     return cluster_details
-
-
+        
 @timeit
 def load_emr_clusters(
         neo4j_session: neo4j.Session,
