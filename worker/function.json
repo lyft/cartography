@@ -1,0 +1,18 @@
+{
+    "scriptFile": "__init__.py",
+    "bindings": [
+      {
+        "type": "eventGridTrigger",
+        "name": "event",
+        "direction": "in"
+      },
+      {
+        "type": "eventGrid",
+        "name": "outputEvent",
+        "topicEndpointUri": "resEventGridURI",
+        "topicKeySetting": "resEventGridKey",
+        "direction": "out"
+      }
+    ]
+  }
+  

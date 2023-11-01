@@ -33,6 +33,7 @@ from cartography.config import Config
 from cartography.stats import set_stats_client
 from cartography.util import STATUS_FAILURE
 from cartography.util import STATUS_SUCCESS
+import cloudanix
 
 logger = logging.getLogger(__name__)
 
@@ -236,4 +237,59 @@ def build_sync(selected_modules_as_str: str) -> Sync:
     sync.add_stages(
         [(sync_name, TOP_LEVEL_MODULES[sync_name]) for sync_name in selected_modules],
     )
+    return sync
+def build_aws_sync():
+    """
+    Build the aws cartography sync, which runs all intelligence modules shipped with the cartography package.
+
+    :rtype: cartography.sync.Sync
+    :return: The aws cartography sync object.
+    """
+    sync = Sync()
+
+    stages = []
+    stages.append(('cloudanix-workspace', cloudanix.run))
+    stages.append(('aws', cartography.intel.aws.start_aws_ingestion))
+    stages.append(('analysis', cartography.intel.analysis.run))
+
+    sync.add_stages(stages)
+
+    return sync
+
+
+def build_azure_sync():
+    """
+    Build the azure cartography sync, which runs all intelligence modules shipped with the cartography package.
+
+    :rtype: cartography.sync.Sync
+    :return: The azure cartography sync object.
+    """
+    sync = Sync()
+
+    stages = []
+    stages.append(('cloudanix-workspace', cloudanix.run))
+    stages.append(('azure', cartography.intel.azure.start_azure_ingestion))
+    stages.append(('analysis', cartography.intel.analysis.run))
+
+    sync.add_stages(stages)
+
+    return sync
+
+
+def build_gcp_sync():
+    """
+    Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
+
+    :rtype: cartography.sync.Sync
+    :return: The default cartography sync object.
+    """
+    sync = Sync()
+
+    stages = []
+    stages.append(('cloudanix-workspace', cloudanix.run))
+    stages.append(('gcp', cartography.intel.gcp.start_gcp_ingestion))
+    stages.append(('analysis', cartography.intel.analysis.run))
+
+    sync.add_stages(stages)
+
     return sync
