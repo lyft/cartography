@@ -2,6 +2,10 @@ from typing import Dict
 
 from . import apigateway
 from . import config
+from . import cloudtrail
+from . import cloudwatch
+from . import cloudfront
+from . import cloudformation
 from . import dynamodb
 from . import ecr
 from . import ecs
@@ -22,6 +26,8 @@ from . import s3
 from . import secretsmanager
 from . import securityhub
 from . import sqs
+from . import sns
+from . import ses
 from . import ssm
 from .ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
 from .ec2.elastic_ip_addresses import sync_elastic_ip_addresses
@@ -41,49 +47,57 @@ from .ec2.tgw import sync_transit_gateways
 from .ec2.volumes import sync_ebs_volumes
 from .ec2.vpc import sync_vpc
 from .ec2.vpc_peerings import sync_vpc_peerings
+from .ec2.route_tables import sync_route_tables
 
 RESOURCE_FUNCTIONS: Dict = {
     'iam': iam.sync,
     's3': s3.sync,
     'dynamodb': dynamodb.sync,
+    'lambda_function': lambda_function.sync,
+    'ecr': ecr.sync,
+    'ecs': ecs.sync,
+    'eks': eks.sync,
+    'emr': emr.sync,
+    'kms': kms.sync,
+    'apigateway': apigateway.sync,
+    'secretsmanager': secretsmanager.sync,
+    'sqs': sqs.sync,
+    'sns': sns.sync,
+    'ses': ses.sync,
+    'cloudwatch': cloudwatch.sync,
+    'cloudfront': cloudfront.sync,
+    'cloudformation': cloudformation.sync,
+    'cloudtrail': cloudtrail.sync,
     'ec2:launch_templates': sync_ec2_launch_templates,
-    'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
+    'ec2:keypair': sync_ec2_key_pairs,
+    'ec2:reserved_instances': sync_ec2_reserved_instances,
+    'ec2:vpc': sync_vpc,
+    'ec2:vpc_peering': sync_vpc_peerings,
+    'ec2:security_group': sync_ec2_security_groupinfo,
+    'ec2:subnet': sync_subnets,
+    'ec2:internet_gateway': sync_internet_gateways,
+    'ec2:tgw': sync_transit_gateways,
+    'ec2:route_table': sync_route_tables,
     # `ec2:instance` must be included before `ssm` and `ec2:images`,
     # they rely on EC2Instance data provided by this module.
     'ec2:instance': sync_ec2_instances,
     'ec2:images': sync_ec2_images,
-    'ec2:keypair': sync_ec2_key_pairs,
+    'ec2:volumes': sync_ebs_volumes,
+    'ec2:snapshots': sync_ebs_snapshots,
+    'ec2:autoscalinggroup': sync_ec2_auto_scaling_groups,
     'ec2:load_balancer': sync_load_balancers,
     'ec2:load_balancer_v2': sync_load_balancer_v2s,
     'ec2:network_interface': sync_network_interfaces,
-    'ec2:security_group': sync_ec2_security_groupinfo,
-    'ec2:subnet': sync_subnets,
-    'ec2:tgw': sync_transit_gateways,
-    'ec2:vpc': sync_vpc,
-    'ec2:vpc_peering': sync_vpc_peerings,
-    'ec2:internet_gateway': sync_internet_gateways,
-    'ec2:reserved_instances': sync_ec2_reserved_instances,
-    'ec2:volumes': sync_ebs_volumes,
-    'ec2:snapshots': sync_ebs_snapshots,
-    'ecr': ecr.sync,
-    'ecs': ecs.sync,
-    'eks': eks.sync,
-    'elasticache': elasticache.sync,
-    'elastic_ip_addresses': sync_elastic_ip_addresses,
-    'emr': emr.sync,
-    'lambda_function': lambda_function.sync,
-    'kms': kms.sync,
     'rds': rds.sync,
     'redshift': redshift.sync,
-    'route53': route53.sync,
+    'elasticache': elasticache.sync,
     'elasticsearch': elasticsearch.sync,
-    'permission_relationships': permission_relationships.sync,
-    'resourcegroupstaggingapi': resourcegroupstaggingapi.sync,
-    'apigateway': apigateway.sync,
-    'secretsmanager': secretsmanager.sync,
-    'securityhub': securityhub.sync,
-    'sqs': sqs.sync,
+    'elastic_ip_addresses': sync_elastic_ip_addresses,
     'ssm': ssm.sync,
+    'route53': route53.sync,
     'inspector': inspector.sync,
     'config': config.sync,
+    'securityhub': securityhub.sync,
+    'permission_relationships': permission_relationships.sync,
+    'resourcegroupstaggingapi': resourcegroupstaggingapi.sync,
 }
