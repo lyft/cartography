@@ -2,7 +2,7 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
-
+import time
 import boto3
 import neo4j
 
@@ -12,9 +12,10 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 from cartography.util import to_asynchronous
 from cartography.util import to_synchronous
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
@@ -25,7 +26,13 @@ def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> L
     ecr_repositories: List[Dict] = []
     for page in paginator.paginate():
         ecr_repositories.extend(page['repositories'])
-    return ecr_repositories
+    repositories = []
+    for repo in ecr_repositories:
+        repo['region'] = region
+        repo['consolelink'] = aws_console_link.get_console_link(arn=repo['repositoryArn'])
+        repositories.append(repo)
+
+    return repositories
 
 
 @timeit
@@ -52,6 +59,7 @@ def load_ecr_repositories(
             repo.arn = ecr_repo.repositoryArn,
             repo.name = ecr_repo.repositoryName,
             repo.region = $Region,
+            repo.consolelink = ecr_repo.consolelink,
             repo.created_at = ecr_repo.createdAt
         SET repo.lastupdated = $aws_update_tag,
             repo.uri = ecr_repo.repositoryUri
@@ -166,12 +174,26 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing ECR for account '%s', at %s.", current_aws_account_id, tic)
+
+    repositories = []
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
         image_data = {}
         repositories = get_ecr_repositories(boto3_session, region)
+        
+        logger.info(f"Total ECR Repositories: {len(repositories)}")
+        
         image_data = _get_image_data(boto3_session, region, repositories)
+        
         load_ecr_repositories(neo4j_session, repositories, region, current_aws_account_id, update_tag)
+        
+
         repo_images_list = transform_ecr_repository_images(image_data)
         load_ecr_repository_images(neo4j_session, repo_images_list, region, update_tag)
     cleanup(neo4j_session, common_job_parameters)
+    toc = time.perf_counter()
+    logger.info(f"Time to process ECR: {toc - tic:0.4f} seconds")
+
