@@ -1,3 +1,4 @@
+import time
 import json
 import logging
 from typing import Dict
@@ -7,6 +8,8 @@ import boto3
 import botocore.config
 import neo4j
 from policyuniverse.policy import Policy
+from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import aws_handle_regions
@@ -14,6 +17,27 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
+# TODO get this programmatically
+# https://docs.aws.amazon.com/general/latest/gr/rande.html#elasticsearch-service-regions
+es_regions = [
+    'us-east-2',
+    'us-east-1',
+    'us-west-1',
+    'us-west-2',
+    'ap-northeast-1',
+    'ap-northeast-2',
+    'ap-south-1',
+    'ap-southeast-1',
+    'ca-central-1',
+    # 'cn-northwest-1',  -- intentionally ignored. need specific token
+    'eu-central-1',
+    'eu-west-1',
+    'eu-west-2',
+    'eu-west-3',
+    'sa-east-1',
+    # 'us-gov-west-1', -- intentionally ignored, need specific token
+]
 
 
 # TODO memoize this
@@ -46,6 +70,21 @@ def _get_es_domains(client: botocore.client.BaseClient) -> List[Dict]:
 
 
 @timeit
+def transform_es_domains(dms: List[Dict], region: str, account_id: str) -> List[Dict]:
+    domains = []
+    for domain in dms:
+        domain['arn'] = f"arn:aws:es:{region if region else ''}:{account_id if account_id else ''}:domain/{domain['DomainName']}"
+        domain['consolelink'] = aws_console_link.get_console_link(arn=domain['arn'])
+        domain['region'] = region
+        domain['isPublicFacing'] = False
+        if not domain.get('VPCOptions', {}).get('VpcId'):
+            domain['isPublicFacing'] = True
+        domains.append(domain)
+
+    return domains
+
+
+@timeit
 def _load_es_domains(
     neo4j_session: neo4j.Session, domain_list: List[Dict], aws_account_id: str, aws_update_tag: int,
 ) -> None:
@@ -71,6 +110,9 @@ def _load_es_domains(
     es.ebs_options_ebsenabled = record.EBSOptions.EBSEnabled,
     es.ebs_options_volumetype = record.EBSOptions.VolumeType,
     es.ebs_options_volumesize = record.EBSOptions.VolumeSize,
+    es.region = record.region,
+    es.consolelink = record.consolelink,
+    es.isPublicFacing = record.isPublicFacing,
     es.ebs_options_iops = record.EBSOptions.Iops,
     es.encryption_at_rest_options_enabled = record.EncryptionAtRestOptions.Enabled,
     es.encryption_at_rest_options_kms_key_id = record.EncryptionAtRestOptions.KmsKeyId,
@@ -199,12 +241,79 @@ def _process_access_policy(neo4j_session: neo4j.Session, domain_id: str, domain_
 
 
 @timeit
-def cleanup(neo4j_session: neo4j.Session, update_tag: int, aws_account_id: int) -> None:
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job(
         'aws_import_es_cleanup.json',
         neo4j_session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id},
+        common_job_parameters,
     )
+
+
+@timeit
+@aws_handle_regions
+def get_elasticsearch_reserved_instances(client: botocore.client.BaseClient, region: str, current_aws_account_id: str) -> List[Dict]:
+    reserved_instances = []
+    try:
+        paginator = client.get_paginator('describe_reserved_elasticsearch_instances')
+
+        page_iterator = paginator.paginate()
+        for page in page_iterator:
+            reserved_instances.extend(page.get('ReservedElasticsearchInstances', []))
+        for reserved_instance in reserved_instances:
+            reserved_instance['arn'] = f"arn:aws:es:{region}:{current_aws_account_id}:reserved-instances/{reserved_instance['ReservedElasticsearchInstanceId']}"
+            reserved_instance['region'] = region
+
+        return reserved_instances
+
+    except ClientError as e:
+        logger.error(f'Failed to call ES describe_reserved_elasticsearch_instances: {region} - {e}')
+        return reserved_instances
+
+
+def load_elasticsearch_reserved_instances(session: neo4j.Session, reserved_instances: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    session.write_transaction(_load_elasticsearch_reserved_instances_tx,
+                              reserved_instances, current_aws_account_id, aws_update_tag)
+
+
+@timeit
+def _load_elasticsearch_reserved_instances_tx(tx: neo4j.Transaction, reserved_instances: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
+    query: str = """
+    UNWIND $Records as record
+    MERGE (instance:AWSESReservedInstance{id: record.arn})
+    ON CREATE SET instance.firstseen = timestamp(),
+        instance.arn = record.arn
+    SET instance.lastupdated = $aws_update_tag,
+        instance.name = record.ReservedElasticsearchInstanceId,
+        instance.region = record.region,
+        instance.fixed_price = record.FixedPrice,
+        instance.reserved_elasticsearch_instance_offering_id = record.ReservedElasticsearchInstanceOfferingId,
+        instance.reservation_name = record.ReservationName,
+        instance.payment_option = record.PaymentOption,
+        instance.usage_price = record.UsagePrice,
+        instance.state = record.State,
+        instance.start_time = record.StartTime,
+        instance.elasticsearch_instance_count = record.ElasticsearchInstanceCount,
+        instance.duration = record.Duration,
+        instance.elasticsearch_instance_type = record.ElasticsearchInstanceType,
+        instance.currency_code = record.CurrencyCode
+    WITH instance
+    MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
+    MERGE (owner)-[r:RESOURCE]->(instance)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $aws_update_tag
+    """
+
+    tx.run(
+        query,
+        Records=reserved_instances,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
+
+
+@timeit
+def cleanup_elasticsearch_reserved_instances(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('aws_import_elasticsearch_reserved_instance_cleanup.json', neo4j_session, common_job_parameters)
 
 
 @timeit
@@ -218,4 +327,27 @@ def sync(
         data = _get_es_domains(client)
         _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
 
-    cleanup(neo4j_session, update_tag, current_aws_account_id)  # type: ignore
+    tic = time.perf_counter()
+    logger.info("Syncing Elasticsearch Service for account '%s', at %s.", current_aws_account_id, tic)
+
+    data = []
+    reserved_instances = []
+    for region in es_regions:
+        client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
+        domains = _get_es_domains(client)
+        data = transform_es_domains(domains, region, current_aws_account_id)
+        reserved_instances.extend(get_elasticsearch_reserved_instances(client, region, current_aws_account_id))
+
+    logger.info(f"Total ElasticSearch Domains: {len(data)}")
+
+    logger.info(f"Total ElasticSearch Reserved Instances: {len(data)}")
+
+    _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
+
+    cleanup(neo4j_session, common_job_parameters)
+
+    load_elasticsearch_reserved_instances(neo4j_session, reserved_instances, current_aws_account_id, update_tag)
+    cleanup_elasticsearch_reserved_instances(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Elasticsearch Service: {toc - tic:0.4f} seconds")
