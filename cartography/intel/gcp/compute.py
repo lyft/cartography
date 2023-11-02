@@ -2,6 +2,9 @@
 # https://cloud.google.com/compute/docs/concepts
 import json
 import logging
+import math
+import time
+import ipaddress
 from collections import namedtuple
 from string import Template
 from typing import Any
@@ -11,14 +14,272 @@ from typing import Optional
 from typing import Set
 
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+from botocore.exceptions import ClientError
 
+from . import iam
+from . import label
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+gcp_console_link = GCPLinker()
 InstanceUriPrefix = namedtuple('InstanceUriPrefix', 'zone_name project_id')
+
+
+@timeit
+def get_compute_disks(compute: Resource, project_id: str, zones: list, common_job_parameters) -> List[Dict]:
+    if not zones:
+        return []
+    disks = []
+    try:
+        for zone in zones:
+            req = compute.disks().list(project=project_id, zone=zone['name'])
+            while req is not None:
+                res = req.execute()
+                if res.get('items'):
+                    for disk in res['items']:
+                        disk['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
+                                                                                zone=zone['name'], disk_name=disk['name'], resource_name="compute_instance_disk")
+                        disk['project_id'] = project_id
+                        disk['id'] = f"projects/{project_id}/disks/{disk['name']}"
+                        x = zone['name'].split('-')
+                        disk['region'] = f"{x[0]}-{x[1]}"
+                        disks.append(disk)
+                req = compute.disks().list_next(previous_request=req, previous_response=res)
+
+        return disks
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve compute disks on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
+
+
+@timeit
+def load_compute_disks(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_compute_disks_tx, data_list, project_id, update_tag)
+
+
+@timeit
+def load_compute_disks_tx(
+    tx: neo4j.Transaction, data: List[Dict],
+    project_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND $Records as record
+    MERGE (disk:GCPComputeDisk{id:record.id})
+    ON CREATE SET
+        disk.firstseen = timestamp()
+    SET
+        disk.lastupdated = $gcp_update_tag,
+        disk.region = record.region,
+        disk.name = record.name,
+        disk.creation_timestamp = record.creationTimestamp,
+        disk.description = record.description,
+        disk.zone = record.zone,
+        disk.status = record.status,
+        disk.source_snapshot = record.sourceSnapshot,
+        disk.source_snapshot_id = record.sourceSnapshotId,
+        disk.source_storage_object = record.sourceStorageObject,
+        disk.options = record.options,
+        disk.self_link = record.selfLink,
+        disk.source_image = record.sourceImage,
+        disk.last_attach_timestamp = record.lastAttachTimestamp,
+        disk.last_detach_timestamp = record.lastDetachTimestamp,
+        disk.physical_block_size_bytes = record.physicalBlockSizeBytes,
+        disk.source_disk = record.sourceDisk,
+        disk.source_disk_id = record.sourceDiskId,
+        disk.consolelink = record.consolelink,
+        disk.source_image_id = record.sourceImageId
+    WITH disk
+    MATCH (owner:GCPProject{id: $ProjectId})
+    MERGE (owner)-[r:RESOURCE]->(disk)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    SET r.lastupdated = $gcp_update_tag
+    """
+    tx.run(
+        query,
+        Records=data,
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def cleanup_compute_disks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_compute_disks_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
+def sync_compute_disks(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, zones: Optional[List[Dict]],
+    gcp_update_tag: int, common_job_parameters: Dict,
+) -> None:
+
+    disks = get_compute_disks(compute, project_id, zones, common_job_parameters)
+
+    load_compute_disks(neo4j_session, disks, project_id, gcp_update_tag)
+    cleanup_compute_disks(neo4j_session, common_job_parameters)
+
+
+@timeit
+def get_https_proxies(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
+    https_proxies = []
+    try:
+        req = compute.targetHttpsProxies().list(project=project_id)
+        while req is not None:
+            res = req.execute()
+            if 'items' in res:
+                https_proxies.extend(res['items'])
+            req = compute.targetHttpsProxies().list_next(previous_request=req, previous_response=res)
+
+        return https_proxies
+
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve https proxies on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
+
+
+@timeit
+def transform_https_proxies(proxies: List, project_id: str) -> List[Resource]:
+    list_proxies = []
+    for proxy in proxies:
+        proxy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='vpc_home')
+        proxy['id'] = f"projects/{project_id}/global/targetHttpsProxies/{proxy['name']}"
+        proxy['type'] = 'https'
+        list_proxies.append(proxy)
+
+    return list_proxies
+
+
+@timeit
+def get_ssl_proxies(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
+    ssl_proxies = []
+    try:
+        req = compute.targetSslProxies().list(project=project_id)
+        while req is not None:
+            res = req.execute()
+            if 'items' in res:
+                ssl_proxies.extend(res['items'])
+            req = compute.targetSslProxies().list_next(previous_request=req, previous_response=res)
+
+        return ssl_proxies
+
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not retrieve ssl proxies on project %s due to permissions issues. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
+
+
+@timeit
+def transform_ssl_proxies(proxies: List, project_id: str) -> List[Resource]:
+    list_proxies = []
+    for proxy in proxies:
+        proxy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='vpc_home')
+        proxy['id'] = f"projects/{project_id}/global/targetSslProxies/{proxy['name']}"
+        proxy['type'] = 'ssl'
+        list_proxies.append(proxy)
+
+    return list_proxies
+
+
+@timeit
+def load_proxies(session: neo4j.Session, proxies: List[Dict], project_id: str, update_tag: int) -> None:
+    session.write_transaction(load_proxies_tx, proxies, project_id, update_tag)
+
+
+@timeit
+def load_proxies_tx(
+    tx: neo4j.Transaction, proxies: List[Dict],
+    project_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND $Proxies as p
+    MERGE (proxy:GCPProxy{id:p.id})
+    ON CREATE SET
+        proxy.firstseen = timestamp()
+    SET
+        proxy.lastupdated = $gcp_update_tag,
+        proxy.uniqueId = p.id,
+        proxy.consolelink = p.consolelink,
+        proxy.type = p.type,
+        proxy.name = p.name,
+        proxy.certificateMap = p.certificateMap,
+        proxy.sslPolicy = p.sslPolicy
+    WITH proxy
+    MATCH (owner:GCPProject{id: $ProjectId})
+    MERGE (owner)-[r:RESOURCE]->(proxy)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    SET r.lastupdated = $gcp_update_tag
+    """
+
+    tx.run(
+        query,
+        Proxies=proxies,
+        ProjectId=project_id,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def attach_compute_disks_to_instance(session: neo4j.Session, data_list: List[Dict], instance_id: str, update_tag: int) -> None:
+    session.write_transaction(attach_compute_disks_to_instance_tx, data_list, instance_id, update_tag)
+
+
+@timeit
+def attach_compute_disks_to_instance_tx(
+    tx: neo4j.Transaction, data: List[Dict],
+    instance_id: str, gcp_update_tag: int,
+) -> None:
+
+    query = """
+    UNWIND $Records as record
+    MERGE (disk:GCPComputeDisk{id:record.id})
+    ON CREATE SET
+        disk.firstseen = timestamp()
+    SET
+        disk.lastupdated = $gcp_update_tag
+    WITH disk
+    MATCH (i:GCPInstance{id: $InstanceId})
+    MERGE (i)-[r:USES]->(disk)
+    ON CREATE SET
+        r.firstseen = timestamp()
+    SET r.lastupdated = $gcp_update_tag
+    """
+    tx.run(
+        query,
+        Records=data,
+        InstanceId=instance_id,
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 def _get_error_reason(http_error: HttpError) -> str:
@@ -98,7 +359,7 @@ def get_zones_in_project(project_id: str, compute: Resource, max_results: Option
 
 
 @timeit
-def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], compute: Resource) -> List[Resource]:
+def get_gcp_instances(project_id: str, zones: Optional[List[Dict]], compute: Resource) -> List[Resource]:
     """
     Return list of GCP instance response objects for a given project and list of zones
     :param project_id: The project ID
@@ -111,10 +372,51 @@ def get_gcp_instance_responses(project_id: str, zones: Optional[List[Dict]], com
         return []
     response_objects: List[Resource] = []
     for zone in zones:
+        logger.info("Instance zone %s.", zone['name'])
         req = compute.instances().list(project=project_id, zone=zone['name'])
         res = req.execute()
-        response_objects.append(res)
+        response_objects.extend(res.get('items', []))
     return response_objects
+
+
+@timeit
+def get_gcp_instance_policy_entities(item: Dict, compute: Resource) -> List[Resource]:
+    """
+    Return list of GCP instance policy users response objects for a given project and zones
+    :param project_id: The project ID
+    :param zones: The list of zones to query for instances
+    :param compute: The compute resource object
+    :return: A list of iam_policy users
+    """
+    try:
+        project_id = item['project_id']
+        iam_policy = compute.instances().getIamPolicy(
+            project=project_id, zone=item['zone_name'], resource=item.get("id"),
+        ).execute()
+        bindings = iam_policy.get('bindings', [])
+        entity_list, public_access = iam.transform_bindings(bindings, project_id)
+        return entity_list, public_access
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+            logger.warning(
+                (
+                    "Could not GCP instance policy on project %s due to permissions issues.\
+                         Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return [], False
+
+        elif err.get('status', '') == 'NOT_FOUND' or err.get('code', '') == 404:
+            logger.warning(
+                (
+                    "Could not retrieve GCP instance policy for Project %s \
+                         Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return [], False
+        else:
+            raise
 
 
 @timeit
@@ -180,7 +482,7 @@ def get_gcp_firewall_ingress_rules(project_id: str, compute: Resource) -> Resour
 
 
 @timeit
-def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
+def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> List[Dict]:
     """
     Process the GCP instance response objects and return a flattened list of GCP instances with all the necessary fields
     we need to load it into Neo4j
@@ -189,19 +491,45 @@ def transform_gcp_instances(response_objects: List[Dict]) -> List[Dict]:
     """
     instance_list = []
     for res in response_objects:
-        prefix = res['id']
+        # prefix is of the form https://www.googleapis.com/compute/v1/projects/<project_id>/zones/<zone_name>/<resource_name>
+        prefix = res['zone']
+
         prefix_fields = _parse_instance_uri_prefix(prefix)
 
-        for instance in res.get('items', []):
-            instance['partial_uri'] = f"{prefix}/{instance['name']}"
-            instance['project_id'] = prefix_fields.project_id
-            instance['zone_name'] = prefix_fields.zone_name
+        res['instance_id'] = res['id']
+        res['id'] = f"projects/{prefix_fields.project_id}/zones/{prefix_fields.zone_name}/instances/{res['name']}"
+        res['partial_uri'] = res['id']
 
-            for nic in instance.get('networkInterfaces', []):
-                nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
-                nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
+        res['project_id'] = prefix_fields.project_id
+        res['zone_name'] = prefix_fields.zone_name
+        res['accessConfig'] = res.get('accessConfig', None)
+        res['public_access'] = res.get('public_access', [])
+        res['consolelink'] = gcp_console_link.get_console_link(
+            resource_name="compute_instance", instance_name=res['name'],
+            project_id=res['project_id'], zone=res['zone_name'],
+        )
+        x = res['zone_name'].split('-')
+        res['region'] = f"{x[0]}-{x[1]}"
 
-            instance_list.append(instance)
+        for nic in res.get('networkInterfaces', []):
+            res['networkIP'] = nic.get('networkIP', None)
+            nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
+            nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
+            nic['consolelink'] = gcp_console_link.get_console_link(project_id=prefix_fields.project_id,
+                                                                   network_name=nic['network'], resource_name='compute_instance_vpc_network')
+            for accessconfig in nic.get('accessConfigs', []):
+                accessconfig['consolelink'] = gcp_console_link.get_console_link(project_id=prefix_fields.project_id,
+                                                                                network_name=nic['network'], resource_name='compute_instance_vpc_network')
+                if not res.get('natIP', None):
+                    res['natIP'] = accessconfig.get('natIP', None)
+                else:
+                    break
+            for ipv6AccessConfig in nic.get('ipv6AccessConfigs', []):
+                if not res.get('ipv6natIP', None):
+                    res['ipv6natIP'] = ipv6AccessConfig.get('natIP', None)
+                else:
+                    break
+        instance_list.append(res)
     return instance_list
 
 
@@ -212,10 +540,9 @@ def _parse_instance_uri_prefix(prefix: str) -> InstanceUriPrefix:
     :return: namedtuple with fields project_id and zone_name
     """
     split_list = prefix.split('/')
-
     return InstanceUriPrefix(
-        project_id=split_list[1],
-        zone_name=split_list[3],
+        project_id=split_list[6],
+        zone_name=split_list[8],
     )
 
 
@@ -252,12 +579,16 @@ def transform_gcp_vpcs(vpc_res: Dict) -> List[Dict]:
 
     # prefix has the form `projects/{project ID}/global/networks`
     prefix = vpc_res['id']
+
     projectid = prefix.split('/')[1]
     for v in vpc_res.get('items', []):
         vpc = {}
         partial_uri = f"{prefix}/{v['name']}"
-
-        vpc['partial_uri'] = partial_uri
+        vpc['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='compute_instance_vpc_network', project_id=projectid, network_name=v['name'],
+        )
+        vpc['id'] = f"projects/{projectid}/global/networks/{v['name']}"
+        vpc['partial_uri'] = vpc['id']
         vpc['name'] = v['name']
         vpc['self_link'] = v['selfLink']
         vpc['project_id'] = projectid
@@ -279,15 +610,16 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
     # The `id` in the response object has the form `projects/{project}/regions/{region}/subnetworks`.
     # We can include this in each subnet object in the list to form the partial_uri later on.
     prefix = subnet_res['id']
+
     projectid = prefix.split('/')[1]
     subnet_list: List[Dict] = []
     for s in subnet_res.get('items', []):
         subnet = {}
 
-        # Has the form `projects/{project}/regions/{region}/subnetworks/{subnet_name}`
+        # Has the form `projects/{project}/locations/{region}/subnetworks/{subnet_name}`
         partial_uri = f"{prefix}/{s['name']}"
-        subnet['id'] = partial_uri
-        subnet['partial_uri'] = partial_uri
+        subnet['id'] = f"projects/{projectid}/locations/{s['region'].split('/')[-1]}/subnetworks/{s['name']}"
+        subnet['partial_uri'] = subnet['id']
 
         # Let's maintain an on-node reference to the VPC that this subnet belongs to.
         subnet['vpc_self_link'] = s['network']
@@ -300,6 +632,9 @@ def transform_gcp_subnets(subnet_res: Dict) -> List[Dict]:
         subnet['gateway_address'] = s.get('gatewayAddress', None)
         subnet['ip_cidr_range'] = s.get('ipCidrRange', None)
         subnet['self_link'] = s['selfLink']
+        subnet['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='compute_instance_vpc_network_subnet', project_id=projectid, region=subnet['region'], subnet_name=subnet['name'],
+        )
         subnet['private_ip_google_access'] = s.get('privateIpGoogleAccess', None)
 
         subnet_list.append(subnet)
@@ -315,27 +650,34 @@ def transform_gcp_forwarding_rules(fwd_response: Resource) -> List[Dict]:
     """
     fwd_list: List[Dict] = []
     prefix = fwd_response['id']
+
     project_id = prefix.split('/')[1]
     for fwd in fwd_response.get('items', []):
         forwarding_rule: Dict[str, Any] = {}
 
         fwd_partial_uri = f"{prefix}/{fwd['name']}"
-        forwarding_rule['id'] = fwd_partial_uri
-        forwarding_rule['partial_uri'] = fwd_partial_uri
 
         forwarding_rule['project_id'] = project_id
         # Region looks like "https://www.googleapis.com/compute/v1/projects/{project}/regions/{region name}"
         region = fwd.get('region', None)
-        forwarding_rule['region'] = region.split('/')[-1] if region else None
+        forwarding_rule['region'] = region.split('/')[-1] if region else 'global'
+
+        forwarding_rule['id'] = f"projects/{project_id}/locations/{forwarding_rule['region']}/forwardingRules/{fwd['name']}"
+        forwarding_rule['partial_uri'] = forwarding_rule['id']
+
         forwarding_rule['ip_address'] = fwd.get('IPAddress', None)
         forwarding_rule['ip_protocol'] = fwd.get('IPProtocol', None)
         forwarding_rule['allow_global_access'] = fwd.get('allowGlobalAccess', None)
 
         forwarding_rule['load_balancing_scheme'] = fwd.get('loadBalancingScheme', None)
-        forwarding_rule['name'] = fwd.get('name', None)
+        forwarding_rule['name'] = fwd['name']
         forwarding_rule['port_range'] = fwd.get('portRange', None)
         forwarding_rule['ports'] = fwd.get('ports', None)
-        forwarding_rule['self_link'] = fwd.get('selfLink', None)
+        forwarding_rule['self_link'] = fwd['selfLink']
+        forwarding_rule['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='compute_forwarding_rule', project_id=project_id,
+            rule_name=forwarding_rule['name'], region=forwarding_rule['region'],
+        )
         target = fwd.get('target', None)
         if target:
             forwarding_rule['target'] = _parse_compute_full_uri_to_partial_uri(target)
@@ -366,11 +708,15 @@ def transform_gcp_firewall(fw_response: Resource) -> List[Dict]:
     """
     fw_list: List[Dict] = []
     prefix = fw_response['id']
+
+    projectid = prefix.split('/')[1]
     for fw in fw_response.get('items', []):
         fw_partial_uri = f"{prefix}/{fw['name']}"
-        fw['id'] = fw_partial_uri
+        fw['id'] = f"projects/{projectid}/global/firewalls/{fw['name']}"
         fw['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(fw['network'])
-
+        fw['consolelink'] = gcp_console_link.get_console_link(
+            resource_name='compute_firewall_rule', project_id=projectid, rule_name=fw['name'],
+        )
         fw['transformed_allow_list'] = []
         fw['transformed_deny_list'] = []
         # Mark whether this FW is defined on a target service account.
@@ -497,7 +843,37 @@ def _parse_port_string_to_rule(port: Optional[str], protocol: str, fw_partial_ur
 
 
 @timeit
-def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int) -> None:
+def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_update_tag: int) -> None:
+    iteration_size = 500
+    total_items = len(instances_list)
+    total_iterations = math.ceil(len(instances_list) / iteration_size)
+    logger.info(f"total instances: {total_items}")
+    logger.info(f"total iterations: {total_iterations}")
+
+    for counter in range(0, total_iterations):
+        start = iteration_size * (counter)
+
+        if (start + iteration_size) >= total_items:
+            end = total_items
+            paginated_instances = instances_list[start:]
+
+        else:
+            end = start + iteration_size
+            paginated_instances = instances_list[start:end]
+
+        session.write_transaction(load_gcp_instances_tx, paginated_instances, gcp_update_tag)
+
+        logger.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
+
+    for instance in instances_list:
+        _attach_instance_tags(session, instance, gcp_update_tag)
+        _attach_gcp_nics(session, instance, gcp_update_tag)
+        _attach_gcp_vpc(session, instance['partial_uri'], gcp_update_tag)
+        _attach_instance_service_account(session, instance, gcp_update_tag)
+
+
+@timeit
+def load_gcp_instances_tx(tx: neo4j.Transaction, instances: Dict, gcp_update_tag: int) -> None:
     """
     Ingest GCP instance objects to Neo4j
     :param neo4j_session: The Neo4j session object
@@ -506,20 +882,28 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
     :return: Nothing
     """
-    query = """
-    MERGE (p:GCPProject{id:$ProjectId})
+    ingest_instances = """
+    UNWIND $instances as instance
+    MERGE (p:GCPProject{id:instance.project_id})
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = $gcp_update_tag
 
-    MERGE (i:Instance:GCPInstance{id:$PartialUri})
+    MERGE (i:Instance:GCPInstance{id:instance.partial_uri})
     ON CREATE SET i.firstseen = timestamp(),
-    i.partial_uri = $PartialUri
-    SET i.self_link = $SelfLink,
-    i.instancename = $InstanceName,
-    i.hostname = $Hostname,
-    i.zone_name = $ZoneName,
-    i.project_id = $ProjectId,
-    i.status = $Status,
+    i.partial_uri = instance.partial_uri
+    SET i.self_link = instance.selfLink,
+    i.instancename = instance.name,
+    i.instance_id = instance.instance_id,
+    i.hostname = instance.hostname,
+    i.region = instance.region,
+    i.zone_name = instance.zone_name,
+    i.project_id = instance.project_id,
+    i.natIP = instance.natIP,
+    i.networkIP = instance.networkIP,
+    i.ipv6_nat_ip = instance.ipv6natIP,
+    i.accessConfig = instance.accessConfig,
+    i.status = instance.status,
+    i.consolelink = instance.consolelink,
     i.lastupdated = $gcp_update_tag
     WITH i, p
 
@@ -527,21 +911,51 @@ def load_gcp_instances(neo4j_session: neo4j.Session, data: List[Dict], gcp_updat
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     """
-    for instance in data:
-        neo4j_session.run(
-            query,
-            ProjectId=instance['project_id'],
-            PartialUri=instance['partial_uri'],
-            SelfLink=instance['selfLink'],
-            InstanceName=instance['name'],
-            ZoneName=instance['zone_name'],
-            Hostname=instance.get('hostname', None),
-            Status=instance['status'],
-            gcp_update_tag=gcp_update_tag,
-        )
-        _attach_instance_tags(neo4j_session, instance, gcp_update_tag)
-        _attach_gcp_nics(neo4j_session, instance, gcp_update_tag)
-        _attach_gcp_vpc(neo4j_session, instance['partial_uri'], gcp_update_tag)
+
+    tx.run(
+        ingest_instances,
+        instances=instances,
+        gcp_update_tag=gcp_update_tag,
+    )
+
+
+@timeit
+def load_compute_entity_relation(session: neo4j.Session, instance: Dict, update_tag: int) -> None:
+    session.write_transaction(load_compute_entity_relation_tx, instance, update_tag)
+
+
+@timeit
+def load_compute_entity_relation_tx(tx: neo4j.Transaction, instance: Dict, gcp_update_tag: int) -> None:
+    """
+        :type neo4j_session: Neo4j session object
+        :param neo4j session: The Neo4j session object
+
+        :type instance: Dict
+        :param instance: instance Dict object
+
+        :type project_id: str
+        :param project_id: Current Google Project Id
+
+        :type gcp_update_tag: timestamp
+        :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+
+        :rtype: NoneType
+        :return: Nothing
+    """
+    ingest_entities = """
+    UNWIND $entities AS entity
+    MATCH (principal:GCPPrincipal{email:entity.email})
+    WITH principal
+    MATCH (i:GCPInstance{id: $instance_id})
+    MERGE (principal)-[r:USES]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $gcp_update_tag    """
+    tx.run(
+        ingest_entities,
+        instance_id=instance.get('name', None),
+        entities=instance.get('entities', []),
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 @timeit
@@ -554,19 +968,21 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
     :return: Nothing
     """
     query = """
-    MERGE(p:GCPProject{id:$ProjectId})
+    MERGE (p:GCPProject{id: $ProjectId})
     ON CREATE SET p.firstseen = timestamp()
     SET p.lastupdated = $gcp_update_tag
 
-    MERGE(vpc:GCPVpc{id:$PartialUri})
+    MERGE (vpc:GCPVpc{id: $PartialUri})
     ON CREATE SET vpc.firstseen = timestamp(),
     vpc.partial_uri = $PartialUri
     SET vpc.self_link = $SelfLink,
+    vpc.region = $region,
     vpc.name = $VpcName,
-    vpc.project_id = $ProjectId,
+    vpc.project_id =  $ProjectId,
     vpc.auto_create_subnetworks = $AutoCreateSubnetworks,
     vpc.routing_config_routing_mode = $RoutingMode,
     vpc.description = $Description,
+    vpc.consolelink = $consolelink,
     vpc.lastupdated = $gcp_update_tag
 
     MERGE (p)-[r:RESOURCE]->(vpc)
@@ -583,6 +999,8 @@ def load_gcp_vpcs(neo4j_session: neo4j.Session, vpcs: List[Dict], gcp_update_tag
             AutoCreateSubnetworks=vpc['auto_create_subnetworks'],
             RoutingMode=vpc['routing_config_routing_mode'],
             Description=vpc['description'],
+            region=vpc.get('region'),
+            consolelink=vpc.get('consolelink'),
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -597,11 +1015,12 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
     :return: Nothing
     """
     query = """
-    MERGE(vpc:GCPVpc{id:$VpcPartialUri})
+    MERGE (vpc:GCPVpc{id: $VpcPartialUri})
     ON CREATE SET vpc.firstseen = timestamp(),
     vpc.partial_uri = $VpcPartialUri
+    SET vpc.lastupdated = $gcp_update_tag
 
-    MERGE(subnet:GCPSubnet{id:$PartialUri})
+    MERGE (subnet:GCPSubnet{id: $PartialUri})
     ON CREATE SET subnet.firstseen = timestamp(),
     subnet.partial_uri = $PartialUri
     SET subnet.self_link = $SubnetSelfLink,
@@ -612,6 +1031,7 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
     subnet.ip_cidr_range = $IpCidrRange,
     subnet.private_ip_google_access = $PrivateIpGoogleAccess,
     subnet.vpc_partial_uri = $VpcPartialUri,
+    subnet.consolelink = $consolelink,
     subnet.lastupdated = $gcp_update_tag
 
     MERGE (vpc)-[r:RESOURCE]->(subnet)
@@ -631,6 +1051,7 @@ def load_gcp_subnets(neo4j_session: neo4j.Session, subnets: List[Dict], gcp_upda
             GatewayAddress=s['gateway_address'],
             IpCidrRange=s['ip_cidr_range'],
             PrivateIpGoogleAccess=s['private_ip_google_access'],
+            consolelink=s['consolelink'],
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -646,7 +1067,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
     """
 
     query = """
-        MERGE(fwd:GCPForwardingRule{id:$PartialUri})
+        MERGE (fwd:GCPForwardingRule{id: $PartialUri})
         ON CREATE SET fwd.firstseen = timestamp(),
         fwd.partial_uri = $PartialUri
         SET fwd.ip_address = $IPAddress,
@@ -661,6 +1082,7 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
         fwd.self_link = $SelfLink,
         fwd.subnetwork = $SubNetworkPartialUri,
         fwd.target = $TargetPartialUri,
+        fwd.consolelink = $consolelink,
         fwd.lastupdated = $gcp_update_tag
     """
 
@@ -680,11 +1102,12 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
             PortRange=fwd.get('port_range', None),
             Ports=fwd.get('ports', None),
             ProjectId=fwd['project_id'],
-            Region=fwd.get('region', None),
+            Region=fwd.get('region', "global"),
             SelfLink=fwd['self_link'],
             SubNetwork=subnetwork,
             SubNetworkPartialUri=fwd.get('subnetwork_partial_uri', None),
             TargetPartialUri=fwd['target'],
+            consolelink=fwd.get('consolelink', None),
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -697,15 +1120,15 @@ def load_gcp_forwarding_rules(neo4j_session: neo4j.Session, fwd_rules: List[Dict
 @timeit
 def _attach_fwd_rule_to_subnet(neo4j_session: neo4j.Session, fwd: Dict, gcp_update_tag: int) -> None:
     query = """
-        MERGE(subnet:GCPSubnet{id:$SubNetworkPartialUri})
+        MERGE (subnet:GCPSubnet{id: $SubNetworkPartialUri})
         ON CREATE SET subnet.firstseen = timestamp(),
         subnet.partial_uri = $SubNetworkPartialUri
         SET subnet.lastupdated = $gcp_update_tag
 
         WITH subnet
-        MATCH(fwd:GCPForwardingRule{id:$PartialUri})
+        MATCH(fwd:GCPForwardingRule{id: $PartialUri})
 
-        MERGE(subnet)-[p:RESOURCE]->(fwd)
+        MERGE (subnet)-[p:RESOURCE]->(fwd)
         ON CREATE SET p.firstseen = timestamp()
         SET p.lastupdated = $gcp_update_tag
     """
@@ -721,12 +1144,13 @@ def _attach_fwd_rule_to_subnet(neo4j_session: neo4j.Session, fwd: Dict, gcp_upda
 @timeit
 def _attach_fwd_rule_to_vpc(neo4j_session: neo4j.Session, fwd: Dict, gcp_update_tag: int) -> None:
     query = """
-        MERGE (vpc:GCPVpc{id:$NetworkPartialUri})
+        MERGE (vpc:GCPVpc{id: $NetworkPartialUri})
         ON CREATE SET vpc.firstseen = timestamp(),
         vpc.partial_uri = $NetworkPartialUri
+        SET vpc.lastupdated = $gcp_update_tag
 
         WITH vpc
-        MATCH (fwd:GCPForwardingRule{id:$PartialUri})
+        MATCH (fwd:GCPForwardingRule{id: $PartialUri})
 
         MERGE (vpc)-[r:RESOURCE]->(fwd)
         ON CREATE SET r.firstseen = timestamp()
@@ -751,9 +1175,9 @@ def _attach_instance_tags(neo4j_session: neo4j.Session, instance: Resource, gcp_
     :return: Nothing
     """
     query = """
-    MATCH (i:GCPInstance{id:$InstanceId})
+    MATCH (i:GCPInstance{id: $InstanceId})
 
-    MERGE (t:GCPNetworkTag{id:$TagId})
+    MERGE (t:GCPNetworkTag{id: $TagId})
     ON CREATE SET t.tag_id = $TagId,
     t.value = $TagValue,
     t.firstseen = timestamp()
@@ -764,7 +1188,7 @@ def _attach_instance_tags(neo4j_session: neo4j.Session, instance: Resource, gcp_
     SET h.lastupdated = $gcp_update_tag
 
     WITH t
-    MATCH (vpc:GCPVpc{id:$VpcPartialUri})
+    MATCH (vpc:GCPVpc{id: $VpcPartialUri})
 
     MERGE (vpc)<-[d:DEFINED_IN]-(t)
     ON CREATE SET d.firstseen = timestamp()
@@ -794,19 +1218,19 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
     :return: Nothing
     """
     query = """
-    MATCH (i:GCPInstance{id:$InstanceId})
-    MERGE (nic:GCPNetworkInterface:NetworkInterface{id:$NicId})
+    MATCH (i:GCPInstance{id: $InstanceId})
+    MERGE (nic:GCPNetworkInterface{id: $NicId})
     ON CREATE SET nic.firstseen = timestamp(),
     nic.nic_id = $NicId
     SET nic.private_ip = $NetworkIP,
+    nic.network = $Network,
     nic.name = $NicName,
     nic.lastupdated = $gcp_update_tag
-
     MERGE (i)-[r:NETWORK_INTERFACE]->(nic)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
 
-    MERGE (subnet:GCPSubnet{id:$SubnetPartialUri})
+    MERGE (subnet:GCPSubnet{id: $SubnetPartialUri})
     ON CREATE SET subnet.firstseen = timestamp(),
     subnet.partial_uri = $SubnetPartialUri
     SET subnet.lastupdated = $gcp_update_tag
@@ -823,7 +1247,9 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
             InstanceId=instance['partial_uri'],
             NicId=nic_id,
             NetworkIP=nic.get('networkIP'),
+            Network=nic.get('network'),
             NicName=nic['name'],
+            ConsoleLink=nic.get('consolelink'),
             gcp_update_tag=gcp_update_tag,
             SubnetPartialUri=nic['subnet_partial_uri'],
         )
@@ -842,13 +1268,13 @@ def _attach_gcp_nic_access_configs(
     :return: Nothing
     """
     query = """
-    MATCH (nic{id:$NicId})
-    MERGE (ac:GCPNicAccessConfig{id:$AccessConfigId})
+    MATCH (nic{id: $NicId})
+    MERGE (ac:GCPNicAccessConfig{id: $AccessConfigId})
     ON CREATE SET ac.firstseen = timestamp(),
     ac.access_config_id = $AccessConfigId
     SET ac.type=$Type,
     ac.name = $Name,
-    ac.public_ip = $NatIP,
+    ac.public_ip =  $NatIP,
     ac.set_public_ptr = $SetPublicPtr,
     ac.public_ptr_domain_name = $PublicPtrDomainName,
     ac.network_tier = $NetworkTier,
@@ -867,6 +1293,7 @@ def _attach_gcp_nic_access_configs(
             AccessConfigId=access_config_id,
             Type=ac['type'],
             Name=ac['name'],
+            ConsoleLink=ac['consolelink'],
             NatIP=ac.get('natIP', None),
             SetPublicPtr=ac.get('setPublicPtr', None),
             PublicPtrDomainName=ac.get('publicPtrDomainName', None),
@@ -885,7 +1312,7 @@ def _attach_gcp_vpc(neo4j_session: neo4j.Session, instance_id: str, gcp_update_t
     :return: Nothing
     """
     query = """
-    MATCH (i:GCPInstance{id:$InstanceId})-[:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)
+    MATCH (i:GCPInstance{id: $InstanceId})-[:NETWORK_INTERFACE]->(nic:GCPNetworkInterface)
           -[p:PART_OF_SUBNET]->(sn:GCPSubnet)<-[r:RESOURCE]-(vpc:GCPVpc)
     MERGE (i)-[m:MEMBER_OF_GCP_VPC]->(vpc)
     ON CREATE SET m.firstseen = timestamp()
@@ -899,6 +1326,31 @@ def _attach_gcp_vpc(neo4j_session: neo4j.Session, instance_id: str, gcp_update_t
 
 
 @timeit
+def _attach_instance_service_account(neo4j_session: neo4j.Session, instance: Resource, gcp_update_tag: int) -> None:
+    """
+    Attach service account to GCP instance
+    :param neo4j_session: The session
+    :param instance: The instance object
+    :param gcp_update_tag: The timestamp
+    :return: Nothing
+    """
+    query = """
+    MATCH (i:GCPInstance{id: $InstanceId})
+    MERGE (sa:GCPServiceAccount{email: $AccountEmail})
+    MERGE (sa)-[r:USED_BY]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $gcp_update_tag
+    """
+    for account in instance.get('serviceAccounts', []):
+        neo4j_session.run(
+            query,
+            InstanceId=instance['partial_uri'],
+            AccountEmail=account.get('email', ''),
+            gcp_update_tag=gcp_update_tag,
+        )
+
+
+@timeit
 def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resource], gcp_update_tag: int) -> None:
     """
     Load the firewall list to Neo4j
@@ -906,18 +1358,21 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     :return: Nothing
     """
     query = """
-    MERGE (fw:GCPFirewall{id:$FwPartialUri})
+    MERGE (fw:GCPFirewall{id: $FwPartialUri})
     ON CREATE SET fw.firstseen = timestamp(),
     fw.partial_uri = $FwPartialUri
     SET fw.direction = $Direction,
     fw.disabled = $Disabled,
     fw.name = $Name,
+    fw.region = $region,
     fw.priority = $Priority,
     fw.self_link = $SelfLink,
     fw.has_target_service_accounts = $HasTargetServiceAccounts,
+    fw.consolelink = $consolelink,
+    fw.network = $Network,
     fw.lastupdated = $gcp_update_tag
 
-    MERGE (vpc:GCPVpc{id:$VpcPartialUri})
+    MERGE (vpc:GCPVpc{id: $VpcPartialUri})
     ON CREATE SET vpc.firstseen = timestamp(),
     vpc.partial_uri = $VpcPartialUri
     SET vpc.lastupdated = $gcp_update_tag
@@ -925,6 +1380,14 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     MERGE (vpc)-[r:RESOURCE]->(fw)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
+    
+    MERGE (nic:GCPNetworkInterface{network: fw.network})
+    ON CREATE SET nic.firstseen = timestamp()
+    SET nic.lastupdated = $gcp_update_tag
+    
+    MERGE (fw)-[c:ATTACH_TO]->(nic)
+    ON CREATE SET c.firstseen = timestamp()
+    SET c.lastupdated = $gcp_update_tag
     """
     for fw in fw_list:
         neo4j_session.run(
@@ -935,12 +1398,46 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
             Name=fw['name'],
             Priority=fw['priority'],
             SelfLink=fw['selfLink'],
+            region="global",
             VpcPartialUri=fw['vpc_partial_uri'],
             HasTargetServiceAccounts=fw['has_target_service_accounts'],
+            consolelink=fw['consolelink'],
+            Network=fw['network'],
             gcp_update_tag=gcp_update_tag,
         )
         _attach_firewall_rules(neo4j_session, fw, gcp_update_tag)
         _attach_target_tags(neo4j_session, fw, gcp_update_tag)
+        _attach_firewall_public_ip_address(neo4j_session, fw, gcp_update_tag)
+
+
+@timeit
+def _attach_firewall_public_ip_address(neo4j_session: neo4j.Session, fw: Resource, gcp_update_tag: int) -> None:
+    ingest_public_ip_address = """
+    UNWIND $PublicIpAddress as ip
+        MERGE (i:GCPPublicIpAddress{ipAddress:ip})
+            ON CREATE SET i.firstseen = timestamp()
+            SET i.lastupdated = $gcp_update_tag,
+                i.IpAddress=ip,
+                i.id=ip,
+                i.type='Internal',
+                i.source='GCP',
+                i.resource='FirewallRule',
+                i.lastupdated = $gcp_update_tag         
+        with i
+            MATCH (p:GCPFirewall{id: $FwId})
+        with i,p
+         MERGE (p)-[r:MEMBER_OF_PUBLIC_IP_ADDRESS]->(i)
+         ON CREATE SET r.firstseen = timestamp()
+         SET
+         r.lastupdated = $gcp_update_tag       
+    """
+    public_ip_address = [ip for ip in fw.get('sourceRanges', []) if not ipaddress.IPv4Network(str(ip).split('/')[0]).is_private]
+    neo4j_session.run(
+        query=ingest_public_ip_address,
+        PublicIpAddress=public_ip_address,
+        FwId=fw['id'],
+        gcp_update_tag=gcp_update_tag,
+    )
 
 
 @timeit
@@ -953,9 +1450,9 @@ def _attach_firewall_rules(neo4j_session: neo4j.Session, fw: Resource, gcp_updat
     :return: Nothing
     """
     template = Template("""
-    MATCH (fw:GCPFirewall{id:$FwPartialUri})
+    MATCH (fw:GCPFirewall{id: $FwPartialUri})
 
-    MERGE (rule:IpRule:IpPermissionInbound:GCPIpRule{id:$RuleId})
+    MERGE (rule:IpRule:IpPermissionInbound:GCPIpRule{id: $RuleId})
     ON CREATE SET rule.firstseen = timestamp(),
     rule.ruleid = $RuleId
     SET rule.protocol = $Protocol,
@@ -963,7 +1460,7 @@ def _attach_firewall_rules(neo4j_session: neo4j.Session, fw: Resource, gcp_updat
     rule.toport = $ToPort,
     rule.lastupdated = $gcp_update_tag
 
-    MERGE (rng:IpRange{id:$Range})
+    MERGE (rng:IpRange{id: $Range})
     ON CREATE SET rng.firstseen = timestamp(),
     rng.range = $Range
     SET rng.lastupdated = $gcp_update_tag
@@ -1008,9 +1505,9 @@ def _attach_target_tags(neo4j_session: neo4j.Session, fw: Resource, gcp_update_t
     :return: Nothing
     """
     query = """
-    MATCH (fw:GCPFirewall{id:$FwPartialUri})
+    MATCH (fw:GCPFirewall{id: $FwPartialUri})
 
-    MERGE (t:GCPNetworkTag{id:$TagId})
+    MERGE (t:GCPNetworkTag{id: $TagId})
     ON CREATE SET t.firstseen = timestamp(),
     t.tag_id = $TagId,
     t.value = $TagValue
@@ -1083,7 +1580,133 @@ def cleanup_gcp_firewall_rules(neo4j_session: neo4j.Session, common_job_paramete
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    run_cleanup_job('gcp_compute_firewall_cleanup.json', neo4j_session, common_job_parameters)
+    try:
+        run_cleanup_job('gcp_compute_firewall_cleanup.json', neo4j_session, common_job_parameters)
+
+    except ClientError as ex:
+        logger.error("error while syncing gcp firewall rules", ex)
+
+
+@timeit
+def cleanup_gcp_proxies(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+    Delete out of date GCP Proxies and their relationships
+    :param neo4j_session: The Neo4j session
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    try:
+        run_cleanup_job('gcp_compute_proxies_cleanup.json', neo4j_session, common_job_parameters)
+
+    except ClientError as ex:
+        logger.error("error while syncing gcp proxies", ex)
+
+
+@timeit
+def sync_gcp_https_proxies(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    """
+    Get GCP Https Proxies, ingest to Neo4j, and clean up old data.
+    :param neo4j_session: The Neo4j session
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID to sync
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    h_proxies = get_https_proxies(compute, project_id, common_job_parameters)
+    https_proxies = transform_https_proxies(h_proxies, project_id)
+    load_proxies(neo4j_session, https_proxies, project_id, gcp_update_tag)
+
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+    cleanup_gcp_proxies(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, https_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
+
+
+@timeit
+def sync_gcp_ssl_proxies(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    """
+    Get GCP SSL Proxies, ingest to Neo4j, and clean up old data.
+    :param neo4j_session: The Neo4j session
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID to sync
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    s_proxies = get_ssl_proxies(compute, project_id, common_job_parameters)
+    ssl_proxies = transform_ssl_proxies(s_proxies, project_id)
+    load_proxies(neo4j_session, ssl_proxies, project_id, gcp_update_tag)
+
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+    cleanup_gcp_proxies(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, ssl_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
+
+
+@timeit
+def cleanup_gcp_proxies(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    """
+    Delete out of date GCP Proxies and their relationships
+    :param neo4j_session: The Neo4j session
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    try:
+        run_cleanup_job('gcp_compute_proxies_cleanup.json', neo4j_session, common_job_parameters)
+
+    except ClientError as ex:
+        logger.error("error while syncing gcp proxies", ex)
+
+
+@timeit
+def sync_gcp_https_proxies(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    """
+    Get GCP Https Proxies, ingest to Neo4j, and clean up old data.
+    :param neo4j_session: The Neo4j session
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID to sync
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    h_proxies = get_https_proxies(compute, project_id, common_job_parameters)
+    https_proxies = transform_https_proxies(h_proxies, project_id)
+    load_proxies(neo4j_session, https_proxies, project_id, gcp_update_tag)
+
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+    cleanup_gcp_proxies(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, https_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
+
+
+@timeit
+def sync_gcp_ssl_proxies(
+    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    """
+    Get GCP SSL Proxies, ingest to Neo4j, and clean up old data.
+    :param neo4j_session: The Neo4j session
+    :param compute: The GCP Compute resource object
+    :param project_id: The project ID to sync
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: dict of other job parameters to pass to Neo4j
+    :return: Nothing
+    """
+    s_proxies = get_ssl_proxies(compute, project_id, common_job_parameters)
+    ssl_proxies = transform_ssl_proxies(s_proxies, project_id)
+    load_proxies(neo4j_session, ssl_proxies, project_id, gcp_update_tag)
+
+    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
+    cleanup_gcp_proxies(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, ssl_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
 
 
 @timeit
@@ -1103,11 +1726,24 @@ def sync_gcp_instances(
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    instance_responses = get_gcp_instance_responses(project_id, zones, compute)
-    instance_list = transform_gcp_instances(instance_responses)
+
+    instance_responses = get_gcp_instances(project_id, zones, compute)
+
+    instance_list = transform_gcp_instances(instance_responses, compute)
+
     load_gcp_instances(neo4j_session, instance_list, gcp_update_tag)
+
+    # attach compute instance to disks
+    for instance in instance_list:
+        disks = []
+        for disk in instance.get('disks', []):
+            disk['id'] = f"projects/{project_id}/disks/{disk.get('initializeParams', {}).get('diskName', '')}"
+            disks.append(disk)
+        attach_compute_disks_to_instance(neo4j_session, disks, instance['partial_uri'], gcp_update_tag)
+
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_instances(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, instance_list, gcp_update_tag, common_job_parameters, 'instances', 'GCPInstance')
 
 
 @timeit
@@ -1126,9 +1762,11 @@ def sync_gcp_vpcs(
     """
     vpc_res = get_gcp_vpcs(project_id, compute)
     vpcs = transform_gcp_vpcs(vpc_res)
+
     load_gcp_vpcs(neo4j_session, vpcs, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_vpcs(neo4j_session, common_job_parameters)
+    label.sync_labels(neo4j_session, vpcs, gcp_update_tag, common_job_parameters, 'vpcs', 'GCPVpc')
 
 
 @timeit
@@ -1137,8 +1775,10 @@ def sync_gcp_subnets(
     common_job_parameters: Dict,
 ) -> None:
     for r in regions:
+        logger.info("Subnet Region %s.", r)
         subnet_res = get_gcp_subnets(project_id, r, compute)
         subnets = transform_gcp_subnets(subnet_res)
+
         load_gcp_subnets(neo4j_session, subnets, gcp_update_tag)
         # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
         cleanup_gcp_subnets(neo4j_session, common_job_parameters)
@@ -1147,7 +1787,6 @@ def sync_gcp_subnets(
 @timeit
 def sync_gcp_forwarding_rules(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, regions: List[str], gcp_update_tag: int,
-
     common_job_parameters: Dict,
 ) -> None:
     """
@@ -1160,13 +1799,16 @@ def sync_gcp_forwarding_rules(
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
+    logger.info("Syncing Compute forwarding rule for project %s.", project_id)
     global_fwd_response = get_gcp_global_forwarding_rules(project_id, compute)
     forwarding_rules = transform_gcp_forwarding_rules(global_fwd_response)
+
     load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_forwarding_rules(neo4j_session, common_job_parameters)
 
     for r in regions:
+        logger.info("Forwarding Rule Region %s.", r)
         fwd_response = get_gcp_regional_forwarding_rules(project_id, r, compute)
         forwarding_rules = transform_gcp_forwarding_rules(fwd_response)
         load_gcp_forwarding_rules(neo4j_session, forwarding_rules, gcp_update_tag)
@@ -1189,6 +1831,7 @@ def sync_gcp_firewall_rules(
     """
     fw_response = get_gcp_firewall_ingress_rules(project_id, compute)
     fw_list = transform_gcp_firewall(fw_response)
+
     load_gcp_ingress_firewalls(neo4j_session, fw_list, gcp_update_tag)
     # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
     cleanup_gcp_firewall_rules(neo4j_session, common_job_parameters)
@@ -1210,7 +1853,7 @@ def _zones_to_regions(zones: List[str]) -> List[Set]:
 
 def sync(
     neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: dict,
+    common_job_parameters: dict, regions: list,
 ) -> None:
     """
     Sync all objects that we need the GCP Compute resource object for.
@@ -1223,15 +1866,40 @@ def sync(
     :param common_job_parameters: dict of other job parameters to pass to Neo4j
     :return: Nothing
     """
-    logger.info("Syncing Compute objects for project %s.", project_id)
+    tic = time.perf_counter()
+
+    logger.info(f"Syncing Compute for project {project_id}, at {tic}")
+
     zones = get_zones_in_project(project_id, compute)
     # Only pull additional assets for this project if the Compute API is enabled
     if zones is None:
         return
     else:
+        if regions:
+            zones_list = []
+            for zone in zones:
+                if zone['name'][:-2] in regions:
+                    zones_list.append(zone)
+            zones = zones_list
+
         regions = _zones_to_regions(zones)
         sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
-        sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
-        sync_gcp_subnets(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
-        sync_gcp_instances(neo4j_session, compute, project_id, zones, gcp_update_tag, common_job_parameters)
-        sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions, gcp_update_tag, common_job_parameters)
+
+        sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag,
+                                common_job_parameters)
+
+        sync_gcp_subnets(neo4j_session, compute, project_id, regions,
+                         gcp_update_tag, common_job_parameters)
+        sync_gcp_instances(neo4j_session, compute, project_id, zones,
+                           gcp_update_tag, common_job_parameters)
+        sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions,
+                                  gcp_update_tag, common_job_parameters)
+        sync_compute_disks(neo4j_session, compute, project_id, zones,
+                           gcp_update_tag, common_job_parameters)
+        sync_gcp_https_proxies(neo4j_session, compute, project_id,
+                               gcp_update_tag, common_job_parameters)
+        sync_gcp_ssl_proxies(neo4j_session, compute, project_id,
+                             gcp_update_tag, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Compute: {toc - tic:0.4f} seconds")
