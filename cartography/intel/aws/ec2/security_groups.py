@@ -12,18 +12,35 @@ from cartography.models.aws.ec2.securitygroup_instance import EC2SecurityGroupIn
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-
+import time
+from cloudconsolelink.clouds.aws import AWSLinker
+from botocore.exceptions import ClientError
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
+
 
 
 @timeit
 @aws_handle_regions
 def get_ec2_security_group_data(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    paginator = client.get_paginator('describe_security_groups')
-    security_groups: List[Dict] = []
-    for page in paginator.paginate():
-        security_groups.extend(page['SecurityGroups'])
+    security_groups = []
+    try:
+        paginator = client.get_paginator('describe_security_groups')
+        security_groups: List[Dict] = []
+        for page in paginator.paginate():
+            security_groups.extend(page['SecurityGroups'])
+        for group in security_groups:
+            group['region'] = region
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
+            logger.warning(
+                f'ec2:describe_security_groups failed with AccessDeniedException; continuing sync.',
+                exc_info=True,
+            )
+        else:
+            raise
+
     return security_groups
 
 
@@ -52,16 +69,16 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
     SET r.lastupdated = $update_tag
     """
 
-    ingest_range = """
-    MERGE (range:IpRange{id: $RangeId})
-    ON CREATE SET range.firstseen = timestamp(), range.range = $RangeId
+    ingest_range = Template("""
+    MERGE (range:$range_label{id: $RangeId})
+    ON CREATE SET range.firstseen = timestamp(), range.range = $Range
     SET range.lastupdated = $update_tag
     WITH range
     MATCH (rule:IpRule{ruleid: $RuleId})
     MERGE (rule)<-[r:MEMBER_OF_IP_RULE]-(range)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag
-    """
+    """)
 
     group_id = group["GroupId"]
     rule_type_map = {"IpPermissions": "IpPermissionInbound", "IpPermissionsEgress": "IpPermissionEgress"}
@@ -93,25 +110,39 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
             )
 
             for ip_range in rule["IpRanges"]:
-                range_id = ip_range["CidrIp"]
+                range_id = f"IpRule/{ruleid}/ipRange/{ip_range['CidrIp']}"
                 neo4j_session.run(
-                    ingest_range,
+                    ingest_range.safe_substitute(range_label='IpRange'),
                     RangeId=range_id,
+                    Range=ip_range['CidrIp'],
+                    RuleId=ruleid,
+                    update_tag=update_tag,
+                )
+
+            for ipv6_range in rule["Ipv6Ranges"]:
+                range_id = f"IpRule/{ruleid}/ipv6Range/{ipv6_range['CidrIpv6']}"
+                neo4j_session.run(
+                    ingest_range.safe_substitute(range_label='Ipv6Range'),
+                    RangeId=range_id,
+                    Range=ipv6_range['CidrIpv6'],
                     RuleId=ruleid,
                     update_tag=update_tag,
                 )
 
 
+
 @timeit
 def load_ec2_security_groupinfo(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str,
+    neo4j_session: neo4j.Session, data: List[Dict],
     current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_security_group = """
     MERGE (group:EC2SecurityGroup{id: $GroupId})
     ON CREATE SET group.firstseen = timestamp(), group.groupid = $GroupId
-    SET group.name = $GroupName, group.description = $Description, group.region = $Region,
-    group.lastupdated = $update_tag
+    SET group.name = $GroupName, group.description = $Description,
+    group.consolelink = $consolelink,
+    group.region = $Region,
+    group.lastupdated = $update_tag, group.arn = $GroupArn
     WITH group
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(group)
@@ -124,11 +155,17 @@ def load_ec2_security_groupinfo(
     """
 
     for group in data:
+        region = group.get('region', '')
         group_id = group["GroupId"]
+        group_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:security-group/{group_id}"
+        consolelink = ''
+        consolelink = aws_console_link.get_console_link(arn=group_arn)
 
         neo4j_session.run(
             ingest_security_group,
             GroupId=group_id,
+            GroupArn=group_arn,
+            consolelink=consolelink,
             GroupName=group.get("GroupName"),
             Description=group.get("Description"),
             VpcId=group.get("VpcId", None),
@@ -156,8 +193,15 @@ def sync_ec2_security_groupinfo(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing EC2 security groups for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.info("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_ec2_security_group_data(boto3_session, region)
         load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_ec2_security_groupinfo(neo4j_session, common_job_parameters)
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 security groups: {toc - tic:0.4f} seconds")
+

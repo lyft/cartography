@@ -17,6 +17,7 @@ class EC2SubnetInstanceNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('SubnetId')
     subnet_id: PropertyRef = PropertyRef('SubnetId', extra_index=True)
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
+    consolelink: PropertyRef = PropertyRef('consolelink')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 

@@ -18,6 +18,7 @@ class EC2ReservationNodeProperties(CartographyNodeProperties):
     requesterid: PropertyRef = PropertyRef('RequesterId')
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+    consolelink:PropertyRef = PropertyRef('consolelink')
 
 
 @dataclass(frozen=True)

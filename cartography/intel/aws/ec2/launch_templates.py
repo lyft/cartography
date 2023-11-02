@@ -10,6 +10,8 @@ from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
+import time
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,14 +21,20 @@ def get_launch_templates(boto3_session: boto3.session.Session, region: str) -> L
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_launch_templates')
     templates: List[Dict] = []
-    for page in paginator.paginate():
-        templates.extend(page['LaunchTemplates'])
-    for template in templates:
-        template_versions: List[Dict] = []
-        v_paginator = client.get_paginator('describe_launch_template_versions')
-        for versions in v_paginator.paginate(LaunchTemplateId=template['LaunchTemplateId']):
-            template_versions.extend(versions["LaunchTemplateVersions"])
-        template["_template_versions"] = template_versions
+    try:
+        for page in paginator.paginate():
+            templates.extend(page['LaunchTemplates'])
+
+        for template in templates:
+            template_versions: List[Dict] = []
+            v_paginator = client.get_paginator('describe_launch_template_versions')
+            for versions in v_paginator.paginate(LaunchTemplateId=template['LaunchTemplateId']):
+                template_versions.extend(versions["LaunchTemplateVersions"])
+            template["_template_versions"] = template_versions
+
+    except Exception as e:
+        logger.warning(f"Failed retrieve address for region - {region}. Error - {e}")
+
     return templates
 
 
@@ -81,9 +89,9 @@ def load_launch_templates(
             SET r.lastupdated = $update_tag
     """
     for lt in data:
-        lt['CreateTime'] = str(int(lt['CreateTime'].timestamp()))
-        for tv in lt["_template_versions"]:
-            tv['CreateTime'] = str(int(tv['CreateTime'].timestamp()))
+        lt['CreateTime'] = str(time.mktime(lt['CreateTime'].timetuple()))
+        for tv in lt.get("_template_versions", []):
+            tv['CreateTime'] = str(time.mktime(tv['CreateTime'].timetuple()))
 
     neo4j_session.run(
         ingest_lt,
@@ -108,8 +116,18 @@ def sync_ec2_launch_templates(
         neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing EC2 Launch Templates for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.debug("Syncing launch templates for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_launch_templates(boto3_session, region)
+
+        logger.info(f"Total EC2 Launch Templates: {len(data)} for {region}")
+
         load_launch_templates(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_ec2_launch_templates(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 Launch Templates: {toc - tic:0.4f} seconds")

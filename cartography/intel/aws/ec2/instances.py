@@ -20,6 +20,10 @@ from cartography.models.aws.ec2.subnet_instance import EC2SubnetInstanceSchema
 from cartography.models.aws.ec2.volumes import EBSVolumeInstanceSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
+import math
+from cloudconsolelink.clouds.aws import AWSLinker
+from botocore.exceptions import ClientError
+aws_console_link = AWSLinker()
 
 logger = logging.getLogger(__name__)
 
@@ -39,13 +43,25 @@ Ec2Data = namedtuple(
 @timeit
 @aws_handle_regions
 def get_ec2_instances(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    paginator = client.get_paginator('describe_instances')
-    reservations: List[Dict[str, Any]] = []
-    for page in paginator.paginate():
-        reservations.extend(page['Reservations'])
-    return reservations
+    client = boto3_session.client('ec2', region_name=region)
+    reservations = []
+    try:
+        paginator = client.get_paginator('describe_instances')
+        for page in paginator.paginate():
+            reservations.extend(page['Reservations'])
+        for reservation in reservations:
+            reservation['region'] = region
 
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
+            logger.warning(
+                f'ec2:describe_security_groups failed with AccessDeniedException; continuing sync.',
+                exc_info=True,
+            )
+        else:
+            raise
+
+    return reservations
 
 def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, current_aws_account_id: str) -> Ec2Data:
     reservation_list = []
@@ -65,6 +81,7 @@ def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, cur
         })
         for instance in reservation['Instances']:
             instance_id = instance['InstanceId']
+            InstanceArn = f"arn:aws:ec2:{region}:{current_aws_account_id}:instance/{instanceid}"
             launch_time = instance.get("LaunchTime")
             launch_time_unix = str(time.mktime(launch_time.timetuple())) if launch_time else None
             instance_list.append(
@@ -90,6 +107,8 @@ def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, cur
                     'BootMode': instance.get("BootMode"),
                     'InstanceLifecycle': instance.get("InstanceLifecycle"),
                     'HibernationOptions': instance.get("HibernationOptions", {}).get("Configured"),
+                    "Region" : region,
+                    "consolelink'":aws_console_link.get_console_link(arn=InstanceArn)
                 },
             )
 
@@ -319,6 +338,7 @@ def sync_ec2_instances(
         update_tag: int,
         common_job_parameters: Dict[str, Any],
 ) -> None:
+    tic = time.perf_counter()
     for region in regions:
         logger.info("Syncing EC2 instances for region '%s' in account '%s'.", region, current_aws_account_id)
         reservations = get_ec2_instances(boto3_session, region)
@@ -337,3 +357,6 @@ def sync_ec2_instances(
             ec2_data.instance_ebs_volumes_list,
         )
     cleanup(neo4j_session, common_job_parameters)
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 instances: {toc - tic:0.4f} seconds")
+

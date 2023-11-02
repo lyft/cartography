@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -16,11 +17,15 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_load_balancer_v2_listeners(client: botocore.client.BaseClient, load_balancer_arn: str) -> List[Dict]:
+def get_load_balancer_v2_listeners(client: botocore.client.BaseClient, load_balancer_arn: str, region: str) -> List[Dict]:
     paginator = client.get_paginator('describe_listeners')
     listeners: List[Dict] = []
-    for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
-        listeners.extend(page['Listeners'])
+    try:
+        for page in paginator.paginate(LoadBalancerArn=load_balancer_arn):
+            listeners.extend(page['Listeners'])
+
+    except Exception as e:
+        logger.warning(f"Failed retrieve load balancer listeners for region -{region} . Error - {e}")
 
     return listeners
 
@@ -53,14 +58,15 @@ def get_loadbalancer_v2_data(boto3_session: boto3.Session, region: str) -> List[
 
     # Make extra calls to get listeners
     for elbv2 in elbv2s:
-        elbv2['Listeners'] = get_load_balancer_v2_listeners(client, elbv2['LoadBalancerArn'])
+        elbv2['Listeners'] = get_load_balancer_v2_listeners(client, elbv2['LoadBalancerArn'], region)
         elbv2['TargetGroups'] = get_load_balancer_v2_target_groups(client, elbv2['LoadBalancerArn'])
+        elbv2['region'] = region
     return elbv2s
 
 
 @timeit
 def load_load_balancer_v2s(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str,
     update_tag: int,
 ) -> None:
     ingest_load_balancer_v2 = """
@@ -69,7 +75,8 @@ def load_load_balancer_v2s(
     SET elbv2.lastupdated = $update_tag, elbv2.name = $NAME, elbv2.dnsname = $DNS_NAME,
     elbv2.canonicalhostedzonenameid = $HOSTED_ZONE_NAME_ID,
     elbv2.type = $ELBv2_TYPE,
-    elbv2.scheme = $SCHEME, elbv2.region = $Region
+    elbv2.scheme = $SCHEME, elbv2.region = $Region,
+    elbv2.arn = $Arn
     WITH elbv2
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(elbv2)
@@ -77,7 +84,9 @@ def load_load_balancer_v2s(
     SET r.lastupdated = $update_tag
     """
     for lb in data:
+        region = lb.get('region', '')
         load_balancer_id = lb["DNSName"]
+        load_balancer_arn = lb["LoadBalancerArn"]
 
         neo4j_session.run(
             ingest_load_balancer_v2,
@@ -90,6 +99,7 @@ def load_load_balancer_v2s(
             SCHEME=lb.get("Scheme"),
             AWS_ACCOUNT_ID=current_aws_account_id,
             Region=region,
+            Arn=load_balancer_arn,
             update_tag=update_tag,
         )
 
@@ -195,7 +205,8 @@ def load_load_balancer_v2_listeners(
         l.firstseen = timestamp(),
         l.targetgrouparn = data.TargetGroupArn
         SET l.lastupdated = $update_tag,
-        l.ssl_policy = data.SslPolicy
+        l.ssl_policy = data.SslPolicy,
+        l.arn = data.ListenerArn
         WITH l, elbv2
         MERGE (elbv2)-[r:ELBV2_LISTENER]->(l)
         ON CREATE SET r.firstseen = timestamp()
@@ -220,8 +231,19 @@ def sync_load_balancer_v2s(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing EC2 load balancers v2 for account '%s', at %s.", current_aws_account_id, tic)
+
+    data = []
     for region in regions:
         logger.info("Syncing EC2 load balancers v2 for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_loadbalancer_v2_data(boto3_session, region)
-        load_load_balancer_v2s(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.extend(get_loadbalancer_v2_data(boto3_session, region))
+
+    logger.info(f"Total Load Balancer V2s: {len(data)}")
+
+    load_load_balancer_v2s(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_load_balancer_v2s(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 load balancers v2: {toc - tic:0.4f} seconds")

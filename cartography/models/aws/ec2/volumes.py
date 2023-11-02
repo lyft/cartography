@@ -30,6 +30,7 @@ class EBSVolumeNodeProperties(CartographyNodeProperties):
     multiattachenabled: PropertyRef = PropertyRef('MultiAttachEnabled')
     type: PropertyRef = PropertyRef('VolumeType')
     kmskeyid: PropertyRef = PropertyRef('KmsKeyId')
+    consolelink: PropertyRef = PropertyRef('consolelink')
 
 
 @dataclass(frozen=True)

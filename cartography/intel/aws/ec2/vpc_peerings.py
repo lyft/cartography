@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -16,8 +17,15 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_vpc_peerings_data(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    return client.describe_vpc_peering_connections()['VpcPeeringConnections']
+    vpc_peerings = []
+    try:
+        client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
+        vpc_peerings = client.describe_vpc_peering_connections()['VpcPeeringConnections']
+
+    except Exception as e:
+        logger.warning(f"Failed retrieve VPC Peerings for region - {region}. Error - {e}")
+
+    return vpc_peerings
 
 
 @timeit
@@ -40,7 +48,9 @@ def load_vpc_peerings(
     pcx.requester_region = vpc_peering.RequesterVpcInfo.Region,
     pcx.accepter_region = vpc_peering.AccepterVpcInfo.Region,
     pcx.status_code = vpc_peering.Status.Code,
-    pcx.status_message = vpc_peering.Status.Message
+    pcx.status_message = vpc_peering.Status.Message,
+    pcx.arn = vpc_peering.Arn
+    
 
     MERGE (avpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId})
     ON CREATE SET avpc.firstseen = timestamp()
@@ -50,12 +60,12 @@ def load_vpc_peerings(
     ON CREATE SET rvpc.firstseen = timestamp()
     SET rvpc.lastupdated = $update_tag, rvpc.vpcid = vpc_peering.RequesterVpcInfo.VpcId
 
-    MERGE (aaccount:AWSAccount{id: vpc_peering.AccepterVpcInfo.OwnerId})
-    ON CREATE SET aaccount.firstseen = timestamp()
+    MERGE (aaccount:AWSAccount{id: $aws_account_id})
+    ON CREATE SET aaccount.firstseen = timestamp(), aaccount.foreign = true
     SET aaccount.lastupdated = $update_tag
 
-    MERGE (raccount:AWSAccount{id: vpc_peering.RequesterVpcInfo.OwnerId})
-    ON CREATE SET raccount.firstseen = timestamp()
+    MERGE (raccount:AWSAccount{id: $aws_account_id})
+    ON CREATE SET raccount.firstseen = timestamp(), raccount.foreign = true
     SET raccount.lastupdated = $update_tag
 
     MERGE (pcx)-[rav:ACCEPTER_VPC]->(avpc)
@@ -75,6 +85,9 @@ def load_vpc_peerings(
     SET rr.lastupdated = $update_tag
 
     """
+
+    for item in data:
+        item['arn'] = f"arn:aws:ec2:{region}:{aws_account_id}:vpc-peering-connection/{item['VpcPeeringConnectionId']}"
 
     neo4j_session.run(
         ingest_vpc_peerings, vpc_peerings=data, update_tag=update_tag,
@@ -158,10 +171,20 @@ def sync_vpc_peerings(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
     current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing EC2 VPC Peerings for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.debug("Syncing EC2 VPC peering for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_vpc_peerings_data(boto3_session, region)
+
+        logger.info(f"Total VPC Peering data: {len(data)} for {region}")
+
         load_vpc_peerings(neo4j_session, data, region, current_aws_account_id, update_tag)
         load_accepter_cidrs(neo4j_session, data, region, current_aws_account_id, update_tag)
         load_requester_cidrs(neo4j_session, data, region, current_aws_account_id, update_tag)
     cleanup_vpc_peerings(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 VPC Peerings: {toc - tic:0.4f} seconds")
