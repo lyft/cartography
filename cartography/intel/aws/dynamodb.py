@@ -15,8 +15,10 @@ from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
 from cartography.util import merge_module_sync_metadata
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 stat_handler = get_stats_client(__name__)
 
 
@@ -33,7 +35,7 @@ def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> Li
 
 
 @timeit
-def transform_dynamodb_tables(dynamodb_tables: List, region: str) -> Any:
+def transform_dynamodb_tables(dynamodb_tables: List, region: str,current_aws_account_id:str) -> Any:
     ddb_table_data: List[Dict[str, Any]] = []
     ddb_gsi_data: List[Dict[str, Any]] = []
 
@@ -42,16 +44,19 @@ def transform_dynamodb_tables(dynamodb_tables: List, region: str) -> Any:
             'Arn': table['Table']['TableArn'],
             'TableName': table['Table']['TableName'],
             'Region': region,
+            'consolelink':aws_console_link.get_console_link(arn=table['Table']['TableArn']),
             'Rows': table['Table']['ItemCount'],
             'Size': table['Table']['TableSizeBytes'],
             'ProvisionedThroughputReadCapacityUnits': table['Table']['ProvisionedThroughput']['ReadCapacityUnits'],
             'ProvisionedThroughputWriteCapacityUnits': table['Table']['ProvisionedThroughput']['WriteCapacityUnits'],
         })
         for gsi in table['Table'].get('GlobalSecondaryIndexes', []):
+            consolelink = aws_console_link.get_console_link(arn=f"arn:aws:dynamodb::{current_aws_account_id}:secondary_indexes/{table['Table']['TableName']}")
             ddb_gsi_data.append({
                 'Arn': gsi['IndexArn'],
                 'TableArn': table['Table']['TableArn'],
                 'Region': region,
+                'consolelink':consolelink,
                 'ProvisionedThroughputReadCapacityUnits': gsi['ProvisionedThroughput']['ReadCapacityUnits'],
                 'ProvisionedThroughputWriteCapacityUnits': gsi['ProvisionedThroughput']['WriteCapacityUnits'],
                 'GSIName': gsi['IndexName'],
@@ -105,7 +110,7 @@ def sync_dynamodb_tables(
     for region in regions:
         logger.info("Syncing DynamoDB for region in '%s' in account '%s'.", region, current_aws_account_id)
         dynamodb_tables = get_dynamodb_tables(boto3_session, region)
-        ddb_table_data, ddb_gsi_data = transform_dynamodb_tables(dynamodb_tables, region)
+        ddb_table_data, ddb_gsi_data = transform_dynamodb_tables(dynamodb_tables, region,current_aws_account_id)
         load_dynamodb_tables(neo4j_session, ddb_table_data, region, current_aws_account_id, aws_update_tag)
         load_dynamodb_gsi(neo4j_session, ddb_gsi_data, region, current_aws_account_id, aws_update_tag)
     cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
