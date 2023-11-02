@@ -1,3 +1,5 @@
+import time
+import datetime
 import logging
 from typing import Dict
 from typing import List
@@ -5,6 +7,9 @@ from typing import List
 import boto3
 import neo4j
 from dateutil import parser
+
+from botocore.exceptions import ClientError
+from botocore.exceptions import ConnectTimeoutError
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -27,6 +32,7 @@ def transform_hub(hub_data: Dict) -> None:
     if 'SubscribedAt' in hub_data and hub_data['SubscribedAt']:
         subbed_at = parser.parse(hub_data['SubscribedAt'])
         hub_data['SubscribedAt'] = int(subbed_at.timestamp())
+
     else:
         hub_data['SubscribedAt'] = None
 
@@ -42,8 +48,11 @@ def load_hub(
     WITH $Hub AS hub
     MERGE (n:SecurityHub{id: hub.HubArn})
     ON CREATE SET n.firstseen = timestamp()
-    SET n.subscribed_at = hub.SubscribedAt, n.auto_enable_controls = hub.AutoEnableControls,
-        n.lastupdated = $aws_update_tag
+    SET n.subscribed_at = hub.SubscribedAt,
+    n.region = $region,
+    n.auto_enable_controls = hub.AutoEnableControls,
+    n.lastupdated = $aws_update_tag,
+    n.arn = hub.HubArn
     WITH n
     MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (owner)-[r:RESOURCE]->(n)
@@ -53,6 +62,7 @@ def load_hub(
     neo4j_session.run(
         ingest_hub,
         Hub=data,
+        region="global",
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
     )
@@ -68,9 +78,22 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing Security Hub in account '%s'.", current_aws_account_id)
-    hub = get_hub(boto3_session)
+
+    tic = time.perf_counter()
+
+    logger.info("Syncing Security Hub for account '%s', at %s.", current_aws_account_id, tic)
+
+    hub = {}
+    try:
+        hub = get_hub(boto3_session)
+
+    except (ClientError, ConnectTimeoutError) as e:
+        logger.error(f'Failed to get Security Hub details - {e}')
+
     if hub:
         transform_hub(hub)
         load_hub(neo4j_session, hub, current_aws_account_id, update_tag)
         cleanup_securityhub(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Security Hub: {toc - tic:0.4f} seconds")
