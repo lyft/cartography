@@ -2,7 +2,7 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
-
+import time
 import boto3
 import neo4j
 
@@ -12,7 +12,11 @@ from cartography.models.aws.eks.clusters import EKSClusterSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
 
+from cloudconsolelink.clouds.aws import AWSLinker
+
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
+
 
 
 @timeit
@@ -74,6 +78,7 @@ def transform(cluster_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     for cluster_name, cluster_dict in cluster_data.items():
         transformed_dict = cluster_dict.copy()
         transformed_dict['ClusterLogging'] = _process_logging(transformed_dict)
+        transformed_dict['consolelink']=aws_console_link.get_console_link(arn=transformed_dict.get('arn'))
         transformed_dict['ClusterEndpointPublic'] = transformed_dict.get('resourcesVpcConfig', {}).get(
             'endpointPublicAccess',
         )
@@ -92,6 +97,8 @@ def sync(
         update_tag: int,
         common_job_parameters: Dict[str, Any],
 ) -> None:
+    tic = time.perf_counter()
+    logger.info("Syncing EKS for account '%s', at %s.", current_aws_account_id, tic)
     for region in regions:
         logger.info("Syncing EKS for region '%s' in account '%s'.", region, current_aws_account_id)
 
@@ -100,7 +107,11 @@ def sync(
         for cluster_name in clusters:
             cluster_data[cluster_name] = get_eks_describe_cluster(boto3_session, region, cluster_name)
         transformed_list = transform(cluster_data)
-
+        logger.info(f"Total EKS Clusters: {len(transformed_list)}")
+        
         load_eks_clusters(neo4j_session, transformed_list, region, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
+    toc = time.perf_counter()
+    logger.info(f"Time to process EKS: {toc - tic:0.4f} seconds")
+
