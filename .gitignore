@@ -13,6 +13,13 @@ build/
 .coverage
 .mypy_cache
 *.vscode
+.env*
 .compose
 generated
+env.dev.json
+env.prod.json
 dist/
+
+tmp
+node_modules
+.serverless

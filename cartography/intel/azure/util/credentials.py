@@ -1,11 +1,17 @@
-import logging
+import base64
 from datetime import datetime
 from datetime import timedelta
 from typing import Any
+from typing import Dict
 from typing import Optional
 
-import adal
+import json
+import logging
 import requests
+import time
+
+import adal
+from azure.core.credentials import AccessToken
 from azure.common.credentials import get_azure_cli_credentials
 from azure.common.credentials import get_cli_profile
 from azure.core.exceptions import HttpResponseError
@@ -19,16 +25,12 @@ AUTHORITY_HOST_URI = 'https://login.microsoftonline.com'
 class Credentials:
 
     def __init__(
-            self,
-            arm_credentials: Any,
-            aad_graph_credentials: Any,
-            tenant_id: Optional[str] = None,
-            subscription_id: Optional[str] = None,
-            context: Optional[adal.AuthenticationContext] = None,
-            current_user: Optional[str] = None,
+        self, arm_credentials: Any, aad_graph_credentials: Any, vault_credentials: Any, tenant_id: str = None, subscription_id: str = None,
+        context: adal.AuthenticationContext = None, current_user: Dict = None,
     ) -> None:
         self.arm_credentials = arm_credentials  # Azure Resource Manager API credentials
         self.aad_graph_credentials = aad_graph_credentials  # Azure AD Graph API credentials
+        self.vault_credentials = vault_credentials  # Azure vault API credentials
         self.tenant_id = tenant_id
         self.subscription_id = subscription_id
         self.context = context
@@ -96,6 +98,21 @@ class Credentials:
         return new_credentials
 
 
+class ImpersonateCredentials(object):
+    def __init__(self, cred: Credentials, resource: str) -> None:
+        self.scheme = "Bearer"
+        self.cred = cred
+        self.resource = resource
+
+    def get_token(self, *scopes, **kwargs):  # pylint:disable=unused-argument
+        return AccessToken(self.cred['access_token'], int(self.cred['expires_in'] + time.time()))
+
+    def signed_session(self, session=None):
+        header = "{} {}".format(self.scheme, self.cred['access_token'])
+        session.headers['Authorization'] = header
+        return session
+
+
 class Authenticator:
 
     def authenticate_cli(self) -> Credentials:
@@ -120,7 +137,7 @@ class Authenticator:
 
             return Credentials(
                 arm_credentials, aad_graph_credentials, tenant_id=tenant_id,
-                current_user=profile.get_current_account_user(), subscription_id=subscription_id,
+                current_user={'email': profile.get_current_account_user()}, subscription_id=subscription_id
             )
 
         except HttpResponseError as e:
@@ -165,10 +182,10 @@ class Authenticator:
                 resource='https://graph.windows.net',
             )
 
-            return Credentials(
-                arm_credentials, aad_graph_credentials, tenant_id=tenant_id,
-                current_user=client_id,
-            )
+            return Credentials(arm_credentials, aad_graph_credentials, tenant_id=tenant_id, current_user=client_id)
+            # return Credentials(
+            #     arm_credentials, aad_graph_credentials, tenant_id=tenant_id, current_user={'email': profile.get_current_account_user()}
+            # )
 
         except HttpResponseError as e:
             if ', AdalError: Unsupported wstrust endpoint version. ' \
@@ -180,3 +197,77 @@ class Authenticator:
                 )
 
             raise e
+
+    # vault_scope: https://vault.azure.net/user_impersonation
+    def impersonate_user(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, graph_scope: str, azure_scope: str, vault_scope: str, subscription_id: str, tenant_id: str = None):
+        """
+        Implements Impersonation authentication for the Azure provider
+        """
+
+        # Set logging level to error for libraries as otherwise generates a lot of warnings
+        logging.getLogger('adal-python').setLevel(logging.ERROR)
+        logging.getLogger('msrest').setLevel(logging.ERROR)
+        logging.getLogger('msrestazure.azure_active_directory').setLevel(logging.ERROR)
+        logging.getLogger('urllib3').setLevel(logging.ERROR)
+        logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.ERROR)
+
+        try:
+            graph_creds = self.refresh_graph_token(client_id, client_secret, redirect_uri, refresh_token, graph_scope, tenant_id)
+            vault_creds = self.refresh_vault_token(client_id, client_secret, redirect_uri, refresh_token, vault_scope, tenant_id)
+            azure_creds = self.refresh_azure_token(client_id, client_secret, redirect_uri, refresh_token, azure_scope, tenant_id)
+            user_tenant_id, user = self.decode_jwt(azure_creds.cred['id_token'])
+
+            if tenant_id is None:
+                tenant_id = user_tenant_id
+
+            return Credentials(azure_creds, graph_creds, vault_creds, subscription_id=subscription_id, tenant_id=tenant_id, current_user=user)
+
+        except Exception as e:
+            logging.error(f"failed to impersonate user: {e}", exc_info=True, stack_info=True)
+
+            raise Exception(e)
+
+    def refresh_graph_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str, tenant_id: str = None) -> ImpersonateCredentials:
+        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope, tenant_id), "graph")
+
+    def refresh_vault_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str, tenant_id: str = None):
+        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope, tenant_id), "vault")
+
+    def refresh_azure_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str, tenant_id: str = None) -> ImpersonateCredentials:
+        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope, tenant_id), "management")
+
+    def get_access_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str, tenant_id: str = None) -> Dict:
+        token_url = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+
+        if tenant_id:
+            token_url = token_url.replace("common", f"{tenant_id}")
+
+        grant_type = "refresh_token"
+        content_type = "application/x-www-form-urlencoded"
+        headers = {"Content-Type": content_type}
+
+        pload = f'grant_type={grant_type}&scope={scope}&client_id={client_id}&client_secret={client_secret}&redirect_uri={redirect_uri}&refresh_token={refresh_token}'
+        r = requests.post(token_url, data=pload, headers=headers)
+
+        return r.json()
+
+    def decode_jwt(self, id_token: str) -> Dict:
+        payload = id_token.split('.')[1]
+
+        # Standard Base64 Decoding
+        decodedBytes = base64.b64decode(payload + '===')
+        decodedStr = str(decodedBytes.decode('utf-8'))
+
+        # print(decodedStr)
+
+        decoded = json.loads(decodedStr)
+        # print('tenant id', decoded['tid'])
+        # print('user id', decoded['oid'])
+        # print('name', decoded['name'])
+        # print('email', decoded['preferred_username'])
+
+        return decoded['tid'], {
+            'id': decoded['oid'],
+            'name': decoded['name'],
+            'email': decoded['preferred_username']
+        }

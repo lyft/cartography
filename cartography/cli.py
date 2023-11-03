@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from typing import Optional
-
+from cartography.config import Config
 import cartography.config
 import cartography.sync
 import cartography.util
@@ -690,7 +690,39 @@ class CLI:
             return cartography.sync.run_with_config(self.sync, config)
         except KeyboardInterrupt:
             return cartography.util.STATUS_KEYBOARD_INTERRUPT
+    
+    def process(self, config):
+        # Logging config
+        if config.verbose:
+            logging.getLogger('cartography').setLevel(logging.DEBUG)
+        elif config.quiet:
+            logging.getLogger('cartography').setLevel(logging.WARNING)
+        else:
+            logging.getLogger('cartography').setLevel(logging.INFO)
+        # logger.debug("Launching cartography with CLI configuration: %r", vars(config))
 
+        # Run cartography
+        try:
+            output = cartography.sync.run_with_config(self.sync, config)
+
+            return {
+                "status": "success",
+                "message": f"output - {output}",
+                "updateTag": output.get('UPDATE_TAG', None),
+                "pagination": output.get('pagination', None),
+            }
+
+        except KeyboardInterrupt:
+            # return 130
+            return {
+                "status": "failure",
+                "message": "keyboard interuption",
+            }
+        except Exception as e:
+            return {
+                "status": "failure",
+                "message": f"error with: {str(e)}",
+            }
 
 def main(argv=None):
     """
@@ -707,3 +739,90 @@ def main(argv=None):
     logging.getLogger('neo4j').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
     sys.exit(CLI(prog='cartography').main(argv))
+
+def run_aws(request):
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('botocore').setLevel(logging.WARNING)
+    logging.getLogger('neo4j').setLevel(logging.WARNING)
+
+    default_sync = cartography.sync.build_aws_sync()
+
+    # TODO: Define config and pass it forward
+    config = Config(
+        request['neo4j']['uri'],
+        neo4j_user=request['neo4j']['user'],
+        neo4j_password=request['neo4j']['pwd'],
+        neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
+        credentials=request['credentials'],
+        params=request['params'],
+        aws_requested_syncs=request.get('services', None),
+        update_tag=request.get('updateTag', None)
+    )
+
+    if request['logging']['mode'] == "verbose":
+        config.verbose = True
+    elif request['logging']['mode'] == "quiet":
+        config.quiet = True
+
+    return CLI(default_sync, prog='cartography').process(config)
+
+
+def run_azure(request):
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('botocore').setLevel(logging.WARNING)
+    logging.getLogger('neo4j').setLevel(logging.WARNING)
+
+    default_sync = cartography.sync.build_azure_sync()
+
+    # TODO: Define config and pass it forward
+    config = Config(
+        request['neo4j']['uri'],
+        neo4j_user=request['neo4j']['user'],
+        neo4j_password=request['neo4j']['pwd'],
+        neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
+        azure_client_id=request['azure']['client_id'],
+        azure_client_secret=request['azure']['client_secret'],
+        azure_redirect_uri=request['azure']['redirect_uri'],
+        azure_subscription_id=request['azure']['subscription_id'],
+        azure_tenant_id=request['azure']['tenant_id'],
+        azure_refresh_token=request['azure']['refresh_token'],
+        azure_vault_scope=request['azure']['vault_scope'],
+        azure_graph_scope=request['azure']['graph_scope'],
+        azure_azure_scope=request['azure']['azure_scope'],
+        params=request['params'],
+        azure_requested_syncs=request.get('services', None),
+        update_tag=request.get('updateTag', None)
+    )
+
+    if request['logging']['mode'] == "verbose":
+        config.verbose = True
+    elif request['logging']['mode'] == "quiet":
+        config.quiet = True
+
+    return CLI(default_sync, prog='cartography').process(config)
+
+
+def run_gcp(request):
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('botocore').setLevel(logging.WARNING)
+    logging.getLogger('neo4j').setLevel(logging.WARNING)
+
+    default_sync = cartography.sync.build_gcp_sync()
+
+    # TODO: Define config and pass it forward
+    config = Config(
+        request['neo4j']['uri'],
+        neo4j_user=request['neo4j']['user'],
+        neo4j_password=request['neo4j']['pwd'],
+        neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
+        credentials=request['credentials'],
+        params=request['params'],
+        gcp_requested_syncs=request.get('services', None),
+    )
+
+    if request['logging']['mode'] == "verbose":
+        config.verbose = True
+    elif request['logging']['mode'] == "quiet":
+        config.quiet = True
+
+    return CLI(default_sync, prog='cartography').process(config)
