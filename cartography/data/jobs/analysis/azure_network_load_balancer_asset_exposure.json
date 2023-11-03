@@ -1,0 +1,14 @@
+{
+	"statements": [
+		{
+			"query": "MATCH ((n:AzureNetworkLoadBalancer)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) where EXISTS(n.exposed_internet) WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(loadbalancer:AzureNetworkLoadBalancer{type: 'public'})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET loadbalancer.exposed_internet = true, (CASE WHEN NOT 'public_load_balancer' IN  coalesce(loadbalancer.exposed_internet_type , []) THEN loadbalancer END).exposed_internet_type = coalesce(loadbalancer.exposed_internet_type , []) + 'public_load_balancer';",
+			"iterative": false
+		}
+	],
+	"name": "Azure network load balancer asset internet exposure"
+}
