@@ -140,6 +140,7 @@ class Config:
         crowdstrike_api_url=None,
         gsuite_auth_method=None,
         gsuite_config=None,
+        refresh_entitlements=False
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -192,3 +193,4 @@ class Config:
         self.crowdstrike_api_url = crowdstrike_api_url
         self.gsuite_auth_method = gsuite_auth_method
         self.gsuite_config = gsuite_config
+        self.refresh_entitlements = refresh_entitlements
