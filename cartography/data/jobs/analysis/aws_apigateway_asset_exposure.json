@@ -1,0 +1,41 @@
+{
+	"statements": [
+		{
+			"query": "MATCH (rest_api:APIGatewayRestAPI)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE EXISTS(rest_api.exposed_internet) WITH rest_api LIMIT $LIMIT_SIZE REMOVE rest_api.exposed_internet, rest_api.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (rest_api:APIGatewayRestAPI)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH rest_api LIMIT $LIMIT_SIZE REMOVE rest_api.anonymous_access_type return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (rest_api_resource:APIGatewayResource)<-[:RESOURCE]-(:APIGatewayRestAPI)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE EXISTS(rest_api_resource.exposed_internet) WITH rest_api_resource LIMIT $LIMIT_SIZE REMOVE rest_api_resource.exposed_internet, rest_api_resource.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (rest_api_resource:APIGatewayResource)<-[:RESOURCE]-(:APIGatewayRestAPI)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH rest_api_resource LIMIT $LIMIT_SIZE REMOVE rest_api_resource.anonymous_access, rest_api_resource.anonymous_access_type return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (rest_api:APIGatewayRestAPI)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'REGIONAL' in rest_api.endpoint_conf_types OR 'EDGE' in rest_api.endpoint_conf_types SET rest_api.exposed_internet = true, (CASE WHEN NOT 'endpoint_type' IN coalesce(rest_api.exposed_internet_type , []) THEN rest_api END).exposed_internet_type = coalesce(rest_api.exposed_internet_type , []) + 'endpoint_type';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (rest_api:APIGatewayRestAPI{anonymous_access: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET (CASE WHEN NOT 'policy' IN  coalesce(rest_api.anonymous_access_type , []) THEN rest_api END).anonymous_access_type = coalesce(rest_api.anonymous_access_type , []) + 'policy';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (rest_api_resource:APIGatewayResource)<-[:RESOURCE]-(:APIGatewayRestAPI)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'REGIONAL' in rest_api_resource.endpoint_conf_types OR 'EDGE' in rest_api_resource.endpoint_conf_types SET rest_api_resource.exposed_internet = true, (CASE WHEN NOT 'api_gateway_endpoint_type' IN coalesce(rest_api_resource.exposed_internet_type , []) THEN rest_api_resource END).exposed_internet_type = coalesce(rest_api_resource.exposed_internet_type , []) + 'api_gateway_endpoint_type';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (rest_api_resource:APIGatewayResource)<-[:RESOURCE]-(:APIGatewayRestAPI{anonymous_access: true})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET rest_api_resource.anonymous_access = true, (CASE WHEN NOT 'api_gateway_policy' IN  coalesce(rest_api_resource.anonymous_access_type , []) THEN rest_api_resource END).anonymous_access_type = coalesce(rest_api_resource.anonymous_access_type , []) + 'api_gateway_policy';",
+			"iterative": false
+		}
+	],
+	"name": "AWS apigateway asset internet exposure"
+}
