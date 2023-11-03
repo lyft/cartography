@@ -26,17 +26,17 @@ DESCRIBE_SLEEP = 1
 @aws_handle_regions
 def get_emr_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
     client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
-    clusters: List[Dict[str, Any]] = []
+    clusters: List[Dict] = []
     paginator = client.get_paginator('list_clusters')
     for page in paginator.paginate():
         cluster = page['Clusters']
         clusters.extend(cluster)
-        time.sleep(LIST_SLEEP)
+
     return clusters
 
 
 @timeit
-def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict[str, Any]:
+def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_id: str) -> Dict:
     client = boto3_session.client('emr', region_name=region, config=get_botocore_config())
     cluster_details: Dict[str, Any] = {}
     try:
@@ -80,6 +80,8 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict[str, Any],
 ) -> None:
+    tic = time.perf_counter()
+
     for region in regions:
         logger.info(f"Syncing EMR for region '{region}' in account '{current_aws_account_id}'.")
 
@@ -96,3 +98,6 @@ def sync(
         load_emr_clusters(neo4j_session, cluster_data, region, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process EMR: {toc - tic:0.4f} seconds")

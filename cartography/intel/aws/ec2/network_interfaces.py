@@ -4,7 +4,7 @@ from collections import namedtuple
 from typing import Any
 from typing import Dict
 from typing import List
-
+import time
 import boto3
 import neo4j
 
@@ -17,8 +17,11 @@ from cartography.models.aws.ec2.securitygroup_networkinterface import EC2Securit
 from cartography.models.aws.ec2.subnet_networkinterface import EC2SubnetNetworkInterfaceSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
+
 
 Ec2NetworkData = namedtuple(
     "Ec2NetworkData", [
@@ -36,12 +39,17 @@ def get_network_interface_data(boto3_session: boto3.session.Session, region: str
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_network_interfaces')
     subnets: List[Dict] = []
-    for page in paginator.paginate():
-        subnets.extend(page['NetworkInterfaces'])
+    try:
+        for page in paginator.paginate():
+            subnets.extend(page['NetworkInterfaces'])
+
+    except Exception as e:
+        logger.warning(f"Failed retrieve network interfaces for region - {region}. Error - {e}")
+
     return subnets
 
 
-def transform_network_interface_data(data_list: List[Dict[str, Any]], region: str) -> Ec2NetworkData:
+def transform_network_interface_data(data_list: List[Dict[str, Any]], region: str,aws_account_id) -> Ec2NetworkData:
     network_interface_list = []
     private_ip_list = []
     sg_list = []
@@ -59,6 +67,8 @@ def transform_network_interface_data(data_list: List[Dict[str, Any]], region: st
             elb_match = re.match(r'^ELB (.*)', network_interface.get('Description', ''))
             if elb_match:
                 elb_v2_id = elb_match[1]
+        network_interface_arn= f"arn:aws:ec2:{region}:{aws_account_id}:network-interface/{network_interface['NetworkInterfaceId']}"
+
         # TODO issue #1024 change this to arn when ready
         network_interface_id = network_interface['NetworkInterfaceId']
         network_interface_list.append(
@@ -79,6 +89,8 @@ def transform_network_interface_data(data_list: List[Dict[str, Any]], region: st
                 'SubnetId': network_interface['SubnetId'],
                 'ElbV1Id': elb_v1_id,
                 'ElbV2Id': elb_v2_id,
+                'Arn':network_interface_arn,
+                'consolelink':aws_console_link.get_console_link(arn=network_interface_arn)
             },
         )
         if network_interface.get('PrivateIpAddresses'):
@@ -238,10 +250,13 @@ def sync_network_interfaces(
         update_tag: int,
         common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+    logger.info("Syncing EC2 Network Interfaces for account '%s', at %s.", current_aws_account_id, tic)
     for region in regions:
         logger.info(f"Syncing EC2 network interfaces for region '{region}' in account '{current_aws_account_id}'.")
         data = get_network_interface_data(boto3_session, region)
-        ec2_network_data = transform_network_interface_data(data, region)
+        logger.info(f"Total Network Interfaces: {len(data)} for {region}")
+        ec2_network_data = transform_network_interface_data(data, region,current_aws_account_id)
         load_network_data(
             neo4j_session,
             region,
@@ -253,3 +268,5 @@ def sync_network_interfaces(
             ec2_network_data.sg_list,
         )
     cleanup_network_interfaces(neo4j_session, common_job_parameters)
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 Network Interfaces: {toc - tic:0.4f} seconds")

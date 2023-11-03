@@ -18,6 +18,7 @@ class EC2ImageNodeProperties(CartographyNodeProperties):
     creationdate: PropertyRef = PropertyRef('CreationDate')
     architecture: PropertyRef = PropertyRef('Architecture')
     location: PropertyRef = PropertyRef('ImageLocation')
+    consolelink: PropertyRef = PropertyRef('consolelink')
     type: PropertyRef = PropertyRef('ImageType')
     ispublic: PropertyRef = PropertyRef('Public')
     platform: PropertyRef = PropertyRef('Platform')

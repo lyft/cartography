@@ -13,6 +13,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 @dataclass(frozen=True)
 class EKSClusterNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('arn')
+    consolelink: PropertyRef = PropertyRef('consolelink')
     arn: PropertyRef = PropertyRef('arn', extra_index=True)
     name: PropertyRef = PropertyRef('name', extra_index=True)
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)

@@ -28,7 +28,8 @@ class EC2NetworkInterfaceNodeProperties(CartographyNodeProperties):
     private_ip_address: PropertyRef = PropertyRef('PrivateIpAddress', extra_index=True)
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
     status: PropertyRef = PropertyRef('Status')
-
+    consolelink: PropertyRef = PropertyRef('consolelink')
+    arn: PropertyRef = PropertyRef('Arn')
     # Properties only returned by describe-network-interfaces
     interface_type: PropertyRef = PropertyRef('InterfaceType')
     public_ip: PropertyRef = PropertyRef('PublicIp', extra_index=True)

@@ -17,6 +17,7 @@ class DynamoDBGSINodeProperties(CartographyNodeProperties):
     arn: PropertyRef = PropertyRef('Arn')
     name: PropertyRef = PropertyRef('GSIName')
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
+    consolelink:PropertyRef = PropertyRef('consolelink')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     provisioned_throughput_read_capacity_units: PropertyRef = PropertyRef('ProvisionedThroughputReadCapacityUnits')
     provisioned_throughput_write_capacity_units: PropertyRef = PropertyRef('ProvisionedThroughputWriteCapacityUnits')

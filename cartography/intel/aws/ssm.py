@@ -12,6 +12,7 @@ from cartography.models.aws.ssm.instance_information import SSMInstanceInformati
 from cartography.models.aws.ssm.instance_patch import SSMInstancePatchSchema
 from cartography.util import aws_handle_regions
 from cartography.util import dict_date_to_epoch
+
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -34,9 +35,7 @@ def get_instance_ids(neo4j_session: neo4j.Session, region: str, current_aws_acco
 @timeit
 @aws_handle_regions
 def get_instance_information(
-        boto3_session: boto3.session.Session,
-        region: str,
-        instance_ids: List[str],
+    boto3_session: boto3.session.Session, region: str, instance_ids: List[str],
 ) -> List[Dict[str, Any]]:
     client = boto3_session.client('ssm', region_name=region)
     instance_information: List[Dict[str, Any]] = []
@@ -125,6 +124,44 @@ def load_instance_patches(
         AWS_ID=current_aws_account_id,
         lastupdated=aws_update_tag,
     )
+    ingest_query = """
+    UNWIND $InstancePatch AS patch
+        MERGE (p:SSMInstancePatch{id: patch._instance_id + "-" + patch.Title})
+        ON CREATE SET p.firstseen = timestamp()
+        SET p.instance_id = patch._instance_id,
+            p.title = patch.Title,
+            p.kb_id = patch.KBId,
+            p.classification = patch.Classification,
+            p.severity = patch.Severity,
+            p.state = patch.State,
+            p.installed_time = patch.InstalledTime,
+            p.cve_ids = patch.CVEIds,
+            p.region = $Region,
+            p.lastupdated = $aws_update_tag
+        WITH p
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
+        MERGE (owner)-[r:RESOURCE]->(p)
+        ON CREATE SET r.firstseen = timestamp()
+        SET r.lastupdated = $aws_update_tag
+        WITH p
+        MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})-[:RESOURCE]->(ec2_instance:EC2Instance{id: p.instance_id})
+        MERGE (ec2_instance)-[r2:HAS_PATCH]->(p)
+        ON CREATE SET r2.firstseen = timestamp()
+        SET r2.lastupdated = $aws_update_tag
+    """
+    for p in data:
+        p["InstalledTime"] = dict_date_to_epoch(p, "InstalledTime")
+        # Split the comma separated CVEIds, if they exist, and strip
+        # the empty string from the list if not.
+        p["CVEIds"] = list(filter(None, p.get("CVEIds", "").split(",")))
+
+    neo4j_session.run(
+        ingest_query,
+        InstancePatch=data,
+        Region=region,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        aws_update_tag=aws_update_tag,
+    )
 
 
 @timeit
@@ -136,12 +173,8 @@ def cleanup_ssm(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, A
 
 @timeit
 def sync(
-        neo4j_session: neo4j.Session,
-        boto3_session: boto3.session.Session,
-        regions: List[str],
-        current_aws_account_id: str,
-        update_tag: int,
-        common_job_parameters: Dict[str, Any],
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
+    update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
         logger.info("Syncing SSM for region '%s' in account '%s'.", region, current_aws_account_id)

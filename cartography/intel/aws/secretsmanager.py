@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -36,15 +37,14 @@ def load_secrets(
     UNWIND $Secrets as secret
         MERGE (s:SecretsManagerSecret{id: secret.ARN})
         ON CREATE SET s.firstseen = timestamp()
-        SET s.name = secret.Name, s.arn = secret.ARN, s.description = secret.Description,
-            s.kms_key_id = secret.KmsKeyId, s.rotation_enabled = secret.RotationEnabled,
-            s.rotation_lambda_arn = secret.RotationLambdaARN,
+        SET s.name = secret.Name, s.description = secret.Description, s.kms_key_id = secret.KmsKeyId,
+            s.rotation_enabled = secret.RotationEnabled, s.rotation_lambda_arn = secret.RotationLambdaARN,
             s.rotation_rules_automatically_after_days = secret.RotationRules.AutomaticallyAfterDays,
             s.last_rotated_date = secret.LastRotatedDate, s.last_changed_date = secret.LastChangedDate,
             s.last_accessed_date = secret.LastAccessedDate, s.deleted_date = secret.DeletedDate,
             s.owning_service = secret.OwningService, s.created_date = secret.CreatedDate,
             s.primary_region = secret.PrimaryRegion, s.region = $Region,
-            s.lastupdated = $aws_update_tag
+            s.lastupdated = $aws_update_tag, s.arn = secret.ARN
         WITH s
         MATCH (owner:AWSAccount{id: $AWS_ACCOUNT_ID})
         MERGE (owner)-[r:RESOURCE]->(s)
@@ -77,8 +77,18 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing SecretsManager for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.info("Syncing Secrets Manager for region '%s' in account '%s'.", region, current_aws_account_id)
         secrets = get_secret_list(boto3_session, region)
+
+        logger.info(f"Total Secrets: {len(secrets)} for {region}")
+
         load_secrets(neo4j_session, secrets, region, current_aws_account_id, update_tag)
     cleanup_secrets(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process SecretsManager: {toc - tic:0.4f} seconds")

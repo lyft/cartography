@@ -12,19 +12,34 @@ from cartography.intel.aws.util.arns import build_arn
 from cartography.models.aws.ec2.volumes import EBSVolumeSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
-
+import time
+from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 logger = logging.getLogger(__name__)
-
+aws_console_link = AWSLinker()
 
 @timeit
 @aws_handle_regions
-def get_volumes(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
+def get_volumes(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     client = boto3_session.client('ec2', region_name=region)
-    paginator = client.get_paginator('describe_volumes')
-    volumes: List[Dict] = []
-    for page in paginator.paginate():
-        volumes.extend(page['Volumes'])
+    volumes = []
+    try:
+        paginator = client.get_paginator('describe_volumes')
+        volumes: List[Dict] = []
+        for page in paginator.paginate():
+            volumes.extend(page['Volumes'])
+
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
+            logger.warning(
+                f'ec2:describe_security_groups failed with AccessDeniedException; continuing sync.',
+                exc_info=True,
+            )
+        else:
+            raise
+
     return volumes
+
 
 
 def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_account_id: str) -> List[Dict[str, Any]]:
@@ -32,8 +47,9 @@ def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_ac
     for volume in volumes:
         attachments = volume.get('Attachments', [])
         active_attachments = [a for a in attachments if a['State'] == 'attached']
-
+        volume_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:volume/{volume['VolumeId']}"
         volume_id = volume['VolumeId']
+        consolelink = aws_console_link.get_console_link(arn=volume_arn)
         raw_vol = ({
             'Arn': build_arn('ec2', current_aws_account_id, 'volume', volume_id, region),
             'AvailabilityZone': volume.get('AvailabilityZone'),
@@ -49,6 +65,7 @@ def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_ac
             'VolumeType': volume.get('VolumeType'),
             'VolumeId': volume_id,
             'KmsKeyId': volume.get('KmsKeyId'),
+            'consolelink':consolelink,
         })
 
         if not active_attachments:
@@ -95,9 +112,17 @@ def sync_ebs_volumes(
         update_tag: int,
         common_job_parameters: Dict[str, Any],
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing volumes for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.debug("Syncing volumes for region '%s' in account '%s'.", region, current_aws_account_id)
         data = get_volumes(boto3_session, region)
         transformed_data = transform_volumes(data, region, current_aws_account_id)
         load_volumes(neo4j_session, transformed_data, region, current_aws_account_id, update_tag)
+    logger.info(f"Total EC2 Volumes: {len(data)}")
     cleanup_volumes(neo4j_session, common_job_parameters)
+    toc = time.perf_counter()
+    logger.info(f"Time to process Volumes: {toc - tic:0.4f} seconds")
+

@@ -1,7 +1,7 @@
 import logging
 from typing import Dict
 from typing import List
-
+import time
 import boto3
 import neo4j
 
@@ -12,13 +12,18 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
-
 @timeit
 @aws_handle_regions
 def get_internet_gateways(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    return client.describe_internet_gateways()['InternetGateways']
+    internet_gateways = []
+    try:
+        client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
+        internet_gateways = client.describe_internet_gateways()['InternetGateways']
 
+    except Exception as e:
+        logger.warning(f"Failed retrieve internet gateways for region - {region}. Error - {e}")
+
+    return internet_gateways
 
 @timeit
 def load_internet_gateways(
@@ -72,9 +77,15 @@ def sync_internet_gateways(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+    logger.info("Syncing EC2 Internet Gateways for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.info("Syncing Internet Gateways for region '%s' in account '%s'.", region, current_aws_account_id)
         internet_gateways = get_internet_gateways(boto3_session, region)
         load_internet_gateways(neo4j_session, internet_gateways, region, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 Internet Gateways: {toc - tic:0.4f} seconds")
+

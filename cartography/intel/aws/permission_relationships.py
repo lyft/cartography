@@ -1,3 +1,4 @@
+import time
 import logging
 import os
 import re
@@ -358,7 +359,9 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    logger.info("Syncing Permission Relationships for account '%s'.", current_aws_account_id)
+    tic = time.perf_counter()
+
+    logger.info("Syncing Permission Relationships for account '%s', at %s.", current_aws_account_id, tic)
     principals = get_principals_for_account(neo4j_session, current_aws_account_id)
     pr_file = common_job_parameters["permission_relationships_file"]
     if not pr_file:
@@ -385,3 +388,6 @@ def sync(
             target_label, relationship_name, update_tag,
         )
         cleanup_rpr(neo4j_session, target_label, relationship_name, update_tag, current_aws_account_id)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Permission Relationships: {toc - tic:0.4f} seconds")

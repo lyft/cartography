@@ -1,3 +1,4 @@
+import time
 import json
 import logging
 from typing import Any
@@ -36,7 +37,7 @@ def get_kms_key_list(boto3_session: boto3.session.Session, region: str) -> List[
         except ClientError as e:
             logger.warning("Failed to describe key with key id - {}. Error - {}".format(key["KeyId"], e))
             continue
-
+        response['region'] = region
         described_key_list.append(response)
 
     return described_key_list
@@ -45,17 +46,18 @@ def get_kms_key_list(boto3_session: boto3.session.Session, region: str) -> List[
 @timeit
 @aws_handle_regions
 def get_kms_key_details(
-    boto3_session: boto3.session.Session, kms_key_data: Dict, region: str,
+    boto3_session: boto3.session.Session, kms_key_data: Dict,
 ) -> Generator[Any, Any, Any]:
     """
     Iterates over all KMS Keys.
     """
-    client = boto3_session.client('kms', region_name=region)
     for key in kms_key_data:
+        region = key['region']
+        client = boto3_session.client('kms', region_name=region)
         policy = get_policy(key, client)
         aliases = get_aliases(key, client)
         grants = get_grants(key, client)
-        yield key['KeyId'], policy, aliases, grants
+        yield key['KeyId'], policy, aliases, grants, region
 
 
 @timeit
@@ -121,7 +123,9 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
     UNWIND $alias_list AS alias
     MERGE (a:KMSAlias{id: alias.AliasArn})
     ON CREATE SET a.firstseen = timestamp(), a.targetkeyid = alias.TargetKeyId
-    SET a.aliasname = alias.AliasName, a.lastupdated = $UpdateTag
+    SET a.aliasname = alias.AliasName, a.lastupdated = $UpdateTag,
+    a.region = alias.region,
+    a.arn = alias.AliasArn
     WITH a, alias
     MATCH (kmskey:KMSKey{id: alias.TargetKeyId})
     MERGE (a)-[r:KNOWN_AS]->(kmskey)
@@ -137,7 +141,9 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
 
 
 @timeit
-def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], update_tag: int) -> None:
+def _load_kms_key_grants(
+    neo4j_session: neo4j.Session, grants_list: List[Dict], aws_account_id: str, update_tag: int
+) -> None:
     """
     Ingest KMS Key Grants into neo4j.
     """
@@ -146,7 +152,9 @@ def _load_kms_key_grants(neo4j_session: neo4j.Session, grants_list: List[Dict], 
     MERGE (g:KMSGrant{id: grant.GrantId})
     ON CREATE SET g.firstseen = timestamp(), g.granteeprincipal = grant.GranteePrincipal,
     g.creationdate = grant.CreationDate
-    SET g.name = grant.GrantName, g.lastupdated = $UpdateTag
+    SET g.name = grant.GrantName,
+    g.region=grant.region,
+    g.lastupdated = $UpdateTag
     WITH g, grant
     MATCH (kmskey:KMSKey{id: grant.KeyId})
     MERGE (g)-[r:APPLIED_ON]->(kmskey)
@@ -176,6 +184,7 @@ def _load_kms_key_policies(neo4j_session: neo4j.Session, policies: List[Dict], u
     UNWIND $policies AS policy
     MATCH (k:KMSKey) where k.name = policy.kms_key
     SET k.anonymous_access = (coalesce(k.anonymous_access, false) OR policy.internet_accessible),
+    k.region=policy.region,
     k.anonymous_actions = coalesce(k.anonymous_actions, []) + policy.accessible_actions,
     k.lastupdated = $UpdateTag
     """
@@ -189,7 +198,7 @@ def _load_kms_key_policies(neo4j_session: neo4j.Session, policies: List[Dict], u
 
 def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> None:
     set_defaults = """
-    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(kmskey:KMSKey) where kmskey.anonymous_actions IS NULL
+    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(kmskey:KMSKey) where NOT EXISTS(kmskey.anonymous_actions)
     SET kmskey.anonymous_access = false, kmskey.anonymous_actions = []
     """
 
@@ -201,8 +210,8 @@ def _set_default_values(neo4j_session: neo4j.Session, aws_account_id: str) -> No
 
 @timeit
 def load_kms_key_details(
-        neo4j_session: neo4j.Session, policy_alias_grants_data: List[Tuple[Any, Any, Any, Any]], region: str,
-        aws_account_id: str, update_tag: int,
+        neo4j_session: neo4j.Session, policy_alias_grants_data: List[Tuple[Any, Any, Any, Any]],
+        aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Create dictionaries for all KMS key policies, aliases and grants so we can import them in a single query for each
@@ -210,25 +219,30 @@ def load_kms_key_details(
     policies = []
     aliases: List[str] = []
     grants: List[str] = []
-    for key, policy, alias, grant in policy_alias_grants_data:
+    for key, policy, alias, grant, region in policy_alias_grants_data:
         parsed_policy = parse_policy(key, policy)
         if parsed_policy is not None:
+            parsed_policy['region'] = region
             policies.append(parsed_policy)
         if len(alias) > 0:
+            for ali in alias:
+                ali['region'] = region
             aliases.extend(alias)
         if len(grants) > 0:
+            for grant in grants:
+                grant['region'] = region
             grants.extend(grant)
 
     # cleanup existing policy properties
     run_cleanup_job(
         'aws_kms_details.json',
         neo4j_session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': aws_account_id},
+        common_job_parameters,
     )
 
     _load_kms_key_policies(neo4j_session, policies, update_tag)
     _load_kms_key_aliases(neo4j_session, aliases, update_tag)
-    _load_kms_key_grants(neo4j_session, grants, update_tag)
+    _load_kms_key_grants(neo4j_session, grants, aws_account_id, update_tag)
     _set_default_values(neo4j_session, aws_account_id)
 
 
@@ -296,7 +310,7 @@ def parse_policy(key: str, policy: Policy) -> Optional[Dict[Any, Any]]:
 
 @timeit
 def load_kms_keys(
-    neo4j_session: neo4j.Session, data: Dict, region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, data: Dict, current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     ingest_keys = """
@@ -310,8 +324,8 @@ def load_kms_keys(
     kmskey.keystate = k.KeyState,
     kmskey.customkeystoreid = k.CustomKeyStoreId,
     kmskey.cloudhsmclusterid = k.CloudHsmClusterId,
-    kmskey.lastupdated = $aws_update_tag,
-    kmskey.region = $Region
+    kmskey.lastupdated =$aws_update_tag,
+    kmskey.region = k.region
     WITH kmskey
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(kmskey)
@@ -329,7 +343,6 @@ def load_kms_keys(
     neo4j_session.run(
         ingest_keys,
         key_list=data,
-        Region=region,
         AWS_ACCOUNT_ID=current_aws_account_id,
         aws_update_tag=aws_update_tag,
     )
@@ -342,15 +355,21 @@ def cleanup_kms(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
 
 @timeit
 def sync_kms_keys(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, region: str, current_aws_account_id: str,
-    aws_update_tag: int,
+    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: str, current_aws_account_id: str,
+    aws_update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    kms_keys = get_kms_key_list(boto3_session, region)
+    kms_keys = []
+    for region in regions:
+        kms_keys.extend(get_kms_key_list(boto3_session, region))
 
-    load_kms_keys(neo4j_session, kms_keys, region, current_aws_account_id, aws_update_tag)
+    logger.info(f"Total KMS Keys: {len(kms_keys)}")
 
-    policy_alias_grants_data = get_kms_key_details(boto3_session, kms_keys, region)
-    load_kms_key_details(neo4j_session, policy_alias_grants_data, region, current_aws_account_id, aws_update_tag)
+    load_kms_keys(neo4j_session, kms_keys, current_aws_account_id, aws_update_tag)
+
+    policy_alias_grants_data = get_kms_key_details(boto3_session, kms_keys)
+    load_kms_key_details(
+        neo4j_session, policy_alias_grants_data, current_aws_account_id, aws_update_tag, common_job_parameters,
+    )
 
 
 @timeit
@@ -358,8 +377,12 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
-    for region in regions:
-        logger.info("Syncing KMS for region %s in account '%s'.", region, current_aws_account_id)
-        sync_kms_keys(neo4j_session, boto3_session, region, current_aws_account_id, update_tag)
+    tic = time.perf_counter()
+
+    logger.info("Syncing KMS for account '%s', at %s.", current_aws_account_id, tic)
+    sync_kms_keys(neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters)
 
     cleanup_kms(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process KMS: {toc - tic:0.4f} seconds")

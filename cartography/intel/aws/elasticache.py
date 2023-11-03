@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -44,12 +45,14 @@ def get_elasticache_clusters(boto3_session: boto3.session.Session, region: str) 
     clusters: List[Dict] = []
     for page in paginator.paginate():
         clusters.extend(page['CacheClusters'])
+    for cluster in clusters:
+        cluster['region'] = region
     return clusters
 
 
 @timeit
 def load_elasticache_clusters(
-    neo4j_session: neo4j.Session, clusters: List[Dict], region: str,
+    neo4j_session: neo4j.Session, clusters: List[Dict],
     aws_account_id: str, update_tag: int,
 ) -> None:
     query = """
@@ -58,8 +61,8 @@ def load_elasticache_clusters(
         ON CREATE SET cluster.firstseen = timestamp(),
             cluster.arn = elasticache_cluster.ARN,
             cluster.topic_arn = elasticache_cluster.NotificationConfiguration.TopicArn,
-            cluster.id = elasticache_cluster.CacheClusterId,
-            cluster.region = $region
+            cluster.cache_cluster_id = elasticache_cluster.CacheClusterId,
+            cluster.region = elasticache_cluster.region
         SET cluster.lastupdated = $aws_update_tag
 
         WITH cluster, elasticache_cluster
@@ -85,22 +88,42 @@ def load_elasticache_clusters(
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = $aws_update_tag
     """
-    logger.info(f"Loading f{len(clusters)} ElastiCache clusters for region '{region}' into graph.")
+    logger.info(f"Loading f{len(clusters)} ElastiCache clusters into graph.")
     neo4j_session.run(
         query,
         clusters=clusters,
-        region=region,
         aws_update_tag=update_tag,
         aws_account_id=aws_account_id,
     )
 
 
 @timeit
-def cleanup(neo4j_session: neo4j.Session, current_aws_account_id: str, update_tag: int) -> None:
+def attach_elasticache_clusters_to_security_groups(neo4j_session: neo4j.Session, clusters: List[Dict], update_tag: int) -> None:
+    query = """
+    UNWIND $clusters as elasticache_cluster
+        MATCH (cluster:ElasticacheCluster{id:elasticache_cluster.ARN})
+        UNWIND elasticache_cluster.SecurityGroups as sg
+            MERGE (security_group:EC2SecurityGroup{id: sg.SecurityGroupId})
+            ON CREATE SET security_group.firstseen = timestamp()
+            SET security_group.lastupdated = $aws_update_tag
+            WITH security_group, cluster
+            MERGE (security_group)<-[r:MEMBER_OF_EC2_SECURITY_GROUP]-(cluster)
+            ON CREATE SET r.firstseen = timestamp()
+            SET r.lastupdated = $aws_update_tag
+    """
+    neo4j_session.run(
+        query,
+        clusters=clusters,
+        aws_update_tag=update_tag,
+    )
+
+
+@timeit
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job(
         'aws_import_elasticache_cleanup.json',
         neo4j_session,
-        {'UPDATE_TAG': update_tag, 'AWS_ID': current_aws_account_id},
+        common_job_parameters,
     )
 
 
@@ -109,16 +132,20 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing ElastiCache for account '%s', at %s.", current_aws_account_id, tic)
+
+    clusters = []
     for region in regions:
         logger.info(f"Syncing ElastiCache clusters for region '{region}' in account {current_aws_account_id}")
-        clusters = get_elasticache_clusters(boto3_session, region)
-        load_elasticache_clusters(neo4j_session, clusters, region, current_aws_account_id, update_tag)
-    cleanup(neo4j_session, current_aws_account_id, update_tag)
-    merge_module_sync_metadata(
-        neo4j_session,
-        group_type='AWSAccount',
-        group_id=current_aws_account_id,
-        synced_type='ElasticacheCluster',
-        update_tag=update_tag,
-        stat_handler=stat_handler,
-    )
+        clusters.extend(get_elasticache_clusters(boto3_session, region))
+
+    logger.info(f"Total Elasticache Clusters: {len(clusters)}")
+
+    load_elasticache_clusters(neo4j_session, clusters, current_aws_account_id, update_tag)
+    attach_elasticache_clusters_to_security_groups(neo4j_session, clusters, update_tag)
+    cleanup(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process ElastiCache: {toc - tic:0.4f} seconds")

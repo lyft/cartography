@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -180,12 +181,31 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing Config for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.info("Syncing AWS Config for region '%s' in account '%s'.", region, current_aws_account_id)
         recorders = get_configuration_recorders(boto3_session, region)
+
+        logger.info(f"Total Config Recorders: {len(recorders)} for {region}")
+
         load_configuration_recorders(neo4j_session, recorders, region, current_aws_account_id, update_tag)
+
         channels = get_delivery_channels(boto3_session, region)
+
+        logger.info(f"Total Config Channels: {len(channels)} for {region}")
+
         load_delivery_channels(neo4j_session, channels, region, current_aws_account_id, update_tag)
+
         rules = get_config_rules(boto3_session, region)
+
+        logger.info(f"Total Config Rules: {len(rules)} for {region}")
+
         load_config_rules(neo4j_session, rules, region, current_aws_account_id, update_tag)
+
     cleanup_config(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process Config: {toc - tic:0.4f} seconds")
