@@ -21,6 +21,7 @@ DESCRIBE_DATABASE_ACCOUNTS = [
         "database_account_offer_type": "Standard",
         "disable_key_based_metadata_write_access": False,
         "enable_free_tier": False,
+        "ipruleslist": ["34.34.14.01"],
         "enable_analytical_storage": True,
         "consistency_policy": {
             "default_consistency_level": "Session",
@@ -110,7 +111,7 @@ DESCRIBE_DATABASE_ACCOUNTS = [
         "virtual_network_rules": [
             {
                 "id": rg + "/providers/Microsoft.Network/virtualNetworks/vn1",
-                "ignore_missing_v_net_service_endpoint": False,
+                "ignore_missing_v_net_service_endpoint": True,
             },
         ],
     },
@@ -124,12 +125,13 @@ DESCRIBE_DATABASE_ACCOUNTS = [
         "tags": {},
         "provisioning_state": "Succeeded",
         "document_endpoint": "https://ddb1.documents.azure.com:444/",
-        "is_virtual_network_filter_enabled": True,
+        "is_virtual_network_filter_enabled": False,
         "enable_automatic_failover": True,
         "enable_multiple_write_locations": True,
         "database_account_offer_type": "Standard",
         "disable_key_based_metadata_write_access": False,
         "enable_free_tier": False,
+        "ipruleslist": ["56.89.88.01"],
         "enable_analytical_storage": True,
         "consistency_policy": {
             "default_consistency_level": "Session",
@@ -164,7 +166,7 @@ DESCRIBE_DATABASE_ACCOUNTS = [
         "virtual_network_rules": [
             {
                 "id": rg + "/providers/Microsoft.Network/virtualNetworks/vn2",
-                "ignore_missing_v_net_service_endpoint": False,
+                "ignore_missing_v_net_service_endpoint": True,
             },
         ],
     },

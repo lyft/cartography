@@ -769,7 +769,7 @@ def _attach_resource_group_container(tx: neo4j.Transaction, container_id: str, r
     tx.run(
         ingest_container,
         container_id=container_id,
-        resource_group=resource_group(),
+        resource_group=resource_group,
         update_tag=update_tag,
     )
 

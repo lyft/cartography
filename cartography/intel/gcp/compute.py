@@ -1224,6 +1224,7 @@ def _attach_gcp_nics(neo4j_session: neo4j.Session, instance: Resource, gcp_updat
     nic.nic_id = $NicId
     SET nic.private_ip = $NetworkIP,
     nic.network = $Network,
+    nic.consolelink=$ConsoleLink,
     nic.name = $NicName,
     nic.lastupdated = $gcp_update_tag
     MERGE (i)-[r:NETWORK_INTERFACE]->(nic)
@@ -1274,6 +1275,7 @@ def _attach_gcp_nic_access_configs(
     ac.access_config_id = $AccessConfigId
     SET ac.type=$Type,
     ac.name = $Name,
+    ac.consolelink=$ConsoleLink,
     ac.public_ip =  $NatIP,
     ac.set_public_ptr = $SetPublicPtr,
     ac.public_ptr_domain_name = $PublicPtrDomainName,
@@ -1293,7 +1295,7 @@ def _attach_gcp_nic_access_configs(
             AccessConfigId=access_config_id,
             Type=ac['type'],
             Name=ac['name'],
-            ConsoleLink=ac['consolelink'],
+            ConsoleLink=ac.get('consolelink'),
             NatIP=ac.get('natIP', None),
             SetPublicPtr=ac.get('setPublicPtr', None),
             PublicPtrDomainName=ac.get('publicPtrDomainName', None),

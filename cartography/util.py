@@ -67,6 +67,14 @@ def run_analysis_job(
         get_job_shortname(filename),
     )
 
+def get_azure_resource_group_name(id:str)->None:
+    resource_group=''
+    id=id.lower()
+    if id is not None and 'resourcegroups' in id:
+        x = id.split('/')
+        resource_group = x[x.index('resourcegroups') + 1]
+        return resource_group  
+    return resource_group
 
 def run_analysis_and_ensure_deps(
         analysis_job_name: str,

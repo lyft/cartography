@@ -11,10 +11,14 @@ from tests.data.azure.sql import DESCRIBE_RESTORE_POINTS
 from tests.data.azure.sql import DESCRIBE_SERVERS
 from tests.data.azure.sql import DESCRIBE_THREAT_DETECTION_POLICY
 from tests.data.azure.sql import DESCRIBE_TRANSPARENT_DATA_ENCRYPTIONS
+from tests.data.azure.sql import DESCRIBE_FIREWALL_RULES
+from cartography.util import run_analysis_job
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
 TEST_UPDATE_TAG = 123456789
+TEST_TENANT_ID = '1234'
+TEST_WORKSPACE_ID = '1234'
 server1 = "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1"
 server2 = "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2"
 
@@ -46,11 +50,13 @@ def test_load_server_relationships(neo4j_session):
     # Create Test Azure Subscription
     neo4j_session.run(
         """
-        MERGE (as:AzureSubscription{id: $subscription_id})
+        MERGE (as:AzureSubscription{id: $subscription_id})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
         ON CREATE SET as.firstseen = timestamp()
         SET as.lastupdated = $update_tag
         """,
         subscription_id=TEST_SUBSCRIPTION_ID,
+        AZURE_TENANT_ID=TEST_TENANT_ID,
+        WORKSPACE_ID=TEST_WORKSPACE_ID,
         update_tag=TEST_UPDATE_TAG,
     )
 
@@ -749,3 +755,57 @@ def test_load_transparent_data_encryptions_relationships(neo4j_session):
     }
 
     assert actual == expected
+
+
+def test_sql_server_analysis_public_exposure(neo4j_session):
+    neo4j_session.run(
+        """
+        MERGE (as:AzureSubscription{id: $subscription_id})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
+        ON CREATE SET as.firstseen = timestamp()
+        SET as.lastupdated = $update_tag
+        """,
+        subscription_id=TEST_SUBSCRIPTION_ID,
+        AZURE_TENANT_ID=TEST_TENANT_ID,
+        WORKSPACE_ID=TEST_WORKSPACE_ID,
+        update_tag=TEST_UPDATE_TAG,
+    )
+
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG + 1,
+        "WORKSPACE_ID": TEST_WORKSPACE_ID,
+        "AZURE_SUBSCRIPTION_ID": TEST_SUBSCRIPTION_ID,
+        "AZURE_TENANT_ID": TEST_TENANT_ID
+    }
+
+    sql.load_server_data(
+        neo4j_session,
+        TEST_SUBSCRIPTION_ID,
+        DESCRIBE_SERVERS,
+        TEST_UPDATE_TAG,
+    )
+
+    sql._load_firewall_rules(neo4j_session, DESCRIBE_FIREWALL_RULES, TEST_UPDATE_TAG)
+
+    sql.load_server_private_endpoint_connection(neo4j_session, DESCRIBE_SERVERS, TEST_UPDATE_TAG)
+
+    run_analysis_job(
+        'azure_sql_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    expected_nodes = {
+        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1',
+         'unrestricted_firewall'),
+        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2',
+         'no_private_endpoints'),
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (r:AzureSQLServer{exposed_internet: true}) RETURN r.id, r.exposed_internet_type;
+        """,
+    )
+    actual_nodes = {(n['r.id'], ",".join(n['r.exposed_internet_type'])) for n in nodes}
+
+    assert actual_nodes == expected_nodes
