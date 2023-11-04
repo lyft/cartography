@@ -1,4 +1,4 @@
-import cartography.intel.aws.ec2
+import cartography.intel.aws.ec2.load_balancer_v2s
 import tests.data.aws.ec2.load_balancers
 
 TEST_ACCOUNT_ID = '000000000000'
@@ -48,9 +48,9 @@ def test_load_load_balancer_v2s(neo4j_session, *args):
     cartography.intel.aws.ec2.load_balancer_v2s.load_load_balancer_v2s(
         neo4j_session,
         load_balancer_data,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
+        TEST_REGION,
     )
 
     # verify the db has (aa)-[r:RESOURCE]->(elbv2)-[r:ELBV2_LISTENER]->(l)

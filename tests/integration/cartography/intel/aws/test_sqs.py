@@ -12,7 +12,7 @@ def test_load_sqs_queues(neo4j_session, *args):
     Ensure that expected queues get loaded with their key fields.
     """
     data = tests.data.aws.sqs.GET_SQS_QUEUE_ATTRIBUTES
-    cartography.intel.aws.sqs.load_sqs_queues(neo4j_session, data, TEST_REGION, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
+    cartography.intel.aws.sqs.load_sqs_queues(neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
 
     expected_nodes = {
         (

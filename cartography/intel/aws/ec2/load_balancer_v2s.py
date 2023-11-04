@@ -67,7 +67,7 @@ def get_loadbalancer_v2_data(boto3_session: boto3.Session, region: str) -> List[
 @timeit
 def load_load_balancer_v2s(
     neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str,
-    update_tag: int,
+    update_tag: int,region:str
 ) -> None:
     ingest_load_balancer_v2 = """
     MERGE (elbv2:LoadBalancerV2{id: $ID})
@@ -239,10 +239,10 @@ def sync_load_balancer_v2s(
     for region in regions:
         logger.info("Syncing EC2 load balancers v2 for region '%s' in account '%s'.", region, current_aws_account_id)
         data.extend(get_loadbalancer_v2_data(boto3_session, region))
+        logger.info(f"Total Load Balancer V2s: {len(data)}")
+        load_load_balancer_v2s(neo4j_session, data, current_aws_account_id, update_tag,region)
 
-    logger.info(f"Total Load Balancer V2s: {len(data)}")
-
-    load_load_balancer_v2s(neo4j_session, data, current_aws_account_id, update_tag)
+    
     cleanup_load_balancer_v2s(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

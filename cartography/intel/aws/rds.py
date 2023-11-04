@@ -395,7 +395,7 @@ def load_rds_clusters(
 @timeit
 def _attach_associate_roles(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
     attach_cluster_to_role = """
-    MATCH (c:RDSCluster{id:$DBClusterArn})
+    MATCH (c:RDSCluster{id:$ClusterArn})
     MERGE (p:AWSPrincipal{arn:$RoleArn})
     MERGE (c)-[s:RDS_ASSUMEROLE_ALLOW]->(p)
     ON CREATE SET s.firstseen = timestamp()
@@ -417,7 +417,7 @@ def _attach_ec2_security_groups_cluster(neo4j_session: neo4j.Session, cluster: D
     """
     attach_rds_to_group = """
     UNWIND $VpcSecurityGroups as rds_sg
-        MATCH (rds:RDSCluster{id: $DBClusterArn})
+        MATCH (rds:RDSCluster{id: $ClusterArn})
         MERGE (sg:EC2SecurityGroup{id: rds_sg.VpcSecurityGroupId})
         MERGE (rds)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
         ON CREATE SET m.firstseen = timestamp()
@@ -434,7 +434,7 @@ def _attach_ec2_security_groups_cluster(neo4j_session: neo4j.Session, cluster: D
 @timeit
 def _attach_db_subnet_group(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
     attach_cluster_to_role = """
-    MATCH (c:RDSCluster{id:$DBClusterArn})
+    MATCH (c:RDSCluster{id:$ClusterArn})
     MERGE (p:DBSubnetGroup{name:$DBSubnetgroup})
     MERGE (c)-[s:ATTACH_TO]->(p)
     ON CREATE SET s.firstseen = timestamp()

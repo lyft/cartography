@@ -10,7 +10,7 @@ def test_load_rds_clusters_basic(neo4j_session):
     cartography.intel.aws.rds.load_rds_clusters(
         neo4j_session,
         DESCRIBE_DBCLUSTERS_RESPONSE['DBClusters'],
-        'us-east1',
+        
         '1234',
         TEST_UPDATE_TAG,
     )
@@ -30,7 +30,6 @@ def test_load_rds_clusters_basic(neo4j_session):
     cartography.intel.aws.rds.load_rds_instances(
         neo4j_session,
         DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
-        'us-east1',
         '1234',
         TEST_UPDATE_TAG,
     )
@@ -69,7 +68,7 @@ def test_load_rds_instances_basic(neo4j_session):
     cartography.intel.aws.rds.load_rds_instances(
         neo4j_session,
         DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
-        'us-east1',
+        
         '1234',
         TEST_UPDATE_TAG,
     )
@@ -92,14 +91,14 @@ def test_load_rds_snapshots_basic(neo4j_session):
     cartography.intel.aws.rds.load_rds_instances(
         neo4j_session,
         DESCRIBE_DBINSTANCES_RESPONSE['DBInstances'],
-        'us-east1',
+        
         '1234',
         TEST_UPDATE_TAG,
     )
     cartography.intel.aws.rds.load_rds_snapshots(
         neo4j_session,
         DESCRIBE_DBSNAPSHOTS_RESPONSE['DBSnapshots'],
-        'us-east1',
+       
         '1234',
         TEST_UPDATE_TAG,
     )

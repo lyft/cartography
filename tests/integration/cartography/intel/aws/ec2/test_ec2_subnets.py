@@ -1,4 +1,4 @@
-import cartography.intel.aws.ec2
+import cartography.intel.aws.ec2.subnets
 import tests.data.aws.ec2.subnets
 
 

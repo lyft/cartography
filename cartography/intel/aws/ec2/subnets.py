@@ -47,7 +47,7 @@ def get_subnet_data(boto3_session: boto3.session.Session, region: str) -> List[D
 
 @timeit
 def load_subnets(
-    neo4j_session: neo4j.Session, data: List[Dict], aws_account_id: str,
+    neo4j_session: neo4j.Session, data: List[Dict],region:str, aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
 

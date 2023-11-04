@@ -20,6 +20,7 @@ DESCRIBE_DBCLUSTERS_RESPONSE = {
             'ReaderEndpoint': 'some-prod-ro-db-iad-0.subdomain.us-east-1.rds.amazonaws.com',
             'CustomEndpoints': [],
             'MultiAZ': False,
+            "region":"us-east-1",
             'Engine': 'docdb',
             'EngineVersion': '3.6.0',
             'LatestRestorableTime': '2021-06-17 07:11:29.507000+00:00',
@@ -67,6 +68,7 @@ DESCRIBE_DBINSTANCES_RESPONSE = {
     "DBInstances": [
         {
             "AllocatedStorage": 1,
+             "region":"us-east-1",
             "AutoMinorVersionUpgrade": True,
             "AvailabilityZone": "us-east-1e",
             "BackupRetentionPeriod": 35,
@@ -208,6 +210,7 @@ DESCRIBE_DBSNAPSHOTS_RESPONSE = {
             "SnapshotDatabaseTime": datetime.datetime(2022, 1, 1),
             "SnapshotTarget": "some-snapshot-target",
             "StorageThroughput": 1234,
+             "region":"us-east-1",
         },
     ],
 }

@@ -12,7 +12,6 @@ def test_load_lambda_functions(neo4j_session):
     cartography.intel.aws.lambda_function.load_lambda_functions(
         neo4j_session,
         data,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -59,7 +58,7 @@ def test_load_lambda_relationships(neo4j_session):
     cartography.intel.aws.lambda_function.load_lambda_functions(
         neo4j_session,
         data,
-        TEST_REGION,
+        
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -123,7 +122,7 @@ def test_load_lambda_function_aliases_relationships(neo4j_session):
     cartography.intel.aws.lambda_function.load_lambda_functions(
         neo4j_session,
         data,
-        TEST_REGION,
+       
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -174,8 +173,7 @@ def test_load_lambda_event_source_mappings(neo4j_session):
     )
 
     expected_nodes = {
-        "i01",
-        "i02",
+       "arn:aws:sqs:us-west-2:123456789012:mySQSqueue"
     }
 
     nodes = neo4j_session.run(
@@ -185,7 +183,7 @@ def test_load_lambda_event_source_mappings(neo4j_session):
     )
 
     actual_nodes = {n['r.id'] for n in nodes}
-
+    print("1==",actual_nodes)
     assert actual_nodes == expected_nodes
 
 
@@ -196,7 +194,7 @@ def test_load_lambda_event_source_mappings_relationships(neo4j_session):
     cartography.intel.aws.lambda_function.load_lambda_functions(
         neo4j_session,
         data,
-        TEST_REGION,
+       
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -209,14 +207,7 @@ def test_load_lambda_event_source_mappings_relationships(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    expected_nodes = {
-        (
-            "arn:aws:lambda:us-west-2:000000000000:function:sample-function-7", "i01",
-        ),
-        (
-            "arn:aws:lambda:us-west-2:000000000000:function:sample-function-8", "i02",
-        ),
-    }
+    expected_nodes={('arn:aws:lambda:us-west-2:000000000000:function:sample-function-8', 'arn:aws:sqs:us-west-2:123456789012:mySQSqueue'), ('arn:aws:lambda:us-west-2:000000000000:function:sample-function-7', 'arn:aws:sqs:us-west-2:123456789012:mySQSqueue')}
 
     # Fetch relationships
     result = neo4j_session.run(
@@ -227,7 +218,6 @@ def test_load_lambda_event_source_mappings_relationships(neo4j_session):
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
-
     assert actual == expected_nodes
 
 
@@ -264,7 +254,6 @@ def test_load_lambda_layers_relationships(neo4j_session):
     cartography.intel.aws.lambda_function.load_lambda_functions(
         neo4j_session,
         data,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )

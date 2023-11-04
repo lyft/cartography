@@ -71,6 +71,7 @@ CLUSTERS = [{
     'ClusterSubnetGroupName': 'redshift',
     'ClusterVersion': '1.0',
     'DBName': 'dev',
+    "region":"us-east-1",
     'DeferredMaintenanceWindows': [],
     'ElasticResizeNumberOfNodeOptions': '[2,3,5,6,7,8]',
     'Encrypted': True,
