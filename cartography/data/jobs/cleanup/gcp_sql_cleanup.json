@@ -1,0 +1,61 @@
+{
+	"statements": [
+		{
+			"query": "MATCH (u:GCPSQLUser)<-[:USED_BY]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE u.lastupdated <> $UPDATE_TAG WITH u LIMIT $LIMIT_SIZE DETACH DELETE (u) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP Cloud SQL Users that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPSQLUser)<-[r:USED_BY]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP GCPSQLUser-to-Instance relationships that are out of date."
+		},
+		{
+			"query": "MATCH (vpc:GCPVpc)<-[:VPC_NETWORK]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE vpc.lastupdated <> $UPDATE_TAG WITH vpc LIMIT $LIMIT_SIZE DETACH DELETE (vpc) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (:GCPVpc)<-[r:VPC_NETWORK]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (ip:GCPPublicIpAddress)<-[:MEMBER_OF_PUBLIC_IP_ADDRESS]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE ip.lastupdated <> $UPDATE_TAG WITH ip LIMIT $LIMIT_SIZE DETACH DELETE (ip) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (:GCPPublicIpAddress)<-[r:MEMBER_OF_PUBLIC_IP_ADDRESS]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (d:GCPSQLDatabase)<-[:HAS_DATABASE]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE d.lastupdated <> $UPDATE_TAG WITH d LIMIT $LIMIT_SIZE DETACH DELETE (d) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP Cloud SQL Database that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPSQLDatabase)<-[r:HAS_DATABASE]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP GCPSQLDatabase-to-Instance relationships that are out of date."
+		},
+		{
+			"query": "MATCH (n:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP Cloud SQL Instance that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:GCPSQLInstance)<-[r:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP GCPSQLInstance-to-Project relationships that are out of date."
+		}
+	],
+	"name": "Cleanup GCP Cloud SQL."
+}

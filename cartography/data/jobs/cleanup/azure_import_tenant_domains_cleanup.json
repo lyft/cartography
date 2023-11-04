@@ -1,0 +1,15 @@
+{
+    "statements": [
+        {
+            "query": "MATCH (n:AzureDomain)<-[:RESOURCE]-(at:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE (at)-[:RESOURCE]->(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID}) AND n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:AzureDomain)<-[r:RESOURCE]-(at:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE (at)-[:RESOURCE]->(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID}) AND r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        }
+    ],
+    "name": "cleanup Azure Domains"
+}

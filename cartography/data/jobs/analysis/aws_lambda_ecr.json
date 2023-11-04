@@ -1,14 +1,14 @@
 {
-    "name": "Lambda functions with ECR images",
-    "statements": [
-        {
-            "__comment": "Create HAS_IMAGE realtionship from lambda functions to the associated ECR image",
-            "query":"MATCH (l:AWSLambda) \n WITH COLLECT(l) as lmbda_list \n UNWIND lmbda_list as lmbda \n MATCH (e:ECRImage) \n WHERE e.digest = 'sha256:' + lmbda.codesha256 \n MERGE (lmbda)-[r:HAS]->(e) \n SET r.lastupdated = $UPDATE_TAG",
-            "iterative": false
-        },
-        {
-            "query": "MATCH (:AWSLambda)-[r:HAS]->(:ECRImage) WHERE r.lastupdated <> $UPDATE_TAG DELETE (r)",
-            "iterative": false
-        }
-    ]
+	"name": "Lambda functions with ECR images",
+	"statements": [
+		{
+			"__comment": "Create HAS_IMAGE relationship from lambda functions to the associated ECR image",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(aa:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(l:AWSLambda) \n WITH COLLECT(l) as lambda_list \n UNWIND lambda_list as lambda \n MATCH (e:ECRImage) \n WHERE e.digest = 'sha256:' + lambda.codesha256 \n MERGE (lambda)-[r:HAS]->(e) \n SET r.lastupdated = $UPDATE_TAG",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(aa:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:AWSLambda)-[r:HAS]->(:ECRImage) WHERE r.lastupdated <> $UPDATE_TAG DELETE (r)",
+			"iterative": false
+		}
+	]
 }

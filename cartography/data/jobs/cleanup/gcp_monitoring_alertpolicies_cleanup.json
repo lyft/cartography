@@ -1,0 +1,17 @@
+{
+	"statements": [
+		{
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:GCPProject{id: $GCP_PROJECT_ID})-[:RESOURCE]->(n:GCPMonitoringAlertPolicy) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Delete GCP Monitoring Alert Policies that no longer exist and detach them from all previously connected nodes."
+		},
+		{
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:GCPProject{id: $GCP_PROJECT_ID})-[r:RESOURCE]->(:GCPMonitoringAlertPolicy) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100,
+			"__comment__": "Remove GCP Project to GCP Monitoring Alert Policies relationships that are out of date"
+		}
+	],
+	"name": "cleanup GCP Monitoring Alert Policies"
+}
