@@ -127,6 +127,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
         cluster.masterauth_username = $ClusterMasterUsername,
         cluster.consolelink = $consolelink,
         cluster.masterauth_password = $ClusterMasterPassword,
+        cluster.enable_kubernetes_alpha = $ClusterKubernetesAlpha,
         cluster.lastupdated = $gcp_update_tag
     WITH cluster
     MATCH (owner:GCPProject{id: $ProjectId})
@@ -170,6 +171,7 @@ def load_gke_clusters(neo4j_session: neo4j.Session, cluster_resp: Dict, project_
             ClusterPublicEndpoint=cluster.get('privateClusterConfig', {}).get('publicEndpoint'),
             ClusterMasterUsername=cluster.get('masterAuth', {}).get('username'),
             ClusterMasterPassword=cluster.get('masterAuth', {}).get('password'),
+            ClusterKubernetesAlpha=cluster.get('enableKubernetesAlpha', False),
             consolelink=cluster.get('consolelink'),
             gcp_update_tag=gcp_update_tag,
         )
