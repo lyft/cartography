@@ -70,27 +70,6 @@ def transform_images(boto3_session: boto3.session.Session, imags: List[Dict], im
         logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
     return images
 
-@timeit
-@aws_handle_regions
-def get_images(boto3_session: boto3.session.Session, region: str, image_ids: List[str]) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    images = []
-    try:
-        self_images = client.describe_images(Owners=['self'])['Images']
-        images.extend(self_images)
-    except ClientError as e:
-        logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
-    try:
-        if image_ids:
-            images_in_use = client.describe_images(ImageIds=image_ids)['Images']
-            # Ensure we're not adding duplicates
-            _ids = [image["ImageId"] for image in images]
-            for image in images_in_use:
-                if image["ImageId"] not in _ids:
-                    images.append(image)
-    except ClientError as e:
-        logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
-    return images
 
 
 @timeit
