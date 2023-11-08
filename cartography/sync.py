@@ -21,7 +21,7 @@ import cartography.intel.create_indexes
 # import cartography.intel.cve
 # import cartography.intel.digitalocean
 import cartography.intel.gcp
-# import cartography.intel.github
+import cartography.intel.github
 # import cartography.intel.gsuite
 # import cartography.intel.kubernetes
 # import cartography.intel.okta
@@ -107,7 +107,7 @@ class Sync:
             for stage_name, stage_func in self._stages.items():
                 logger.info("Starting sync stage '%s'", stage_name)
                 try:
-                    if stage_name in ['aws', 'azure', 'gcp']:
+                    if stage_name in ['aws', 'azure', 'gcp','github']:
                         response = stage_func(neo4j_session, config)
                     else:
                         stage_func(neo4j_session, config)
@@ -293,6 +293,23 @@ def build_gcp_sync():
     stages = []
     stages.append(('cloudanix-workspace', cloudanix.run))
     stages.append(('gcp', cartography.intel.gcp.start_gcp_ingestion))
+    stages.append(('analysis', cartography.intel.analysis.run))
+
+    sync.add_stages(stages)
+
+    return sync
+
+def build_github_sync():
+    """
+    Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
+    :rtype: cartography.sync.Sync
+    :return: The default cartography sync object.
+    """
+    sync = Sync()
+
+    stages = []
+    stages.append(('cloudanix-workspace', cloudanix.run))
+    stages.append(('github', cartography.intel.github.start_github_ingestion))
     stages.append(('analysis', cartography.intel.analysis.run))
 
     sync.add_stages(stages)

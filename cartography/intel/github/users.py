@@ -69,7 +69,7 @@ def get(token: str, api_url: str, organization: str) -> Tuple[List[Dict], Dict]:
 @timeit
 def load_organization_users(
     neo4j_session: neo4j.Session, user_data: List[Dict], org_data: Dict,
-    update_tag: int,
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     query = """
     MERGE (org:GitHubOrganization{id: $OrgUrl})
@@ -94,13 +94,19 @@ def load_organization_users(
     MERGE (u)-[r:MEMBER_OF]->(org)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $UpdateTag
+    WITH org
+    match (owner:CloudanixWorkspace{id:$workspace_id})
+    merge (org)<-[o:OWNER1]-(owner)
+    ON CREATE SET o.firstseen = timestamp()
+    SET o.lastupdated = $UpdateTag
     """
     neo4j_session.run(
         query,
         OrgUrl=org_data['url'],
         OrgLogin=org_data['login'],
         UserData=user_data,
-        UpdateTag=update_tag,
+        UpdateTag=common_job_parameters['UPDATE_TAG'],
+         workspace_id=common_job_parameters['WORKSPACE_ID'],
     )
 
 
@@ -114,7 +120,7 @@ def sync(
 ) -> None:
     logger.info("Syncing GitHub users")
     user_data, org_data = get(github_api_key, github_url, organization)
-    load_organization_users(neo4j_session, user_data, org_data, common_job_parameters['UPDATE_TAG'])
+    load_organization_users(neo4j_session, user_data, org_data, common_job_parameters)
     run_cleanup_job('github_users_cleanup.json', neo4j_session, common_job_parameters)
     merge_module_sync_metadata(
         neo4j_session,
