@@ -314,6 +314,14 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--okta-api-key',
+            type=str,
+            default=None,
+            help=(
+                'Key with which to auth to the Okta API.'
+            ),
+        )
+        parser.add_argument(
             '--okta-api-key-env-var',
             type=str,
             default=None,
@@ -631,12 +639,7 @@ class CLI:
         else:
             config.azure_client_secret = None
 
-        # Okta config
-        if config.okta_org_id and config.okta_api_key_env_var:
-            logger.debug(f"Reading API key for Okta from environment variable {config.okta_api_key_env_var}")
-            config.okta_api_key = os.environ.get(config.okta_api_key_env_var)
-        else:
-            config.okta_api_key = None
+        # Okta config. Rajat: No extra work required any more.
 
         # CRXcavator config
         if config.crxcavator_api_base_uri and config.crxcavator_api_key_env_var:
@@ -779,8 +782,10 @@ def main(argv=None, sync_flag=None):
     if(requested_sync == 'rule_check'):
         sync = cartography.sync.build_rule_check_sync()
         result = CLI(sync, prog='cartography').main(argv)
-    if(requested_sync.startswith("gcp")):
+    elif(requested_sync.startswith("gcp")):
         sync = cartography.sync.build_borneo_gcp_sync("skip_index" in requested_sync)
+    elif(requested_sync.startswith("okta")):
+        sync = cartography.sync.build_borneo_okta_sync("skip_index" in requested_sync)
         result = CLI(sync, prog='cartography').main(argv)
     else:
         if(requested_sync != "default"):
