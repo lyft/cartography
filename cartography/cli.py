@@ -261,6 +261,22 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--borneo-gcp-creds',
+            type=str,
+            default=None,
+            help=(
+                'Path to GCP Creds file'
+            ),
+        )
+        parser.add_argument(
+            '--borneo-gcp-project',
+            type=str,
+            default=None,
+            help=(
+                'GCP Project Name'
+            ),
+        )
+        parser.add_argument(
             '--crxcavator-api-base-uri',
             type=str,
             default='https://api.crxcavator.io/v1',
@@ -560,9 +576,16 @@ class CLI:
         """
         # TODO support parameter lookup in environment variables if not present on command line
         config: argparse.Namespace = self.parser.parse_args(argv)
-        
-        os.environ['AWS_PROFILE'] = config.borneo_aws_profile
-        os.environ['AWS_CONFIG_FILE'] = config.borneo_aws_config
+
+        if config.borneo_aws_profile is not None:
+            os.environ['AWS_PROFILE'] = config.borneo_aws_profile
+        if config.borneo_aws_config is not None:
+            os.environ['AWS_CONFIG_FILE'] = config.borneo_aws_config
+        if config.borneo_gcp_creds is not None:
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = config.borneo_gcp_creds
+        if config.borneo_gcp_project is not None:
+            os.environ["GOOGLE_CLOUD_PROJECT"] = config.borneo_gcp_project
+
         # Logging config
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
@@ -752,8 +775,12 @@ def main(argv=None, sync_flag=None):
     logging.getLogger('neo4j').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
     requested_sync = sync_flag if sync_flag is not None else 'default'
+    logger.info("Running cartography sync with requested sync: %s", requested_sync)
     if(requested_sync == 'rule_check'):
         sync = cartography.sync.build_rule_check_sync()
+        result = CLI(sync, prog='cartography').main(argv)
+    if(requested_sync.startswith("gcp")):
+        sync = cartography.sync.build_borneo_gcp_sync("skip_index" in requested_sync)
         result = CLI(sync, prog='cartography').main(argv)
     else:
         if(requested_sync != "default"):

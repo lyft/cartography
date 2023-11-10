@@ -8,8 +8,9 @@ from typing import Set
 import googleapiclient.discovery
 import neo4j
 from googleapiclient.discovery import Resource
-from oauth2client.client import ApplicationDefaultCredentialsError
-from oauth2client.client import GoogleCredentials
+from google.auth import default as google_default_auth
+from google.auth.credentials import Credentials
+from google.auth.exceptions import DefaultCredentialsError
 
 from cartography.config import Config
 from cartography.intel.gcp import compute
@@ -34,11 +35,11 @@ service_names = Services(
 )
 
 
-def _get_crm_resource_v1(credentials: GoogleCredentials) -> Resource:
+def _get_crm_resource_v1(credentials: Credentials) -> Resource:
     """
     Instantiates a Google Compute Resource Manager v1 resource object to call the Resource Manager API.
     See https://cloud.google.com/resource-manager/reference/rest/.
-    :param credentials: The GoogleCredentials object
+    :param credentials: The Credentials object
     :return: A CRM v1 resource object
     """
     # cache_discovery=False to suppress extra warnings.
@@ -46,75 +47,75 @@ def _get_crm_resource_v1(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_crm_resource_v2(credentials: GoogleCredentials) -> Resource:
+def _get_crm_resource_v2(credentials: Credentials) -> Resource:
     """
     Instantiates a Google Compute Resource Manager v2 resource object to call the Resource Manager API.
     We need a v2 resource object to query for GCP folders.
-    :param credentials: The GoogleCredentials object
+    :param credentials: The Credentials object
     :return: A CRM v2 resource object
     """
     return googleapiclient.discovery.build('cloudresourcemanager', 'v2', credentials=credentials, cache_discovery=False)
 
 
-def _get_compute_resource(credentials: GoogleCredentials) -> Resource:
+def _get_compute_resource(credentials: Credentials) -> Resource:
     """
     Instantiates a Google Compute resource object to call the Compute API. This is used to pull zone, instance, and
     networking data. See https://cloud.google.com/compute/docs/reference/rest/v1/.
-    :param credentials: The GoogleCredentials object
+    :param credentials: The Credentials object
     :return: A Compute resource object
     """
     return googleapiclient.discovery.build('compute', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_storage_resource(credentials: GoogleCredentials) -> Resource:
+def _get_storage_resource(credentials: Credentials) -> Resource:
     """
     Instantiates a Google Cloud Storage resource object to call the Storage API.
     This is used to pull bucket metadata and IAM Policies
     as well as list buckets in a specified project.
     See https://cloud.google.com/storage/docs/json_api/.
-    :param credentials: The GoogleCredentials object
+    :param credentials: The Credentials object
     :return: A Storage resource object
     """
     return googleapiclient.discovery.build('storage', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_container_resource(credentials: GoogleCredentials) -> Resource:
+def _get_container_resource(credentials: Credentials) -> Resource:
     """
     Instantiates a Google Cloud Container resource object to call the
     Container API. See: https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/.
 
-    :param credentials: The GoogleCredentials object
+    :param credentials: The Credentials object
     :return: A Container resource object
     """
     return googleapiclient.discovery.build('container', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_dns_resource(credentials: GoogleCredentials) -> Resource:
+def _get_dns_resource(credentials: Credentials) -> Resource:
     """
     Instantiates a Google Cloud DNS resource object to call the
     Container API. See: https://cloud.google.com/dns/docs/reference/v1/.
 
-    :param credentials: The GoogleCredentials object
+    :param credentials: The Credentials object
     :return: A DNS resource object
     """
     return googleapiclient.discovery.build('dns', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
+def _get_serviceusage_resource(credentials: Credentials) -> Resource:
     """
     Instantiates a serviceusage resource object.
     See: https://cloud.google.com/service-usage/docs/reference/rest/v1/operations/list.
 
-    :param credentials: The GoogleCredentials object
+    :param credentials: The Credentials object
     :return: A serviceusage resource object
     """
     return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _initialize_resources(credentials: GoogleCredentials) -> Resource:
+def _initialize_resources(credentials: Credentials) -> Resource:
     """
     Create namedtuple of all resource objects necessary for GCP data gathering.
-    :param credentials: The GoogleCredentials object
+    :param credentials: The Credentials object
     :return: namedtuple of all resource objects
     """
     return Resources(
@@ -222,12 +223,10 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "UPDATE_TAG": config.update_tag,
     }
     try:
-        # Explicitly use Application Default Credentials.
-        # See https://oauth2client.readthedocs.io/en/latest/source/
-        #             oauth2client.client.html#oauth2client.client.OAuth2Credentials
-        credentials = GoogleCredentials.get_application_default()
-    except ApplicationDefaultCredentialsError as e:
-        logger.debug("Error occurred calling GoogleCredentials.get_application_default().", exc_info=True)
+        credentials, project = google_default_auth()
+        logger.info("Successfully initialized Google Compute Platform creds for project %s.", project)
+    except DefaultCredentialsError as e:
+        logger.debug("Error occurred calling Credentials.get_application_default().", exc_info=True)
         logger.error(
             (
                 "Unable to initialize Google Compute Platform creds. If you don't have GCP data or don't want to load "
