@@ -20,7 +20,7 @@ class PubSubLibrary:
         try:
             # When you publish a message, the client returns a message_id
             message_id = publisher.publish(topic_path, data=data).result()
-            logging.error(f'PubSub publish payload success: {message_id}')
+            logging.info(f'PubSub publish payload success: {message_id}')
 
             return True
 

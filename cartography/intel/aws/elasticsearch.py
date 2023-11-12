@@ -1,53 +1,20 @@
-import time
 import json
 import logging
-from typing import Dict
-from typing import List
+import time
+from typing import Dict, List
 
 import boto3
 import botocore.config
 import neo4j
-from policyuniverse.policy import Policy
 from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
+from policyuniverse.policy import Policy
 
 from cartography.intel.dns import ingest_dns_record_by_fqdn
-from cartography.util import aws_handle_regions
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util import aws_handle_regions, run_cleanup_job, timeit
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
-# TODO get this programmatically
-# https://docs.aws.amazon.com/general/latest/gr/rande.html#elasticsearch-service-regions
-es_regions = [
-    'us-east-2',
-    'us-east-1',
-    'us-west-1',
-    'us-west-2',
-    'ap-northeast-1',
-    'ap-northeast-2',
-    'ap-south-1',
-    'ap-southeast-1',
-    'ca-central-1',
-    # 'cn-northwest-1',  -- intentionally ignored. need specific token
-    'eu-central-1',
-    'eu-west-1',
-    'eu-west-2',
-    'eu-west-3',
-    'sa-east-1',
-    # 'us-gov-west-1', -- intentionally ignored, need specific token
-]
-
-
-# TODO memoize this
-def _get_botocore_config() -> botocore.config.Config:
-    return botocore.config.Config(
-        retries={
-            'max_attempts': 8,
-        },
-    )
-
 
 @timeit
 @aws_handle_regions
@@ -323,7 +290,7 @@ def sync(
 ) -> None:
     for region in regions:
         logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, current_aws_account_id)
-        client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
+        client = boto3_session.client('es', region_name=region)
         data = _get_es_domains(client)
         _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
 
@@ -332,8 +299,8 @@ def sync(
 
     data = []
     reserved_instances = []
-    for region in es_regions:
-        client = boto3_session.client('es', region_name=region, config=_get_botocore_config())
+    for region in regions:
+        client = boto3_session.client('es', region_name=region)
         domains = _get_es_domains(client)
         data = transform_es_domains(domains, region, current_aws_account_id)
         reserved_instances.extend(get_elasticsearch_reserved_instances(client, region, current_aws_account_id))

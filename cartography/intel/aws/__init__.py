@@ -283,7 +283,7 @@ def _autodiscover_accounts(
 
 def list_all_regions(boto3_session, logger):
     try:
-        client = boto3_session.client('ec2', region_name="us-east-2", config=get_botocore_config())
+        client = boto3_session.client('ec2', region_name="us-east-1", config=get_botocore_config())
         regions = client.describe_regions(Filters=[
             {
                 'Name': 'opt-in-status',
@@ -342,7 +342,12 @@ def _sync_multiple_accounts(
         # _autodiscover_accounts(neo4j_session, boto3_session, account_id, config.update_tag, common_job_parameters)
 
         # INFO: fetching active regions for customers instead of reading from parameters
-        regions = list_all_regions(boto3_session, logger)
+        if len(config.params.get('regions',[])) > 0:
+            regions = config.params.get('regions', [])
+        
+        else:
+            regions = list_all_regions(boto3_session, logger)
+
         if len(regions) == 0:
             logger.info("regions could not be fetched. reading regions from input parameters")
             regions = config.params.get('regions', [])
