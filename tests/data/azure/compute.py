@@ -24,6 +24,23 @@ DESCRIBE_VMS = [
         "additional_capabilities": {
             "ultra_ssd_enabled": True,
         },
+        "network_interfaces": [
+            {
+                "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic",
+                "primary": False,
+                "delete_option": "Delete"
+            },
+            {
+                "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic1",
+                "primary": False,
+                "delete_option": "Detach"
+            },
+            {
+                "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic2",
+                "primary": True,
+                "delete_option": "Detach"
+            }
+        ],
         "priority": "Low",
         "eviction_policy": "Deallocate",
     },
@@ -52,6 +69,23 @@ DESCRIBE_VMS = [
         "additional_capabilities": {
             "ultra_ssd_enabled": True,
         },
+        "network_interfaces": [
+            {
+                "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic3",
+                "primary": False,
+                "delete_option": "Delete"
+            },
+            {
+                "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic4",
+                "primary": False,
+                "delete_option": "Detach"
+            },
+            {
+                "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic5",
+                "primary": True,
+                "delete_option": "Detach"
+            }
+        ],
         "priority": "Low",
         "eviction_policy": "Deallocate",
     },
@@ -176,5 +210,136 @@ DESCRIBE_SNAPSHOTS = [
         "sku": {
             "name": "Standard_LRS",
         },
+    },
+]
+
+DESCRIBE_VMEXTENSIONS = [
+    {
+        "id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachines/TestVM/extensions/extensions1",
+        "type":
+        "Microsoft.Compute/virtualMachines/extensions",
+        "resource_group":
+        "TestRG",
+        "name":
+        "extensions1",
+        "location": "West US",
+        "vm_id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM",
+    },
+    {
+        "id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachines/TestVM1/extensions/extensions2",
+        "type":
+        "Microsoft.Compute/virtualMachines/extensions",
+        "resource_group":
+        "TestRG",
+        "name":
+        "extensions2",
+        "location": "West US",
+        "vm_id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
+    },
+]
+
+DESCRIBE_VMAVAILABLESIZES = [
+    {
+        "numberOfCores":
+        2,
+        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM",
+        "type":
+        "Microsoft.Compute/virtualMachines/availablesizes",
+        "osDiskSizeInMB":
+        1234,
+        "name":
+        "size1",
+        "resourceDiskSizeInMB":
+        2312,
+        "memoryInMB":
+        4352,
+        "maxDataDiskCount":
+        3214,
+        "vm_id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM",
+    },
+    {
+        "numberOfCores":
+        2,
+        "type":
+        "Microsoft.Compute/virtualMachines/availablesizes",
+        "osDiskSizeInMB":
+        1234,
+        "name":
+        "size2",
+        "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
+
+        "resourceDiskSizeInMB":
+        2312,
+        "memoryInMB":
+        4352,
+        "maxDataDiskCount":
+        3214,
+        "vm_id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1",
+    },
+]
+
+DESCRIBE_VMSCALESETS = [
+    {
+        "id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set1",
+        "type":
+        "Microsoft.Compute/virtualMachineScaleSets",
+        "resource_group":
+        "TestRG",
+        "name":
+        "set1",
+        "location": "West US",
+    },
+    {
+        "id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set2",
+        "type":
+        "Microsoft.Compute/virtualMachineScaleSets",
+        "resource_group":
+        "TestRG",
+        "name":
+        "set2",
+        "location": "West US",
+    },
+]
+
+DESCRIBE_VMSCALESETEXTENSIONS = [
+    {
+        "id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set1/extensions/extension1",
+        "type":
+        "Microsoft.Compute/virtualMachineScaleSets/extensions",
+        "resource_group":
+        "TestRG",
+        "name":
+        "extension1",
+        "set_id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set1",
+    },
+    {
+        "id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set2/extensions/extension2",
+        "type":
+        "Microsoft.Compute/virtualMachineScaleSets/extensions",
+        "resource_group":
+        "TestRG",
+        "name":
+        "extension2",
+        "set_id":
+        "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/\
+            virtualMachineScaleSets/set2",
     },
 ]

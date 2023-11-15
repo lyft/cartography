@@ -15,6 +15,7 @@ from tests.integration.util import check_rels
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
+TEST_WORKSPACE_ID = '123'
 
 
 @patch.object(cartography.intel.aws.ec2.instances, 'get_ec2_instances', return_value=DESCRIBE_INSTANCES['Reservations'])
@@ -298,3 +299,93 @@ def test_ec2_iaminstanceprofiles(mock_get_instances, neo4j_session):
         ('i-03', 'arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME'),
         ('i-04', 'arn:aws:iam::000000000000:role/ANOTHER_SERVICE_NAME'),
     }
+
+def test_ec2_asset_exposure(neo4j_session):
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSAccount{id: $aws_account_id})<-[:OWNER]-(:CloudanixWorkspace{id: $workspace_id})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = $aws_update_tag
+        """,
+        aws_account_id=TEST_ACCOUNT_ID,
+        aws_update_tag=TEST_UPDATE_TAG,
+        workspace_id=TEST_WORKSPACE_ID
+    )
+
+    neo4j_session.run(
+        """
+        MERGE (:AWSVpc{id : 'vpc-025873e026b9e8ee6'})
+        """
+    )
+    data_instances = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
+    cartography.intel.aws.ec2.instances.load_ec2_instance_data(
+        neo4j_session, data_instances, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+    )
+
+    data = tests.data.aws.ec2.route_tables.DESCRIBE_ROUTE_TABLES
+    cartography.intel.aws.ec2.route_tables.load_route_tables(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG
+    )
+    data = tests.data.aws.ec2.subnets.DESCRIBE_SUBNETS
+    cartography.intel.aws.ec2.subnets.load_subnets(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG + 1,
+        "WORKSPACE_ID": TEST_WORKSPACE_ID,
+        "AWS_ID": TEST_ACCOUNT_ID,
+        "PUBLIC_PORTS": ['20', '21', '22', '3306', '3389', '4333'],
+    }
+
+    run_analysis_job(
+        'implicit_relationship_creation.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    run_analysis_job(
+        'aws_ec2_subnet_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'aws_ec2_security_group_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    run_analysis_job(
+        'aws_ec2_instance_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    expected_nodes = {
+        ('i-03', 'public_ip, public_subnet_ipv4'),
+        ('i-04', 'public_ip, public_subnet_ipv6'),
+        ('i-02', 'public_ip, public_subnet_ipv4'),
+        ('i-01', 'public_ip, public_subnet_ipv6'),
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (instance:EC2Instance{exposed_internet: true}) return instance.id, instance.exposed_internet_type
+        """,
+    )
+
+    actual_nodes = {
+        (
+            n['instance.id'],
+            ", ".join(n['instance.exposed_internet_type'])
+        )
+        for n in nodes
+    }
+
+    assert actual_nodes == expected_nodes

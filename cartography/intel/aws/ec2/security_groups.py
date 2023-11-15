@@ -133,7 +133,7 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
 
 @timeit
 def load_ec2_security_groupinfo(
-    neo4j_session: neo4j.Session, data: List[Dict],
+    neo4j_session: neo4j.Session, data: List[Dict],region:str,
     current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_security_group = """
@@ -155,7 +155,6 @@ def load_ec2_security_groupinfo(
     """
 
     for group in data:
-        region = group.get('region', '')
         group_id = group["GroupId"]
         group_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:security-group/{group_id}"
         consolelink = ''

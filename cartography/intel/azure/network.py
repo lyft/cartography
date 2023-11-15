@@ -598,7 +598,7 @@ def _attach_resource_group_network_routes(tx: neo4j.Transaction,network_routes_i
     ingest_network_route = """
     MATCH (n:AzureNetworkRoute{id: $network_routes_id})
     WITH n
-    MATCH (rg:AzureResourceGroup{name: $resource_name})
+    MATCH (rg:AzureResourceGroup{name: $resource_group})
     MERGE (n)-[r:RESOURCE_GROUP]->(rg)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $azure_update_tag

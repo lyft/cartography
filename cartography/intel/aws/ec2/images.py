@@ -70,44 +70,23 @@ def transform_images(boto3_session: boto3.session.Session, imags: List[Dict], im
         logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
     return images
 
-@timeit
-@aws_handle_regions
-def get_images(boto3_session: boto3.session.Session, region: str, image_ids: List[str]) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
-    images = []
-    try:
-        self_images = client.describe_images(Owners=['self'])['Images']
-        images.extend(self_images)
-    except ClientError as e:
-        logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
-    try:
-        if image_ids:
-            images_in_use = client.describe_images(ImageIds=image_ids)['Images']
-            # Ensure we're not adding duplicates
-            _ids = [image["ImageId"] for image in images]
-            for image in images_in_use:
-                if image["ImageId"] not in _ids:
-                    images.append(image)
-    except ClientError as e:
-        logger.warning(f"Failed retrieve images for region - {region}. Error - {e}")
-    return images
 
 
 @timeit
 def load_images(
-        neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, update_tag: int,region: str
 ) -> None:
     # AMI IDs are unique to each AWS Region. Hence we make an 'ID' string that is a combo of ImageId and region
     for image in data:
-        image['ID'] = image['ImageId'] + '|' + image.get('region', '')
-        image['arn'] = f"arn:aws:ec2:{image.get('region', '')}:{current_aws_account_id}:image/{image['ImageId']}"
+        image['ID'] = image['ImageId'] + '|' + region
+        image['arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:image/{image['ImageId']}"
 
     load(
         neo4j_session,
         EC2ImageSchema(),
         data,
         lastupdated=update_tag,
-        Region=image.get('region', ''),
+        Region=region,
         AWS_ID=current_aws_account_id,
     )
 @timeit
@@ -129,8 +108,9 @@ def sync_ec2_images(
         images_in_use = get_images_in_use(neo4j_session, region, current_aws_account_id)
         imgs = get_images(boto3_session, region)
         data = transform_images(boto3_session, imgs, images_in_use, region, current_aws_account_id)
-    logger.info(f"Total EC2 Images: {len(data)}")
-    load_images(neo4j_session, data, current_aws_account_id, update_tag)
+        logger.info(f"Total EC2 Images: {len(data)}")
+        load_images(neo4j_session, data, current_aws_account_id, update_tag,region)
+   
     cleanup_images(neo4j_session, common_job_parameters)
     toc = time.perf_counter()
     logger.info(f"Time to process Images: {toc - tic:0.4f} seconds")

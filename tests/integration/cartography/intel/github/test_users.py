@@ -2,14 +2,14 @@ import cartography.intel.github.users
 import tests.data.github.users
 
 TEST_UPDATE_TAG = 123456789
-
+common_job_parameters={'UPDATE_TAG':'123456789',"WORKSPACE_ID":"123445"}
 
 def test_load_github_organization_users(neo4j_session):
     cartography.intel.github.users.load_organization_users(
         neo4j_session,
         tests.data.github.users.GITHUB_USER_DATA,
         tests.data.github.users.GITHUB_ORG_DATA,
-        TEST_UPDATE_TAG,
+        common_job_parameters,
     )
 
     # Ensure users got loaded

@@ -44,7 +44,7 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dic
 
 @timeit
 def load_snapshots(
-        neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict],region:str ,current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_snapshots = """
     UNWIND $snapshots_list as snapshot
@@ -65,7 +65,6 @@ def load_snapshots(
     # neo4j does not accept datetime objects and values. This loop is used to convert
     # these values to string.
     for snapshot in data:
-        region = snapshot.get('region', '')
         snapshot['StartTime'] = str(snapshot['StartTime'])
         snapshot['Arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:snapshot/{snapshot['SnapshotId']}"
         snapshot['consolelink'] = aws_console_link.get_console_link(arn=snapshot['Arn'])

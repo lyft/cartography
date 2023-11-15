@@ -139,13 +139,13 @@ def _ensure_local_neo4j_has_test_cluster_data(neo4j_session):
     clusters = tests.data.aws.redshift.CLUSTERS
     cartography.intel.aws.redshift.transform_redshift_cluster_data(
         clusters,
-        TEST_REGION,
+        
         TEST_ACCOUNT_ID,
     )
     cartography.intel.aws.redshift.load_redshift_cluster_data(
         neo4j_session,
         clusters,
-        TEST_REGION,
+       
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )

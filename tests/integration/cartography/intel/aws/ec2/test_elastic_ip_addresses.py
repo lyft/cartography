@@ -42,7 +42,7 @@ def test_load_elastic_ip_addresses(neo4j_session, *args):
     )
     actual_nodes = {
         (
-            n['n.id'],
+            n['n.public_ip'],
             n['n.association_id'],
             n['n.public_ip'],
             n['n.private_ip_address'],

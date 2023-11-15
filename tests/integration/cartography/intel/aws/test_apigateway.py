@@ -11,7 +11,6 @@ def test_load_apigateway_rest_apis(neo4j_session):
     cartography.intel.aws.apigateway.load_apigateway_rest_apis(
         neo4j_session,
         data,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -48,7 +47,7 @@ def test_load_apigateway_rest_apis_relationships(neo4j_session):
     cartography.intel.aws.apigateway.load_apigateway_rest_apis(
         neo4j_session,
         data,
-        TEST_REGION,
+        
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -79,8 +78,8 @@ def test_load_apigateway_stages(neo4j_session):
     )
 
     expected_nodes = {
-        "arn:aws:apigateway:::test-001/Cartography-testing-infra",
-        "arn:aws:apigateway:::test-002/Cartography-testing-unit",
+         'arn:aws:apigateway:us-east-1::restapis/test-001/stages/Cartography-testing-infra',
+        'arn:aws:apigateway:us-east-1::restapis/test-002/stages/Cartography-testing-unit'
     }
 
     nodes = neo4j_session.run(
@@ -99,7 +98,6 @@ def test_load_apigateway_stages_relationships(neo4j_session):
     cartography.intel.aws.apigateway.load_apigateway_rest_apis(
         neo4j_session,
         data_rest_api,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -115,11 +113,11 @@ def test_load_apigateway_stages_relationships(neo4j_session):
     expected = {
         (
             'test-001',
-            'arn:aws:apigateway:::test-001/Cartography-testing-infra',
+            'arn:aws:apigateway:us-east-1::restapis/test-001/stages/Cartography-testing-infra',
         ),
         (
-            'test-002',
-            'arn:aws:apigateway:::test-002/Cartography-testing-unit',
+           'test-002',
+            'arn:aws:apigateway:us-east-1::restapis/test-002/stages/Cartography-testing-unit',
         ),
     }
 
@@ -132,7 +130,7 @@ def test_load_apigateway_stages_relationships(neo4j_session):
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
-
+    
     assert actual == expected
 
 
@@ -178,11 +176,11 @@ def test_load_apigateway_certificates_relationships(neo4j_session):
 
     expected = {
         (
-            'arn:aws:apigateway:::test-001/Cartography-testing-infra',
+            'arn:aws:apigateway:us-east-1::restapis/test-001/stages/Cartography-testing-infra',
             'cert-001',
         ),
         (
-            'arn:aws:apigateway:::test-002/Cartography-testing-unit',
+            'arn:aws:apigateway:us-east-1::restapis/test-002/stages/Cartography-testing-unit',
             'cert-002',
         ),
     }
@@ -196,7 +194,6 @@ def test_load_apigateway_certificates_relationships(neo4j_session):
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
-
     assert actual == expected
 
 
@@ -228,7 +225,6 @@ def test_load_apigateway_resources_relationships(neo4j_session):
     cartography.intel.aws.apigateway.load_apigateway_rest_apis(
         neo4j_session,
         data_rest_api,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -256,5 +252,4 @@ def test_load_apigateway_resources_relationships(neo4j_session):
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
-
     assert actual == expected

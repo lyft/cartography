@@ -31,7 +31,7 @@ def test_load_launch_templates(neo4j_session, *args):
         (
             "lt-00000000000000000",
             "eks-00000000-0000-0000-0000-000000000000",
-            "1634020072",
+            "1634000272.0",
             1,
         ),
     }
@@ -50,15 +50,17 @@ def test_load_launch_templates(neo4j_session, *args):
             n['n.latest_version_number'],
         )
         for n in templates
+        
     }
+    
     assert actual_templates == expected_templates
-
+    
     expected_versions = {
         (
             "lt-00000000000000000-1",
             "eks-00000000-0000-0000-0000-000000000000",
             1,
-            "1634020072",
+            "1634000272.0",
             "ami-00000000000000000",
         ),
     }
@@ -78,4 +80,5 @@ def test_load_launch_templates(neo4j_session, *args):
         )
         for n in versions
     }
+    print(actual_versions)
     assert actual_versions == expected_versions

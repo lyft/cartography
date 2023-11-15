@@ -1,6 +1,9 @@
 import cartography.intel.aws.route53
+import cartography.intel.aws.ec2.load_balancer_v2s
 import cartography.util
 import tests.data.aws.route53
+import tests.data.aws.ec2.load_balancers
+import cartography.intel.aws.elasticsearch
 
 TEST_UPDATE_TAG = 123456789
 TEST_ZONE_ID = "TESTZONEID"
@@ -39,7 +42,7 @@ def _ensure_local_neo4j_has_test_route53_records(neo4j_session):
 def _ensure_local_neo4j_has_test_ec2_records(neo4j_session):
     cartography.intel.aws.ec2.load_balancer_v2s.load_load_balancer_v2s(
         neo4j_session, tests.data.aws.ec2.load_balancers.LOAD_BALANCER_DATA,
-        TEST_AWS_REGION, TEST_AWS_ACCOUNTID, TEST_UPDATE_TAG,
+        TEST_AWS_ACCOUNTID, TEST_UPDATE_TAG,TEST_AWS_REGION
     )
 
 
@@ -48,7 +51,7 @@ def test_transform_and_load_ns(neo4j_session):
     data = tests.data.aws.route53.NS_RECORD
     parsed_data = cartography.intel.aws.route53.transform_ns_record_set(data, TEST_ZONE_ID)
     assert "ns-856.awsdns-43.net" in parsed_data["servers"]
-    cartography.intel.aws.route53.load_ns_records(neo4j_session, [parsed_data], TEST_ZONE_NAME, TEST_UPDATE_TAG)
+    cartography.intel.aws.route53.load_ns_records(neo4j_session, [parsed_data], TEST_ZONE_NAME, TEST_UPDATE_TAG, 'www.democonsolelink.com')
 
 
 def test_transform_and_load_zones(neo4j_session):
@@ -80,10 +83,10 @@ def test_transform_and_load_ns_records(neo4j_session):
     # Test that NS records are correctly transformed and loaded
     data = tests.data.aws.route53.NS_RECORD
     first_data = [cartography.intel.aws.route53.transform_ns_record_set(data, TEST_ZONE_ID)]
-    cartography.intel.aws.route53.load_ns_records(neo4j_session, first_data, TEST_ZONE_NAME, TEST_UPDATE_TAG)
+    cartography.intel.aws.route53.load_ns_records(neo4j_session, first_data, TEST_ZONE_NAME, TEST_UPDATE_TAG, 'www.democonsolelink.com')
 
     second_data = [cartography.intel.aws.route53.transform_ns_record_set(data, TEST_ZONE_ID + "2")]
-    cartography.intel.aws.route53.load_ns_records(neo4j_session, second_data, TEST_ZONE_NAME, TEST_UPDATE_TAG)
+    cartography.intel.aws.route53.load_ns_records(neo4j_session, second_data, TEST_ZONE_NAME, TEST_UPDATE_TAG, 'www.democonsolelink.com')
     result = neo4j_session.run("MATCH (n:AWSDNSRecord{name:'testdomain.net'}) return count(n) as recordcount")
     for r in result:
         assert r["recordcount"] == 2
@@ -142,11 +145,16 @@ def test_cleanup_dnspointsto_relationships(neo4j_session):
     )
     # Imagine it's a new sync run so we set a new update tag
     new_update_tag = 1337
+    new_job_parameters = {
+        "UPDATE_TAG": new_update_tag,
+        "AWS_ID": TEST_AWS_ACCOUNTID,
+        "WORKSPACE_ID": '123'
+    }
+    # Run all cleanup jobs where DNS_POINTS_TO is mentioned in the AWS sync.
+    cartography.intel.aws.route53.cleanup_route53(neo4j_session, new_job_parameters)
 
-    # Act: Run all cleanup jobs where DNS_POINTS_TO is mentioned in the AWS sync.
-    cartography.intel.aws.route53.cleanup_route53(neo4j_session, TEST_AWS_ACCOUNTID, new_update_tag)
     cartography.intel.aws.elasticsearch.cleanup(
-        neo4j_session, update_tag=new_update_tag, aws_account_id=TEST_AWS_ACCOUNTID,
+        neo4j_session, new_job_parameters
     )
 
     # Assert: Verify that the AWSDNSRecord-->AWSDNSRecord relationships don't exist anymore

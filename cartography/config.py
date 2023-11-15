@@ -19,8 +19,6 @@ class Config:
     :param neo4j_database: The name of the database in Neo4j to connect to. If not specified, uses your Neo4j database
     settings to infer which database is set to default.
     See https://neo4j.com/docs/api/python-driver/4.4/api.html#database. Optional.
-    :type selected_modules: str
-    :param selected_modules: Comma-separated list of cartography top-level modules to sync. Optional.
     :type update_tag: int
     :param update_tag: Update tag for a cartography sync run. Optional.
     :type aws_sync_all_profiles: bool
@@ -87,24 +85,6 @@ class Config:
     :param gsuite_auth_method: Auth method (delegated, oauth) used for Google Workspace. Optional.
     :type gsuite_config: str
     :param gsuite_config: Base64 encoded config object or config file path for Google Workspace. Optional.
-    :type lastpass_cid: str
-    :param lastpass_cid: Lastpass account ID. Optional.
-    :type lastpass_provhash: str
-    :param lastpass_provhash: Lastpass API KEY. Optional.
-    :type bigfix_username: str
-    :param bigfix_username: The username to authenticate to BigFix. Optional.
-    :type bigfix_password: str
-    :param bigfix_password: The password to authenticate to BigFix. Optional.
-    :type bigfix_root_url: str
-    :param bigfix_root_url: The API URL to use for BigFix, e.g. "https://example.com:52311". Optional.
-    :type duo_api_key: str
-    :param duo_api_key: The Duo api key. Optional.
-    :type duo_api_key: str
-    :param duo_api_key: The Duo api secret. Optional.
-    :type duo_api_hostname: str
-    :param duo_api_hostname: The Duo api hostname, e.g. "api-abc123.duosecurity.com". Optional.
-    :param semgrep_app_token: The Semgrep api token. Optional.
-    :type semgrep_app_token: str
     """
 
     def __init__(
@@ -114,22 +94,23 @@ class Config:
         neo4j_password=None,
         neo4j_max_connection_lifetime=None,
         neo4j_database=None,
-        selected_modules=None,
         update_tag=None,
         aws_sync_all_profiles=False,
         aws_best_effort_mode=False,
         azure_sync_all_subscriptions=False,
         azure_sp_auth=None,
         azure_tenant_id=None,
+        azure_client_id=None,
+        azure_client_secret=None,
         azure_redirect_uri=None,
+        azure_subscription_id=None,
+        azure_refresh_token=None,
         azure_graph_scope=None,
         azure_vault_scope=None,
         azure_azure_scope=None,
-        azure_subscription_id=None,
-        azure_refresh_token=None,
-        azure_client_id=None,
-        azure_client_secret=None,
         aws_requested_syncs=None,
+        azure_requested_syncs=None,
+        gcp_requested_syncs=None,
         analysis_job_directory=None,
         crxcavator_api_base_uri=None,
         crxcavator_api_key=None,
@@ -148,6 +129,8 @@ class Config:
         statsd_prefix=None,
         statsd_host=None,
         statsd_port=None,
+        credentials=None,
+        params=None,
         pagerduty_api_key=None,
         pagerduty_request_timeout=None,
         nist_cve_url=None,
@@ -157,22 +140,13 @@ class Config:
         crowdstrike_api_url=None,
         gsuite_auth_method=None,
         gsuite_config=None,
-        lastpass_cid=None,
-        lastpass_provhash=None,
-        bigfix_username=None,
-        bigfix_password=None,
-        bigfix_root_url=None,
-        duo_api_key=None,
-        duo_api_secret=None,
-        duo_api_hostname=None,
-        semgrep_app_token=None,
+        refresh_entitlements=False
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
         self.neo4j_max_connection_lifetime = neo4j_max_connection_lifetime
         self.neo4j_database = neo4j_database
-        self.selected_modules = selected_modules
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.aws_best_effort_mode = aws_best_effort_mode
@@ -182,12 +156,14 @@ class Config:
         self.azure_client_id = azure_client_id
         self.azure_client_secret = azure_client_secret
         self.azure_redirect_uri = azure_redirect_uri
-        self.azure_refresh_token=azure_refresh_token
-        self.azure_graph_scope=azure_graph_scope
-        self.azure_azure_scope=azure_azure_scope
-        self.azure_vault_scope=azure_vault_scope
-        self.azure_subscription_id=azure_subscription_id
+        self.azure_subscription_id = azure_subscription_id
+        self.azure_refresh_token = azure_refresh_token
+        self.azure_graph_scope = azure_graph_scope
+        self.azure_vault_scope = azure_vault_scope
+        self.azure_azure_scope = azure_azure_scope
         self.aws_requested_syncs = aws_requested_syncs
+        self.azure_requested_syncs = azure_requested_syncs
+        self.gcp_requested_syncs = gcp_requested_syncs
         self.analysis_job_directory = analysis_job_directory
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
         self.crxcavator_api_key = crxcavator_api_key
@@ -206,6 +182,8 @@ class Config:
         self.statsd_prefix = statsd_prefix
         self.statsd_host = statsd_host
         self.statsd_port = statsd_port
+        self.credentials = credentials
+        self.params = params
         self.pagerduty_api_key = pagerduty_api_key
         self.pagerduty_request_timeout = pagerduty_request_timeout
         self.nist_cve_url = nist_cve_url
@@ -215,12 +193,4 @@ class Config:
         self.crowdstrike_api_url = crowdstrike_api_url
         self.gsuite_auth_method = gsuite_auth_method
         self.gsuite_config = gsuite_config
-        self.lastpass_cid = lastpass_cid
-        self.lastpass_provhash = lastpass_provhash
-        self.bigfix_username = bigfix_username
-        self.bigfix_password = bigfix_password
-        self.bigfix_root_url = bigfix_root_url
-        self.duo_api_key = duo_api_key
-        self.duo_api_secret = duo_api_secret
-        self.duo_api_hostname = duo_api_hostname
-        self.semgrep_app_token = semgrep_app_token
+        self.refresh_entitlements = refresh_entitlements

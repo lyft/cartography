@@ -1,6 +1,8 @@
 DESCRIBE_IMAGES = [
     {
         'Architecture': 'i386',
+        'consolelink':"www.demolink.com",
+        'region':'us-west-1',
         'CreationDate': "2015-06-03T08:44:46.000Z",
         'ImageId': 'img-01',
         'ImageLocation': 'US West 1',
@@ -28,6 +30,8 @@ DESCRIBE_IMAGES = [
         'State': 'available',
         'Description': 'This AMI is for testing',
         'EnaSupport': True,
+        'consolelink':"www.demolink1.com",
+        'region':'us-west-1',
         'Hypervisor': 'xen',
         'Name': 'Test-AMI-02',
         'VirtualizationType': 'paravirtual',
