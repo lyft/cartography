@@ -38,6 +38,7 @@ class PolicyType(enum.Enum):
 def get_policy_name_from_arn(arn: str) -> str:
     return arn.split("/")[-1]
 
+
 @timeit
 def _is_common_exception(e: Exception, item: str) -> bool:
     error_msg = "Failed to retrieve IAM details"
@@ -57,6 +58,7 @@ def _is_common_exception(e: Exception, item: str) -> bool:
         logger.warning(f"{error_msg} for {item} - IllegalLocationConstraintException")
         return True
     return False
+
 
 @timeit
 def get_group_policies(boto3_session: boto3.session.Session, group_name: str) -> Dict:
@@ -112,7 +114,7 @@ def get_group_managed_policy_data(boto3_session: boto3.session.Session, group_li
         group_arn = group["Arn"]
         resource_group = resource_client.Group(name)
         policies[group_arn] = {
-            p.arn: p.default_version.document["Statement"]
+            p.policy_name: p.default_version.document["Statement"]
             for p in resource_group.attached_policies.all()
         }
     return policies
@@ -149,7 +151,7 @@ def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list
         resource_user = resource_client.User(name)
         try:
             policies[user_arn] = {
-                p.arn: p.default_version.document["Statement"]
+                p.policy_name: p.default_version.document["Statement"]
                 for p in resource_user.attached_policies.all()
             }
 
@@ -194,7 +196,7 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
         resource_role = resource_client.Role(name)
         try:
             policies[role_arn] = {
-                p.arn: p.default_version.document["Statement"]
+                p.policy_name: p.default_version.document["Statement"]
                 for p in resource_role.attached_policies.all()
             }
         except ClientError as e:
@@ -258,6 +260,7 @@ def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
     for page in paginator.paginate():
         roles.extend(page['Roles'])
     return {'Roles': roles}
+
 
 @timeit
 def get_account_access_key_data(boto3_session: boto3.session.Session, username: str) -> Dict:
@@ -419,6 +422,7 @@ def load_roles(
                     RoleArn=role['Arn'],
                     aws_update_tag=aws_update_tag,
                 )
+
 
 @timeit
 def load_group_memberships(neo4j_session: neo4j.Session, group_memberships: Dict, aws_update_tag: int) -> None:
@@ -611,10 +615,10 @@ def _load_policy_tx(
     MERGE (policy) <-[r:POLICY]-(principal)
     SET r.lastupdated = $aws_update_tag
     """
-    policy=policy_name.split('/')[-1]
+    policy = policy_name.split('/')[-1]
     policy_arn = f"arn:aws:iam::{current_aws_account_id}:policy/{policy}"
     consolelink = aws_console_link.get_console_link(arn=policy_arn)
-    consolelink=''
+    consolelink = ''
 
     tx.run(
         ingest_policy,
@@ -709,6 +713,7 @@ def sync_users(
 
     run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, common_job_parameters)
 
+
 @timeit
 def sync_user_managed_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
@@ -789,6 +794,7 @@ def sync_roles(
     # sync_role_service_access_details(boto3_session, data['Roles'], neo4j_session, aws_update_tag)
 
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
+
 
 def sync_role_managed_policies(
     current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
