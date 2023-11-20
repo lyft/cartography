@@ -2,6 +2,8 @@ import asyncio
 import logging
 import re
 import sys
+import requests
+from requests.exceptions import RequestException
 from functools import partial
 from functools import wraps
 from string import Template
@@ -429,3 +431,22 @@ def to_synchronous(*awaitables: Awaitable[Any]) -> List[Any]:
     results = to_synchronous(future_1, future_2)
     '''
     return asyncio.get_event_loop().run_until_complete(asyncio.gather(*awaitables))
+
+def make_requests_url(url,access_token):
+    try:
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {access_token}"
+            }
+        response = requests.request(
+            "GET",
+            url,
+            headers=headers
+            )
+        if response.status_code!=200:
+            return []
+        return response.json().get('values',[])
+    except RequestException as e:
+        logger.info(f"failed to geting bitbucket response")
+        return []
+    

@@ -1,28 +1,29 @@
-import cartography.intel.bitbucket.workspace
+import cartography.intel.bitbucket.repositories
 import tests.data.bitbucket.workspace
 
 TEST_UPDATE_TAG = 123456789
 common_job_parameters={'UPDATE_TAG':'123456789',"WORKSPACE_ID":"123445","WORKSPACE_UUID":"234"}
 
 def test_load_workspace(neo4j_session):
-    cartography.intel.bitbucket.workspace.load_workspace_data(
+    # load repo
+    cartography.intel.bitbucket.repositories.load_repositeris_data(
         neo4j_session,
-        tests.data.bitbucket.workspace.WORKSPACES,
+        tests.data.bitbucket.workspace.REPOSITORIES,
         common_job_parameters,
     )
-
-    # Ensure users got loaded
     nodes = neo4j_session.run(
         """
-        MATCH (g:BitbucketWorkspace) RETURN g.name;
+        MATCH (g:BitbucketRepository) RETURN g.uuid;
         """,
     )
-    expected_nodes = {'Workspace12', 'Workspace'}
+    expected_nodes = {'repo1', 'repo2'}
     actual_nodes = {
         (
-            n['g.name']
+            n['g.uuid']
         ) for n in nodes
     }
     
     assert actual_nodes == expected_nodes
     
+    
+   
