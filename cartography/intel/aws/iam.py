@@ -258,6 +258,9 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
     access_keys: Dict = {}
     try:
         access_keys = client.list_access_keys(UserName=username)
+        for access_key in access_keys["AccessKeyMetadata"]:
+            last_used=client.get_access_key_last_used(AccessKeyId=access_key.get('AccessKeyId'))
+            access_key['LastUsedDate']=last_used.get('AccessKeyLastUsed',{}).get('LastUsedDate')
 
     except ClientError as e:
         if _is_common_exception(e, username):
@@ -516,7 +519,8 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
     ON CREATE SET key.firstseen = timestamp(),
     key.region = $region,
     key.createdate = $CreateDate,
-    key.consolelink = $consolelink
+    key.consolelink = $consolelink,
+    key.lastuseddate= $lastuseddate
     SET key.status = $Status, key.lastupdated = $aws_update_tag
     WITH user,key
     MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
@@ -532,6 +536,7 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
                     consolelink=consolelink,
                     UserName=username,
                     AccessKeyId=key['AccessKeyId'],
+                    lastuseddate=str(key['LastUsedDate']),
                     CreateDate=str(key['CreateDate']),
                     Status=key['Status'],
                     region="global",
