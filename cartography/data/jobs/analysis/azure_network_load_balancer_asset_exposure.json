@@ -6,7 +6,7 @@
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(loadbalancer:AzureNetworkLoadBalancer{type: 'public'})<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET loadbalancer.exposed_internet = true, (CASE WHEN NOT 'public_load_balancer' IN  coalesce(loadbalancer.exposed_internet_type , []) THEN loadbalancer END).exposed_internet_type = coalesce(loadbalancer.exposed_internet_type , []) + 'public_load_balancer';",
+			"query": "MATCH (:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(:AzureLoadBalancerFrontendIPConfiguration)<-[:HAS]-(loadbalancer:AzureNetworkLoadBalancer)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET loadbalancer.exposed_internet = true, (CASE WHEN NOT 'public_load_balancer' IN  coalesce(loadbalancer.exposed_internet_type , []) THEN loadbalancer END).exposed_internet_type = coalesce(loadbalancer.exposed_internet_type , []) + 'public_load_balancer';",
 			"iterative": false
 		}
 	],
