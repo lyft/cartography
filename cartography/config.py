@@ -141,7 +141,7 @@ class Config:
         gsuite_auth_method=None,
         gsuite_config=None,
         refresh_entitlements=False,
-        bitbucket_refresh_token=None
+        bitbucket_access_token=None
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -173,7 +173,7 @@ class Config:
         self.okta_api_key = okta_api_key
         self.okta_saml_role_regex = okta_saml_role_regex
         self.github_config = github_config
-        self.bitbucket_refresh_token=bitbucket_refresh_token
+        self.bitbucket_access_token=bitbucket_access_token
         self.digitalocean_token = digitalocean_token
         self.permission_relationships_file = permission_relationships_file
         self.jamf_base_uri = jamf_base_uri

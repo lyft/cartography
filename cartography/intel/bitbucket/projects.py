@@ -19,17 +19,20 @@ def get_projects(access_token:str,workspace:str):
     return make_requests_url(url,access_token)
 
 
-           
+
+def load_projects_data(session: neo4j.Session, project_data:List[Dict],common_job_parameters:Dict) -> None:
+    session.write_transaction(_load_projects_data, project_data,  common_job_parameters)        
     
-def load_projects_data(neo4j_session: neo4j.Session,project_data:List[Dict],common_job_parameters:Dict):
+def _load_projects_data(tx: neo4j.Transaction,project_data:List[Dict],common_job_parameters:Dict):
     ingest_workspace="""
     UNWIND $projectData as project
-    MERGE (pro:BitbucketProjects{name: project.name})
+    MERGE (pro:BitbucketProjects{id: project.uuid})
     ON CREATE SET pro.firstseen = timestamp(),
     pro.created_on = project.created_on
 
     SET pro.description = project.description,
     pro.type = project.type,
+    pro.name=project.name,
     pro.uuid = project.uuid,
     pro.is_private = project.is_private,
     pro.has_publicly_visible_repos=project.has_publicly_visible_repos,
@@ -40,18 +43,18 @@ def load_projects_data(neo4j_session: neo4j.Session,project_data:List[Dict],comm
     pro.lastupdated = $UpdateTag
 
     WITH pro,project
-    MATCH (work:BitbucketWorkspace{name:project.workspace.name})
+    MATCH (work:BitbucketWorkspace{id:project.workspace.uuid})
     merge (work)-[o:PROJETS]->(pro)
     ON CREATE SET o.firstseen = timestamp()
     SET o.lastupdated = $UpdateTag
     """
 
-    neo4j_session.run(
+    tx.run(
         ingest_workspace,
         projectData=project_data,
         UpdateTag=common_job_parameters['UPDATE_TAG'],
     )  
-    cleanup(neo4j_session,common_job_parameters)
+   
     
 def cleanup(neo4j_session: neo4j.Session,  common_job_parameters: Dict) -> None:
     run_cleanup_job('bitbucket_workspace_project_cleanup.json', neo4j_session, common_job_parameters)
@@ -73,4 +76,4 @@ def sync(
     logger.info("Syncing Bitbucket All workspace Projects ")
     workspace_projects=get_projects(bitbucket_refresh_token,workspace_name)
     load_projects_data(neo4j_session,workspace_projects,common_job_parameters)
-    
+    cleanup(neo4j_session,common_job_parameters)

@@ -1,8 +1,5 @@
 import argparse
 import getpass
-from requests.exceptions import RequestException
-from requests import Response
-import requests
 import logging
 import os
 import sys
@@ -870,8 +867,7 @@ def run_bitbucket(request):
         neo4j_password=request['neo4j']['pwd'],
         neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
         params=request['params'],
-        bitbucket_refresh_token=get_access_token(request['client_id'],request['client_secret'],request['refresh_token']),
-        gcp_requested_syncs=request.get('services', None),
+        bitbucket_access_token=request['bitbucket']['access_token'],
     )
 
     if request['logging']['mode'] == "verbose":
@@ -880,16 +876,3 @@ def run_bitbucket(request):
         config.quiet = True
 
     return CLI(default_sync, prog='cartography').process(config)
-
-def get_access_token( client_id: str, client_secret: str, refresh_token: str):
-    try:
-        TOKEN_URL = 'https://bitbucket.org/site/oauth2/access_token'
-        token_req_payload = {'grant_type': 'refresh_token', 'refresh_token': refresh_token}
-        response: Response = requests.post(TOKEN_URL, data=token_req_payload, allow_redirects=False, auth=(client_id, client_secret))
-        if response.status_code == requests.codes['ok']:
-            output: dict = response.json()
-            return output.get('access_token')
-        return None
-    except RequestException as e:
-        logger.info(f"geting error access token{e}")
-        return None

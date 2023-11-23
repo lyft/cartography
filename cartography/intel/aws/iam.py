@@ -1,28 +1,17 @@
 import enum
-import hashlib
 import json
 import logging
 import time
-from datetime import datetime
-from datetime import timedelta
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Tuple
+from typing import Any, Dict, List, Tuple
 
 import boto3
-import maya
 import neo4j
-import pytz
+from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
-from botocore.exceptions import ClientError
-from botocore.exceptions import EndpointConnectionError
+from cartography.intel.aws.permission_relationships import parse_statement_node, principal_allowed_on_resource
+from cartography.util import run_cleanup_job, timeit
 
-from cartography.intel.aws.permission_relationships import parse_statement_node
-from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
 
@@ -37,6 +26,7 @@ class PolicyType(enum.Enum):
 
 def get_policy_name_from_arn(arn: str) -> str:
     return arn.split("/")[-1]
+
 
 @timeit
 def _is_common_exception(e: Exception, item: str) -> bool:
@@ -57,6 +47,7 @@ def _is_common_exception(e: Exception, item: str) -> bool:
         logger.warning(f"{error_msg} for {item} - IllegalLocationConstraintException")
         return True
     return False
+
 
 @timeit
 def get_group_policies(boto3_session: boto3.session.Session, group_name: str) -> Dict:
@@ -112,7 +103,7 @@ def get_group_managed_policy_data(boto3_session: boto3.session.Session, group_li
         group_arn = group["Arn"]
         resource_group = resource_client.Group(name)
         policies[group_arn] = {
-            p.arn: p.default_version.document["Statement"]
+            p.policy_name: p.default_version.document["Statement"]
             for p in resource_group.attached_policies.all()
         }
     return policies
@@ -149,7 +140,7 @@ def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list
         resource_user = resource_client.User(name)
         try:
             policies[user_arn] = {
-                p.arn: p.default_version.document["Statement"]
+                p.policy_name: p.default_version.document["Statement"]
                 for p in resource_user.attached_policies.all()
             }
 
@@ -194,7 +185,7 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
         resource_role = resource_client.Role(name)
         try:
             policies[role_arn] = {
-                p.arn: p.default_version.document["Statement"]
+                p.policy_name: p.default_version.document["Statement"]
                 for p in resource_role.attached_policies.all()
             }
         except ClientError as e:
@@ -259,6 +250,7 @@ def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
         roles.extend(page['Roles'])
     return {'Roles': roles}
 
+
 @timeit
 def get_account_access_key_data(boto3_session: boto3.session.Session, username: str) -> Dict:
     client = boto3_session.client('iam')
@@ -266,6 +258,9 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
     access_keys: Dict = {}
     try:
         access_keys = client.list_access_keys(UserName=username)
+        for access_key in access_keys["AccessKeyMetadata"]:
+            last_used=client.get_access_key_last_used(AccessKeyId=access_key.get('AccessKeyId'))
+            access_key['LastUsedDate']=last_used.get('AccessKeyLastUsed',{}).get('LastUsedDate')
 
     except ClientError as e:
         if _is_common_exception(e, username):
@@ -420,6 +415,7 @@ def load_roles(
                     aws_update_tag=aws_update_tag,
                 )
 
+
 @timeit
 def load_group_memberships(neo4j_session: neo4j.Session, group_memberships: Dict, aws_update_tag: int) -> None:
     ingest_membership = """
@@ -523,7 +519,8 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
     ON CREATE SET key.firstseen = timestamp(),
     key.region = $region,
     key.createdate = $CreateDate,
-    key.consolelink = $consolelink
+    key.consolelink = $consolelink,
+    key.lastuseddate= $lastuseddate
     SET key.status = $Status, key.lastupdated = $aws_update_tag
     WITH user,key
     MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
@@ -539,6 +536,7 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
                     consolelink=consolelink,
                     UserName=username,
                     AccessKeyId=key['AccessKeyId'],
+                    lastuseddate=str(key['LastUsedDate']),
                     CreateDate=str(key['CreateDate']),
                     Status=key['Status'],
                     region="global",
@@ -611,10 +609,10 @@ def _load_policy_tx(
     MERGE (policy) <-[r:POLICY]-(principal)
     SET r.lastupdated = $aws_update_tag
     """
-    policy=policy_name.split('/')[-1]
+
+    policy = policy_name.split('/')[-1]
     policy_arn = f"arn:aws:iam::{current_aws_account_id}:policy/{policy}"
     consolelink = aws_console_link.get_console_link(arn=policy_arn)
-    
 
     tx.run(
         ingest_policy,
@@ -709,6 +707,7 @@ def sync_users(
 
     run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, common_job_parameters)
 
+
 @timeit
 def sync_user_managed_policies(
     boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
@@ -789,6 +788,7 @@ def sync_roles(
     # sync_role_service_access_details(boto3_session, data['Roles'], neo4j_session, aws_update_tag)
 
     run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
+
 
 def sync_role_managed_policies(
     current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,

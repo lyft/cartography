@@ -15,9 +15,13 @@ def get_workspaces(access_token:str):
     url = f"https://api.bitbucket.org/2.0/workspaces"
     return make_requests_url(url,access_token)
 
-def load_workspace_data(neo4j_session: neo4j.Session,workspace_data:List[Dict],common_job_parameters:Dict):
+def load_workspace_data(session: neo4j.Session, workspace_data:List[Dict],common_job_parameters:Dict) -> None:
+    session.write_transaction(_load_workspace_data, workspace_data,  common_job_parameters)  
+
+
+def _load_workspace_data(tx: neo4j.Transaction,workspace_data:List[Dict],common_job_parameters:Dict):
     ingest_workspace="""
-    MERGE (work:BitbucketWorkspace{name: $name})
+    MERGE (work:BitbucketWorkspace{id: $uuid})
     ON CREATE SET 
         work.firstseen = timestamp(),
         work.created_on = $created_on
@@ -25,6 +29,7 @@ def load_workspace_data(neo4j_session: neo4j.Session,workspace_data:List[Dict],c
     SET 
         work.slug = $slug,
         work.type = $type,
+        work.name= $name,
         work.uuid = $uuid,
         work.is_private = $is_private,
         work.lastupdated = $UpdateTag
@@ -40,7 +45,7 @@ def load_workspace_data(neo4j_session: neo4j.Session,workspace_data:List[Dict],c
 
     """
     for workspace in workspace_data: 
-        neo4j_session.run(
+        tx.run(
             ingest_workspace,
             name=workspace.get("name"),
             created_on=workspace.get('created_on'),
@@ -51,12 +56,7 @@ def load_workspace_data(neo4j_session: neo4j.Session,workspace_data:List[Dict],c
             UpdateTag=common_job_parameters['UPDATE_TAG'],
             workspace_id=common_job_parameters['WORKSPACE_ID'],
         )
-        cleanup(neo4j_session,workspace.get('uuid'),common_job_parameters)
-    
-def cleanup(neo4j_session: neo4j.Session, workspace_uuid: str, common_job_parameters: Dict) -> None:
-    common_job_parameters['WORKSPACE_UUID']=workspace_uuid
-    run_cleanup_job('bitbucket_workspace_cleanup.json', neo4j_session, common_job_parameters)
-   
+        
     
 def sync(
         neo4j_session: neo4j.Session,

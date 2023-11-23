@@ -15,12 +15,13 @@ def get_repos(access_token:str,workspace:str):
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}"
     return make_requests_url(url,access_token)
 
+def load_repositeris_data(session: neo4j.Session, repos_data:List[Dict],common_job_parameters:Dict) -> None:
+    session.write_transaction(_load_repositeris_data, repos_data,  common_job_parameters)  
 
-
-def load_repositeris_data(neo4j_session: neo4j.Session,repos_data:List[Dict],common_job_parameters:Dict):
+def _load_repositeris_data(tx: neo4j.Transaction,repos_data:List[Dict],common_job_parameters:Dict):
     ingest_repositeris="""
     UNWIND $reposData as repo
-    MERGE (re:BitbucketRepository{name:repo.name})
+    MERGE (re:BitbucketRepository{id:repo.uuid})
     ON CREATE SET re.firstseen = timestamp(),
     re.created_on = repo.created_on
 
@@ -37,19 +38,19 @@ def load_repositeris_data(neo4j_session: neo4j.Session,repos_data:List[Dict],com
     re.parent=repo.parent.name,
     re.lastupdated = $UpdateTag    
     WITH re,repo
-    MATCH (project:BitbucketProjects{name:repo.project.name})
+    MATCH (project:BitbucketProjects{id:repo.project.uuid})
     merge (project)<-[o:REPOSITORY]-(re)
     ON CREATE SET o.firstseen = timestamp()
     SET o.lastupdated = $UpdateTag
 
     """
    
-    neo4j_session.run(
+    tx.run(
         ingest_repositeris,
         reposData=repos_data,
         UpdateTag=common_job_parameters['UPDATE_TAG'],
     )
-    cleanup(neo4j_session,common_job_parameters)
+    
     
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('bitbucket_workspace_repositories_cleanup.json', neo4j_session, common_job_parameters)
@@ -70,3 +71,4 @@ def sync(
     logger.info("Syncing Bitbucket All Repositories")
     workspace_repos=get_repos(bitbucket_refresh_token,workspace_name)
     load_repositeris_data(neo4j_session,workspace_repos,common_job_parameters)
+    cleanup(neo4j_session,common_job_parameters)

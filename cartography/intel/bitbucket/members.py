@@ -17,33 +17,37 @@ def get_workspace_members(access_token:str,workspace:str):
 
 
 
-    
-def load_memebers_data(neo4j_session: neo4j.Session,members_data:List[Dict],common_job_parameters:Dict):
+def load_memebers_data(session: neo4j.Session, members_data:List[Dict],common_job_parameters:Dict) -> None:
+    session.write_transaction(_load_memebers_data, members_data,  common_job_parameters)
+
+
+def _load_memebers_data(tx: neo4j.Transaction,members_data:List[Dict],common_job_parameters:Dict):
     ingest_workspace="""
     UNWIND $membersData as member
-    MERGE (mem:BitbucketMember{name: member.user.display_name})
+    MERGE (mem:BitbucketMember{id: member.user.uuid})
     ON CREATE SET mem.firstseen = timestamp()
 
     SET mem.slug = member.slug,
     mem.type = member.user.type,
+    mem.name= member.user.display_name,
     mem.account_id=member.user.account_id,
     mem.uuid = member.user.uuid,
     mem.lastupdated = $UpdateTag
 
     WITH mem,member
-    MATCH (owner:BitbucketWorkspace{name:member.workspace.name})
+    MATCH (owner:BitbucketWorkspace{id:member.workspace.uuid})
     merge (owner)-[o:MEMBER]->(mem)
     ON CREATE SET o.firstseen = timestamp()
     SET o.lastupdated = $UpdateTag
 
     """
-    neo4j_session.run(
+    tx.run(
         ingest_workspace,
         membersData=members_data,
         UpdateTag=common_job_parameters['UPDATE_TAG'],
     )
     
-    cleanup(neo4j_session,common_job_parameters)
+   
     
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('bitbucket_workspace_member_cleanup.json', neo4j_session, common_job_parameters)
@@ -65,4 +69,5 @@ def sync(
     logger.info("Syncing Bitbucket All workspace members")
     workspace_members=get_workspace_members(bitbucket_refresh_token,workspace_name)
     load_memebers_data(neo4j_session,workspace_members,common_job_parameters)
+    cleanup(neo4j_session,common_job_parameters)
     
