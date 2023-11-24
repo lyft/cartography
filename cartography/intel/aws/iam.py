@@ -614,6 +614,7 @@ def _load_policy_tx(
     policy_arn = f"arn:aws:iam::{current_aws_account_id}:policy/{policy}"
     consolelink = aws_console_link.get_console_link(arn=policy_arn)
 
+
     tx.run(
         ingest_policy,
         PolicyId=policy_id,
