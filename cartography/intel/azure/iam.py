@@ -1,896 +1,700 @@
-import enum
-import json
 import logging
-import time
-from typing import Any, Dict, List, Tuple
+import math
+from typing import Dict
+from typing import List
 
-import boto3
 import neo4j
-from botocore.exceptions import ClientError
-from cloudconsolelink.clouds.aws import AWSLinker
+from azure.core.exceptions import HttpResponseError
+from azure.graphrbac import GraphRbacManagementClient
+from azure.mgmt.authorization import AuthorizationManagementClient
+from azure.mgmt.msi import ManagedServiceIdentityClient
+from cloudconsolelink.clouds.azure import AzureLinker
+from datetime import datetime
 
-from cartography.intel.aws.permission_relationships import parse_statement_node, principal_allowed_on_resource
-from cartography.util import run_cleanup_job, timeit
+from .util.credentials import Credentials
+from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
-aws_console_link = AWSLinker()
-
-# Overview of IAM in AWS
-# https://aws.amazon.com/iam/
+azure_console_link = AzureLinker()
 
 
-class PolicyType(enum.Enum):
-    managed = 'managed'
-    inline = 'inline'
+def load_tenant_users(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
+    iteration_size = 500
+    total_items = len(data_list)
+    total_iterations = math.ceil(len(data_list) / iteration_size)
 
+    for counter in range(0, total_iterations):
+        start = iteration_size * (counter)
 
-def get_policy_name_from_arn(arn: str) -> str:
-    return arn.split("/")[-1]
+        if (start + iteration_size) >= total_items:
+            end = total_items
+            paged_users = data_list[start:]
 
-
-@timeit
-def _is_common_exception(e: Exception, item: str) -> bool:
-    error_msg = "Failed to retrieve IAM details"
-    if "AccessDenied" in e.args[0]:
-        logger.warning(f"{error_msg} for {item} - Access Denied")
-        return True
-    elif "NoSuchEntityException" in e.args[0]:
-        logger.warning(f"{error_msg} for {item} - NoSuchEntityException")
-        return True
-    elif "EndpointConnectionError" in e.args[0]:
-        logger.warning(f"{error_msg} for {item} - EndpointConnectionError")
-        return True
-    elif "InvalidToken" in e.args[0]:
-        logger.warning(f"{error_msg} for {item} - InvalidToken")
-        return True
-    elif "IllegalLocationConstraintException" in e.args[0]:
-        logger.warning(f"{error_msg} for {item} - IllegalLocationConstraintException")
-        return True
-    return False
-
-
-@timeit
-def get_group_policies(boto3_session: boto3.session.Session, group_name: str) -> Dict:
-    client = boto3_session.client('iam')
-    paginator = client.get_paginator('list_group_policies')
-    policy_names: List[Dict] = []
-    for page in paginator.paginate(GroupName=group_name):
-        policy_names.extend(page['PolicyNames'])
-    return {'PolicyNames': policy_names}
-
-
-@timeit
-def get_group_policy_info(
-        boto3_session: boto3.session.Session, group_name: str, policy_name: str,
-) -> Any:
-    client = boto3_session.client('iam')
-    return client.get_group_policy(GroupName=group_name, PolicyName=policy_name)
-
-
-@timeit
-def get_group_membership_data(boto3_session: boto3.session.Session, group_name: str) -> Dict:
-    client = boto3_session.client('iam')
-    try:
-        memberships = client.get_group(GroupName=group_name)
-        return memberships
-
-    except ClientError as e:
-        if _is_common_exception(e, group_name):
-            pass
         else:
-            logger.warning("client.get_group(GroupName='%s') failed with NoSuchEntityException; skipping.", group_name)
-        return {}
+            end = start + iteration_size
+            paged_users = data_list[start:end]
+
+        session.write_transaction(_load_tenant_users_tx, tenant_id, paged_users, update_tag)
+
+        logger.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paged_users)}")
+
+
+def load_roles(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int, SUBSCRIPTION_ID: str) -> None:
+    session.write_transaction(_load_roles_tx, tenant_id, data_list, update_tag, SUBSCRIPTION_ID)
+
+
+def load_managed_identities(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_managed_identities_tx, tenant_id, data_list, update_tag)
+
+
+def load_tenant_groups(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_tenant_groups_tx, tenant_id, data_list, update_tag)
+
+
+def load_tenant_applications(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_tenant_applications_tx, tenant_id, data_list, update_tag)
+
+
+def load_tenant_service_accounts(
+    session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int,
+) -> None:
+    session.write_transaction(_load_tenant_service_accounts_tx, tenant_id, data_list, update_tag)
+
+
+def load_tenant_domains(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_tenant_domains_tx, tenant_id, data_list, update_tag)
+
+
+def set_used_state(session: neo4j.Session, tenant_id: str, common_job_parameters: Dict, update_tag: int) -> None:
+    session.write_transaction(_set_used_state_tx, tenant_id, common_job_parameters, update_tag)
 
 
 @timeit
-def get_group_policy_data(boto3_session: boto3.session.Session, group_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
-    policies = {}
-    for group in group_list:
-        name = group["GroupName"]
-        arn = group["Arn"]
-        resource_group = resource_client.Group(name)
-        policies[arn] = policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_group.policies.all()}
-    return policies
+def get_graph_client(credentials: Credentials, tenant_id: str) -> GraphRbacManagementClient:
+    client = GraphRbacManagementClient(credentials, tenant_id)
+    return client
 
 
 @timeit
-def get_group_managed_policy_data(boto3_session: boto3.session.Session, group_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
-    policies = {}
-    for group in group_list:
-        name = group["GroupName"]
-        group_arn = group["Arn"]
-        resource_group = resource_client.Group(name)
-        policies[group_arn] = {
-            p.policy_name: p.default_version.document["Statement"]
-            for p in resource_group.attached_policies.all()
-        }
-    return policies
+def get_authorization_client(credentials: Credentials, subscription_id: str) -> AuthorizationManagementClient:
+    client = AuthorizationManagementClient(credentials, subscription_id)
+    return client
 
 
 @timeit
-def get_user_policy_data(boto3_session: boto3.session.Session, user_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
-    policies = {}
-    for user in user_list:
-        name = user["UserName"]
-        arn = user["Arn"]
-        resource_user = resource_client.User(name)
-        try:
-            policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_user.policies.all()}
-
-        except ClientError as e:
-            if _is_common_exception(e, name):
-                pass
-            else:
-                logger.warning(
-                    f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
-                )
-    return policies
+def get_managed_identity_client(credentials: Credentials, subscription_id: str) -> ManagedServiceIdentityClient:
+    client = ManagedServiceIdentityClient(credentials, subscription_id)
+    return client
 
 
 @timeit
-def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
-    policies = {}
-    for user in user_list:
-        name = user["UserName"]
-        user_arn = user["Arn"]
-        resource_user = resource_client.User(name)
-        try:
-            policies[user_arn] = {
-                p.policy_name: p.default_version.document["Statement"]
-                for p in resource_user.attached_policies.all()
-            }
+def list_tenant_users(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
+    try:
+        users = client.users.list()
 
-        except ClientError as e:
-            if _is_common_exception(e, name):
-                pass
-            else:
-                logger.warning(
-                    f"Could not get policies for user {name} due to NoSuchEntityException; skipping.",
-                )
-    return policies
+        users = transform_users(client.users.list(), tenant_id)
+
+        return users
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving tenant users - {e}")
+        return []
 
 
-@timeit
-def get_role_policy_data(boto3_session: boto3.session.Session, role_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
-    policies = {}
-    for role in role_list:
-        name = role["RoleName"]
-        arn = role["Arn"]
-        resource_role = resource_client.Role(name)
-        try:
-            policies[arn] = {p.name: p.policy_document["Statement"] for p in resource_role.policies.all()}
-
-        except ClientError as e:
-            if _is_common_exception(e, name):
-                pass
-            else:
-                logger.warning(
-                    f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
-                )
-    return policies
-
-
-@timeit
-def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list: List[Dict]) -> Dict:
-    resource_client = boto3_session.resource('iam')
-    policies = {}
-    for role in role_list:
-        name = role["RoleName"]
-        role_arn = role["Arn"]
-        resource_role = resource_client.Role(name)
-        try:
-            policies[role_arn] = {
-                p.policy_name: p.default_version.document["Statement"]
-                for p in resource_role.attached_policies.all()
-            }
-        except ClientError as e:
-            if _is_common_exception(e, name):
-                pass
-            else:
-                logger.warning(
-                    f"Could not get policies for role {name} due to NoSuchEntityException; skipping.",
-                )
-    return policies
-
-
-@timeit
-def get_role_tags(boto3_session: boto3.session.Session) -> List[Dict]:
-    role_list = get_role_list_data(boto3_session)['Roles']
-    resource_client = boto3_session.resource('iam')
-    role_tag_data: List[Dict] = []
-    for role in role_list:
-        name = role["RoleName"]
-        role_arn = role["Arn"]
-        resource_role = resource_client.Role(name)
-        role_tags = resource_role.tags
-        if not role_tags:
-            continue
-
-        tag_data = {
-            'ResourceARN': role_arn,
-            'Tags': resource_role.tags,
-        }
-        role_tag_data.append(tag_data)
-
-    return role_tag_data
-
-
-@timeit
-def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
-    client = boto3_session.client('iam')
-
-    paginator = client.get_paginator('list_users')
+def transform_users(users_list: List[Dict], tenant_id: str) -> List[Dict]:
     users: List[Dict] = []
-    for page in paginator.paginate():
-        users.extend(page['Users'])
-    return {'Users': users}
+
+    # User properties - https://learn.microsoft.com/en-us/graph/api/resources/user?view=graph-rest-1.0
+    for user in users_list:
+        usr = {
+            'id': f"tenants/{tenant_id}/users/{user.object_id}",
+            'consolelink': azure_console_link.get_console_link(id=user.object_id, iam_entity_type='user'),
+            'object_id': user.object_id,
+            'user_principal_name': user.user_principal_name,
+            'email': user.mail,
+            'name': user.display_name,
+            'given_name': user.given_name,
+            'surname': user.surname,
+            'user_type': user.user_type,
+            'object_type': user.object_type,
+            'mail_nickname': user.mail_nickname,
+            'account_enabled': user.account_enabled,
+            'usage_location': user.usage_location,
+            'account_enabled': user.account_enabled,
+            'deletion_timestamp': user.deletion_timestamp,
+            'create_date': user.additional_properties['createdDateTime'],
+            'company_name': user.additional_properties['companyName'],
+            'refresh_tokens_valid_from': user.additional_properties['refreshTokensValidFromDateTime'],
+            'mobile': user.additional_properties['mobile'],
+        }
+        users.append(usr)
+
+    return users
 
 
-@timeit
-def get_group_list_data(boto3_session: boto3.session.Session) -> Dict:
-    client = boto3_session.client('iam')
-    paginator = client.get_paginator('list_groups')
-    groups: List[Dict] = []
-    for page in paginator.paginate():
-        groups.extend(page['Groups'])
-    return {'Groups': groups}
+def transform_user(user: Dict, tenant_id: str) -> Dict:
+    # User properties - https://learn.microsoft.com/en-us/graph/api/resources/user?view=graph-rest-1.0
+    return {
+        'id': f"tenants/{tenant_id}/users/{user.object_id}",
+        'consolelink': azure_console_link.get_console_link(id=user.object_id, iam_entity_type='user'),
+        'object_id': user.object_id,
+        'user_principal_name': user.user_principal_name,
+        'email': user.mail,
+        'name': user.display_name,
+        'given_name': user.given_name,
+        'surname': user.surname,
+        'user_type': user.user_type,
+        'object_type': user.object_type,
+        'mail_nickname': user.mail_nickname,
+        'account_enabled': user.account_enabled,
+        'usage_location': user.usage_location,
+        'account_enabled': user.account_enabled,
+        'deletion_timestamp': user.deletion_timestamp,
+        'create_date': user.additional_properties['createdDateTime'],
+        'company_name': user.additional_properties['companyName'],
+        'refresh_tokens_valid_from': user.additional_properties['refreshTokensValidFromDateTime'],
+        'mobile': user.additional_properties['mobile'],
+    }
 
 
-@timeit
-def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
-    client = boto3_session.client('iam')
-    paginator = client.get_paginator('list_roles')
-    roles: List[Dict] = []
-    for page in paginator.paginate():
-        roles.extend(page['Roles'])
-    return {'Roles': roles}
-
-
-@timeit
-def get_account_access_key_data(boto3_session: boto3.session.Session, username: str) -> Dict:
-    client = boto3_session.client('iam')
-    # NOTE we can get away without using a paginator here because users are limited to two access keys
-    access_keys: Dict = {}
-    try:
-        access_keys = client.list_access_keys(UserName=username)
-        for access_key in access_keys["AccessKeyMetadata"]:
-            last_used=client.get_access_key_last_used(AccessKeyId=access_key.get('AccessKeyId'))
-            access_key['LastUsedDate']=last_used.get('AccessKeyLastUsed',{}).get('LastUsedDate')
-
-    except ClientError as e:
-        if _is_common_exception(e, username):
-            pass
-        else:
-            logger.warning(
-                f"Could not get access key for user {username} due to NoSuchEntityException; skipping.",
-            )
-    return access_keys
-
-
-@timeit
-def load_users(
-    neo4j_session: neo4j.Session, users: List[Dict], current_aws_account_id: str, aws_update_tag: int,
+def _load_tenant_users_tx(
+    tx: neo4j.Transaction, tenant_id: str, tenant_users_list: List[Dict], update_tag: int,
 ) -> None:
     ingest_user = """
-    MERGE (unode:AWSUser{arn: $ARN})
-    ON CREATE SET unode:AWSPrincipal, unode.userid = $USERID, unode.firstseen = timestamp(),
-    unode.consolelink = $consolelink,
-    unode.createdate = $CREATE_DATE
-    SET unode.name = $USERNAME, unode.path = $PATH, unode.passwordlastused = $PASSWORD_LASTUSED,
-    unode.region = $region,
-    unode.lastupdated = $aws_update_tag
-    WITH unode
-    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
-    MERGE (aa)-[r:RESOURCE]->(unode)
+    UNWIND $tenant_users_list AS user
+    MERGE (i:AzureUser{id: user.id})
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
+    i.consolelink =user.consolelink,
+    i.object_id =user.object_id,
+    i.user_principal_name =user.user_principal_name,
+    i.email =user.email,
+    i.name =user.name,
+    i.given_name =user.given_name,
+    i.surname =user.surname,
+    i.user_type =user.user_type,
+    i.object_type =user.object_type,
+    i.mail_nickname =user.mail_nickname,
+    i.account_enabled =user.account_enabled,
+    i.usage_location =user.usage_location,
+    i.account_enabled =user.account_enabled,
+    i.deletion_timestamp =user.deletion_timestamp,
+    i.create_date =user.create_date,
+    i.company_name =user.company_name,
+    i.refresh_tokens_valid_from =user.refresh_tokens_valid_from,
+    i.mobile =user.mobile,
+    i.region = $region
+    SET i.lastupdated = $update_tag,
+    i.consolelink =user.consolelink,
+    i.user_principal_name =user.user_principal_name,
+    i.name =user.name,
+    i.given_name =user.given_name,
+    i.surname =user.surname,
+    i.mail_nickname =user.mail_nickname,
+    i.account_enabled =user.account_enabled,
+    i.usage_location =user.usage_location,
+    i.account_enabled =user.account_enabled,
+    i.deletion_timestamp =user.deletion_timestamp,
+    i.create_date =user.create_date,
+    i.company_name =user.company_name,
+    i.refresh_tokens_valid_from =user.refresh_tokens_valid_from,
+    i.mobile =user.mobile,
+    i.region = $region
+    WITH i
+    MATCH (owner:AzureTenant{id: $tenant_id})
+    MERGE (owner)-[r:RESOURCE]->(i)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
+    SET r.lastupdated = $update_tag
     """
-    logger.info(f"Loading {len(users)} IAM users.")
-    for user in users:
-        neo4j_session.run(
-            ingest_user,
-            ARN=user["Arn"],
-            consolelink=aws_console_link.get_console_link(arn=user["Arn"]),
-            USERID=user["UserId"],
-            CREATE_DATE=str(user["CreateDate"]),
-            USERNAME=user["UserName"],
-            PATH=user["Path"],
-            PASSWORD_LASTUSED=str(user.get("PasswordLastUsed", "")),
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            region="global",
-            aws_update_tag=aws_update_tag,
-        )
-
-
-@timeit
-def load_groups(
-    neo4j_session: neo4j.Session, groups: List[Dict], current_aws_account_id: str, aws_update_tag: int,
-) -> None:
-    ingest_group = """
-    MERGE (gnode:AWSGroup{arn: $ARN})
-    ON CREATE SET gnode.groupid = $GROUP_ID, gnode.firstseen = timestamp(), gnode.createdate = $CREATE_DATE
-    SET gnode:AWSPrincipal, gnode.name = $GROUP_NAME, gnode.path = $PATH,
-    gnode.region = $region,
-    gnode.consolelink = $consolelink,
-    gnode.lastupdated = $aws_update_tag
-    WITH gnode
-    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
-    MERGE (aa)-[r:RESOURCE]->(gnode)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    """
-    logger.info(f"Loading {len(groups)} IAM groups to the graph.")
-    for group in groups:
-        neo4j_session.run(
-            ingest_group,
-            ARN=group["Arn"],
-            consolelink=aws_console_link.get_console_link(arn=group["Arn"]),
-            GROUP_ID=group["GroupId"],
-            CREATE_DATE=str(group["CreateDate"]),
-            GROUP_NAME=group["GroupName"],
-            PATH=group["Path"],
-            region="global",
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-        )
-
-
-def _parse_principal_entries(principal: Dict) -> List[Tuple[Any, Any]]:
-    """
-    Returns a list of tuples of the form (principal_type, principal_value)
-    e.g. [('AWS', 'example-role-name'), ('Service', 'example-service')]
-    """
-    principal_entries = []
-    for principal_type in principal:
-        principal_values = principal[principal_type]
-        if not isinstance(principal_values, list):
-            principal_values = [principal_values]
-        for principal_value in principal_values:
-            principal_entries.append((principal_type, principal_value))
-    return principal_entries
-
-
-@timeit
-def load_roles(
-    neo4j_session: neo4j.Session, roles: List[Dict], current_aws_account_id: str, aws_update_tag: int,
-) -> None:
-    ingest_role = """
-    MERGE (rnode:AWSRole{arn: $Arn})
-    ON CREATE SET rnode:AWSPrincipal, rnode.roleid = $RoleId, rnode.firstseen = timestamp(),
-    rnode.region = $region,
-    rnode.consolelink = $consolelink,
-    rnode.createdate = $CreateDate
-    SET rnode.name = $RoleName, rnode.path = $Path,
-    rnode.lastuseddate = $LastUsedDate, rnode.lastusedregion = $LastUsedRegion
-    SET rnode.lastupdated = $aws_update_tag
-    WITH rnode
-    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
-    MERGE (aa)-[r:RESOURCE]->(rnode)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    """
-
-    ingest_policy_statement = """
-    MERGE (spnnode:AWSPrincipal{arn: $SpnArn})
-    ON CREATE SET spnnode.firstseen = timestamp()
-    SET spnnode.lastupdated = $aws_update_tag, spnnode.type = $SpnType
-    WITH spnnode
-    MATCH (role:AWSRole{arn: $RoleArn})
-    MERGE (role)-[r:TRUSTS_AWS_PRINCIPAL]->(spnnode)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    """
-
-    # TODO support conditions
-    logger.info(f"Loading {len(roles)} IAM roles to the graph.")
-    for role in roles:
-        neo4j_session.run(
-            ingest_role,
-            Arn=role["Arn"],
-            consolelink=aws_console_link.get_console_link(arn=role["Arn"]),
-            RoleId=role["RoleId"],
-            CreateDate=str(role["CreateDate"]),
-            RoleName=role["RoleName"],
-            Path=role["Path"],
-            region="global",
-            LastUsedDate=role["RoleLastUsed"].get('LastUsedDate') if 'RoleLastUsed' in role else None,
-            LastUsedRegion=role["RoleLastUsed"].get('Region') if 'RoleLastUsed' in role else None,
-            AWS_ACCOUNT_ID=current_aws_account_id,
-            aws_update_tag=aws_update_tag,
-        )
-
-        for statement in role["AssumeRolePolicyDocument"]["Statement"]:
-            principal_entries = _parse_principal_entries(statement["Principal"])
-            for principal_type, principal_value in principal_entries:
-                neo4j_session.run(
-                    ingest_policy_statement,
-                    SpnArn=principal_value,
-                    SpnType=principal_type,
-                    RoleArn=role['Arn'],
-                    aws_update_tag=aws_update_tag,
-                )
-
-
-@timeit
-def load_group_memberships(neo4j_session: neo4j.Session, group_memberships: Dict, aws_update_tag: int) -> None:
-    ingest_membership = """
-    MATCH (group:AWSGroup{arn: $GroupArn})
-    WITH group
-    MATCH (user:AWSUser{arn: $PrincipalArn})
-    MERGE (user)-[r:MEMBER_AWS_GROUP]->(group)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    WITH user, group
-    MATCH (group)-[:POLICY]->(policy:AWSPolicy)
-    MERGE (user)-[r2:POLICY]->(policy)
-    SET r2.lastupdated = $aws_update_tag
-    """
-
-    for group_arn, membership_data in group_memberships.items():
-        for info in membership_data.get("Users", []):
-            principal_arn = info["Arn"]
-            neo4j_session.run(
-                ingest_membership,
-                GroupArn=group_arn,
-                PrincipalArn=principal_arn,
-                aws_update_tag=aws_update_tag,
-            )
-
-
-@timeit
-def get_policies_for_principal(neo4j_session: neo4j.Session, principal_arn: str) -> Dict:
-    get_policy_query = """
-    MATCH
-    (principal:AWSPrincipal{arn:$Arn})-[:POLICY]->
-    (policy:AWSPolicy)-[:STATEMENT]->
-    (statements:AWSPolicyStatement)
-    RETURN
-    DISTINCT policy.id AS policy_id,
-    COLLECT(DISTINCT statements) AS statements
-    """
-    results = neo4j_session.run(
-        get_policy_query,
-        Arn=principal_arn,
-    )
-    policies = {r["policy_id"]: parse_statement_node(r["statements"]) for r in results}
-    return policies
-
-
-@timeit
-def sync_assumerole_relationships(
-    neo4j_session: neo4j.Session, current_aws_account_id: str, aws_update_tag: str,
-    common_job_parameters: Dict,
-) -> None:
-    # Must be called after load_role
-    # Computes and syncs the STS_ASSUME_ROLE allow relationship
-    logger.info("Syncing assume role mappings for account '%s'.", current_aws_account_id)
-    query_potential_matches = """
-    MATCH (:AWSAccount{id:$AccountId})-[:RESOURCE]->(target:AWSRole)-[:TRUSTS_AWS_PRINCIPAL]->(source:AWSPrincipal)
-    WHERE NOT source.arn ENDS WITH 'root'
-    AND NOT source.type = 'Service'
-    AND NOT source.type = 'Federated'
-    RETURN target.arn AS target_arn,
-    source.arn AS source_arn
-    """
-
-    ingest_policies_assume_role = """
-    MATCH (source:AWSPrincipal{arn: $SourceArn})
-    WITH source
-    MATCH (role:AWSRole{arn: $TargetArn})
-    WITH role, source
-    MERGE (source)-[r:STS_ASSUMEROLE_ALLOW]->(role)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    """
-
-    results = neo4j_session.run(
-        query_potential_matches,
-        AccountId=current_aws_account_id,
-    )
-    potential_matches = [(r["source_arn"], r["target_arn"]) for r in results]
-    for source_arn, target_arn in potential_matches:
-        policies = get_policies_for_principal(neo4j_session, source_arn)
-        if principal_allowed_on_resource(policies, target_arn, ["sts:AssumeRole"]):
-            neo4j_session.run(
-                ingest_policies_assume_role,
-                SourceArn=source_arn,
-                TargetArn=target_arn,
-                aws_update_tag=aws_update_tag,
-            )
-    run_cleanup_job(
-        'aws_import_roles_policy_cleanup.json',
-        neo4j_session,
-        common_job_parameters,
-    )
-
-
-@timeit
-def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, aws_update_tag: int, consolelink: str) -> None:
-    # TODO change the node label to reflect that this is a user access key, not an account access key
-    ingest_account_key = """
-    MATCH (user:AWSUser{name: $UserName})
-    WITH user
-    MERGE (key:AccountAccessKey{accesskeyid: $AccessKeyId})
-    ON CREATE SET key.firstseen = timestamp(),
-    key.region = $region,
-    key.createdate = $CreateDate,
-    key.consolelink = $consolelink,
-    key.lastuseddate= $LastUsedDate
-    SET key.status = $Status, key.lastupdated = $aws_update_tag
-    WITH user,key
-    MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $aws_update_tag
-    """
-
-    for username, access_keys in user_access_keys.items():
-        for key in access_keys["AccessKeyMetadata"]:
-            if key.get('AccessKeyId'):
-                neo4j_session.run(
-                    ingest_account_key,
-                    consolelink=consolelink,
-                    UserName=username,
-                    AccessKeyId=key['AccessKeyId'],
-                    LastUsedDate=str(key.get('LastUsedDate','')),
-                    CreateDate=str(key.get('CreateDate','')),
-                    Status=key['Status'],
-                    region="global",
-                    aws_update_tag=aws_update_tag,
-                )
-
-
-def ensure_list(obj: Any) -> List[Any]:
-    if not isinstance(obj, list):
-        obj = [obj]
-    return obj
-
-
-def _transform_policy_statements(statements: Any, policy_id: str) -> List[Dict]:
-    count = 1
-    if not isinstance(statements, list):
-        statements = [statements]
-    for stmt in statements:
-        if "Sid" not in stmt:
-            statement_id = count
-            count += 1
-        else:
-            statement_id = stmt["Sid"]
-        stmt["id"] = f"{policy_id}/statement/{statement_id}"
-        if "Resource" in stmt:
-            stmt["Resource"] = ensure_list(stmt["Resource"])
-        if "Action" in stmt:
-            stmt["Action"] = ensure_list(stmt["Action"])
-        if "NotAction" in stmt:
-            stmt["NotAction"] = ensure_list(stmt["NotAction"])
-        if "NotResource" in stmt:
-            stmt["NotResource"] = ensure_list(stmt["NotResource"])
-        if "Condition" in stmt:
-            stmt["Condition"] = json.dumps(ensure_list(stmt["Condition"]))
-    return statements
-
-
-def transform_policy_data(policy_map: Dict, policy_type: str) -> None:
-    for principal_arn, policy_statement_map in policy_map.items():
-        logger.debug(f"Transforming IAM {policy_type} policies for principal {principal_arn}")
-        for policy_key, statements in policy_statement_map.items():
-            policy_id = transform_policy_id(
-                principal_arn,
-                policy_type,
-                policy_key,
-            ) if policy_type == PolicyType.inline.value else policy_key
-            policy_statement_map[policy_key] = _transform_policy_statements(statements, policy_id)
-
-
-def transform_policy_id(principal_arn: str, policy_type: str, name: str) -> str:
-    return f"{principal_arn}/{policy_type}_policy/{name}"
-
-
-def _load_policy_tx(
-    tx: neo4j.Transaction, policy_id: str, policy_name: str, policy_type: str, principal_arn: str,
-    current_aws_account_id: str, aws_update_tag: int,
-) -> None:
-    ingest_policy = """
-    MERGE (policy:AWSPolicy{id: $PolicyId})
-    ON CREATE SET
-    policy.firstseen = timestamp(),
-    policy.type = $PolicyType,
-    policy.region = $region,
-    policy.name = $PolicyName,
-    policy.arn = $PolicyArn,
-    policy.consolelink = $consolelink
-    SET policy.lastupdated = $aws_update_tag
-    WITH policy
-    MATCH (principal:AWSPrincipal{arn: $PrincipalArn})
-    MERGE (policy) <-[r:POLICY]-(principal)
-    SET r.lastupdated = $aws_update_tag
-    """
-
-    policy = policy_name.split('/')[-1]
-    policy_arn = f"arn:aws:iam::{current_aws_account_id}:policy/{policy}"
-    consolelink = aws_console_link.get_console_link(arn=policy_arn)
 
     tx.run(
-        ingest_policy,
-        PolicyId=policy_id,
-        PolicyName=policy_name,
-        PolicyType=policy_type,
-        PrincipalArn=principal_arn,
-        consolelink=consolelink,
-        PolicyArn=policy_arn,
+        ingest_user,
         region="global",
-        aws_update_tag=aws_update_tag,
+        tenant_users_list=tenant_users_list,
+        createDate=datetime.utcnow(),
+        tenant_id=tenant_id,
+        update_tag=update_tag,
     )
 
 
-@timeit
-def load_policy(
-    neo4j_session: neo4j.Session, policy_id: str, policy_name: str, policy_type: str, principal_arn: str,
-    current_aws_account_id: str, aws_update_tag: int,
+def cleanup_tenant_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_tenant_users_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_tenant_users(
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
+    common_job_parameters: Dict,
 ) -> None:
-    neo4j_session.write_transaction(
-        _load_policy_tx, policy_id, policy_name, policy_type, principal_arn, current_aws_account_id, aws_update_tag
+    client = get_graph_client(credentials, tenant_id)
+    tenant_users_list = list_tenant_users(client, tenant_id)
+
+    load_tenant_users(neo4j_session, tenant_id, tenant_users_list, update_tag)
+    cleanup_tenant_users(neo4j_session, common_job_parameters)
+
+
+@timeit
+def get_tenant_groups_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
+    try:
+        tenant_groups_list = list(map(lambda x: x.as_dict(), client.groups.list()))
+
+        for group in tenant_groups_list:
+            group['id'] = f"tenants/{tenant_id}/Groups/{group.get('object_id',None)}"
+            group['consolelink'] = azure_console_link.get_console_link(iam_entity_type='group', id=group['object_id'])
+
+        return tenant_groups_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving tenant groups - {e}")
+        return []
+
+
+def _load_tenant_groups_tx(
+    tx: neo4j.Transaction, tenant_id: str, tenant_groups_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_group = """
+    UNWIND $tenant_groups_list AS group
+    MERGE (i:AzureGroup{id: group.id})
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
+    i.object_id=group.object_id,
+    i.region = $region,
+    i.create_date = $createDate,
+    i.name = group.display_name,
+    i.visibility = group.visibility,
+    i.classification = group.classification,
+    i.createdDateTime = group.createdDateTime,
+    i.consolelink = group.consolelink,
+    i.securityEnabled = group.security_enabled
+    SET i.lastupdated = $update_tag,
+    i.mail = group.mail
+    WITH i
+    MATCH (owner:AzureTenant{id: $tenant_id})
+    MERGE (owner)-[r:RESOURCE]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_group,
+        region="global",
+        tenant_groups_list=tenant_groups_list,
+        tenant_id=tenant_id,
+        createDate=datetime.utcnow(),
+        update_tag=update_tag,
     )
 
 
-@timeit
-def load_policy_statements(
-    neo4j_session: neo4j.Session, policy_id: str, policy_name: str, statements: Any,
-    aws_update_tag: int, consolelink: str,
+def cleanup_tenant_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_tenant_groups_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_tenant_groups(
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
+    common_job_parameters: Dict
 ) -> None:
-    ingest_policy_statement = """
-        MATCH (policy:AWSPolicy{id: $PolicyId})
-        WITH policy
-        UNWIND $Statements as statement_data
-        MERGE (statement:AWSPolicyStatement{id: statement_data.id})
-        SET
-        statement.effect = statement_data.Effect,
-        statement.action = statement_data.Action,
-        statement.region = $region,
-        statement.consolelink = $consolelink,
-        statement.notaction = statement_data.NotAction,
-        statement.resource = statement_data.Resource,
-        statement.notresource = statement_data.NotResource,
-        statement.condition = statement_data.Condition,
-        statement.sid = statement_data.Sid,
-        statement.lastupdated = $aws_update_tag
-        MERGE (policy)-[r:STATEMENT]->(statement)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = $aws_update_tag
-        """
-    neo4j_session.run(
-        ingest_policy_statement,
-        PolicyId=policy_id,
-        consolelink=consolelink,
-        PolicyName=policy_name,
-        Statements=statements,
+    client = get_graph_client(credentials, tenant_id)
+    tenant_groups_list = get_tenant_groups_list(client, tenant_id)
+
+    load_tenant_groups(neo4j_session, tenant_id, tenant_groups_list, update_tag)
+    cleanup_tenant_groups(neo4j_session, common_job_parameters)
+
+
+@timeit
+def get_tenant_applications_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
+    try:
+        tenant_applications_list = list(map(lambda x: x.as_dict(), client.applications.list()))
+
+        for app in tenant_applications_list:
+            app['id'] = f"tenants/{tenant_id}/Applications/{app.get('object_id',None)}"
+            app['consolelink'] = azure_console_link.get_console_link(iam_entity_type='application', id=app['app_id'])
+
+        return tenant_applications_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving tenant applications - {e}")
+        return []
+
+
+def _load_tenant_applications_tx(
+    tx: neo4j.Transaction, tenant_id: str, tenant_applications_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_app = """
+    UNWIND $tenant_applications_list AS app
+    MERGE (i:AzureApplication{id: app.id})
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
+    i.object_id=app.object_id,
+    i.region = $region,
+    i.create_date = $createDate,
+    i.name = app.display_name,
+    i.consolelink = app.consolelink,
+    i.publisherDomain = app.publisher_domain
+    SET i.lastupdated = $update_tag,
+    i.signInAudience = app.sign_in_audience
+    WITH i
+    MATCH (owner:AzureTenant{id: $tenant_id})
+    MERGE (owner)-[r:RESOURCE]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_app,
         region="global",
-        aws_update_tag=aws_update_tag,
-    ).consume()
+        tenant_applications_list=tenant_applications_list,
+        tenant_id=tenant_id,
+        createDate=datetime.utcnow(),
+        update_tag=update_tag,
+    )
+
+
+def cleanup_tenant_applications(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_tenant_applications_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_tenant_applications(
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
+    common_job_parameters: Dict
+) -> None:
+    client = get_graph_client(credentials, tenant_id)
+    tenant_applications_list = get_tenant_applications_list(client, tenant_id)
+
+    load_tenant_applications(neo4j_session, tenant_id, tenant_applications_list, update_tag)
+    cleanup_tenant_applications(neo4j_session, common_job_parameters)
 
 
 @timeit
-def load_policy_data(
-    neo4j_session: neo4j.Session, policy_map: Dict, policy_type: str, current_aws_account_id: str, aws_update_tag: int
+def get_tenant_service_accounts_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
+    try:
+        tenant_service_accounts_list = list(
+            map(lambda x: x.as_dict(), client.service_principals.list()),
+        )
+
+        for account in tenant_service_accounts_list:
+            account['id'] = f"tenants/{tenant_id}/ServiceAccounts/{account.get('object_id',None)}"
+            account['consolelink'] = azure_console_link.get_console_link(id=account['object_id'],
+                                                                         app_id=account['app_id'], iam_entity_type='service_principal')
+
+        return tenant_service_accounts_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving tenant service accounts - {e}")
+        return []
+
+
+def _load_tenant_service_accounts_tx(
+    tx: neo4j.Transaction, tenant_id: str, tenant_service_accounts_list: List[Dict], update_tag: int,
 ) -> None:
-    for principal_arn, policy_list in policy_map.items():
-        logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
-        for policy_name, statements in policy_list.items():
-            # consolelink = aws_console_link.get_console_link(arn=f"arn:aws:iam::{current_aws_account_id}:policy_statement/{policy_name}")
-            consolelink = ''
-            policy_id = transform_policy_id(principal_arn, policy_type, policy_name)
-            load_policy(
-                neo4j_session, policy_id, policy_name, policy_type, principal_arn, current_aws_account_id, aws_update_tag
+    ingest_app = """
+    UNWIND $tenant_service_accounts_list AS service
+    MERGE (i:AzureServiceAccount{id: service.id})
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
+    i.name = service.display_name,
+    i.consolelink = service.consolelink,
+    i.region = $region,
+    i.create_date = $createDate,
+    i.object_id=service.object_id,
+    i.accountEnabled = service.account_enabled,
+    i.servicePrincipalType = service.service_principal_type
+    SET i.lastupdated = $update_tag,
+    i.signInAudience = service.signInAudience
+    WITH i
+    MATCH (owner:AzureTenant{id: $tenant_id})
+    MERGE (owner)-[r:RESOURCE]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_app,
+        region="global",
+        tenant_service_accounts_list=tenant_service_accounts_list,
+        tenant_id=tenant_id,
+        createDate=datetime.utcnow(),
+        update_tag=update_tag,
+    )
+
+
+def cleanup_tenant_service_accounts(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_tenant_service_accounts_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_tenant_service_accounts(
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    client = get_graph_client(credentials, tenant_id)
+    tenant_service_accounts_list = get_tenant_service_accounts_list(client, tenant_id)
+
+    load_tenant_service_accounts(neo4j_session, tenant_id, tenant_service_accounts_list, update_tag)
+    cleanup_tenant_service_accounts(neo4j_session, common_job_parameters)
+
+
+@timeit
+def get_tenant_domains_list(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
+    try:
+        tenant_domains_list = list(map(lambda x: x.as_dict(), client.domains.list()))
+
+        for domain in tenant_domains_list:
+            domain["id"] = f"tenants/{tenant_id}/domains/{domain.get('name',None)}"
+            domain['consolelink'] = azure_console_link.get_console_link(id=domain['name'], iam_entity_type='domain')
+
+        return tenant_domains_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving tenant domains - {e}")
+        return []
+
+
+def _load_tenant_domains_tx(
+    tx: neo4j.Transaction, tenant_id: str, tenant_domains_list: List[Dict], update_tag: int,
+) -> None:
+    ingest_domain = """
+    UNWIND $tenant_domains_list AS domain
+    MERGE (i:AzureDomain{id: domain.id})
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
+    i.isRoot = domain.isRoot,
+    i.consolelink = domain.consolelink,
+    i.region = $region,
+    i.create_date = $createDate,
+    i.name = domain.name,
+    i.isInitial = domain.isInitial
+    SET i.lastupdated = $update_tag,
+    i.authenticationType = domain.authentication_type,
+    i.availabilityStatus = domain.availabilityStatus
+    WITH i
+    MATCH (owner:AzureTenant{id: $tenant_id})
+    MERGE (owner)-[r:RESOURCE]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_domain,
+        region="global",
+        tenant_domains_list=tenant_domains_list,
+        tenant_id=tenant_id,
+        createDate=datetime.utcnow(),
+        update_tag=update_tag,
+    )
+
+
+def cleanup_tenant_domains(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_tenant_domains_cleanup.json', neo4j_session, common_job_parameters)
+
+
+def sync_tenant_domains(
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
+    common_job_parameters: Dict,
+) -> None:
+    client = get_graph_client(credentials, tenant_id)
+    tenant_domains_list = get_tenant_domains_list(client, tenant_id)
+
+    load_tenant_domains(neo4j_session, tenant_id, tenant_domains_list, update_tag)
+    cleanup_tenant_domains(neo4j_session, common_job_parameters)
+
+
+@timeit
+def get_roles_list(client: AuthorizationManagementClient, common_job_parameters: Dict) -> List[Dict]:
+    try:
+        role_assignments_list = list(
+            map(lambda x: x.as_dict(), client.role_assignments.list()),
+        )
+
+        roles_list = []
+        for role_assignment in role_assignments_list:
+            role_in_roles_list = False
+            for role in roles_list:
+                if role['id'] == role_assignment["role_definition_id"]:
+                    role['principal_ids'].append(role_assignment['principal_id'])
+                    role_in_roles_list = True
+                    break
+
+            if not role_in_roles_list:
+                role = {}
+                result = client.role_definitions.get_by_id(role_assignment["role_definition_id"], raw=True)
+                result = result.response.json()
+                role['name'] = result.get('name', '')
+                role['id'] = role_assignment["role_definition_id"]
+                role['principal_ids'] = [role_assignment['principal_id']]
+                role['type'] = result.get('properties', {}).get('type')
+                role['roleName'] = result.get('properties', {}).get('roleName', '')
+                role['consolelink'] = azure_console_link.get_console_link(
+                    id=role_assignment['role_definition_id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                role['permissions'] = []
+                for permission in result.get('properties', {}).get('permissions', []):
+                    for action in permission.get('actions', []):
+                        role['permissions'].append(action)
+                    for data_action in permission.get('dataActions', []):
+                        role['permissions'].append(data_action)
+                role['permissions'] = list(set(role['permissions']))
+                roles_list.append(role)
+        return roles_list
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving roles - {e}")
+        return []
+
+
+@timeit
+def get_managed_identity_list(client: ManagedServiceIdentityClient, subscription_id: str, common_job_parameters: Dict) -> List[Dict]:
+    try:
+        managed_identity_list = list(
+            map(lambda x: x.as_dict(), client.user_assigned_identities.list_by_subscription()),
+        )
+
+        for managed_identity in managed_identity_list:
+            managed_identity['consolelink'] = azure_console_link.get_console_link(
+                id=managed_identity['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name']
             )
-            load_policy_statements(neo4j_session, policy_id, policy_name, statements, aws_update_tag, consolelink)
+        return managed_identity_list
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving managed identity - {e}")
+        return []
 
 
-@timeit
-def sync_users(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
-    aws_update_tag: int, common_job_parameters: Dict,
+def _load_roles_tx(
+    tx: neo4j.Transaction, tenant_id: str, roles_list: List[Dict], update_tag: int, SUBSCRIPTION_ID: str
 ) -> None:
-    logger.info("Syncing IAM users for account '%s'.", current_aws_account_id)
-    data = get_user_list_data(boto3_session)
+    ingest_role = """
+    UNWIND $roles_list AS role
+    MERGE (i:AzureRole{id: role.id})
+    ON CREATE SET i.firstseen = timestamp(),
+    i.name = role.name,
+    i.consolelink = role.consolelink,
+    i.region = $region,
+    i.create_date = $createDate,
+    i.type = role.type
+    SET i.lastupdated = $update_tag,
+    i.roleName = role.roleName,
+    i.permissions = role.permissions
+    WITH i,role
+    MATCH (t:AzureTenant{id: $tenant_id})
+    MERGE (t)-[tr:RESOURCE]->(i)
+    ON CREATE SET tr.firstseen = timestamp()
+    SET tr.lastupdated = $update_tag
+    WITH i,role
+    MATCH (sub:AzureSubscription{id: $SUBSCRIPTION_ID})
+    MERGE (sub)<-[sr:HAS_ACCESS]-(i)
+    ON CREATE SET sr.firstseen = timestamp()
+    SET sr.lastupdated = $update_tag
+    """
 
-    logger.info(f"Total Users: {len(data['Users'])}")
+    tx.run(
+        ingest_role,
+        region="global",
+        roles_list=roles_list,
+        update_tag=update_tag,
+        createDate=datetime.utcnow(),
+        tenant_id=tenant_id,
+        SUBSCRIPTION_ID=SUBSCRIPTION_ID,
+    )
 
-    load_users(neo4j_session, data['Users'], current_aws_account_id, aws_update_tag)
+    attach_role = """
+    UNWIND $principal_ids AS principal_id
+    MATCH (principal:AzurePrincipal{object_id: principal_id})
+    WITH principal
+    MATCH (i:AzureRole{id: $role})
+    WITH i,principal
+    MERGE (principal)-[r:ASSUME_ROLE]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    for role in roles_list:
+        tx.run(
+            attach_role,
+            role=role['id'],
+            principal_ids=role['principal_ids'],
+            update_tag=update_tag
+        )
 
-    sync_user_inline_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
 
-    sync_user_managed_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
-
-    run_cleanup_job('aws_import_users_cleanup.json', neo4j_session, common_job_parameters)
-
-
-@timeit
-def sync_user_managed_policies(
-    boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    current_aws_account_id: str, aws_update_tag: int,
+def _load_managed_identities_tx(
+    tx: neo4j.Transaction, tenant_id: str, managed_identity_list: List[Dict], update_tag: int,
 ) -> None:
-    managed_policy_data = get_user_managed_policy_data(boto3_session, data['Users'])
-    transform_policy_data(managed_policy_data, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value,
-                     current_aws_account_id, aws_update_tag)
+    ingest_managed_identity = """
+    UNWIND $managed_identity_list AS managed_identity
+    MERGE (i:AzureManagedIdentity{id: managed_identity.id})
+    ON CREATE SET i:AzurePrincipal,
+    i.firstseen = timestamp(),
+    i.name = managed_identity.name,
+    i.consolelink = managed_identity.consolelink,
+    i.location = managed_identity.location,
+    i.type = managed_identity.type,
+    i.object_id = managed_identity.principal_id,
+    i.principal_id = managed_identity.principal_id,
+    i.client_id = managed_identity.client_id
+    SET i.lastupdated = $update_tag
+    WITH i
+    MATCH (t:AzureTenant{id: $tenant_id})
+    MERGE (t)-[tr:RESOURCE]->(i)
+    ON CREATE SET tr.firstseen = timestamp()
+    SET tr.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_managed_identity,
+        managed_identity_list=managed_identity_list,
+        update_tag=update_tag,
+        tenant_id=tenant_id,
+    )
 
 
-@timeit
-def sync_user_inline_policies(
-    boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    current_aws_account_id: str, aws_update_tag: int,
-) -> None:
-    policy_data = get_user_policy_data(boto3_session, data['Users'])
-    transform_policy_data(policy_data, PolicyType.inline.value)
-    load_policy_data(neo4j_session, policy_data, PolicyType.inline.value, current_aws_account_id, aws_update_tag)
+def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_tenant_roles_cleanup.json', neo4j_session, common_job_parameters)
 
 
-@timeit
-def sync_groups(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
-    aws_update_tag: int, common_job_parameters: Dict,
-) -> None:
-    logger.info("Syncing IAM groups for account '%s'.", current_aws_account_id)
-    data = get_group_list_data(boto3_session)
-
-    logger.info(f"Total Groups: {len(data['Groups'])}")
-
-    load_groups(neo4j_session, data['Groups'], current_aws_account_id, aws_update_tag)
-
-    sync_groups_inline_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
-
-    sync_group_managed_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
-
-    # sync_group_service_access_details(boto3_session, data['Groups'], neo4j_session, aws_update_tag)
-
-    run_cleanup_job('aws_import_groups_cleanup.json', neo4j_session, common_job_parameters)
+def cleanup_managed_identities(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('azure_import_managed_identity_cleanup.json', neo4j_session, common_job_parameters)
 
 
-def sync_group_managed_policies(
-    boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    current_aws_account_id: str, aws_update_tag: int,
-) -> None:
-    managed_policy_data = get_group_managed_policy_data(boto3_session, data["Groups"])
-    transform_policy_data(managed_policy_data, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value,
-                     current_aws_account_id, aws_update_tag)
-
-
-def sync_groups_inline_policies(
-    boto3_session: boto3.session.Session, data: Dict, neo4j_session: neo4j.Session,
-    current_aws_account_id: str, aws_update_tag: int,
-) -> None:
-    policy_data = get_group_policy_data(boto3_session, data["Groups"])
-    transform_policy_data(policy_data, PolicyType.inline.value)
-    load_policy_data(neo4j_session, policy_data, PolicyType.inline.value, current_aws_account_id, aws_update_tag)
-
-
-@timeit
 def sync_roles(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, current_aws_account_id: str,
-    aws_update_tag: int, common_job_parameters: Dict,
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
+    common_job_parameters: Dict
 ) -> None:
-    logger.info("Syncing IAM roles for account '%s'.", current_aws_account_id)
-    data = get_role_list_data(boto3_session)
-
-    logger.info(f"Total Roles: {len(data['Roles'])}")
-
-    load_roles(neo4j_session, data['Roles'], current_aws_account_id, aws_update_tag)
-
-    sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
-
-    sync_role_managed_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
-
-    # sync_role_service_access_details(boto3_session, data['Roles'], neo4j_session, aws_update_tag)
-
-    run_cleanup_job('aws_import_roles_cleanup.json', neo4j_session, common_job_parameters)
+    client = get_authorization_client(credentials.arm_credentials, credentials.subscription_id)
+    roles_list = get_roles_list(client, common_job_parameters)
+    load_roles(neo4j_session, tenant_id, roles_list, update_tag, credentials.subscription_id)
+    cleanup_roles(neo4j_session, common_job_parameters)
 
 
-def sync_role_managed_policies(
-    current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
-    neo4j_session: neo4j.Session, aws_update_tag: int,
+def sync_managed_identity(
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
+    common_job_parameters: Dict
 ) -> None:
-    logger.info("Syncing IAM role managed policies for account '%s'.", current_aws_account_id)
-    managed_policy_data = get_role_managed_policy_data(boto3_session, data["Roles"])
-    transform_policy_data(managed_policy_data, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policy_data, PolicyType.managed.value,
-                     current_aws_account_id, aws_update_tag)
-
-
-def sync_role_inline_policies(
-    current_aws_account_id: str, boto3_session: boto3.session.Session, data: Dict,
-    neo4j_session: neo4j.Session, aws_update_tag: int,
-) -> None:
-    logger.info("Syncing IAM role inline policies for account '%s'.", current_aws_account_id)
-    inline_policy_data = get_role_policy_data(boto3_session, data["Roles"])
-    transform_policy_data(inline_policy_data, PolicyType.inline.value)
-    load_policy_data(neo4j_session, inline_policy_data, PolicyType.inline.value, current_aws_account_id, aws_update_tag)
-
-
-@timeit
-def sync_group_memberships(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session,
-    current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
-) -> None:
-    logger.info("Syncing IAM group membership for account '%s'.", current_aws_account_id)
-    query = "MATCH (group:AWSGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ACCOUNT_ID}) " \
-            "return group.name as name, group.arn as arn;"
-    groups = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
-    groups_membership = {group["arn"]: get_group_membership_data(boto3_session, group["name"]) for group in groups}
-    load_group_memberships(neo4j_session, groups_membership, aws_update_tag)
-    run_cleanup_job(
-        'aws_import_groups_membership_cleanup.json',
-        neo4j_session,
-        common_job_parameters,
-    )
-
-
-@timeit
-def sync_user_access_keys(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session,
-    current_aws_account_id: str, aws_update_tag: int, common_job_parameters: Dict,
-) -> None:
-    logger.info("Syncing IAM user access keys for account '%s'.", current_aws_account_id)
-    query = "MATCH (user:AWSUser)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ACCOUNT_ID}) return user.name as name"
-    result = neo4j_session.run(query, AWS_ACCOUNT_ID=current_aws_account_id)
-    usernames = [r['name'] for r in result]
-    for name in usernames:
-        access_keys = get_account_access_key_data(boto3_session, name)
-        if access_keys:
-            consolelink = aws_console_link.get_console_link(arn=f"arn:aws:iam::{current_aws_account_id}:access_keys/{name}")
-            account_access_keys = {name: access_keys}
-            load_user_access_keys(neo4j_session, account_access_keys, aws_update_tag, consolelink)
-    run_cleanup_job(
-        'aws_import_account_access_key_cleanup.json',
-        neo4j_session,
-        common_job_parameters,
-    )
-
-
-def set_used_state(session: neo4j.Session, project_id: str, common_job_parameters: Dict, update_tag: int) -> None:
-    session.write_transaction(_set_used_state_tx, project_id, common_job_parameters, update_tag)
+    client = get_managed_identity_client(credentials.arm_credentials, credentials.subscription_id)
+    managed_identity_list = get_managed_identity_list(client, credentials.subscription_id, common_job_parameters)
+    load_managed_identities(neo4j_session, tenant_id, managed_identity_list, update_tag)
+    cleanup_managed_identities(neo4j_session, common_job_parameters)
 
 
 def _set_used_state_tx(
-    tx: neo4j.Transaction, project_id: str, common_job_parameters: Dict, update_tag: int,
+    tx: neo4j.Transaction, tenant_id: str, common_job_parameters: Dict, update_tag: int,
 ) -> None:
     ingest_role_used = """
-    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n:AWSRole)
-    WHERE (n)-[:TRUSTS_AWS_PRINCIPAL]->() AND n.lastupdated = $update_tag
-    SET n.isUsed = $isUsed
+    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
+    (:AzureTenant{id: $AZURE_TENANT_ID})-[r:RESOURCE]->(n:AzureRole)<-[:ASSUME_ROLE]-(p:AzurePrincipal)
+    WHERE n.lastupdated = $update_tag
+    SET n.isUsed = $isUsed,
+    p.isUsed = $isUsed
     """
 
     tx.run(
         ingest_role_used,
         WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
         update_tag=update_tag,
-        AWS_ID=project_id,
-        isUsed=True,
-    )
-
-    ingest_entity_used = """
-    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n)
-    WHERE ()-[:TRUSTS_AWS_PRINCIPAL]->(n) AND n.lastupdated = $update_tag
-    AND labels(n) IN [['AWSUser'], ['AWSGroup']]
-    SET n.isUsed = $isUsed
-    """
-
-    tx.run(
-        ingest_entity_used,
-        WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
-        update_tag=update_tag,
-        AWS_ID=project_id,
+        AZURE_TENANT_ID=tenant_id,
         isUsed=True,
     )
 
     ingest_entity_unused = """
-    MATCH (:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(n)
+    MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->
+    (:AzureTenant{id: $AZURE_TENANT_ID})-[r:RESOURCE]->(n)
     WHERE NOT EXISTS(n.isUsed) AND n.lastupdated = $update_tag
-    AND labels(n) IN [['AWSUser'], ['AWSGroup'], ['AWSRole']]
+    AND labels(n) IN [['AzureUser'], ['AzureGroup'], ['AzureServiceAccount'], ['AzureRole']]
     SET n.isUsed = $isUsed
     """
 
@@ -898,30 +702,42 @@ def _set_used_state_tx(
         ingest_entity_unused,
         WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
         update_tag=update_tag,
-        AWS_ID=project_id,
+        AZURE_TENANT_ID=tenant_id,
         isUsed=False,
     )
 
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
-    update_tag: int, common_job_parameters: Dict,
+    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
+    common_job_parameters: Dict,
 ) -> None:
-    tic = time.perf_counter()
+    logger.info("Syncing IAM for Tenant '%s'.", tenant_id)
 
-    logger.info("Syncing IAM for account '%s', at %s.", current_aws_account_id, tic)
-    # This module only syncs IAM information that is in use.
-    # As such only policies that are attached to a user, role or group are synced
-    sync_users(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_groups(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_roles(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_group_memberships(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_assumerole_relationships(neo4j_session, current_aws_account_id, update_tag, common_job_parameters)
-    sync_user_access_keys(neo4j_session, boto3_session, current_aws_account_id, update_tag, common_job_parameters)
-    set_used_state(neo4j_session, current_aws_account_id, common_job_parameters, update_tag)
+    common_job_parameters['AZURE_TENANT_ID'] = tenant_id
 
-    run_cleanup_job('aws_import_principals_cleanup.json', neo4j_session, common_job_parameters)
+    try:
+        sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id,
+                          update_tag, common_job_parameters)
+        sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id,
+                           update_tag, common_job_parameters)
+        sync_tenant_applications(
+            neo4j_session, credentials.aad_graph_credentials,
+            tenant_id, update_tag, common_job_parameters)
+        sync_tenant_service_accounts(
+            neo4j_session, credentials.aad_graph_credentials,
+            tenant_id, update_tag, common_job_parameters,
+        )
+        sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
 
-    toc = time.perf_counter()
-    logger.info(f"Time to process IAM: {toc - tic:0.4f} seconds")
+        sync_managed_identity(
+            neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
+        )
+
+        sync_roles(
+            neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
+        )
+        set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
+
+    except Exception as ex:
+        logger.error(f'exception from IAM - {ex}', exc_info=True, stack_info=True)

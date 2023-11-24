@@ -520,7 +520,7 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
     key.region = $region,
     key.createdate = $CreateDate,
     key.consolelink = $consolelink,
-    key.lastuseddate= $lastuseddate
+    key.lastuseddate= $LastUsedDate
     SET key.status = $Status, key.lastupdated = $aws_update_tag
     WITH user,key
     MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
@@ -536,8 +536,8 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
                     consolelink=consolelink,
                     UserName=username,
                     AccessKeyId=key['AccessKeyId'],
-                    lastuseddate=str(key['LastUsedDate']),
-                    CreateDate=str(key['CreateDate']),
+                    LastUsedDate=str(key.get('LastUsedDate','')),
+                    CreateDate=str(key.get('CreateDate','')),
                     Status=key['Status'],
                     region="global",
                     aws_update_tag=aws_update_tag,
