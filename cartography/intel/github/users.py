@@ -9,7 +9,7 @@ import neo4j
 from cartography.intel.github.util import fetch_all
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
-from cartography.util import run_cleanup_job
+
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -113,15 +113,11 @@ def load_organization_users(
 @timeit
 def sync(
         neo4j_session: neo4j.Session,
+        user_data, org_data,
         common_job_parameters: Dict[str, Any],
-        github_api_key: str,
-        github_url: str,
-        organization: str,
 ) -> None:
     logger.info("Syncing GitHub users")
-    user_data, org_data = get(github_api_key, github_url, organization)
     load_organization_users(neo4j_session, user_data, org_data, common_job_parameters)
-    run_cleanup_job('github_users_cleanup.json', neo4j_session, common_job_parameters)
     merge_module_sync_metadata(
         neo4j_session,
         group_type='GitHubOrganization',
