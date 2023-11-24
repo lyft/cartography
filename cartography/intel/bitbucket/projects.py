@@ -26,7 +26,7 @@ def load_projects_data(session: neo4j.Session, project_data:List[Dict],common_jo
 def _load_projects_data(tx: neo4j.Transaction,project_data:List[Dict],common_job_parameters:Dict):
     ingest_workspace="""
     UNWIND $projectData as project
-    MERGE (pro:BitbucketProjects{id: project.uuid})
+    MERGE (pro:BitbucketProject{id: project.uuid})
     ON CREATE SET pro.firstseen = timestamp(),
     pro.created_on = project.created_on
 
