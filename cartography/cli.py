@@ -833,8 +833,6 @@ def run_github(request):
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
-    credentials_json = json.dumps(request['credentials'])
-    credentials=base64.b64encode(credentials_json.encode())
     default_sync = cartography.sync.build_github_sync()
 
 
@@ -844,7 +842,7 @@ def run_github(request):
         neo4j_password=request['neo4j']['pwd'],
         neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
         params=request['params'],
-        github_config=credentials,
+        github_config=request.get('github_config', None),
         gcp_requested_syncs=request.get('services', None),
     )
 
