@@ -43,7 +43,7 @@ def start_github_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
     for auth_data in auth_tokens['organization']:
         try:
             user_data, org_data = cartography.intel.github.users.get( auth_data['token'],auth_data['url'], auth_data['name'])
-            common_job_parameters['Organization_id']=org_data.get('url')
+            common_job_parameters['ORGANIZATION_ID']=org_data.get('url')
             
             cartography.intel.github.users.sync(
                 neo4j_session,
@@ -78,7 +78,7 @@ def start_github_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
 
 
             run_cleanup_job('github_users_cleanup.json', neo4j_session, common_job_parameters)
-            del common_job_parameters['Organization_id']
+            del common_job_parameters['ORGANIZATION_ID']
         except exceptions.RequestException as e:
             logger.error("Could not complete request to the GitHub API: %s", e)
     return common_job_parameters
