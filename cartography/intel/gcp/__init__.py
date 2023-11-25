@@ -29,13 +29,13 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun  \
-        iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage',
+        iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage policyanalyzer',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
-    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage',
+    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage policyanalyzer',
 )
 service_names = Services(
     compute='compute.googleapis.com',
@@ -65,6 +65,8 @@ service_names = Services(
     pubsublite='pubsublite.googleapis.com',
     cloudtasks='cloudtasks.googleapis.com',
     serviceusage='serviceusage.googleapis.com',
+    policyanalyzer='policyanalyzer.googleapis.com',
+    
 )
 
 
@@ -89,6 +91,14 @@ def _get_crm_resource_v1(credentials: GoogleCredentials) -> Resource:
     # cache_discovery=False to suppress extra warnings.
     # See https://github.com/googleapis/google-api-python-client/issues/299#issuecomment-268915510 and related issues
     return googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials, cache_discovery=False)
+
+def _get_policyanalyzer_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a policyanalyzer resource object.
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('policyanalyzer', 'v1', credentials=credentials, cache_discovery=False)
 
 
 def _get_crm_resource_v2(credentials: GoogleCredentials) -> Resource:
@@ -387,6 +397,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         cloudtasks=_get_cloudtasks_resource(credentials),
         spanner=_get_spanner_resource(credentials),
         pubsublite=_get_pubsublite_resource(credentials),
+        policyanalyzer= _get_policyanalyzer_resource(credentials),
     )
 
 
@@ -421,7 +432,7 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 
 def concurrent_execution(
     service: str, service_func: Any, config: Config, resource: Resource,
-    common_job_parameters: Dict, gcp_update_tag: int, project_id: str, crm_v1: Resource,
+    common_job_parameters: Dict, gcp_update_tag: int, project_id: str,policyanalyzer: Resource, crm_v1: Resource,
     crm_v2: Resource, apikey: Resource,
 ):
     logger.info(f"BEGIN processing for service: {service}")
@@ -436,7 +447,7 @@ def concurrent_execution(
     )
 
     if service == 'iam':
-        service_func(Session(neo4j_driver), resource, crm_v1, crm_v2, apikey, project_id,
+        service_func(Session(neo4j_driver), resource, policyanalyzer,crm_v1, crm_v2, apikey, project_id,
                      gcp_update_tag, common_job_parameters)
 
     else:
@@ -473,7 +484,7 @@ def _sync_single_project(
                     executor.submit(
                         concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
                             resources, request,
-                        ), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1, resources.crm_v2, resources.apikey,
+                        ), common_job_parameters, gcp_update_tag, project_id,resources.policyanalyzer, resources.crm_v1, resources.crm_v2, resources.apikey,
                     ),
                 )
 
