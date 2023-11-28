@@ -103,6 +103,18 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
     MERGE (v)-[rel:HAS]->(i)
     ON CREATE SET rel.firstseen = timestamp()
     SET rel.lastupdated = $update_tag
+    WITH vm, v
+    MERGE (osdisk:AzureDisk{id: vm.storage_profile.os_disk.managed_disk.id})
+    ON CREATE SET osdisk.firstseen = timestamp()
+    SET d.lastupdated = $update_tag, d.name = vm.storage_profile.os_disk.name,
+    d.vhd = vm.storage_profile.os_disk.vhd.uri, d.image = vm.storage_profile.os_disk.image.uri,
+    d.size = vm.storage_profile.os_disk.disk_size_gb, d.caching = vm.storage_profile.os_disk.caching,
+    d.createoption = vm.storage_profile.os_disk.create_option, d.write_accelerator_enabled=vm.storage_profile.os_disk.write_accelerator_enabled,
+    d.managed_disk_storage_type=vm.storage_profile.os_disk.managed_disk.storage_account_type, d.is_data_disk = false
+    WITH v, osdisk
+    MERGE (v)-[r:ATTACHED_TO]->(osdisk)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
     """
 
     neo4j_session.run(
@@ -562,7 +574,7 @@ def sync_virtual_machine_scale_sets_extensions(
 def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: List[Dict], update_tag: int) -> None:
     ingest_data_disk = """
     UNWIND $disks AS disk
-    MERGE (d:AzureDataDisk{id: disk.managed_disk.id})
+    MERGE (d:AzureDisk{id: disk.managed_disk.id})
     ON CREATE SET d.firstseen = timestamp(), d.lun = disk.lun
     SET d.lastupdated = $update_tag, d.name = disk.name,
     d.vhd = disk.vhd.uri, d.image = disk.image.uri,
@@ -570,7 +582,7 @@ def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: Lis
     d.region = disk.location,
     d.size = disk.disk_size_gb, d.caching = disk.caching,
     d.createoption = disk.create_option, d.write_accelerator_enabled=disk.write_accelerator_enabled,
-    d.managed_disk_storage_type=disk.managed_disk.storage_account_type
+    d.managed_disk_storage_type=disk.managed_disk.storage_account_type, d.is_data_disk = true
     WITH d
     MATCH (owner:AzureVirtualMachine{id: $VM_ID})
     MERGE (owner)-[r:ATTACHED_TO]->(d)
@@ -763,6 +775,24 @@ def sync_disk(
     cleanup_disks(neo4j_session, common_job_parameters)
 
 
+def _attach_snapshot_disk(neo4j_session: neo4j.Session, snapshot_id: str, disk_id: str, update_tag: int):
+    attach_snapshot_disk = """
+    MATCH (s:AzureSnapshot{id: $snapshot_id})
+    WITH s
+    MATCH (d:AzureDisk{id: $disk_id})
+    WITH s, d
+    MERGE (s)-[r:ATTACHED_TO]->(d)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    neo4j_session.run(
+        attach_snapshot_disk,
+        snapshot_id=snapshot_id,
+        disk_id=disk_id,
+        update_tag=update_tag,
+    )
+
+
 def sync_snapshot(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict, regions: list
@@ -770,6 +800,11 @@ def sync_snapshot(
     snapshots = get_snapshots_list(credentials, subscription_id, regions, common_job_parameters)
 
     load_snapshots(neo4j_session, subscription_id, snapshots, update_tag)
+    for snapshot in snapshots:
+        if snapshot.get("creation_data").get("create_option", "") == "Copy":
+            _attach_snapshot_disk(neo4j_session, snapshot["id"],
+                                  snapshot["creation_data"]["source_resource_id"], update_tag)
+
     cleanup_snapshot(neo4j_session, common_job_parameters)
 
 
