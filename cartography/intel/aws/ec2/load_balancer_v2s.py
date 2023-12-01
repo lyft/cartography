@@ -157,10 +157,10 @@ def load_load_balancer_v2_target_groups(
     ingest_instances = """
     MATCH (elbv2:LoadBalancerV2{id: $ID}), (instance:EC2Instance{instanceid: $INSTANCE_ID})
     MERGE (elbv2)-[r:EXPOSE]->(instance)
-    ON CREATE SET r.firstseen = timestamp(),
-                  r.target_group_arn = $TARGET_GROUP_ARN
+    ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $update_tag,
-        r.port = $PORT, r.protocol = $PROTOCOL
+        r.port = $PORT, r.protocol = $PROTOCOL,
+        r.target_group_arn = $TARGET_GROUP_ARN
     WITH instance
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(instance)
