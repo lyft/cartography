@@ -706,7 +706,7 @@ class CLI:
         # Run cartography
         try:
             output = cartography.sync.run_with_config(self.sync, config)
-
+        
             return {
                 "status": "success",
                 "message": f"output - {output}",
@@ -833,8 +833,6 @@ def run_github(request):
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
-    credentials_json = json.dumps(request['credentials'])
-    credentials=base64.b64encode(credentials_json.encode())
     default_sync = cartography.sync.build_github_sync()
 
 
@@ -844,8 +842,30 @@ def run_github(request):
         neo4j_password=request['neo4j']['pwd'],
         neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
         params=request['params'],
-        github_config=credentials,
+        github_config=request.get('github_config', None),
         gcp_requested_syncs=request.get('services', None),
+    )
+
+    if request['logging']['mode'] == "verbose":
+        config.verbose = True
+    elif request['logging']['mode'] == "quiet":
+        config.quiet = True
+
+    return CLI(default_sync, prog='cartography').process(config)
+
+def run_bitbucket(request):
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger('botocore').setLevel(logging.WARNING)
+    logging.getLogger('neo4j').setLevel(logging.WARNING)
+
+    default_sync = cartography.sync.build_bitbucket_sync()
+    config = Config(
+        request['neo4j']['uri'],
+        neo4j_user=request['neo4j']['user'],
+        neo4j_password=request['neo4j']['pwd'],
+        neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
+        params=request['params'],
+        bitbucket_access_token=request['bitbucket']['access_token'],
     )
 
     if request['logging']['mode'] == "verbose":
