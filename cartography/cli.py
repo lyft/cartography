@@ -758,7 +758,8 @@ def run_aws(request):
         credentials=request['credentials'],
         params=request['params'],
         aws_requested_syncs=request.get('services', None),
-        update_tag=request.get('updateTag', None)
+        update_tag=request.get('updateTag', None),
+        refresh_entitlements=request.get('refreshEntitlements', False)
     )
 
     if request['logging']['mode'] == "verbose":
@@ -820,6 +821,7 @@ def run_gcp(request):
         credentials=request['credentials'],
         params=request['params'],
         gcp_requested_syncs=request.get('services', None),
+        refresh_entitlements=request.get('refreshEntitlements', False)
     )
 
     if request['logging']['mode'] == "verbose":
