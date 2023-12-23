@@ -404,7 +404,7 @@ def _attach_associate_roles(neo4j_session: neo4j.Session, cluster: Dict, aws_upd
     for role in cluster.get('AssociatedRoles', []):
         neo4j_session.run(
             attach_cluster_to_role,
-            ClusterArn=cluster['DBClusterArn'],
+            DBClusterArn=cluster['DBClusterArn'],
             RoleArn=role['RoleArn'],
             aws_update_tag=aws_update_tag,
         )
@@ -425,7 +425,7 @@ def _attach_ec2_security_groups_cluster(neo4j_session: neo4j.Session, cluster: D
     """
     neo4j_session.run(
         attach_rds_to_group,
-        ClusterArn=cluster['DBClusterArn'],
+        DBClusterArn=cluster['DBClusterArn'],
         VpcSecurityGroups=cluster['VpcSecurityGroups'],
         aws_update_tag=aws_update_tag,
     )
@@ -434,16 +434,16 @@ def _attach_ec2_security_groups_cluster(neo4j_session: neo4j.Session, cluster: D
 @timeit
 def _attach_db_subnet_group(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
     attach_cluster_to_role = """
-    MATCH (c:RDSCluster{id:$ClusterArn})
-    MERGE (p:DBSubnetGroup{name:$DBSubnetgroup})
+    MATCH (c:RDSCluster{id:$DBClusterArn})
+    MERGE (p:DBSubnetGroup{name:$DBSubnetGroup})
     MERGE (c)-[s:ATTACH_TO]->(p)
     ON CREATE SET s.firstseen = timestamp()
     SET s.lastupdated = $aws_update_tag
     """
     neo4j_session.run(
         attach_cluster_to_role,
-        ClusterArn=cluster['DBClusterArn'],
-        DBSubnetgroup=cluster['DBSubnetGroup'],
+        DBClusterArn=cluster['DBClusterArn'],
+        DBSubnetGroup=cluster['DBSubnetGroup'],
         aws_update_tag=aws_update_tag,
     )
 

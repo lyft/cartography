@@ -52,13 +52,15 @@ def get_sqs_queue_attributes(
         try:
             response = client.get_queue_attributes(QueueUrl=queue_url['name'], AttributeNames=['All'])
         except ClientError as e:
-            if e.response['Error']['Code'] == 'AWS.SimpleQueueService.NonExistentQueue':
+            if e.response['Error']['Code'] in ('AWS.SimpleQueueService.NonExistentQueue', 'AccessDenied'):
                 logger.warning(f"Failed to retrieve SQS queue {queue_url['name']} - Queue does not exist error")
                 continue
             else:
                 raise
+
         queue_attributes[queue_url['name']] = response['Attributes']
         queue_attributes[queue_url['name']]['region'] = queue_url['region']
+
     return queue_attributes
 
 

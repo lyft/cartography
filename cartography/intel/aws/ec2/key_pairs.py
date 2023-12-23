@@ -1,18 +1,18 @@
 import logging
 import time
-from typing import Dict
-from typing import List
+from typing import Dict, List
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
-from .util import get_botocore_config
 from cartography.graph.job import GraphJob
 from cartography.models.aws.ec2.keypairs import EC2KeyPairSchema
-from cartography.util import aws_handle_regions
-from cartography.util import timeit
-from cloudconsolelink.clouds.aws import AWSLinker
-from botocore.exceptions import ClientError
+from cartography.util import aws_handle_regions, timeit
+
+from .util import get_botocore_config
+
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
 
@@ -29,7 +29,7 @@ def get_ec2_key_pairs(boto3_session: boto3.session.Session, region: str) -> List
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
             logger.warning(
-                f'ec2:describe_key_pairs failed with AccessDeniedException; continuing sync.',
+                'ec2:describe_key_pairs failed with AccessDeniedException; continuing sync.',
                 exc_info=True,
             )
         else:
@@ -61,8 +61,10 @@ def load_ec2_key_pairs(
         consolelink = ''
         try:
             consolelink = aws_console_link.get_console_link(arn=key_pair_arn)
-        except Exception as e:
-            print(e)
+
+        except Exception as ex:
+            logger.error('failed to generate console link for key pair', { "key": key_pair_arn }, ex)
+
         neo4j_session.run(
             ingest_key_pair,
             ARN=key_pair_arn,
