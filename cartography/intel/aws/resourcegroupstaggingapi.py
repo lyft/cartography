@@ -213,7 +213,7 @@ def load_tags(
     current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
-    for tag_data_batch in batch(tag_data, size=100):
+    for tag_data_batch in batch(tag_data, size=500):
         neo4j_session.write_transaction(
             _load_tags_tx,
             tag_data=tag_data_batch,

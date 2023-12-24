@@ -27,13 +27,14 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dic
         snapshots: List[Dict] = []
         for page in paginator.paginate(**query_params):
             snapshots.extend(page['Snapshots'])
+
         for snapshot in snapshots:
             snapshot['region'] = region
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
             logger.warning(
-                f'ec2:describe_snapshots failed with AccessDeniedException; continuing sync.',
+                'ec2:describe_snapshots failed with AccessDeniedException; continuing sync.',
                 exc_info=True,
             )
         else:
@@ -44,7 +45,7 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dic
 
 @timeit
 def load_snapshots(
-        neo4j_session: neo4j.Session, data: List[Dict],region:str ,current_aws_account_id: str, update_tag: int,
+        neo4j_session: neo4j.Session, data: List[Dict],current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_snapshots = """
     UNWIND $snapshots_list as snapshot
@@ -66,7 +67,7 @@ def load_snapshots(
     # these values to string.
     for snapshot in data:
         snapshot['StartTime'] = str(snapshot['StartTime'])
-        snapshot['Arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:snapshot/{snapshot['SnapshotId']}"
+        snapshot['Arn'] = f"arn:aws:ec2:{snapshot.get('region')}:{current_aws_account_id}:snapshot/{snapshot['SnapshotId']}"
         snapshot['consolelink'] = aws_console_link.get_console_link(arn=snapshot['Arn'])
 
     neo4j_session.run(

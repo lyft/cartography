@@ -417,7 +417,7 @@ def _attach_ec2_security_groups_cluster(neo4j_session: neo4j.Session, cluster: D
     """
     attach_rds_to_group = """
     UNWIND $VpcSecurityGroups as rds_sg
-        MATCH (rds:RDSCluster{id: $ClusterArn})
+        MATCH (rds:RDSCluster{id: $DBClusterArn})
         MERGE (sg:EC2SecurityGroup{id: rds_sg.VpcSecurityGroupId})
         MERGE (rds)-[m:MEMBER_OF_EC2_SECURITY_GROUP]->(sg)
         ON CREATE SET m.firstseen = timestamp()
