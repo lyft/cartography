@@ -813,10 +813,9 @@ def sync_virtual_machine(
     vm_list = get_vm_list(credentials, subscription_id, regions, common_job_parameters)
 
     load_vms(neo4j_session, subscription_id, vm_list, update_tag)
-    cleanup_virtual_machine(neo4j_session, common_job_parameters)
     sync_virtual_machine_extensions(neo4j_session, client, vm_list, update_tag, common_job_parameters)
-    # sync_virtual_machine_available_sizes(neo4j_session, client, vm_list, update_tag, common_job_parameters)
-
+    cleanup_virtual_machine(neo4j_session, common_job_parameters)
+    
 
 def sync_disk(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,

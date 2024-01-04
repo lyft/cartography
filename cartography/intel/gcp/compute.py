@@ -14,6 +14,7 @@ from typing import Optional
 from typing import Set
 
 import neo4j
+from cartography.util import batch
 from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
@@ -844,27 +845,9 @@ def _parse_port_string_to_rule(port: Optional[str], protocol: str, fw_partial_ur
 
 @timeit
 def load_gcp_instances(session: neo4j.Session, instances_list: List[Dict], gcp_update_tag: int) -> None:
-    iteration_size = 500
-    total_items = len(instances_list)
-    total_iterations = math.ceil(len(instances_list) / iteration_size)
-    logger.info(f"total instances: {total_items}")
-    logger.info(f"total iterations: {total_iterations}")
-
-    for counter in range(0, total_iterations):
-        start = iteration_size * (counter)
-
-        if (start + iteration_size) >= total_items:
-            end = total_items
-            paginated_instances = instances_list[start:]
-
-        else:
-            end = start + iteration_size
-            paginated_instances = instances_list[start:end]
-
+    logger.info(f"Loading instances  {len(instances_list)}")
+    for paginated_instances in batch(instances_list, size=500):
         session.write_transaction(load_gcp_instances_tx, paginated_instances, gcp_update_tag)
-
-        logger.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_instances)}")
-
     for instance in instances_list:
         _attach_instance_tags(session, instance, gcp_update_tag)
         _attach_gcp_nics(session, instance, gcp_update_tag)
