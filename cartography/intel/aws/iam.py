@@ -260,7 +260,7 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
         access_keys = client.list_access_keys(UserName=username)
         for access_key in access_keys["AccessKeyMetadata"]:
             last_used=client.get_access_key_last_used(AccessKeyId=access_key.get('AccessKeyId'))
-            access_key['LastUsedDate']=last_used.get('AccessKeyLastUsed',{}).get('LastUsedDate')
+            access_key['LastUsedDate']=last_used.get('AccessKeyLastUsed',{}).get('LastUsedDate',None)
 
     except ClientError as e:
         if _is_common_exception(e, username):
@@ -393,7 +393,7 @@ def load_roles(
             ingest_role,
             Arn=role["Arn"],
             consolelink=aws_console_link.get_console_link(arn=role["Arn"]),
-            RoleId=role["RoleId"],
+            RoleId=role.get("RoleId",None),
             CreateDate=str(role["CreateDate"]),
             RoleName=role["RoleName"],
             Path=role["Path"],

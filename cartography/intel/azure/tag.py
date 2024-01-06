@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import neo4j
 from neo4j import GraphDatabase
 from cartography.graph.session import Session
+from cartography.util import batch
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.resource import ResourceManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
@@ -26,26 +27,9 @@ def load_resource_groups(session: neo4j.Session, subscription_id: str, data_list
 
 
 def load_tags(session: neo4j.Session, data_list: List[Dict], update_tag: int, common_job_parameters: Dict) -> None:
-    iteration_size = 100
-    total_items = len(data_list)
-    total_iterations = math.ceil(len(data_list) / iteration_size)
-    logger.info(f"total instances: {total_items}")
-    logger.info(f"total iterations: {total_iterations}")
-
-    for counter in range(0, total_iterations):
-        start = iteration_size * (counter)
-
-        if (start + iteration_size) >= total_items:
-            end = total_items
-            paginated_tags = data_list[start:]
-
-        else:
-            end = start + iteration_size
-            paginated_tags = data_list[start:end]
-
+    logger.info(f"Loading instances  {len(data_list)}")
+    for paginated_tags in batch(data_list, size=500):
         session.write_transaction(_load_tags_tx, paginated_tags, update_tag, common_job_parameters)
-
-        logger.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_tags)}")
 
 
 @timeit
