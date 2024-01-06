@@ -248,7 +248,30 @@ def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
     roles: List[Dict] = []
     for page in paginator.paginate():
         roles.extend(page['Roles'])
+    for role in roles:
+        role_data = client.get_role(RoleName=role.get("RoleName")).get("Role")
+        role['RoleLastUsed'] = role_data.get("RoleLastUsed")
     return {'Roles': roles}
+
+
+@timeit
+def get_external_access_roles(boto3_session: boto3.session.Session) -> List[Dict]:
+    try:
+        analyzer_client = boto3_session.client('accessanalyzer')
+        # AWS allow to create only one analyzer per account per region with type (ACCOUNT, ORGANIZATION, ACCOUNT_UNUSED_ACCESS, and ORGANIZTAION_UNUSED_ACCESS) thats why uses analyzers_list index 0
+        analyzers_list = analyzer_client.list_analyzers(type='ACCOUNT').get("analyzers", [])
+        findings: List = []
+        if analyzers_list:
+            paginator = analyzer_client.get_paginator('list_findings_v2')
+            for page in paginator.paginate(analyzerArn=analyzers_list[0].get("arn"), filter={'resourceType': {'eq': ['AWS::IAM::Role']}}):
+                findings.extend(page.get("findings", []))
+            return findings
+        else:
+            analyzer_client.create_analyzer(analyzerName="cdx_analyzer", type="ACCOUNT", tags={'owner': 'cloudanix', 'project': 'iam-entitlements-analyzer'})
+            return findings
+    except (ClientError, Exception) as e:
+        logger.error(f'Failed to get external roles. {e}')
+        return []
 
 
 @timeit
@@ -259,8 +282,8 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
     try:
         access_keys = client.list_access_keys(UserName=username)
         for access_key in access_keys["AccessKeyMetadata"]:
-            last_used=client.get_access_key_last_used(AccessKeyId=access_key.get('AccessKeyId'))
-            access_key['LastUsedDate']=last_used.get('AccessKeyLastUsed',{}).get('LastUsedDate')
+            last_used = client.get_access_key_last_used(AccessKeyId=access_key.get('AccessKeyId'))
+            access_key['LastUsedDate'] = last_used.get('AccessKeyLastUsed', {}).get('LastUsedDate')
 
     except ClientError as e:
         if _is_common_exception(e, username):
@@ -357,7 +380,7 @@ def _parse_principal_entries(principal: Dict) -> List[Tuple[Any, Any]]:
 
 @timeit
 def load_roles(
-    neo4j_session: neo4j.Session, roles: List[Dict], current_aws_account_id: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, roles: List[Dict], external_access_roles: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_role = """
     MERGE (rnode:AWSRole{arn: $Arn})
@@ -366,7 +389,7 @@ def load_roles(
     rnode.consolelink = $consolelink,
     rnode.createdate = $CreateDate
     SET rnode.name = $RoleName, rnode.path = $Path,
-    rnode.lastuseddate = $LastUsedDate, rnode.lastusedregion = $LastUsedRegion
+    rnode.lastuseddate = $LastUsedDate, rnode.lastusedregion = $LastUsedRegion, rnode.external_access = $ExternalAccess
     SET rnode.lastupdated = $aws_update_tag
     WITH rnode
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
@@ -388,6 +411,7 @@ def load_roles(
 
     # TODO support conditions
     logger.info(f"Loading {len(roles)} IAM roles to the graph.")
+    external_access_roles_arn_list = [d['resource'] for d in external_access_roles if 'resource' in d]
     for role in roles:
         neo4j_session.run(
             ingest_role,
@@ -396,6 +420,7 @@ def load_roles(
             RoleId=role["RoleId"],
             CreateDate=str(role["CreateDate"]),
             RoleName=role["RoleName"],
+            ExternalAccess=True if role["Arn"] in external_access_roles_arn_list else None,
             Path=role["Path"],
             region="global",
             LastUsedDate=role["RoleLastUsed"].get('LastUsedDate') if 'RoleLastUsed' in role else None,
@@ -536,8 +561,8 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
                     consolelink=consolelink,
                     UserName=username,
                     AccessKeyId=key['AccessKeyId'],
-                    LastUsedDate=str(key.get('LastUsedDate','')),
-                    CreateDate=str(key.get('CreateDate','')),
+                    LastUsedDate=str(key.get('LastUsedDate', '')),
+                    CreateDate=str(key.get('CreateDate', '')),
                     Status=key['Status'],
                     region="global",
                     aws_update_tag=aws_update_tag,
@@ -776,10 +801,11 @@ def sync_roles(
 ) -> None:
     logger.info("Syncing IAM roles for account '%s'.", current_aws_account_id)
     data = get_role_list_data(boto3_session)
+    external_access_roles = get_external_access_roles(boto3_session)
 
     logger.info(f"Total Roles: {len(data['Roles'])}")
 
-    load_roles(neo4j_session, data['Roles'], current_aws_account_id, aws_update_tag)
+    load_roles(neo4j_session, data['Roles'], external_access_roles, current_aws_account_id, aws_update_tag)
 
     sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
 
