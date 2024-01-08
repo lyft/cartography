@@ -722,7 +722,7 @@ def load_snapshots(neo4j_session: neo4j.Session, subscription_id: str, snapshots
     s.type = snapshot.type, s.location = snapshot.location,
     s.consolelink = snapshot.consolelink,
     s.region = snapshot.location
-    SET s.lastupdated = $update_tag, s.name = snapshot.name,
+    SET s.lastupdated = $update_tag, s.name = snapshot.name, s.time_created = snapshot.time_created,
     s.createoption = snapshot.creation_data.create_option, s.disksizegb = snapshot.disk_size_gb,
     s.encryption = snapshot.encryption_settings_collection.enabled, s.incremental = snapshot.incremental,
     s.network_access_policy = snapshot.network_access_policy, s.ostype = snapshot.os_type,
