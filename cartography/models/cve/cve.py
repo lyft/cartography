@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 
 from cartography.models.core.common import PropertyRef
@@ -10,6 +9,7 @@ from cartography.models.core.relationships import LinkDirection
 from cartography.models.core.relationships import make_target_node_matcher
 from cartography.models.core.relationships import OtherRelationships
 from cartography.models.core.relationships import TargetNodeMatcher
+
 
 @dataclass(frozen=True)
 class CVENodeProperties(CartographyNodeProperties):
@@ -36,9 +36,11 @@ class CVENodeProperties(CartographyNodeProperties):
     vuln_status: PropertyRef = PropertyRef('vulnStatus')
     lastupdated: PropertyRef = PropertyRef('lastupdated')
 
+
 @dataclass(frozen=True)
 class CVEtoCVEFeedRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
 
 @dataclass(frozen=True)
 # (:CVE)<-[:RESOURCE]-(:CVEFeed)
@@ -51,9 +53,11 @@ class CVEtoCVEFeedRelSchema(CartographyRelSchema):
     rel_label: str = "RESOURCE"
     properties: CVEtoCVEFeedRelProperties = CVEtoCVEFeedRelProperties()
 
+
 @dataclass(frozen=True)
 class CVEToSpotlightVulnerabilityRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
+
 
 @dataclass(frozen=True)
 # (:CVE)<-[:HAS_CVE]-(:SpotlightVulnerability)
@@ -65,6 +69,7 @@ class CVEToSpotlightVulnerabilityRel(CartographyRelSchema):
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "HAS_CVE"
     properties: CVEToSpotlightVulnerabilityRelProperties = CVEToSpotlightVulnerabilityRelProperties()
+
 
 @dataclass(frozen=True)
 class CVESchema(CartographyNodeSchema):
