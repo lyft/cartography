@@ -232,6 +232,20 @@ def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
 
 
 @timeit
+def transform_users_data(boto3_session: boto3.session.Session, users: List[Dict]) -> Dict:
+    client = boto3_session.client('iam')
+    for user in users:
+        try:
+            client.get_login_profile(UserName=user["UserName"])
+            user["consoleLoginEnabled"] = True
+        except client.exceptions.NoSuchEntityException:
+            user["consoleLoginEnabled"] = False
+        except Exception as e:
+            user["consoleLoginEnabled"] = False
+    return {'Users': users}
+
+
+@timeit
 def get_group_list_data(boto3_session: boto3.session.Session) -> Dict:
     client = boto3_session.client('iam')
     paginator = client.get_paginator('list_groups')
@@ -306,6 +320,7 @@ def load_users(
     unode.createdate = $CREATE_DATE
     SET unode.name = $USERNAME, unode.path = $PATH, unode.passwordlastused = $PASSWORD_LASTUSED,
     unode.region = $region,
+    unode.consoleloginenabled = $CONSOLELOGINENABLED,
     unode.lastupdated = $aws_update_tag
     WITH unode
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
@@ -323,6 +338,7 @@ def load_users(
             CREATE_DATE=str(user["CreateDate"]),
             USERNAME=user["UserName"],
             PATH=user["Path"],
+            CONSOLELOGINENABLED=user.get("consoleLoginEnabled", False),
             PASSWORD_LASTUSED=str(user.get("PasswordLastUsed", "")),
             AWS_ACCOUNT_ID=current_aws_account_id,
             region="global",
@@ -723,6 +739,8 @@ def sync_users(
     data = get_user_list_data(boto3_session)
 
     logger.info(f"Total Users: {len(data['Users'])}")
+
+    data = transform_users_data(boto3_session, data['Users'])
 
     load_users(neo4j_session, data['Users'], current_aws_account_id, aws_update_tag)
 
