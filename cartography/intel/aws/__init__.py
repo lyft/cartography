@@ -342,9 +342,9 @@ def _sync_multiple_accounts(
         # _autodiscover_accounts(neo4j_session, boto3_session, account_id, config.update_tag, common_job_parameters)
 
         # INFO: fetching active regions for customers instead of reading from parameters
-        if len(config.params.get('regions',[])) > 0:
+        if len(config.params.get('regions', [])) > 0:
             regions = config.params.get('regions', [])
-        
+
         else:
             regions = list_all_regions(boto3_session, logger)
 
@@ -386,6 +386,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "AWS_ACCOUNT_ID": config.params['workspace']['account_id'],
         "pagination": {},
         "PUBLIC_PORTS": ['20', '21', '22', '3306', '3389', '4333'],
+        "AWS_INTERNAL_ACCOUNTS": config.aws_internal_accounts
     }
 
     try:
