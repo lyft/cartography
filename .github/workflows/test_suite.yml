@@ -35,7 +35,7 @@ jobs:
             --publish 7474:7474 \
             --publish 7473:7473 \
             --publish 7687:7687 \
-            neo4j:4.4.30-community
+            neo4j:4.4-community
       - uses: actions/setup-python@v2
         with:
           python-version: "3.10"
