@@ -289,6 +289,45 @@ def get_external_access_roles(boto3_session: boto3.session.Session) -> List[Dict
 
 
 @timeit
+def transform_roles(boto3_session: boto3.session.Session, roles: List[Dict], external_access_roles: List[Dict], common_job_parameters: Dict) -> Dict:
+    external_access_roles_arn_list = [d['resource'] for d in external_access_roles if 'resource' in d]
+
+    try:
+        client = boto3_session.client('organizations')
+        response = client.list_accounts()
+        internal_accounts = [account["Id"] for account in response["Accounts"]]
+    except Exception as e:
+        internal_accounts = []
+
+    for role in roles:
+        ExternalAccess = None
+        ExternalAccounts = []
+        if role['arn'] in external_access_roles_arn_list:
+            for statement in role["AssumeRolePolicyDocument"]["Statement"]:
+                principal_entries = _parse_principal_entries(statement["Principal"])
+                for principal_type, principal_value in principal_entries:
+                    if principal_type == "AWS":
+                        try:
+                            account_id = principal_value.split(':')[4]
+                        except Exception as e:
+                            account_id = principal_value
+                        if internal_accounts:
+                            if account_id not in internal_accounts:
+                                ExternalAccess = True
+                                ExternalAccounts.append(account_id)
+
+                        if common_job_parameters["AWS_INTERNAL_ACCOUNTS"]:
+                            if account_id not in common_job_parameters["AWS_INTERNAL_ACCOUNTS"]:
+                                ExternalAccess = True
+                                ExternalAccounts.append(account_id)
+
+        role["ExternalAccess"] = ExternalAccess
+        role["ExternalAccounts"] = ExternalAccounts
+
+    return {'Roles': roles}
+
+
+@timeit
 def get_account_access_key_data(boto3_session: boto3.session.Session, username: str) -> Dict:
     client = boto3_session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
@@ -396,7 +435,7 @@ def _parse_principal_entries(principal: Dict) -> List[Tuple[Any, Any]]:
 
 @timeit
 def load_roles(
-    neo4j_session: neo4j.Session, roles: List[Dict], external_access_roles: List[Dict], current_aws_account_id: str, aws_update_tag: int,
+    neo4j_session: neo4j.Session, roles: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_role = """
     MERGE (rnode:AWSRole{arn: $Arn})
@@ -405,7 +444,9 @@ def load_roles(
     rnode.consolelink = $consolelink,
     rnode.createdate = $CreateDate
     SET rnode.name = $RoleName, rnode.path = $Path,
-    rnode.lastuseddate = $LastUsedDate, rnode.lastusedregion = $LastUsedRegion, rnode.external_access = $ExternalAccess
+    rnode.lastuseddate = $LastUsedDate, rnode.lastusedregion = $LastUsedRegion,
+    rnode.external_access = $ExternalAccess,
+    rnode.external_accounts = $ExternalAccounts
     SET rnode.lastupdated = $aws_update_tag
     WITH rnode
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
@@ -427,7 +468,6 @@ def load_roles(
 
     # TODO support conditions
     logger.info(f"Loading {len(roles)} IAM roles to the graph.")
-    external_access_roles_arn_list = [d['resource'] for d in external_access_roles if 'resource' in d]
     for role in roles:
         neo4j_session.run(
             ingest_role,
@@ -436,7 +476,8 @@ def load_roles(
             RoleId=role["RoleId"],
             CreateDate=str(role["CreateDate"]),
             RoleName=role["RoleName"],
-            ExternalAccess=True if role["Arn"] in external_access_roles_arn_list else None,
+            ExternalAccess=role["ExternalAccess"],
+            ExternalAccounts=role["ExternalAccounts"] if role["ExternalAccess"] else None,
             Path=role["Path"],
             region="global",
             LastUsedDate=role["RoleLastUsed"].get('LastUsedDate') if 'RoleLastUsed' in role else None,
@@ -820,10 +861,11 @@ def sync_roles(
     logger.info("Syncing IAM roles for account '%s'.", current_aws_account_id)
     data = get_role_list_data(boto3_session)
     external_access_roles = get_external_access_roles(boto3_session)
+    data = transform_roles(boto3_session, data['Roles'], external_access_roles, common_job_parameters)
 
     logger.info(f"Total Roles: {len(data['Roles'])}")
 
-    load_roles(neo4j_session, data['Roles'], external_access_roles, current_aws_account_id, aws_update_tag)
+    load_roles(neo4j_session, data['Roles'], current_aws_account_id, aws_update_tag)
 
     sync_role_inline_policies(current_aws_account_id, boto3_session, data, neo4j_session, aws_update_tag)
 

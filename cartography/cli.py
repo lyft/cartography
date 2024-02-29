@@ -652,7 +652,8 @@ def run_aws(request):
         params=request['params'],
         aws_requested_syncs=request.get('services', None),
         update_tag=request.get('updateTag', None),
-        refresh_entitlements=request.get('refreshEntitlements', False)
+        refresh_entitlements=request.get('refreshEntitlements', False),
+        aws_internal_accounts=request.get('awsInternalAccounts', None)
     )
 
     if request['logging']['mode'] == "verbose":
