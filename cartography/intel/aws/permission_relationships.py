@@ -333,7 +333,7 @@ def parse_permission_relationships_file(file_path: str) -> List[Any]:
         if not os.path.isabs(file_path):
             file_path = os.path.join(os.getcwd(), file_path)
         with open(file_path) as f:
-            relationship_mapping = yaml.load(f, Loader=yaml.FullLoader)
+            relationship_mapping = yaml.load(f, Loader=yaml.SafeLoader)
         return relationship_mapping
     except FileNotFoundError:
         logger.warning(

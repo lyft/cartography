@@ -78,7 +78,10 @@ def sync(
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
     for region in regions:
-        logger.info("Syncing Secrets Manager for region '%s' in account '%s'.", region, current_aws_account_id)
+        logger.info(  # nosemgrep
+            "Syncing Secrets Manager for region '%s' in account '%s'.",
+            region, current_aws_account_id,
+        )
         secrets = get_secret_list(boto3_session, region)
         load_secrets(neo4j_session, secrets, region, current_aws_account_id, update_tag)
     cleanup_secrets(neo4j_session, common_job_parameters)

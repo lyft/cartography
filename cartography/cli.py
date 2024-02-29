@@ -540,10 +540,10 @@ class CLI:
         if config.neo4j_user:
             config.neo4j_password = None
             if config.neo4j_password_prompt:
-                logger.info("Reading password for Neo4j user '%s' interactively.", config.neo4j_user)
+                logger.info("Reading password for Neo4j user '%s' interactively.", config.neo4j_user)  # nosemgrep
                 config.neo4j_password = getpass.getpass()
             elif config.neo4j_password_env_var:
-                logger.debug(
+                logger.debug(  # nosemgrep
                     "Reading password for Neo4j user '%s' from environment variable '%s'.",
                     config.neo4j_user,
                     config.neo4j_password_env_var,
@@ -565,7 +565,7 @@ class CLI:
 
         # Azure config
         if config.azure_sp_auth and config.azure_client_secret_env_var:
-            logger.debug(
+            logger.debug(  # nosemgrep
                 "Reading Client Secret for Azure Service Principal Authentication from environment variable %s",
                 config.azure_client_secret_env_var,
             )
@@ -606,7 +606,7 @@ class CLI:
             if config.jamf_user:
                 config.jamf_password = None
                 if config.jamf_password_env_var:
-                    logger.debug(
+                    logger.debug(  # nosemgrep
                         "Reading password for Jamf user '%s' from environment variable '%s'.",
                         config.jamf_user,
                         config.jamf_password_env_var,
