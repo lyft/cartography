@@ -1,0 +1,14 @@
+{
+	"statements": [
+		{
+			"query": "MATCH (service:ECSService)<-[:HAS_SERVICE]-(:ECSCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE EXISTS(service.exposed_internet) WITH service LIMIT $LIMIT_SIZE REMOVE service.exposed_internet, service.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (service:ECSService)<-[:HAS_SERVICE]-(:ECSCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE 'ENABLED' in service.assign_public_ip SET service.exposed_internet = true ,(CASE WHEN NOT 'assign_public_ip' IN coalesce(service.exposed_internet_type , []) THEN service END).exposed_internet_type = coalesce(service.exposed_internet_type , []) + 'assign_public_ip';",
+            "iterative": false
+		}
+	],
+	"name": "aws ECS Service asset internet exposure"
+}

@@ -248,6 +248,7 @@ def load_ecs_services(
             s.deployment_config_minimum_healthy_percent = service.deploymentConfiguration.minimumHealthyPercent,
             s.role_arn = service.roleArn,
             s.created_at = service.createdAt,
+            s.assign_public_ip=service.networkConfiguration.assignPublicIp,
             s.health_check_grace_period_seconds = service.healthCheckGracePeriodSeconds,
             s.created_by = service.createdBy,
             s.enable_ecs_managed_tags = service.enableECSManagedTags,
