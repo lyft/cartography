@@ -11,10 +11,10 @@ DESCRIBE_SERVERS = [
                 "properties": {
                     "provisioning_state": "Ready",
                     "private_endpoint": {
-                        "id": "private-endpoint-name"
-                    }
-                }
-            }
+                        "id": "private-endpoint-name",
+                    },
+                },
+            },
         ],
         "version": "12.0",
         "state": "Ready",
@@ -355,5 +355,5 @@ DESCRIBE_FIREWALL_RULES = [
         "server_id": server2,
         "start_ip_address": "14.65.46.34",
         "end_ip_address": "0.0.0.0",
-    }
+    },
 ]

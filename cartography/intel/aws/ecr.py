@@ -1,11 +1,12 @@
-import time
 import logging
+import time
 from typing import Any
 from typing import Dict
 from typing import List
-import time
+
 import boto3
 import neo4j
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions
 from cartography.util import batch
@@ -13,10 +14,10 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 from cartography.util import to_asynchronous
 from cartography.util import to_synchronous
-from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
+
 
 @timeit
 @aws_handle_regions

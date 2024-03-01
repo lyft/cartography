@@ -10,8 +10,8 @@ from azure.mgmt.containerservice import ContainerServiceClient
 from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
-from cartography.util import run_cleanup_job
 from cartography.util import get_azure_resource_group_name
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,8 @@ def get_aks_list(credentials: Credentials, subscription_id: str, regions: list, 
             aks['resource_group'] = get_azure_resource_group_name(aks.get('id'))
             aks['publicNetworkAccess'] = aks.get('properties', {}).get('public_network_access', 'Disabled')
             aks['consolelink'] = azure_console_link.get_console_link(
-                id=aks['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=aks['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 aks_data.append(aks)
             else:
@@ -138,7 +139,7 @@ def _attach_resource_group_aks(tx: neo4j.Transaction, aks_id:str,resource_group:
         resource_group=resource_group,
         update_tag=update_tag,
     )
-    
+
 
 def cleanup_aks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_aks_cleanup.json', neo4j_session, common_job_parameters)
@@ -146,7 +147,7 @@ def cleanup_aks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> No
 
 def sync_aks(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     aks_list = get_aks_list(credentials, subscription_id, regions, common_job_parameters)
 
@@ -162,7 +163,8 @@ def get_container_registries_list(client: ContainerRegistryManagementClient, reg
         for registry in container_registries_list:
             registry['resource_group'] = get_azure_resource_group_name(registry.get('id'))
             registry['consolelink'] = azure_console_link.get_console_link(
-                id=registry['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=registry['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 registry_data.append(registry)
             else:
@@ -229,7 +231,7 @@ def cleanup_container_registries(neo4j_session: neo4j.Session, common_job_parame
 
 def sync_container_registries(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     client = get_container_registry_Client(credentials, subscription_id)
     container_registries_list = get_container_registries_list(client, regions, common_job_parameters)
@@ -252,7 +254,7 @@ def sync_container_registries(
 
 @timeit
 def get_container_registry_replications_list(
-    client: ContainerRegistryManagementClient, container_registries_list: List[Dict], common_job_parameters: Dict
+    client: ContainerRegistryManagementClient, container_registries_list: List[Dict], common_job_parameters: Dict,
 ) -> List[Dict]:
     try:
         container_registry_replications_list: List[Dict] = []
@@ -271,7 +273,8 @@ def get_container_registry_replications_list(
             replication['resource_group'] = get_azure_resource_group_name(replication.get('id'))
             replication['container_registry_id'] = replication['id'][:replication['id'].index("/replications")]
             replication['consolelink'] = azure_console_link.get_console_link(
-                id=replication['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=replication['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
 
         return container_registry_replications_list
 
@@ -309,7 +312,7 @@ def _load_container_registry_replications_tx(
     for container_registry_replication in container_registry_replications_list:
         resource_group = get_azure_resource_group_name(container_registry_replication.get('id'))
         _attach_resource_group_container_replication(tx,container_registry_replication['id'],resource_group,update_tag=update_tag)
-    
+
 def _attach_resource_group_container_replication(tx: neo4j.Transaction, container_registry_replication_id:str, resource_group:str,update_tag: int) -> None:
     ingest_container_replication = """
         MATCH (a:AzureContainerRegistryReplication{id: $container_registry_replication_id})
@@ -336,7 +339,8 @@ def sync_container_registry_replications(
     common_job_parameters: Dict,
 ) -> None:
     container_registry_replications_list = get_container_registry_replications_list(
-        client, container_registries_list, common_job_parameters)
+        client, container_registries_list, common_job_parameters,
+    )
     load_container_registry_replications(neo4j_session, container_registry_replications_list, update_tag)
     cleanup_container_registry_replications(neo4j_session, common_job_parameters)
 
@@ -344,7 +348,7 @@ def sync_container_registry_replications(
 @timeit
 def get_container_registry_runs_list(
     client: ContainerRegistryManagementClient,
-    container_registries_list: List[Dict], common_job_parameters: Dict
+    container_registries_list: List[Dict], common_job_parameters: Dict,
 ) -> List[Dict]:
     try:
         container_registry_runs_list: List[Dict] = []
@@ -362,7 +366,8 @@ def get_container_registry_runs_list(
                 run['resource_group'] = get_azure_resource_group_name(run.get('id'))
                 run['container_registry_id'] = run['id'][:run['id'].index("/runs")]
                 run['consolelink'] = azure_console_link.get_console_link(
-                    id=run['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=run['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
             container_registry_runs_list.extend(registry_runs_list)
 
         return container_registry_runs_list
@@ -418,7 +423,7 @@ def _attach_resource_group_container_registry_runs(tx: neo4j.Transaction, contai
         resource_group=resource_group,
         update_tag=update_tag,
     )
-    
+
 def cleanup_container_registry_runs(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_container_registry_runs_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -429,14 +434,15 @@ def sync_container_registry_runs(
     common_job_parameters: Dict,
 ) -> None:
     container_registry_runs_list = get_container_registry_runs_list(
-        client, container_registries_list, common_job_parameters)
+        client, container_registries_list, common_job_parameters,
+    )
     load_container_registry_runs(neo4j_session, container_registry_runs_list, update_tag)
     cleanup_container_registry_runs(neo4j_session, common_job_parameters)
 
 
 @timeit
 def get_container_registry_tasks_list(
-    client: ContainerRegistryManagementClient, container_registries_list: List[Dict], common_job_parameters: Dict
+    client: ContainerRegistryManagementClient, container_registries_list: List[Dict], common_job_parameters: Dict,
 ) -> List[Dict]:
     try:
         container_registry_tasks_list: List[Dict] = []
@@ -455,7 +461,8 @@ def get_container_registry_tasks_list(
             task['resource_group'] = get_azure_resource_group_name(task.get('id'))
             task['container_registry_id'] = task['id'][:task['id'].index("/tasks")]
             task['consolelink'] = azure_console_link.get_console_link(
-                id=task['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=task['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
 
         return container_registry_tasks_list
 
@@ -523,14 +530,15 @@ def sync_container_registry_tasks(
     common_job_parameters: Dict,
 ) -> None:
     container_registry_tasks_list = get_container_registry_tasks_list(
-        client, container_registries_list, common_job_parameters)
+        client, container_registries_list, common_job_parameters,
+    )
     load_container_registry_tasks(neo4j_session, container_registry_tasks_list, update_tag)
     cleanup_container_registry_tasks(neo4j_session, common_job_parameters)
 
 
 @timeit
 def get_container_registry_webhooks_list(
-    client: ContainerRegistryManagementClient, container_registries_list: List[Dict], common_job_parameters: Dict
+    client: ContainerRegistryManagementClient, container_registries_list: List[Dict], common_job_parameters: Dict,
 ) -> List[Dict]:
     try:
         container_registry_webhooks_list: List[Dict] = []
@@ -549,7 +557,8 @@ def get_container_registry_webhooks_list(
             webhook['resource_group'] = get_azure_resource_group_name(webhook.get('id'))
             webhook['container_registry_id'] = webhook['id'][:webhook['id'].index("/webhooks")]
             webhook['consolelink'] = azure_console_link.get_console_link(
-                id=webhook['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=webhook['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
 
         return container_registry_webhooks_list
 
@@ -587,7 +596,7 @@ def _load_container_registry_webhooks_tx(
     for container_registry_webhook in container_registry_webhooks_list:
         resource_group = get_azure_resource_group_name(container_registry_webhook.get('id'))
         _attach_resource_group_container_registry_webhooks(tx,container_registry_webhook['id'],resource_group,update_tag)
-           
+
 def _attach_resource_group_container_registry_webhooks( tx: neo4j.Transaction, container_registry_webhook_id: str,resource_group:str ,update_tag: int) -> None:
     ingest_container_webhook = """
     MATCH (a:AzureContainerRegistryWebhook{id:$container_registry_webhook_id})
@@ -615,7 +624,8 @@ def sync_container_registry_webhooks(
     common_job_parameters: Dict,
 ) -> None:
     container_registry_webhooks_list = get_container_registry_webhooks_list(
-        client, container_registries_list, common_job_parameters)
+        client, container_registries_list, common_job_parameters,
+    )
     load_container_registry_webhooks(neo4j_session, container_registry_webhooks_list, update_tag)
     cleanup_container_registry_webhooks(neo4j_session, common_job_parameters)
 
@@ -628,7 +638,8 @@ def get_container_groups_list(client: ContainerInstanceManagementClient, regions
         for group in container_groups_list:
             group['resource_group'] = get_azure_resource_group_name(group.get('id'))
             group['consolelink'] = azure_console_link.get_console_link(
-                id=group['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=group['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 group_data.append(group)
             else:
@@ -672,7 +683,7 @@ def _load_container_groups_tx(
     for container_group in container_groups_list:
         resource_group = get_azure_resource_group_name(container_group.get('id'))
         _attach_resource_group_aks_container_group(tx,container_group['id'],resource_group,update_tag)
-          
+
 def _attach_resource_group_aks_container_group(
     tx: neo4j.Transaction,container_group_id: str,resource_group:str, update_tag: int,
 ) -> None:
@@ -697,7 +708,7 @@ def cleanup_container_groups(neo4j_session: neo4j.Session, common_job_parameters
 
 def sync_container_groups(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     client = get_container_instance_Client(credentials, subscription_id)
     container_groups_list = get_container_groups_list(client, regions, common_job_parameters)
@@ -755,8 +766,8 @@ def _load_containers_tx(tx: neo4j.Transaction, containers_list: List[Dict], upda
         resource_group = get_azure_resource_group_name(container.get('id'))
         _attach_resource_group_container(tx,container['id'],resource_group,update_tag)
 
-            
-    
+
+
 def _attach_resource_group_container(tx: neo4j.Transaction, container_id: str, resource_group:str,update_tag: int) -> None:
     ingest_container = """
     MATCH (a:AzureContainer{id: $container_id})
@@ -790,7 +801,7 @@ def sync_containers(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 
 
 ) -> None:

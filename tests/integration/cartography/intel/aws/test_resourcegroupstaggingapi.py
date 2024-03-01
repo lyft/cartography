@@ -2,10 +2,9 @@ import copy
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-import cartography.intel.aws.ec2
+import cartography.intel.aws.ec2.instances
 import cartography.intel.aws.resourcegroupstaggingapi as rgta
 import tests.data.aws.ec2.instances
-import cartography.intel.aws.ec2.instances
 import tests.data.aws.resourcegroupstaggingapi
 from cartography.intel.aws.ec2.instances import sync_ec2_instances
 from tests.data.aws.ec2.instances import DESCRIBE_INSTANCES
@@ -78,7 +77,7 @@ def test_transform_and_load_ec2_tags(mock_get_instances, neo4j_session):
 
     # Assert
     expected = {
-        'TestKeyUpdated:TestValueUpdated', 'TestKey:TestValue'
+        'TestKeyUpdated:TestValueUpdated', 'TestKey:TestValue',
     }
     result = neo4j_session.run('MATCH (t:AWSTag) RETURN t.id')
     actual = {

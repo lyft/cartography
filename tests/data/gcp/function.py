@@ -53,7 +53,7 @@ FUNCTION_POLICY_BINDINGS = [
             'allUsers',
             'allAuthenticatedUsers',
         ],
-        'role': 'viewer'
+        'role': 'viewer',
 
     },
 ]

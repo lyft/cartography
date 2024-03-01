@@ -22,8 +22,5 @@ def test_load_workspace(neo4j_session):
             n['g.uuid']
         ) for n in nodes
     }
-    
+
     assert actual_nodes == expected_nodes
-    
-    
-   

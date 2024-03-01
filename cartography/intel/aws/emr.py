@@ -49,7 +49,7 @@ def get_emr_describe_cluster(boto3_session: boto3.session.Session, region: str, 
         msg = e.response['Error']['Message']
         logger.warning(f"Could not run EMR describe_cluster due to boto3 error {code}: {msg}. Skipping.")
     return cluster_details
-        
+
 @timeit
 def load_emr_clusters(
         neo4j_session: neo4j.Session,

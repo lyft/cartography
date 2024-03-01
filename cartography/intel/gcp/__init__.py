@@ -12,13 +12,13 @@ import googleapiclient.discovery
 import neo4j
 from googleapiclient.discovery import Resource
 from neo4j import GraphDatabase
-from cartography.graph.session import Session
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
 from . import label
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
+from cartography.graph.session import Session
 from cartography.intel.gcp import crm
 from cartography.intel.gcp.auth import AuthHelper
 from cartography.intel.gcp.util.common import parse_and_validate_gcp_requested_syncs
@@ -66,7 +66,7 @@ service_names = Services(
     cloudtasks='cloudtasks.googleapis.com',
     serviceusage='serviceusage.googleapis.com',
     policyanalyzer='policyanalyzer.googleapis.com',
-    
+
 )
 
 
@@ -91,6 +91,7 @@ def _get_crm_resource_v1(credentials: GoogleCredentials) -> Resource:
     # cache_discovery=False to suppress extra warnings.
     # See https://github.com/googleapis/google-api-python-client/issues/299#issuecomment-268915510 and related issues
     return googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials, cache_discovery=False)
+
 
 def _get_policyanalyzer_resource(credentials: GoogleCredentials) -> Resource:
     """
@@ -211,16 +212,6 @@ def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
     :return: A serviceusage resource object
     """
     return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
-
-
-def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
-    """
-    Instantiates a cloud function resource object.
-    See: https://cloud.google.com/functions/docs/reference/rest
-    :param credentials: The GoogleCredentials object
-    :return: A serviceusage resource object
-    """
-    return googleapiclient.discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
 
 
 def _get_cloudkms_resource(credentials: GoogleCredentials) -> Resource:
@@ -397,7 +388,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         cloudtasks=_get_cloudtasks_resource(credentials),
         spanner=_get_spanner_resource(credentials),
         pubsublite=_get_pubsublite_resource(credentials),
-        policyanalyzer= _get_policyanalyzer_resource(credentials),
+        policyanalyzer=_get_policyanalyzer_resource(credentials),
     )
 
 
@@ -434,7 +425,7 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 
 def concurrent_execution(
     service: str, service_func: Any, config: Config, resource: Resource,
-    common_job_parameters: Dict, gcp_update_tag: int, project_id: str,policyanalyzer: Resource, crm_v1: Resource,
+    common_job_parameters: Dict, gcp_update_tag: int, project_id: str, policyanalyzer: Resource, crm_v1: Resource,
     crm_v2: Resource, apikey: Resource,
 ):
     logger.info(f"BEGIN processing for service: {service}")
@@ -449,12 +440,16 @@ def concurrent_execution(
     )
 
     if service == 'iam':
-        service_func(Session(neo4j_driver), resource, policyanalyzer,crm_v1, crm_v2, apikey, project_id,
-                     gcp_update_tag, common_job_parameters)
+        service_func(
+            Session(neo4j_driver), resource, policyanalyzer, crm_v1, crm_v2, apikey, project_id,
+            gcp_update_tag, common_job_parameters,
+        )
 
     else:
-        service_func(Session(neo4j_driver), resource, project_id, gcp_update_tag,
-                     common_job_parameters, regions)
+        service_func(
+            Session(neo4j_driver), resource, project_id, gcp_update_tag,
+            common_job_parameters, regions,
+        )
 
     logger.info(f"END processing for service: {service}")
 
@@ -486,7 +481,7 @@ def _sync_single_project(
                     executor.submit(
                         concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
                             resources, request,
-                        ), common_job_parameters, gcp_update_tag, project_id,resources.policyanalyzer, resources.crm_v1, resources.crm_v2, resources.apikey,
+                        ), common_job_parameters, gcp_update_tag, project_id, resources.policyanalyzer, resources.crm_v1, resources.crm_v2, resources.apikey,
                     ),
                 )
 
@@ -630,7 +625,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     if config.gcp_requested_syncs:
         gcp_requested_syncs_string = ""
         for service in config.gcp_requested_syncs:
-            gcp_requested_syncs_string += f"{service.get('name',' ')},"
+            gcp_requested_syncs_string += f"{service.get('name', ' ')},"
             if service.get('pagination', None):
                 pagination = service.get('pagination', {})
                 pagination['hasNextPage'] = False

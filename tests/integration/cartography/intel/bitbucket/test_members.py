@@ -21,7 +21,5 @@ def test_load_member(neo4j_session):
             n['g.name']
         ) for n in nodes
     }
-    
-    assert actual_nodes == expected_nodes
 
-   
+    assert actual_nodes == expected_nodes

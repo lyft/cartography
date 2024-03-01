@@ -1,5 +1,6 @@
 from cartography.intel.azure import compute
 from cartography.intel.azure import network
+from cartography.util import run_analysis_job
 from tests.data.azure.compute import DESCRIBE_DISKS
 from tests.data.azure.compute import DESCRIBE_SNAPSHOTS
 from tests.data.azure.compute import DESCRIBE_VM_DATA_DISKS
@@ -8,16 +9,15 @@ from tests.data.azure.compute import DESCRIBE_VMEXTENSIONS
 from tests.data.azure.compute import DESCRIBE_VMS
 from tests.data.azure.compute import DESCRIBE_VMSCALESETEXTENSIONS
 from tests.data.azure.compute import DESCRIBE_VMSCALESETS
-from tests.data.azure.network import DESCRIBE_NETWORKSECURITYGROUPS
-from tests.data.azure.network import DESCRIBE_NETWORKSECURITYRULES
 from tests.data.azure.network import DESCRIBE_NETWORKINTERFACES
-from tests.data.azure.network import DESCRIBE_PUBLICIPADDRESSES
-from tests.data.azure.network import DESCRIBE_PUBLICIPADDRESSES_REFERENCE
-from tests.data.azure.network import DESCRIBE_NETWORKSUBNETS
-from tests.data.azure.network import DESCRIBE_ROUTETABLE
 from tests.data.azure.network import DESCRIBE_NETWORKROUTE
 from tests.data.azure.network import DESCRIBE_NETWORKS
-from cartography.util import run_analysis_job
+from tests.data.azure.network import DESCRIBE_NETWORKSECURITYGROUPS
+from tests.data.azure.network import DESCRIBE_NETWORKSECURITYRULES
+from tests.data.azure.network import DESCRIBE_NETWORKSUBNETS
+from tests.data.azure.network import DESCRIBE_PUBLICIPADDRESSES
+from tests.data.azure.network import DESCRIBE_PUBLICIPADDRESSES_REFERENCE
+from tests.data.azure.network import DESCRIBE_ROUTETABLE
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
@@ -572,21 +572,21 @@ def test_vm_public_exposure_analysis(neo4j_session):
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_NETWORKINTERFACES,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     network.load_public_ip_addresses(
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_PUBLICIPADDRESSES,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     network.load_public_ip_network_interfaces_relationship(
         neo4j_session,
         "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic",
         DESCRIBE_PUBLICIPADDRESSES_REFERENCE,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     network.load_networks(
@@ -600,26 +600,26 @@ def test_vm_public_exposure_analysis(neo4j_session):
         neo4j_session,
         DESCRIBE_NETWORKSUBNETS,
         TEST_SUBSCRIPTION_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     network.load_network_routetables(
         neo4j_session,
         TEST_SUBSCRIPTION_ID,
         DESCRIBE_ROUTETABLE,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     network.attach_network_routetables_to_subnet(
         neo4j_session,
         DESCRIBE_ROUTETABLE,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     network.load_network_routes(
         neo4j_session,
         DESCRIBE_NETWORKROUTE,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     compute.load_vms(
@@ -633,20 +633,24 @@ def test_vm_public_exposure_analysis(neo4j_session):
         "UPDATE_TAG": TEST_UPDATE_TAG + 1,
         "WORKSPACE_ID": TEST_WORKSPACE_ID,
         "AZURE_SUBSCRIPTION_ID": TEST_SUBSCRIPTION_ID,
-        "AZURE_TENANT_ID": TEST_TENANT_ID
+        "AZURE_TENANT_ID": TEST_TENANT_ID,
     }
 
     run_analysis_job(
         'azure_vm_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     expected_nodes = {
-        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM',
-         'direct_ipv4,public_ip,inbound_public_ports,public_icmp,public_subnet'),
-        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1',
-            'direct_ipv4,inbound_public_ports,public_icmp,public_subnet'),
+        (
+            '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM',
+            'direct_ipv4,public_ip,inbound_public_ports,public_icmp,public_subnet',
+        ),
+        (
+            '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1',
+            'direct_ipv4,inbound_public_ports,public_icmp,public_subnet',
+        ),
     }
 
     nodes = neo4j_session.run(

@@ -15,7 +15,7 @@ DESCRIBE_TRAILS = [
         'KmsKeyId': 'kmskey',
         'HasCustomEventSelectors': True,
         'HasInsightSelectors': True,
-        'IsOrganizationTrail': True
+        'IsOrganizationTrail': True,
     },
     {
         'Name': 'trail2',
@@ -33,6 +33,6 @@ DESCRIBE_TRAILS = [
         'KmsKeyId': 'kmskey',
         'HasCustomEventSelectors': True,
         'HasInsightSelectors': True,
-        'IsOrganizationTrail': True
+        'IsOrganizationTrail': True,
     },
 ]

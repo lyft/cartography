@@ -1,13 +1,12 @@
-import requests
 import logging
 from typing import Any
 from typing import Dict
 from typing import List
 
 import neo4j
+import requests
 
 from cartography.util import make_requests_url
-
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
@@ -21,8 +20,8 @@ def get_projects(access_token:str,workspace:str):
 
 
 def load_projects_data(session: neo4j.Session, project_data:List[Dict],common_job_parameters:Dict) -> None:
-    session.write_transaction(_load_projects_data, project_data,  common_job_parameters)        
-    
+    session.write_transaction(_load_projects_data, project_data,  common_job_parameters)
+
 def _load_projects_data(tx: neo4j.Transaction,project_data:List[Dict],common_job_parameters:Dict):
     ingest_workspace="""
     UNWIND $projectData as project
@@ -53,19 +52,19 @@ def _load_projects_data(tx: neo4j.Transaction,project_data:List[Dict],common_job
         ingest_workspace,
         projectData=project_data,
         UpdateTag=common_job_parameters['UPDATE_TAG'],
-    )  
-   
-    
+    )
+
+
 def cleanup(neo4j_session: neo4j.Session,  common_job_parameters: Dict) -> None:
     run_cleanup_job('bitbucket_workspace_project_cleanup.json', neo4j_session, common_job_parameters)
 
-    
+
 def sync(
         neo4j_session: neo4j.Session,
         workspace_name:str,
         bitbucket_refresh_token:str,
         common_job_parameters: Dict[str, Any],
-        
+
 ) -> None:
     """
     Performs the sequential tasks to collect, transform, and sync bitbucket data

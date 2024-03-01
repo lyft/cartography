@@ -1,6 +1,5 @@
 import cartography.intel.gcp.cloudkms
 import tests.data.gcp.cloudkms
-
 from cartography.util import run_analysis_job
 
 TEST_PROJECT_NUMBER = '000000000000'
@@ -29,7 +28,6 @@ def cloudanix_workspace_to_gcp_project(neo4j_session):
         WorkspaceId=TEST_WORKSPACE_ID,
         ProjectId=TEST_PROJECT_NUMBER,
     )
-
 
 
 def test_load_kms_locations(neo4j_session):
@@ -222,17 +220,17 @@ def test_kms_crypto_key_relationship(neo4j_session):
 
     assert actual == expected
 
+
 def test_cloudkms_function(neo4j_session):
     cloudanix_workspace_to_gcp_project(neo4j_session)
     data = tests.data.gcp.cloudkms.CLOUD_KMS_LOCATIONS
     cartography.intel.gcp.cloudkms.load_kms_locations(neo4j_session, data, TEST_PROJECT_NUMBER, TEST_UPDATE_TAG)
     data = tests.data.gcp.cloudkms.CLOUD_KMS_KEYRINGS
-    cartography.intel.gcp.cloudkms.load_kms_key_rings( neo4j_session,data, TEST_PROJECT_NUMBER, TEST_UPDATE_TAG)
+    cartography.intel.gcp.cloudkms.load_kms_key_rings(neo4j_session, data, TEST_PROJECT_NUMBER, TEST_UPDATE_TAG)
     bindings_data = tests.data.gcp.cloudkms.FUNCTION_POLICY_BINDINGS
 
     cartography.intel.gcp.cloudkms.attach_keyring_to_binding(neo4j_session, TEST_KEYRING_ID, bindings_data, TEST_UPDATE_TAG)
 
-   
     query1 = """
     MATCH (binding:GCPBinding)<-[a:ATTACHED_BINDING]-(keyring:GCPKMSKeyRing)<-[r:RESOURCE]-(location:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE keyring.exposed_internet=true
     RETURN keyring.id,keyring.exposed_internet,keyring.exposed_internet_type
@@ -241,13 +239,11 @@ def test_cloudkms_function(neo4j_session):
 
     objects1 = neo4j_session.run(query1, GCP_PROJECT_ID=TEST_PROJECT_NUMBER, WORKSPACE_ID=TEST_WORKSPACE_ID)
 
-    
-
     actual_nodes = {
         (
             o['keyring.id'],
             o['keyring.exposed_internet'],
-            ",".join(o['keyring.exposed_internet_type'])
+            ",".join(o['keyring.exposed_internet_type']),
 
         ) for o in objects1
 
@@ -258,8 +254,8 @@ def test_cloudkms_function(neo4j_session):
         (
             'keyring1',
             True,
-            'allUsers,allAuthenticatedUsers'
-        )
+            'allUsers,allAuthenticatedUsers',
+        ),
 
     }
 

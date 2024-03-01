@@ -1,8 +1,11 @@
 from cartography.intel.aws.cloudtrail import load_trails
-from tests.data.aws.cloudtrail import DESCRIBE_TRAILS
-from tests.data.aws.s3 import LIST_BUCKETS, LIST_STATEMENTS
-from cartography.intel.aws.s3 import load_s3_buckets, _load_s3_policies, parse_policy
+from cartography.intel.aws.s3 import _load_s3_policies
+from cartography.intel.aws.s3 import load_s3_buckets
+from cartography.intel.aws.s3 import parse_policy
 from cartography.util import run_analysis_job
+from tests.data.aws.cloudtrail import DESCRIBE_TRAILS
+from tests.data.aws.s3 import LIST_BUCKETS
+from tests.data.aws.s3 import LIST_STATEMENTS
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
@@ -19,14 +22,14 @@ def test_load_cloudtrails(neo4j_session):
             """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
-        workspace_id=TEST_WORKSPACE_ID
+        workspace_id=TEST_WORKSPACE_ID,
     )
     load_trails(neo4j_session, DESCRIBE_TRAILS, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
 
     nodes = neo4j_session.run(
         """
         MATCH (n:AWSCloudTrailTrail) return n.id
-        """
+        """,
     )
 
     actual_nodes = {n["n.id"] for n in nodes}
@@ -45,7 +48,7 @@ def test_cloudtrails_analysis(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (s3:S3Bucket)<-[:HAS_BUCKET]-(n:AWSCloudTrailTrail) return s3.id, n.id
-        """
+        """,
     )
 
     actual_nodes = {(n["n.id"], n["s3.id"]) for n in nodes}
@@ -65,7 +68,7 @@ def test_cloudtrails_analysis(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (n:AWSCloudTrailTrail{anonymous_access: true}) RETURN n.id
-        """
+        """,
     )
 
     actual_nodes = {n["n.id"] for n in nodes}

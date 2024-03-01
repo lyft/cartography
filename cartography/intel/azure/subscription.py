@@ -6,10 +6,10 @@ from typing import Optional
 import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.resource import SubscriptionClient
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
-from cloudconsolelink.clouds.azure import AzureLinker
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -40,8 +40,10 @@ def get_all_azure_subscriptions(credentials: Credentials, common_job_parameters:
             'subscriptionId': sub.subscription_id,
             'displayName': sub.display_name,
             'state': sub.state,
-            'consolelink': azure_console_link.get_console_link(id=sub.subscription_id,\
-                     primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            'consolelink': azure_console_link.get_console_link(
+                id=sub.subscription_id,
+                primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            ),
         })
 
     return subscriptions
@@ -70,8 +72,10 @@ def get_current_azure_subscription(credentials: Credentials, subscription_id: Op
             'subscriptionId': sub.subscription_id,
             'displayName': sub.display_name,
             'state': sub.state,
-            'consolelink': azure_console_link.get_console_link(id=sub.subscription_id,\
-                     primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name']),
+            'consolelink': azure_console_link.get_console_link(
+                id=sub.subscription_id,
+                primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            ),
         },
     ]
 

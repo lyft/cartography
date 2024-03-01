@@ -8,8 +8,8 @@ from azure.mgmt.compute import ComputeManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
-from cartography.util import run_cleanup_job
 from cartography.util import get_azure_resource_group_name
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,8 @@ def get_vm_list(credentials: Credentials, subscription_id: str, regions: list, c
         for vm in vm_list:
             vm['resource_group'] = get_azure_resource_group_name(vm.get('id'))
             vm['consolelink'] = azure_console_link.get_console_link(
-                id=vm['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=vm['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
 
             network_interfaces = []
             for interface in vm.get('network_profile', {}).get('network_interfaces', []):
@@ -129,7 +130,7 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
 
 
 def _attach_vm_properties_public_ip(tx: neo4j.Transaction, vm_id: str, update_tag) -> None:
-    ingest_vm_properties = """    
+    ingest_vm_properties = """
     MATCH (vm:AzureVirtualMachine{id: $vm_id})-[:MEMBER_NETWORK_INTERFACE]->(:AzureNetworkInterface)-[:MEMBER_PUBLIC_IP_ADDRESS]->(ip:AzurePublicIPAddress)
     SET vm.public_ip=ip.ipAddress,
     vm.lastupdated= $update_tag
@@ -137,7 +138,7 @@ def _attach_vm_properties_public_ip(tx: neo4j.Transaction, vm_id: str, update_ta
     tx.run(
         ingest_vm_properties,
         vm_id=vm_id,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -150,7 +151,7 @@ def _attach_vm_properties_private_ip(tx: neo4j.Transaction, vm_id: str, update_t
     tx.run(
         ingest_vm_properties,
         vm_id=vm_id,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -389,7 +390,8 @@ def get_vm_scale_sets_list(credentials: Credentials, subscription_id: str, regio
             x = set['id'].split('/')
             set['resource_group'] = x[x.index('resourceGroups') + 1]
             set['consolelink'] = azure_console_link.get_console_link(
-                id=set['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=set['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 sets_list.append(set)
             else:
@@ -457,7 +459,7 @@ def cleanup_vm_scale_sets(neo4j_session: neo4j.Session, common_job_parameters: D
 
 def sync_vm_scale_sets(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     client = get_client(credentials, subscription_id)
     vm_scale_sets_list = get_vm_scale_sets_list(credentials, subscription_id, regions, common_job_parameters)
@@ -486,7 +488,8 @@ def get_vm_scale_sets_extensions_list(vm_scale_sets_list: List[Dict], client: Co
                 extension['resource_group'] = x[x.index('resourceGroups') + 1]
                 extension['set_id'] = extension['id'][:extension['id'].index("/extensions")]
                 extension['consolelink'] = azure_console_link.get_console_link(
-                    id=extension['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=extension['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
 
             vm_scale_sets_extensions_list.extend(extensions_list)
 
@@ -586,7 +589,8 @@ def load_vm_data_disks(neo4j_session: neo4j.Session, vm_id: str, data_disks: Lis
         VM_ID=vm_id,
         update_tag=update_tag,
     )
-    
+
+
 def load_vm_os_disk(neo4j_session: neo4j.Session, vm_id: str, os_disk: Dict, update_tag: int) -> None:
     ingest_os_disk = """
     MERGE (osdisk:AzureDisk{id: $disk.managed_disk.id})
@@ -607,8 +611,9 @@ def load_vm_os_disk(neo4j_session: neo4j.Session, vm_id: str, os_disk: Dict, upd
         ingest_os_disk,
         disk=os_disk,
         VM_ID=vm_id,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
+
 
 def _attach_snapshot_disk(neo4j_session: neo4j.Session, snapshot_id: str, disk_id: str, update_tag: int):
     attach_snapshot_disk = """
@@ -628,54 +633,6 @@ def _attach_snapshot_disk(neo4j_session: neo4j.Session, snapshot_id: str, disk_i
     )
 
 
-def load_vm_os_disk(neo4j_session: neo4j.Session, vm_id: str, os_disk: Dict, update_tag: int) -> None:
-    ingest_os_disk = """
-    MERGE (osdisk:AzureDisk{id: $disk.managed_disk.id})
-    ON CREATE SET osdisk.firstseen = timestamp()
-    SET d.lastupdated = $update_tag, d.name = $disk.name,
-    d.vhd = $disk.vhd.uri, d.image = $disk.image.uri,
-    d.size = $disk.disk_size_gb, d.caching = $disk.caching,
-    d.createoption = $disk.create_option, d.write_accelerator_enabled=$disk.write_accelerator_enabled,
-    d.managed_disk_storage_type=$disk.managed_disk.storage_account_type, d.disk_type = 'osdisk'
-    WITH osdisk
-    MATCH (owner:AzureVirtualMachine{id: $VM_ID})
-    MERGE (owner)-[r:ATTACHED_TO]->(d)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $update_tag
-    """
-
-    neo4j_session.run(
-        ingest_os_disk,
-        disk=os_disk,
-        VM_ID=vm_id,
-        update_tag=update_tag
-    )
-
-
-def load_vm_os_disk(neo4j_session: neo4j.Session, vm_id: str, os_disk: Dict, update_tag: int) -> None:
-    ingest_os_disk = """
-    MERGE (osdisk:AzureDisk{id: $disk.managed_disk.id})
-    ON CREATE SET osdisk.firstseen = timestamp()
-    SET d.lastupdated = $update_tag, d.name = $disk.name,
-    d.vhd = $disk.vhd.uri, d.image = $disk.image.uri,
-    d.size = $disk.disk_size_gb, d.caching = $disk.caching,
-    d.createoption = $disk.create_option, d.write_accelerator_enabled=$disk.write_accelerator_enabled,
-    d.managed_disk_storage_type=$disk.managed_disk.storage_account_type, d.disk_type = 'osdisk'
-    WITH osdisk
-    MATCH (owner:AzureVirtualMachine{id: $VM_ID})
-    MERGE (owner)-[r:ATTACHED_TO]->(d)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $update_tag
-    """
-
-    neo4j_session.run(
-        ingest_os_disk,
-        disk=os_disk,
-        VM_ID=vm_id,
-        update_tag=update_tag
-    )
-
-
 def cleanup_virtual_machine(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_virtual_machines_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -689,7 +646,8 @@ def get_disks(credentials: Credentials, subscription_id: str, regions: list, com
             x = disk['id'].split('/')
             disk['resource_group'] = x[x.index('resourceGroups') + 1]
             disk['consolelink'] = azure_console_link.get_console_link(
-                id=disk['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=disk['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 disk_data.append(disk)
             else:
@@ -764,7 +722,8 @@ def get_snapshots_list(credentials: Credentials, subscription_id: str, regions: 
             x = snapshot['id'].split('/')
             snapshot['resource_group'] = x[x.index('resourceGroups') + 1]
             snapshot['consolelink'] = azure_console_link.get_console_link(
-                id=snapshot['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=snapshot['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 snapshot_list.append(snapshot)
             else:
@@ -831,7 +790,7 @@ def cleanup_snapshot(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
 
 def sync_virtual_machine(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     client = get_client(credentials, subscription_id)
     vm_list = get_vm_list(credentials, subscription_id, regions, common_job_parameters)
@@ -844,11 +803,11 @@ def sync_virtual_machine(
     load_vms(neo4j_session, subscription_id, vm_list, update_tag)
     sync_virtual_machine_extensions(neo4j_session, client, vm_list, update_tag, common_job_parameters)
     cleanup_virtual_machine(neo4j_session, common_job_parameters)
-    
+
 
 def sync_disk(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     disk_list = get_disks(credentials, subscription_id, regions, common_job_parameters)
 
@@ -856,35 +815,19 @@ def sync_disk(
     cleanup_disks(neo4j_session, common_job_parameters)
 
 
-def _attach_snapshot_disk(neo4j_session: neo4j.Session, snapshot_id: str, disk_id: str, update_tag: int):
-    attach_snapshot_disk = """
-    MATCH (s:AzureSnapshot{id: $snapshot_id})
-    WITH s
-    MATCH (d:AzureDisk{id: $disk_id})
-    WITH s, d
-    MERGE (d)-[r:HAS]->(s)
-    ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $update_tag
-    """
-    neo4j_session.run(
-        attach_snapshot_disk,
-        snapshot_id=snapshot_id,
-        disk_id=disk_id,
-        update_tag=update_tag,
-    )
-
-
 def sync_snapshot(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     snapshots = get_snapshots_list(credentials, subscription_id, regions, common_job_parameters)
 
     load_snapshots(neo4j_session, subscription_id, snapshots, update_tag)
     for snapshot in snapshots:
         if snapshot.get("creation_data").get("create_option", "") == "Copy":
-            _attach_snapshot_disk(neo4j_session, snapshot["id"],
-                                  snapshot["creation_data"]["source_resource_id"], update_tag)
+            _attach_snapshot_disk(
+                neo4j_session, snapshot["id"],
+                snapshot["creation_data"]["source_resource_id"], update_tag,
+            )
 
     cleanup_snapshot(neo4j_session, common_job_parameters)
 
@@ -892,7 +835,7 @@ def sync_snapshot(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     logger.info("Syncing VM for subscription '%s'.", subscription_id)
 

@@ -356,4 +356,3 @@ CREATE INDEX IF NOT EXISTS FOR (n:BitbucketProject) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:BitbucketRepository) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:BitbucketWorkspace) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:ProgrammingLanguage) ON (n.id);
-

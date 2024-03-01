@@ -1,33 +1,34 @@
 import logging
+from concurrent.futures import as_completed
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Any
-
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import neo4j
-from neo4j import GraphDatabase
-from cartography.graph.session import Session
 from azure.core.exceptions import HttpResponseError
 from azure.graphrbac import GraphRbacManagementClient
 from azure.mgmt.resource import SubscriptionClient
+from neo4j import GraphDatabase
 
 from . import subscription
 from . import tag
 from . import tenant
 from .resources import RESOURCE_FUNCTIONS
-from .util.credentials import Authenticator, Credentials
+from .util.credentials import Authenticator
+from .util.credentials import Credentials
 from cartography.config import Config
+from cartography.graph.session import Session
 from cartography.intel.azure.util.common import parse_and_validate_azure_requested_syncs
-from cartography.util import timeit
 from cartography.util import run_analysis_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
 
 def concurrent_execution(
-    service: str, service_func: Any, config: Config, credentials: Credentials, common_job_parameters: Dict, update_tag: int, subscription_id: str
+    service: str, service_func: Any, config: Config, credentials: Credentials, common_job_parameters: Dict, update_tag: int, subscription_id: str,
 ):
     logger.info(f"BEGIN processing for service: {service}")
 
@@ -42,11 +43,15 @@ def concurrent_execution(
     if service == 'iam':
         service_func(Session(neo4j_driver), credentials, credentials.tenant_id, update_tag, common_job_parameters)
     elif service == 'key_vaults':
-        service_func(Session(neo4j_driver), credentials,
-                     subscription_id, update_tag, common_job_parameters, regions)
+        service_func(
+            Session(neo4j_driver), credentials,
+            subscription_id, update_tag, common_job_parameters, regions,
+        )
     else:
-        service_func(Session(neo4j_driver), credentials.arm_credentials,
-                     subscription_id, update_tag, common_job_parameters, regions)
+        service_func(
+            Session(neo4j_driver), credentials.arm_credentials,
+            subscription_id, update_tag, common_job_parameters, regions,
+        )
     logger.info(f"END processing for service: {service}")
 
 
@@ -76,12 +81,13 @@ def _sync_one_subscription(
                         credentials,
                         common_job_parameters,
                         update_tag,
-                        subscription_id
-                    )
+                        subscription_id,
+                    ),
                 )
             else:
                 raise ValueError(
-                    f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?')
+                    f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?',
+                )
 
         for future in as_completed(futures):
             logger.info(f'Result from Future - Service Processing: {future.result()}')
@@ -150,7 +156,7 @@ def _sync_multiple_subscriptions(
         run_analysis_job(
             'azure_network_security_group_asset_exposure.json',
             neo4j_session,
-            common_job_parameters
+            common_job_parameters,
         )
 
         run_analysis_job(
@@ -167,13 +173,13 @@ def _sync_multiple_subscriptions(
         run_analysis_job(
             'azure_network_interface_asset_exposure.json',
             neo4j_session,
-            common_job_parameters
+            common_job_parameters,
         )
 
         run_analysis_job(
             'azure_network_load_balancer_asset_exposure.json',
             neo4j_session,
-            common_job_parameters
+            common_job_parameters,
         )
 
         run_analysis_job(
@@ -185,19 +191,19 @@ def _sync_multiple_subscriptions(
         run_analysis_job(
             'azure_sql_asset_exposure.json',
             neo4j_session,
-            common_job_parameters
+            common_job_parameters,
         )
 
         run_analysis_job(
             'azure_cosmosdb_asset_exposure.json',
             neo4j_session,
-            common_job_parameters
+            common_job_parameters,
         )
 
         run_analysis_job(
             'azure_keyvault_asset_exposure.json',
             neo4j_session,
-            common_job_parameters
+            common_job_parameters,
         )
 
         del common_job_parameters["AZURE_SUBSCRIPTION_ID"]

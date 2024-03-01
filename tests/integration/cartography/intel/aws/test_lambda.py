@@ -181,7 +181,7 @@ def test_load_lambda_event_source_mappings(neo4j_session):
     )
 
     actual_nodes = {n['r.id'] for n in nodes}
-    print("1==",actual_nodes)
+    print("1==", actual_nodes)
     assert actual_nodes == expected_nodes
 
 
@@ -260,10 +260,6 @@ def test_load_lambda_layers_relationships(neo4j_session):
     cartography.intel.aws.lambda_function.load_lambda_functions(
         neo4j_session,
         data,
-<<<<<<< HEAD
-=======
-
->>>>>>> cloudanix-all
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -313,7 +309,7 @@ def test_lambda_exposure_analysis(neo4j_session):
         """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
-        workspace_id=TEST_WORKSPACE_ID
+        workspace_id=TEST_WORKSPACE_ID,
     )
     data = tests.data.aws.lambda_function.LIST_LAMBDA_FUNCTIONS
 
@@ -333,13 +329,13 @@ def test_lambda_exposure_analysis(neo4j_session):
     run_analysis_job(
         'aws_lambda_function_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     nodes = neo4j_session.run(
         """
         MATCH (s:AWSLambda{exposed_internet: true}) RETURN s.id;
-        """
+        """,
     )
 
     actual_nodes = {

@@ -42,7 +42,7 @@ def test_load_apigateway_rest_apis_relationships(neo4j_session):
             """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
-        workspace_id=TEST_WORKSPACE_ID
+        workspace_id=TEST_WORKSPACE_ID,
     )
 
     # Load Test API Gateway REST APIs
@@ -80,8 +80,8 @@ def test_load_apigateway_stages(neo4j_session):
     )
 
     expected_nodes = {
-         'arn:aws:apigateway:us-east-1::restapis/test-001/stages/Cartography-testing-infra',
-        'arn:aws:apigateway:us-east-1::restapis/test-002/stages/Cartography-testing-unit'
+        'arn:aws:apigateway:us-east-1::restapis/test-001/stages/Cartography-testing-infra',
+        'arn:aws:apigateway:us-east-1::restapis/test-002/stages/Cartography-testing-unit',
     }
 
     nodes = neo4j_session.run(
@@ -132,7 +132,7 @@ def test_load_apigateway_stages_relationships(neo4j_session):
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
-    
+
     assert actual == expected
 
 
@@ -146,7 +146,7 @@ def test_load_apigateway_certificates(neo4j_session):
 
     expected_nodes = {
         'arn:aws:apigateway:us-east-1:aws-001:clientcertificates/cert-002',
-        'arn:aws:apigateway:us-east-1:aws-001:clientcertificates/cert-001'
+        'arn:aws:apigateway:us-east-1:aws-001:clientcertificates/cert-001',
     }
 
     nodes = neo4j_session.run(
@@ -298,7 +298,7 @@ def test_apigateway_analysis(neo4j_session):
     run_analysis_job('aws_apigateway_asset_exposure.json', neo4j_session, common_job_parameters)
 
     expected = {
-        ('test-001', 'endpoint_type')
+        ('test-001', 'endpoint_type'),
     }
 
     # Fetch relationships

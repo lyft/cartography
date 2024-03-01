@@ -6,8 +6,8 @@ DESCRIBE_USERS = [
         "mail": "'contoso1@gmail.com",
         "mailNickname": "contoso1_gmail.com#EXT#",
         "otherMails": ["contoso1@gmail.com"],
-        "proxyAddresses":["SMTP:contoso1@gmail.com"],
-        "userPrincipalName":"contoso1_gmail.com#EXT#@microsoft.onmicrosoft.com",
+        "proxyAddresses": ["SMTP:contoso1@gmail.com"],
+        "userPrincipalName": "contoso1_gmail.com#EXT#@microsoft.onmicrosoft.com",
     },
     {
         "id": "user-321",
@@ -16,8 +16,8 @@ DESCRIBE_USERS = [
         "mail": "'contoso2@gmail.com",
         "mailNickname": "contoso2_gmail.com#EXT#",
         "otherMails": ["contoso2@gmail.com"],
-        "proxyAddresses":["SMTP:contoso2@gmail.com"],
-        "userPrincipalName":"contoso2_gmail.com#EXT#@microsoft.onmicrosoft.com",
+        "proxyAddresses": ["SMTP:contoso2@gmail.com"],
+        "userPrincipalName": "contoso2_gmail.com#EXT#@microsoft.onmicrosoft.com",
     },
 ]
 

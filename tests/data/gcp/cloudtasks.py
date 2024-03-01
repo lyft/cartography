@@ -50,5 +50,5 @@ CLOUDTASKS_QUEUES = [
             "minBackoff": "3.5s",
         },
         "state": "PAUSED",
-    }
+    },
 ]

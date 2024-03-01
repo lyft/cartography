@@ -1,20 +1,18 @@
-import time
 import logging
+import time
 from typing import Any
 from typing import Dict
 from typing import List
-import time
+
 import boto3
 import neo4j
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
 from cartography.models.aws.eks.clusters import EKSClusterSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
-from cloudconsolelink.clouds.aws import AWSLinker
-
-from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()

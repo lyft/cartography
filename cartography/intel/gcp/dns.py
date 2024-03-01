@@ -118,7 +118,7 @@ def transform_rrs(rrsets: List, zone: Dict, project_id: str):
         )
         resource_record_set[
             "id"
-        ] = f"projects/{project_id}/resourceRecordSet/{resource_record_set.get('name',None)}"
+        ] = f"projects/{project_id}/resourceRecordSet/{resource_record_set.get('name', None)}"
         list_rrs.append(resource_record_set)
 
     return list_rrs
@@ -220,8 +220,10 @@ def transform_dns_policies(policies: List[Dict], project_id: str) -> List[Dict]:
 
     for policy in policies:
         policy['id'] = f"projects/{project_id}/policies/{policy['name']}"
-        policy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
-                     dns_policy_name=policy['name'], resource_name='dns_policy')
+        policy['consolelink'] = gcp_console_link.get_console_link(
+            project_id=project_id,
+            dns_policy_name=policy['name'], resource_name='dns_policy',
+        )
         list_policies.append(policy)
 
     return list_policies

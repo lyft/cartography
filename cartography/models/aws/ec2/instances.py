@@ -38,7 +38,6 @@ class EC2InstanceNodeProperties(CartographyNodeProperties):
     instancelifecycle: PropertyRef = PropertyRef('InstanceLifecycle')
     hibernationoptions: PropertyRef = PropertyRef('HibernationOption')
     consolelink: PropertyRef = PropertyRef('consolelink')
-    
 
 
 @dataclass(frozen=True)

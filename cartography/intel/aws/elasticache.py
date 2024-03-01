@@ -1,5 +1,5 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
 from typing import Set

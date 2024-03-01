@@ -10,7 +10,7 @@
             "iterative": true,
             "iterationsize": 100
         }
-        
+
     ],
     "name": "cleanup workspaces repositories "
 }

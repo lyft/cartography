@@ -1,13 +1,15 @@
-import requests
 import logging
 from typing import Any
 from typing import Dict
 from typing import List
-from requests.exceptions import RequestException
+
 import neo4j
+import requests
+from requests.exceptions import RequestException
+
+from cartography.util import make_requests_url
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cartography.util import make_requests_url
 logger = logging.getLogger(__name__)
 
 @timeit
@@ -16,7 +18,7 @@ def get_repos(access_token:str,workspace:str):
     return make_requests_url(url,access_token)
 
 def load_repositeris_data(session: neo4j.Session, repos_data:List[Dict],common_job_parameters:Dict) -> None:
-    session.write_transaction(_load_repositeris_data, repos_data,  common_job_parameters)  
+    session.write_transaction(_load_repositeris_data, repos_data,  common_job_parameters)
 
 def _load_repositeris_data(tx: neo4j.Transaction,repos_data:List[Dict],common_job_parameters:Dict):
     ingest_repositeris="""
@@ -36,7 +38,7 @@ def _load_repositeris_data(tx: neo4j.Transaction,repos_data:List[Dict],common_jo
     re.language=repo.language,
     re.owner=repo.owner.display_name,
     re.parent=repo.parent.name,
-    re.lastupdated = $UpdateTag    
+    re.lastupdated = $UpdateTag
     WITH re,repo
     MATCH (project:BitbucketProjects{id:repo.project.uuid})
     merge (project)<-[o:REPOSITORY]-(re)
@@ -44,14 +46,14 @@ def _load_repositeris_data(tx: neo4j.Transaction,repos_data:List[Dict],common_jo
     SET o.lastupdated = $UpdateTag
 
     """
-   
+
     tx.run(
         ingest_repositeris,
         reposData=repos_data,
         UpdateTag=common_job_parameters['UPDATE_TAG'],
     )
-    
-    
+
+
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('bitbucket_workspace_repositories_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -60,7 +62,7 @@ def sync(
         workspace_name:str,
         bitbucket_refresh_token:str,
         common_job_parameters: Dict[str, Any],
-        
+
 ) -> None:
     """
     Performs the sequential tasks to collect, transform, and sync bitbucket data

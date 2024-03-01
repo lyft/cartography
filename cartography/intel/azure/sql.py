@@ -1,10 +1,11 @@
+import ipaddress
 import logging
 from typing import Any
 from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Tuple
-import ipaddress
+
 import neo4j
 from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
@@ -12,16 +13,15 @@ from azure.core.exceptions import ResourceNotFoundError
 from azure.mgmt.sql import SqlManagementClient
 from azure.mgmt.sql.models import SecurityAlertPolicyName
 from azure.mgmt.sql.models import TransparentDataEncryptionName
-from msrestazure.azure_exceptions import CloudError
 from cloudconsolelink.clouds.azure import AzureLinker
-
-from .util.credentials import Credentials
-from cartography.util import run_cleanup_job
-from cartography.util import get_azure_resource_group_name
-from cartography.util import timeit
-from . import network
-
+from msrestazure.azure_exceptions import CloudError
 from netaddr import *
+
+from . import network
+from .util.credentials import Credentials
+from cartography.util import get_azure_resource_group_name
+from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 azure_console_link = AzureLinker()
@@ -60,7 +60,8 @@ def get_server_list(credentials: Credentials, subscription_id: str, regions: lis
         server['resourceGroup'] = get_azure_resource_group_name(server.get('id'))
         server['publicNetworkAccess'] = server.get('properties', {}).get('public_network_access', 'Disabled')
         server['consolelink'] = azure_console_link.get_console_link(
-            id=server['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            id=server['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+        )
         if regions is None:
             server_data.append(server)
         else:
@@ -107,7 +108,7 @@ def load_server_data(
     for server in server_list:
         resource_group=get_azure_resource_group_name(server.get('id'))
         _attach_resource_group_server(neo4j_session,server.get('id'),resource_group,azure_update_tag)
-    
+
 def _attach_resource_group_server( neo4j_session: neo4j.Session,  server_id: str,server_resource_group:str,azure_update_tag: int) -> None:
     ingest_server = """
     MATCH (s:AzureSQLServer{id: $server_id})
@@ -121,7 +122,7 @@ def _attach_resource_group_server( neo4j_session: neo4j.Session,  server_id: str
         ingest_server,
         server_id=server_id,
         server_resource_group=server_resource_group,
-        azure_update_tag=azure_update_tag
+        azure_update_tag=azure_update_tag,
     )
 
 
@@ -151,7 +152,7 @@ def load_server_private_endpoint_connection(neo4j_session: neo4j.Session, server
         for private_endpoint_connection in server.get('private_endpoint_connections', []):
             resource_group=get_azure_resource_group_name(private_endpoint_connection.get('id'))
             _attach_resource_group_server_private_endpoint_connections(neo4j_session,private_endpoint_connection['id'],resource_group,azure_update_tag)
-    
+
 
 def _attach_resource_group_server_private_endpoint_connections(neo4j_session: neo4j.Session,private_endpoint_connection_id:str, resource_group:str,azure_update_tag: int) -> None:
     ingest_attach_private_endpoint_connection = """
@@ -166,13 +167,13 @@ def _attach_resource_group_server_private_endpoint_connections(neo4j_session: ne
         ingest_attach_private_endpoint_connection,
         aspec_id=private_endpoint_connection_id,
         resource_group=resource_group,
-        azure_update_tag=azure_update_tag
-        )
+        azure_update_tag=azure_update_tag,
+    )
 
 @timeit
 def sync_server_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        server_list: List[Dict], sync_tag: int, common_job_parameters: Dict
+        server_list: List[Dict], sync_tag: int, common_job_parameters: Dict,
 ) -> None:
     details = get_server_details(credentials, subscription_id, server_list)
     load_server_details(neo4j_session, credentials, subscription_id, details, sync_tag, common_job_parameters)
@@ -396,7 +397,7 @@ def get_databases(credentials: Credentials, subscription_id: str, server: Dict) 
 @timeit
 def load_server_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict
+        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Create dictionaries for every resource in the server so we can import them in a single query
@@ -416,7 +417,8 @@ def load_server_details(
                 alias['server_name'] = name
                 alias['server_id'] = server_id
                 alias['consolelink'] = azure_console_link.get_console_link(
-                    id=alias['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=alias['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 dns_aliases.append(alias)
 
         if len(ad_admin) > 0:
@@ -424,7 +426,8 @@ def load_server_details(
                 admin['server_name'] = name
                 admin['server_id'] = server_id
                 admin['consolelink'] = azure_console_link.get_console_link(
-                    id=admin['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=admin['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 ad_admins.append(admin)
 
         if len(r_database) > 0:
@@ -432,7 +435,8 @@ def load_server_details(
                 rdb['server_name'] = name
                 rdb['server_id'] = server_id
                 rdb['consolelink'] = azure_console_link.get_console_link(
-                    id=rdb['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=rdb['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 recoverable_databases.append(rdb)
 
         if len(rd_database) > 0:
@@ -440,7 +444,8 @@ def load_server_details(
                 rddb['server_name'] = name
                 rddb['server_id'] = server_id
                 rddb['consolelink'] = azure_console_link.get_console_link(
-                    id=rddb['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=rddb['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 restorable_dropped_databases.append(rddb)
 
         if len(fg) > 0:
@@ -448,7 +453,8 @@ def load_server_details(
                 group['server_name'] = name
                 group['server_id'] = server_id
                 group['consolelink'] = azure_console_link.get_console_link(
-                    id=group['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=group['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 failover_groups.append(group)
 
         if len(elastic_pool) > 0:
@@ -456,7 +462,8 @@ def load_server_details(
                 pool['server_name'] = name
                 pool['server_id'] = server_id
                 pool['consolelink'] = azure_console_link.get_console_link(
-                    id=pool['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=pool['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 elastic_pools.append(pool)
 
         if len(database) > 0:
@@ -465,7 +472,8 @@ def load_server_details(
                 db['server_id'] = server_id
                 db['resource_group_name'] = rg
                 db['consolelink'] = azure_console_link.get_console_link(
-                    id=db['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=db['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 databases.append(db)
 
         if len(firewall_rules) > 0:
@@ -558,7 +566,7 @@ def _attach_resource_group_dns_alias(neo4j_session: neo4j.Session, dns_alias_id:
         ingest_dns_aliases,
         dns_alias_id=dns_alias_id,
         resource_group=resource_group,
-        azure_update_tag=update_tag
+        azure_update_tag=update_tag,
     )
 
 @timeit
@@ -635,7 +643,7 @@ def _attach_firewall_rule_to_public_ip_tx(tx: neo4j.Transaction, fw_rule: Dict, 
         source=source,
         type=type,
         resource=fw_rule['type'],
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -686,8 +694,8 @@ def _attach_resource_group_ad_admin(neo4j_session: neo4j.Session, ad_admin_id:st
         ingest_ad_admins,
         ad_admin_id=ad_admin_id,
         resource_group=resource_group,
-        azure_update_tag=update_tag
-    )     
+        azure_update_tag=update_tag,
+    )
 
 @timeit
 def _load_recoverable_databases(
@@ -893,7 +901,7 @@ def _attach_resource_group_restorable_elastic_pool(neo4j_session: neo4j.Session,
         ingest_elastic_pools,
         ep_id=elastic_pool_id,
         resource_group=resource_group,
-        azure_update_tag=update_tag
+        azure_update_tag=update_tag,
     )
 
 
@@ -940,7 +948,7 @@ def _load_databases(
         resource_group=get_azure_resource_group_name(database.get('id'))
         _attach_resource_group_restorable_database(neo4j_session,database['id'],resource_group,update_tag)
 
-def _attach_resource_group_restorable_database(neo4j_session: neo4j.Session, database_id:str,resource_group:str ,update_tag: int,) -> None:
+def _attach_resource_group_restorable_database(neo4j_session: neo4j.Session, database_id:str,resource_group:str ,update_tag: int) -> None:
     ingest_databases = """
     MATCH (d:AzureSQLDatabase{id: $database_id})
     WITH d
@@ -1098,7 +1106,7 @@ def get_transparent_data_encryptions(credentials: Credentials, subscription_id: 
 
 
 @timeit
-def get_firewall_rules(credentials: Credentials, subscription_id: str, server: Dict,) -> List[Dict]:
+def get_firewall_rules(credentials: Credentials, subscription_id: str, server: Dict) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
         firewall_rules = list(
@@ -1134,28 +1142,36 @@ def load_database_details(
     for databaseId, replication_link, db_threat_detection_policy, restore_point, transparent_data_encryption in details:
         if len(replication_link) > 0:
             for link in replication_link:
-                link['consolelink'] = azure_console_link.get_console_link(id=link['id'],
-                                                                          primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                link['consolelink'] = azure_console_link.get_console_link(
+                    id=link['id'],
+                    primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 link['database_id'] = databaseId
                 replication_links.append(link)
 
         if len(db_threat_detection_policy) > 0:
             db_threat_detection_policy['database_id'] = databaseId
-            db_threat_detection_policy['consolelink'] = azure_console_link.get_console_link(id=db_threat_detection_policy['id'],
-                                                                                            primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            db_threat_detection_policy['consolelink'] = azure_console_link.get_console_link(
+                id=db_threat_detection_policy['id'],
+                primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             threat_detection_policies.append(db_threat_detection_policy)
 
         if len(restore_point) > 0:
             for point in restore_point:
                 point['database_id'] = databaseId
-                point['consolelink'] = azure_console_link.get_console_link(id=point['id'],
-                                                                           primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                point['consolelink'] = azure_console_link.get_console_link(
+                    id=point['id'],
+                    primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 restore_points.append(point)
 
         if len(transparent_data_encryption) > 0:
             transparent_data_encryption['database_id'] = databaseId
-            transparent_data_encryption['consolelink'] = azure_console_link.get_console_link(id=transparent_data_encryption['id'],
-                                                                                             primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            transparent_data_encryption['consolelink'] = azure_console_link.get_console_link(
+                id=transparent_data_encryption['id'],
+                primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             encryptions_list.append(transparent_data_encryption)
 
     _load_replication_links(neo4j_session, replication_links, update_tag)
@@ -1219,7 +1235,7 @@ def _attach_resource_group_replication_link(neo4j_session: neo4j.Session, replic
         ingest_replication_links,
         replication_link_id=replication_link_id,
         resource_group=resource_group,
-        azure_update_tag=update_tag
+        azure_update_tag=update_tag,
     )
 
 
@@ -1392,7 +1408,7 @@ def cleanup_azure_sql_servers(
 @timeit
 def sync(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        sync_tag: int, common_job_parameters: Dict, regions: list
+        sync_tag: int, common_job_parameters: Dict, regions: list,
 ) -> None:
     logger.info("Syncing Azure SQL for subscription '%s'.", subscription_id)
     server_list = get_server_list(credentials, subscription_id, regions, common_job_parameters)

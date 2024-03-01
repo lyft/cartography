@@ -1,5 +1,5 @@
-import math
 import logging
+import math
 import time
 from collections import namedtuple
 from typing import Any
@@ -8,6 +8,7 @@ from typing import List
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.client.core.tx import load
@@ -20,12 +21,8 @@ from cartography.models.aws.ec2.reservations import EC2ReservationSchema
 from cartography.models.aws.ec2.securitygroup_instance import EC2SecurityGroupInstanceSchema
 from cartography.models.aws.ec2.subnet_instance import EC2SubnetInstanceSchema
 from cartography.models.aws.ec2.volumes import EBSVolumeInstanceSchema
-from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
-import math
-from cloudconsolelink.clouds.aws import AWSLinker
-from botocore.exceptions import ClientError
 aws_console_link = AWSLinker()
 
 logger = logging.getLogger(__name__)
@@ -66,6 +63,7 @@ def get_ec2_instances(boto3_session: boto3.session.Session, region: str) -> List
             raise
 
     return reservations
+
 
 def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, current_aws_account_id: str) -> Ec2Data:
     reservation_list = []
@@ -111,8 +109,8 @@ def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, cur
                     'BootMode': instance.get("BootMode"),
                     'InstanceLifecycle': instance.get("InstanceLifecycle"),
                     'HibernationOptions': instance.get("HibernationOptions", {}).get("Configured"),
-                    "Region" : region,
-                    "consolelink'":aws_console_link.get_console_link(arn=InstanceArn)
+                    "Region": region,
+                    "consolelink'": aws_console_link.get_console_link(arn=InstanceArn),
                 },
             )
 
@@ -363,4 +361,3 @@ def sync_ec2_instances(
     cleanup(neo4j_session, common_job_parameters)
     toc = time.perf_counter()
     logger.info(f"Time to process EC2 instances: {toc - tic:0.4f} seconds")
-

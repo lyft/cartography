@@ -147,5 +147,5 @@ LIST_STATUSES = [
     {
         'is_public': False,
         'bucket': 'bucket-3',
-    }
+    },
 ]

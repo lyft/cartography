@@ -87,12 +87,13 @@ def get_dataset_info(bigquery, dataset_id, project_id):
 
     return response
 
+
 @timeit
 def get_dataset_access_info(bigquery, dataset_id, project_id):
     response = {}
     try:
         response = bigquery.datasets().get(projectId=project_id, datasetId=dataset_id).execute()
-        accesses = response.get('access',[]) 
+        accesses = response.get('access', [])
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
@@ -107,8 +108,9 @@ def get_dataset_access_info(bigquery, dataset_id, project_id):
 
     return accesses
 
+
 @timeit
-def transform_dataset_accesses(response_objects: List[Dict], dataset_id: str,project_id: str) -> List[Dict]:
+def transform_dataset_accesses(response_objects: List[Dict], dataset_id: str, project_id: str) -> List[Dict]:
     """
     Process the GCP dataset access objects and return a flattened list of GCP accesses with all the necessary fields
     we need to load it into Neo4j
@@ -325,6 +327,7 @@ def cleanup_gcp_bigquery(neo4j_session: neo4j.Session, common_job_parameters: Di
     """
     run_cleanup_job('gcp_bigquery_cleanup.json', neo4j_session, common_job_parameters)
 
+
 @timeit
 def cleanup_gcp_bigquery_accesses(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     """
@@ -381,8 +384,8 @@ def sync(
     # BIGQUERY TABLES
     for dataset in bigquery_datasets:
         accesses = get_dataset_access_info(bigquery, dataset['id'], project_id)
-        accesses_list = transform_dataset_accesses(accesses,dataset['id'], project_id)
-        attach_dataset_to_accesses(neo4j_session,dataset['id'],accesses_list,gcp_update_tag)
+        accesses_list = transform_dataset_accesses(accesses, dataset['id'], project_id)
+        attach_dataset_to_accesses(neo4j_session, dataset['id'], accesses_list, gcp_update_tag)
         tables = get_bigquery_tables(bigquery, dataset, project_id, common_job_parameters)
         bigquery_tables = transform_bigquery_tables(bigquery, dataset, tables, project_id)
         load_bigquery_tables(neo4j_session, bigquery_tables, project_id, gcp_update_tag)

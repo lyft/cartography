@@ -1,21 +1,19 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
 from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cloudconsolelink.clouds.aws import AWSLinker
-import time
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
-
 
 
 @timeit
@@ -35,7 +33,7 @@ def get_elastic_ip_addresses(boto3_session: boto3.session.Session, region: str) 
 
 
 @timeit
-def transform_elastic_ip_addresses(elastic_ip_addresses: List[Dict], current_aws_account_id: str,) -> List[Dict]:
+def transform_elastic_ip_addresses(elastic_ip_addresses: List[Dict], current_aws_account_id: str) -> List[Dict]:
     addresses: List[Dict] = []
     for address in elastic_ip_addresses:
         address['arn'] = f"arn:aws:ec2:{address.get('region')}:{current_aws_account_id}:elastic-ip/{address.get('AllocationId')}"
@@ -45,21 +43,10 @@ def transform_elastic_ip_addresses(elastic_ip_addresses: List[Dict], current_aws
 
     return addresses
 
-
-@timeit
-def transform_elastic_ip_addresses(elastic_ip_addresses: List[Dict], current_aws_account_id: str,) -> List[Dict]:
-    addresses: List[Dict] = []
-    for address in elastic_ip_addresses:
-        address['arn'] = f"arn:aws:ec2:{address.get('region')}:{current_aws_account_id}:elastic-ip/{address.get('AllocationId')}"
-        address['consolelink'] = aws_console_link.get_console_link(arn=address['arn'])
-        if address.get('AllocationId'):
-            addresses.append(address)
-
-    return addresses
 
 @timeit
 def load_elastic_ip_addresses(
-    neo4j_session: neo4j.Session, elastic_ip_addresses: List[Dict],region:str,
+    neo4j_session: neo4j.Session, elastic_ip_addresses: List[Dict], region: str,
     current_aws_account_id: str, update_tag: int,
 ) -> None:
     """

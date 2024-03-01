@@ -54,10 +54,10 @@ def test_sync_multiple_accounts(
         update_tag=TEST_UPDATE_TAG,
         aws_sync_all_profiles=True,
         credentials={'type': 'self', 'aws_access_key_id': '123', 'aws_secret_access_key': '12333'},
-        params={'regions': []}
+        params={'regions': []},
     )
     cartography.intel.aws._sync_multiple_accounts(
-        neo4j_session, TEST_ACCOUNTS, test_config, GRAPH_JOB_PARAMETERS, True
+        neo4j_session, TEST_ACCOUNTS, test_config, GRAPH_JOB_PARAMETERS, True,
     )
 
     # Ensure we call _sync_one_account on all accounts in our list.
@@ -93,7 +93,7 @@ def test_start_aws_ingestion(mock_perform_analysis, mock_sync_multiple, mock_org
         update_tag=TEST_UPDATE_TAG,
         aws_sync_all_profiles=True,
         credentials={'type': 'self', 'aws_access_key_id': '', 'aws_secret_access_key': ''},
-        params={'workspace': {'id_string': 'workspace_id'}}
+        params={'workspace': {'id_string': 'workspace_id'}},
     )
 
     # Act

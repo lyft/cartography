@@ -5,9 +5,9 @@ from typing import Dict
 from typing import List
 
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
 from . import label
 from cartography.util import run_cleanup_job
@@ -49,8 +49,10 @@ def transform_subscriptions(subscriptions: List[Dict], project_id: str) -> List[
         subscription['project_id'] = project_id
         subscription['region'] = 'global'
         subscription['subscription_name'] = subscription['id'].split('/')[-1]
-        subscription['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
-                                                                        subscription_name=subscription['subscription_name'], resource_name='cloud_pubsub_subscription')
+        subscription['consolelink'] = gcp_console_link.get_console_link(
+            project_id=project_id,
+            subscription_name=subscription['subscription_name'], resource_name='cloud_pubsub_subscription',
+        )
         subscriptions.append(subscription)
 
     return subscriptions

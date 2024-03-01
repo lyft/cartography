@@ -142,7 +142,7 @@ class Config:
         gsuite_config=None,
         refresh_entitlements=False,
         bitbucket_access_token=None,
-        aws_internal_accounts=None
+        aws_internal_accounts=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user

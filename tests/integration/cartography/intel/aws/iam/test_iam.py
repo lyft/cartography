@@ -175,7 +175,7 @@ def test_load_inline_policy_data(neo4j_session):
         "group_inline_policy",
         tests.data.aws.iam.INLINE_POLICY_STATEMENTS,
         TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
 

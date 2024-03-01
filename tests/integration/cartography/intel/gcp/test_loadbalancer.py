@@ -4,13 +4,14 @@ import tests.data.gcp.loadbalancer
 TEST_PROJECT_ID = 'project123'
 TEST_UPDATE_TAG = 123456789
 
+
 def test_global_health_check(neo4j_session):
     data = tests.data.gcp.loadbalancer.TEST_GLOBAL_HEALTH_CHECK
     cartography.intel.gcp.loadbalancer.load_health_checks(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -27,13 +28,14 @@ def test_global_health_check(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_regional_health_check(neo4j_session):
     data = tests.data.gcp.loadbalancer.TEST_REGIONAL_HEALTH_CHECK
     cartography.intel.gcp.loadbalancer.load_health_checks(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -50,13 +52,14 @@ def test_regional_health_check(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_global_instance_group(neo4j_session):
     data = tests.data.gcp.loadbalancer.TEST_GLOBAL_INSTANCE_GROUP
     cartography.intel.gcp.loadbalancer.load_instance_groups(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -73,13 +76,14 @@ def test_global_instance_group(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_regional_instance_group(neo4j_session):
     data = tests.data.gcp.loadbalancer.TEST_REGIONAL_INSTANCE_GROUP
     cartography.intel.gcp.loadbalancer.load_instance_groups(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -96,13 +100,14 @@ def test_regional_instance_group(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_global_url_map(neo4j_session):
-    data =  tests.data.gcp.loadbalancer.TEST_GLOBAL_URL_MAP
+    data = tests.data.gcp.loadbalancer.TEST_GLOBAL_URL_MAP
     cartography.intel.gcp.loadbalancer.load_url_maps(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -119,13 +124,14 @@ def test_global_url_map(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_regional_url_map(neo4j_session):
-    data =  tests.data.gcp.loadbalancer.TEST_REGIONAL_URL_MAP
+    data = tests.data.gcp.loadbalancer.TEST_REGIONAL_URL_MAP
     cartography.intel.gcp.loadbalancer.load_url_maps(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {
@@ -142,13 +148,14 @@ def test_regional_url_map(neo4j_session):
 
     assert actual_nodes == expected_nodes
 
+
 def test_ssl_policy(neo4j_session):
-    data =  tests.data.gcp.loadbalancer.TEST_SSL_POLICY
+    data = tests.data.gcp.loadbalancer.TEST_SSL_POLICY
     cartography.intel.gcp.loadbalancer.load_ssl_policies(
         neo4j_session,
         data,
         TEST_PROJECT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
     expected_nodes = {

@@ -66,7 +66,7 @@ CLUSTERS = [
                 ],
                 'ParameterApplyStatus': 'in-sync',
                 'ParameterGroupName': 'my-cluster',
-            }
+            },
         ],
         'ClusterPublicKey': 'ssh-rsa AAAA Amazon-Redshift\n',
         'ClusterRevisionNumber': '15503',
@@ -102,9 +102,9 @@ CLUSTERS = [
             {
                 'Status': 'active',
                 'VpcSecurityGroupId': 'sg-028e2522c72719996',
-            }
+            },
         ],
-    }
+    },
 ]
 
 NODES = [
@@ -119,12 +119,13 @@ NODES = [
         "RecurringCharges": [
             {
                 "RecurringChargeAmount": "",
-                "RecurringChargeFrequency": "Hourly"
-            }],
+                "RecurringChargeFrequency": "Hourly",
+            },
+        ],
         "NodeCount": 1,
         "State": "payment-pending",
         "StartTime": "2013-02-13T17:08:39.051Z",
         "Duration": 31536000,
-        "ReservedNodeOfferingId": "ceb6a579-cf4c-4343-be8b-d832c45ab51c"
-    }
+        "ReservedNodeOfferingId": "ceb6a579-cf4c-4343-be8b-d832c45ab51c",
+    },
 ]

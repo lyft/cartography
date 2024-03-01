@@ -1,13 +1,13 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
-from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -51,7 +51,7 @@ def load_route_tables(
         associations.extend(route_table['Associations'])
         for route in route_table['Routes']:
             route['RouteTableId'] = route_table['RouteTableId']
-            route['id'] = f"route_table/{route_table['RouteTableId']}/destination_cidr/{route.get('DestinationCidrBlock',route.get('DestinationIpv6CidrBlock'))}"
+            route['id'] = f"route_table/{route_table['RouteTableId']}/destination_cidr/{route.get('DestinationCidrBlock', route.get('DestinationIpv6CidrBlock'))}"
             routes.append(route)
     neo4j_session.write_transaction(load_route_tables_tx, data, aws_account_id, aws_update_tag)
     neo4j_session.write_transaction(load_routes_tx, routes, aws_update_tag)
@@ -63,14 +63,14 @@ def load_route_tables_tx(tx: neo4j.Transaction, data: List[Dict], aws_account_id
     ingest_route_tables = """
     UNWIND $route_tables as route_table
     MERGE (rtab: EC2RouteTable{id: route_table.RouteTableId})
-    ON CREATE SET 
+    ON CREATE SET
         rtab.firstseen = timestamp()
     SET
         rtab.lastupdated = $aws_update_tag,
         rtab.consolelink = route_table.consolelink,
         rtab.arn = route_table.arn,
         rtab.owner_id = route_table.OwnerId
-        
+
     WITH route_table, rtab
     MATCH (vpc:AWSVpc{id: route_table.VpcId})
     MERGE (rtab)-[r:MEMBER_OF_AWS_VPC]->(vpc)
@@ -134,16 +134,16 @@ def load_associations_tx(tx: neo4j.Transaction, data: List[Dict], aws_update_tag
     WITH assoc, asc
     MATCH (rtab:EC2RouteTable{id: assoc.RouteTableId})
     MERGE (rtab)-[rel:HAS_ASSOCIATION]->(asc)
-    ON CREATE SET 
+    ON CREATE SET
         rel.firstseen = timestamp()
     SET
         rel.lastupdated = $aws_update_tag
     WITH asc, assoc
     WHERE assoc.SubnetId IS NOT NULL
     MERGE (subnet:EC2Subnet{subnetid: assoc.SubnetId})
-    ON CREATE SET 
+    ON CREATE SET
         subnet.firstseen = timestamp()
-    SET 
+    SET
         subnet.lastupdated = $aws_update_tag
     WITH subnet, asc
     MERGE (subnet)-[r:HAS_EXPLICIT_ASSOCIATION]->(asc)

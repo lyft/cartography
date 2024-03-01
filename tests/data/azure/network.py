@@ -49,7 +49,7 @@ DESCRIBE_NETWORKSUBNETS = [
             virtualNetworks/TestNetwork1",
         "network_security_group_id":
         "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
-            networkSecurityGroups/Testgroup1"
+            networkSecurityGroups/Testgroup1",
     },
     {
         "id":
@@ -72,7 +72,7 @@ DESCRIBE_NETWORKSUBNETS = [
             virtualNetworks/TestNetwork2",
         "network_security_group_id":
             "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
-            networkSecurityGroups/Testgroup2"
+            networkSecurityGroups/Testgroup2",
     },
 ]
 
@@ -89,9 +89,9 @@ DESCRIBE_ROUTETABLE = [
         "subnets": [
             {
                 "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
-            virtualNetworks/TestNetwork1/subnets/subnet1"
+            virtualNetworks/TestNetwork1/subnets/subnet1",
             },
-        ]
+        ],
     },
     {
         "id":
@@ -105,9 +105,9 @@ DESCRIBE_ROUTETABLE = [
         "subnets": [
             {
                 "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
-            virtualNetworks/TestNetwork2/subnets/subnet2"
+            virtualNetworks/TestNetwork2/subnets/subnet2",
             },
-        ]
+        ],
     },
 ]
 
@@ -184,7 +184,7 @@ DESCRIBE_NETWORKSECURITYRULES = [
         "access": "Allow",
         "source_port_range": "*",
         "protocol": "TCP",
-        "source_address_prefix": "1.1.1.1/24"
+        "source_address_prefix": "1.1.1.1/24",
     },
     {
         "id":
@@ -202,7 +202,7 @@ DESCRIBE_NETWORKSECURITYRULES = [
         "access": "Allow",
         "source_port_range": "8080",
         "protocol": "TCP",
-        "source_address_prefix": "1.1.1.1/24"
+        "source_address_prefix": "1.1.1.1/24",
     },
     {
         "id":
@@ -219,7 +219,7 @@ DESCRIBE_NETWORKSECURITYRULES = [
             networkSecurityGroups/Testgroup2",
         "access": "Allow",
         "direction": "Inbound",
-        "destination_port_range": "0-65535"
+        "destination_port_range": "0-65535",
     },
     {
         "id":
@@ -237,8 +237,8 @@ DESCRIBE_NETWORKSECURITYRULES = [
         "access": "Allow",
         "direction": "Inbound",
         "protocol": "ICMP",
-        "source_address_prefix": "*"
-    }
+        "source_address_prefix": "*",
+    },
 ]
 
 DESCRIBE_PUBLICIPADDRESSES = [
@@ -271,7 +271,7 @@ DESCRIBE_PUBLICIPADDRESSES_REFERENCE = [
     {
         "public_ip_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/\
             publicIPAddresses/ip2",
-    }
+    },
 ]
 
 DESCRIBE_NETWORKUSAGES = [

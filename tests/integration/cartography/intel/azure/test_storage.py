@@ -1,4 +1,5 @@
 from cartography.intel.azure import storage
+from cartography.util import run_analysis_job
 from tests.data.azure.storage import DESCRIBE_BLOB_CONTAINERS
 from tests.data.azure.storage import DESCRIBE_BLOB_SERVICES
 from tests.data.azure.storage import DESCRIBE_FILE_SERVICES
@@ -8,7 +9,6 @@ from tests.data.azure.storage import DESCRIBE_QUEUE_SERVICES
 from tests.data.azure.storage import DESCRIBE_STORAGE_ACCOUNTS
 from tests.data.azure.storage import DESCRIBE_TABLE_SERVICES
 from tests.data.azure.storage import DESCRIBE_TABLES
-from cartography.util import run_analysis_job
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_WORKSPACE_ID = '1234'
@@ -600,19 +600,19 @@ def test_storage_public_facing_analysis(neo4j_session):
         "UPDATE_TAG": TEST_UPDATE_TAG + 1,
         "WORKSPACE_ID": TEST_WORKSPACE_ID,
         "AZURE_SUBSCRIPTION_ID": TEST_SUBSCRIPTION_ID,
-        "AZURE_TENANT_ID": TEST_TENANT_ID
+        "AZURE_TENANT_ID": TEST_TENANT_ID,
     }
 
     run_analysis_job(
         'azure_storage_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     result = neo4j_session.run(
         """
         MATCH (n:AzureStorageBlobContainer{anonymous_access: true}) return n.id, n.anonymous_access_type
-        """
+        """,
     )
 
     expected_nodes = {
@@ -629,7 +629,7 @@ def test_storage_public_facing_analysis(neo4j_session):
     result = neo4j_session.run(
         """
         MATCH (n:AzureStorageAccount{exposed_internet: true}) return n.id, n.exposed_internet_type
-        """
+        """,
     )
 
     expected_nodes = {('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2', 'default_allow_action')}

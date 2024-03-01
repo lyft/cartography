@@ -8,9 +8,9 @@ DESCRIBE_KEYVAULTS = [
         "properties": {
             "vault_uri": "https://vault1.vault.azure.net/",
             "network_acls": {
-                "default_action": "Deny"
-            }
-        }
+                "default_action": "Deny",
+            },
+        },
     },
     {
         "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2",
@@ -19,8 +19,8 @@ DESCRIBE_KEYVAULTS = [
         "resource_group": "TestRG",
         "name": "vault2",
         "properties": {
-            "vault_uri": "https://vault2.vault.azure.net/"
-        }
+            "vault_uri": "https://vault2.vault.azure.net/",
+        },
     },
 ]
 DESCRIBE_KEYS = [
@@ -81,7 +81,7 @@ DESCRIBE_CERTIFICATES = [
         "content_type": "content2",
         "kid": "https://vault2.vault.azure.net/keys/key2",
         "sid": "https://vault1.vault.azure.net/secrets/secret2/hijklm",
-        "vault_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2"
+        "vault_id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2",
 
     },
 ]

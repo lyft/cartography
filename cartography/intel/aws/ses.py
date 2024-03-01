@@ -1,21 +1,23 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
-from botocore.exceptions import ClientError
-from botocore.exceptions import ConnectTimeoutError, EndpointConnectionError
-from botocore.client import Config
 
 import boto3
 import neo4j
+from botocore.client import Config
+from botocore.exceptions import ClientError
+from botocore.exceptions import ConnectTimeoutError
+from botocore.exceptions import EndpointConnectionError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
+
 
 @timeit
 @aws_handle_regions
@@ -37,6 +39,7 @@ def get_ses_identity(boto3_session: boto3.session.Session, region: str) -> List[
         logger.error(f'Failed to call SES list_identities: {region} - {e}')
         return identity_names
 
+
 @timeit
 def transform_identites(boto3_session: boto3.session.Session, idsnames: List[Dict], region: str, current_aws_account_id: str) -> List[Dict]:
     identities = []
@@ -49,7 +52,8 @@ def transform_identites(boto3_session: boto3.session.Session, idsnames: List[Dic
         dkim_attributes = client.get_identity_dkim_attributes(Identities=idsnames).get('DkimAttributes', {})
 
         identity_verifications = client.get_identity_verification_attributes(
-                Identities=idsnames).get('VerificationAttributes', {})
+            Identities=idsnames,
+        ).get('VerificationAttributes', {})
 
         for identity in identities:
             identity['arn'] = f"arn:aws:ses:{region}:{current_aws_account_id}:identity/{identity['name']}"
@@ -63,6 +67,7 @@ def transform_identites(boto3_session: boto3.session.Session, idsnames: List[Dic
         logger.error(f'Failed to call SES list_identities: {region} - {e}')
 
     return resources
+
 
 def load_ses_identity(session: neo4j.Session, identities: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_ses_identity_tx, identities, current_aws_account_id, aws_update_tag)

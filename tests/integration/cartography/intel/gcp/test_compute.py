@@ -331,7 +331,7 @@ def test_vpc_to_subnets(neo4j_session):
             '10.0.0.1',
             '10.0.0.0/20',
             False,
-        )
+        ),
     }
 
     assert actual_nodes == expected_nodes
@@ -503,7 +503,7 @@ def test_compute_network_interfaces(neo4j_session):
     instance_id2 = 'projects/project-abc/zones/europe-west2-b/instances/instance-1-test'
 
     nat_ip_query = """
-    MATCH (i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID}) \nWHERE i.nat_ip IS NOT NULL AND i.ipv6_nat_ip IS NOT NULL \n 
+    MATCH (i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID}) \nWHERE i.nat_ip IS NOT NULL AND i.ipv6_nat_ip IS NOT NULL \n
     RETURN i.id, i.zone_name, i.project_id, i.nat_ip, i.ipv6_nat_ip
     """
 
@@ -525,14 +525,14 @@ def test_compute_network_interfaces(neo4j_session):
             'europe-west2-b',
             'project-abc',
             '1.2.3.4',
-            '6.7.8.9'
+            '6.7.8.9',
         ),
         (
             instance_id2,
             'europe-west2-b',
             'project-abc',
             '1.3.4.5',
-            '6.7.8.9'
+            '6.7.8.9',
         ),
     }
 
@@ -540,7 +540,7 @@ def test_compute_network_interfaces(neo4j_session):
 
 
 def test_compute_firewalls(neo4j_session):
-    
+
     cloudanix_workspace_to_gcp_project(neo4j_session)
     fw_responses = tests.data.gcp.compute.LIST_FIREWALLS_RESPONSE
     fw_list = cartography.intel.gcp.compute.transform_gcp_firewall(fw_responses)
@@ -548,9 +548,6 @@ def test_compute_firewalls(neo4j_session):
     instance_responses = tests.data.gcp.compute.GCP_LIST_INSTANCES_RESPONSE
     instance_list = cartography.intel.gcp.compute.transform_gcp_instances(instance_responses.get("items", []), compute=None)
     cartography.intel.gcp.compute.load_gcp_instances(neo4j_session, instance_list, TEST_UPDATE_TAG)
-    
-    
-    
 
     firewall_query = """
     MATCH (rng:IpRange)-[m:MEMBER_OF_IP_RULE]->(rule:IpRule:IpPermissionInbound:GCPIpRule)-[r:ALLOWED_BY]->(fw:GCPFirewall)<-[:RESOURCE]-(vpc:GCPVpc)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE fw.direction='INGRESS' AND fw.disabled=FALSE AND rng.id='0.0.0.0/0' AND rule.protocol IN ['tcp','udp'] AND rule.fromport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,0,53,20,21,22] AND rule.toport IN [80,443,23,3389,25,465,587,3306,5432,1521,1433,135,137,138,139,445,53,20,21,22,65535]
@@ -562,36 +559,35 @@ def test_compute_firewalls(neo4j_session):
     """
 
     query2 = """
-    MATCH (fw:GCPFirewall)-[:CONNECTION]->(network:GCPNetwork)<-[:CONNECTION]-(i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) 
+    MATCH (fw:GCPFirewall)-[:CONNECTION]->(network:GCPNetwork)<-[:CONNECTION]-(i:Instance:GCPInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
     RETURN fw.id,fw.unrestricted_access
     """
-    run_analysis_job('gcp_compute_firewall_analysis.json',neo4j_session,common_job_parameters)
-    run_analysis_job('gcp_compute_instance_analysis.json',neo4j_session,common_job_parameters)
+    run_analysis_job('gcp_compute_firewall_analysis.json', neo4j_session, common_job_parameters)
+    run_analysis_job('gcp_compute_instance_analysis.json', neo4j_session, common_job_parameters)
 
     objects1 = neo4j_session.run(query1, GCP_PROJECT_ID=TEST_PROJECT_ID, WORKSPACE_ID=TEST_WORKSPACE_ID)
     # checked the query1 output by printing the output due to unhashable type list error
 
-
     actual_nodes = {
         (
             o['i.id'],
-            ",".join(o['i.exposed_internet_type'])
+            ",".join(o['i.exposed_internet_type']),
 
         ) for o in objects1
-        
+
     }
 
     expected_nodes = {
-        
+
         (
             'projects/project-abc/zones/europe-west2-b/instances/instance-1',
-            'nat_ip,ipv6_nat_ip,unrestricted_access_from_firewall'
+            'nat_ip,ipv6_nat_ip,unrestricted_access_from_firewall',
         ),
         (
             'projects/project-abc/zones/europe-west2-b/instances/instance-1-test',
-            'nat_ip,ipv6_nat_ip,unrestricted_access_from_firewall'
+            'nat_ip,ipv6_nat_ip,unrestricted_access_from_firewall',
         ),
-        
+
     }
 
     assert actual_nodes == expected_nodes

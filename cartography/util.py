@@ -2,8 +2,6 @@ import asyncio
 import logging
 import re
 import sys
-import requests
-from requests.exceptions import RequestException
 from functools import partial
 from functools import wraps
 from string import Template
@@ -24,6 +22,8 @@ import backoff
 import boto3
 import botocore
 import neo4j
+import requests
+from requests.exceptions import RequestException
 
 from cartography.graph.job import GraphJob
 from cartography.graph.statement import get_job_shortname
@@ -50,7 +50,7 @@ def get_azure_resource_group_name(id:str)->None:
     if id is not None and 'resourcegroups' in id:
         x = id.split('/')
         resource_group = x[x.index('resourcegroups') + 1]
-        return resource_group  
+        return resource_group
     return resource_group
 
 
@@ -77,15 +77,6 @@ def run_analysis_job(
         common_job_parameters,
         get_job_shortname(filename),
     )
-
-def get_azure_resource_group_name(id:str)->None:
-    resource_group=''
-    id=id.lower()
-    if id is not None and 'resourcegroups' in id:
-        x = id.split('/')
-        resource_group = x[x.index('resourcegroups') + 1]
-        return resource_group  
-    return resource_group
 
 def run_analysis_and_ensure_deps(
         analysis_job_name: str,
@@ -151,9 +142,9 @@ def run_cleanup_job(
             common_job_parameters,
             get_job_shortname(filename),
         )
-    
+
     except Exception as e:
-        logger.warning("Failed to cleanup - {}. parameters - {}, Error - {}".format(filename, common_job_parameters, e))
+        logger.warning(f"Failed to cleanup - {filename}. parameters - {common_job_parameters}, Error - {e}")
 
 
 def merge_module_sync_metadata(
@@ -449,17 +440,16 @@ def make_requests_url(url,access_token):
     try:
         headers = {
             "Accept": "application/json",
-            "Authorization": f"Bearer {access_token}"
-            }
+            "Authorization": f"Bearer {access_token}",
+        }
         response = requests.request(
             "GET",
             url,
-            headers=headers
-            )
+            headers=headers,
+        )
         if response.status_code!=200:
             return []
         return response.json().get('values',[])
     except RequestException as e:
         logger.info(f"failed to geting bitbucket response")
         return []
-    

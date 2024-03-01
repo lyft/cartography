@@ -21,7 +21,7 @@ DESCRIBE_DBCLUSTERS_RESPONSE = {
             'ReaderEndpoint': 'some-prod-ro-db-iad-0.subdomain.us-east-1.rds.amazonaws.com',
             'CustomEndpoints': [],
             'MultiAZ': False,
-            "region":"us-east-1",
+            "region": "us-east-1",
             'Engine': 'docdb',
             'EngineVersion': '3.6.0',
             'LatestRestorableTime': '2021-06-17 07:11:29.507000+00:00',
@@ -69,7 +69,7 @@ DESCRIBE_DBINSTANCES_RESPONSE = {
     "DBInstances": [
         {
             "AllocatedStorage": 1,
-             "region":"us-east-1",
+            "region": "us-east-1",
             "AutoMinorVersionUpgrade": True,
             "AvailabilityZone": "us-east-1e",
             'region': 'us-east-1',
@@ -184,8 +184,8 @@ DESCRIBE_SECURITY_GROUPS_RESPONSE = [
         "VpcId": "vpc-1234567f",
         "EC2SecurityGroups": [],
         "IPRanges": [],
-        "DBSecurityGroupArn": "arn:aws:rds:us-east-1:111122223333:secgrp:mysecgroup"
-    }
+        "DBSecurityGroupArn": "arn:aws:rds:us-east-1:111122223333:secgrp:mysecgroup",
+    },
 ]
 DESCRIBE_SNAPSHOTS_RESPONSE = [
     {
@@ -212,8 +212,8 @@ DESCRIBE_SNAPSHOTS_RESPONSE = [
         "DBSnapshotArn": "arn:aws:rds:us-east-1:123456789012:snapshot:mydbsnapshot",
         "IAMDatabaseAuthenticationEnabled": False,
         "ProcessorFeatures": [],
-        "DbiResourceId": "db-AKIAIOSFODNN7EXAMPLE"
-    }
+        "DbiResourceId": "db-AKIAIOSFODNN7EXAMPLE",
+    },
 ]
 
 DESCRIBE_DBSNAPSHOTS_RESPONSE = {
@@ -252,7 +252,7 @@ DESCRIBE_DBSNAPSHOTS_RESPONSE = {
             "SnapshotDatabaseTime": datetime.datetime(2022, 1, 1),
             "SnapshotTarget": "some-snapshot-target",
             "StorageThroughput": 1234,
-             "region":"us-east-1",
+            "region": "us-east-1",
         },
         {
             "DBSnapshotIdentifier": "some-other-db-snapshot-identifier",
@@ -301,15 +301,15 @@ DESCRIBE_DBSNAPSHOT_ATTRIBUTE_RESPONSE = [
                 'AttributeName': 'backup',
                 'AttributeValues': [
                     'all',
-                ]
+                ],
             },
             {
                 'AttributeName': 'attrib-1',
                 'AttributeValues': [
                     'all',
-                ]
-            }
-        ]
+                ],
+            },
+        ],
     },
     {
         'DBSnapshotIdentifier': 'some-other-db-snapshot-identifier',
@@ -318,20 +318,20 @@ DESCRIBE_DBSNAPSHOT_ATTRIBUTE_RESPONSE = [
                 'AttributeName': 'backup',
                 'AttributeValues': [
                     'all',
-                ]
+                ],
             },
             {
                 'AttributeName': 'attrib-1',
                 'AttributeValues': [
                     'all',
-                ]
+                ],
             },
             {
                 'AttributeName': 'restore',
                 'AttributeValues': [
                     'all',
-                ]
-            }
-        ]
-    }
+                ],
+            },
+        ],
+    },
 ]

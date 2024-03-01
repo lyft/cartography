@@ -1,12 +1,13 @@
 # Google Compute Engine API-centric functions
 # https://cloud.google.com/compute/docs/concepts
+import ipaddress
 import json
 import logging
 import math
 import time
-import ipaddress
-from ipaddress import AddressValueError, NetmaskValueError
 from collections import namedtuple
+from ipaddress import AddressValueError
+from ipaddress import NetmaskValueError
 from string import Template
 from typing import Any
 from typing import Dict
@@ -15,14 +16,14 @@ from typing import Optional
 from typing import Set
 
 import neo4j
-from cartography.util import batch
+from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from botocore.exceptions import ClientError
 
 from . import iam
 from . import label
+from cartography.util import batch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -43,8 +44,10 @@ def get_compute_disks(compute: Resource, project_id: str, zones: list, common_jo
                 res = req.execute()
                 if res.get('items'):
                     for disk in res['items']:
-                        disk['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
-                                                                                zone=zone['name'], disk_name=disk['name'], resource_name="compute_instance_disk")
+                        disk['consolelink'] = gcp_console_link.get_console_link(
+                            project_id=project_id,
+                            zone=zone['name'], disk_name=disk['name'], resource_name="compute_instance_disk",
+                        )
                         disk['project_id'] = project_id
                         disk['id'] = f"projects/{project_id}/disks/{disk['name']}"
                         x = zone['name'].split('-')
@@ -517,11 +520,15 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
             res['networkIP'] = nic.get('networkIP', None)
             nic['subnet_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['subnetwork'])
             nic['vpc_partial_uri'] = _parse_compute_full_uri_to_partial_uri(nic['network'])
-            nic['consolelink'] = gcp_console_link.get_console_link(project_id=prefix_fields.project_id,
-                                                                   network_name=nic['network'], resource_name='compute_instance_vpc_network')
+            nic['consolelink'] = gcp_console_link.get_console_link(
+                project_id=prefix_fields.project_id,
+                network_name=nic['network'], resource_name='compute_instance_vpc_network',
+            )
             for accessconfig in nic.get('accessConfigs', []):
-                accessconfig['consolelink'] = gcp_console_link.get_console_link(project_id=prefix_fields.project_id,
-                                                                                network_name=nic['network'], resource_name='compute_instance_vpc_network')
+                accessconfig['consolelink'] = gcp_console_link.get_console_link(
+                    project_id=prefix_fields.project_id,
+                    network_name=nic['network'], resource_name='compute_instance_vpc_network',
+                )
                 if not res.get('natIP', None):
                     res['natIP'] = accessconfig.get('natIP', None)
                 else:
@@ -1366,11 +1373,11 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     MERGE (vpc)-[r:RESOURCE]->(fw)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
-    
+
     MERGE (nic:GCPNetworkInterface{network: fw.network})
     ON CREATE SET nic.firstseen = timestamp()
     SET nic.lastupdated = $gcp_update_tag
-    
+
     MERGE (fw)-[c:ATTACH_TO]->(nic)
     ON CREATE SET c.firstseen = timestamp()
     SET c.lastupdated = $gcp_update_tag
@@ -1408,14 +1415,14 @@ def _attach_firewall_public_ip_address(neo4j_session: neo4j.Session, fw: Resourc
                 i.type='Internal',
                 i.source='GCP',
                 i.resource='FirewallRule',
-                i.lastupdated = $gcp_update_tag         
+                i.lastupdated = $gcp_update_tag
         with i
             MATCH (p:GCPFirewall{id: $FwId})
         with i,p
          MERGE (p)-[r:MEMBER_OF_PUBLIC_IP_ADDRESS]->(i)
          ON CREATE SET r.firstseen = timestamp()
          SET
-         r.lastupdated = $gcp_update_tag       
+         r.lastupdated = $gcp_update_tag
     """
     public_ip_address = []
     for ip in fw.get('sourceRanges', []):
@@ -1581,67 +1588,6 @@ def cleanup_gcp_firewall_rules(neo4j_session: neo4j.Session, common_job_paramete
 
     except ClientError as ex:
         logger.error("error while syncing gcp firewall rules", ex)
-
-
-@timeit
-def cleanup_gcp_proxies(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    """
-    Delete out of date GCP Proxies and their relationships
-    :param neo4j_session: The Neo4j session
-    :param common_job_parameters: dict of other job parameters to pass to Neo4j
-    :return: Nothing
-    """
-    try:
-        run_cleanup_job('gcp_compute_proxies_cleanup.json', neo4j_session, common_job_parameters)
-
-    except ClientError as ex:
-        logger.error("error while syncing gcp proxies", ex)
-
-
-@timeit
-def sync_gcp_https_proxies(
-    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
-) -> None:
-    """
-    Get GCP Https Proxies, ingest to Neo4j, and clean up old data.
-    :param neo4j_session: The Neo4j session
-    :param compute: The GCP Compute resource object
-    :param project_id: The project ID to sync
-    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-    :param common_job_parameters: dict of other job parameters to pass to Neo4j
-    :return: Nothing
-    """
-    h_proxies = get_https_proxies(compute, project_id, common_job_parameters)
-    https_proxies = transform_https_proxies(h_proxies, project_id)
-    load_proxies(neo4j_session, https_proxies, project_id, gcp_update_tag)
-
-    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
-    cleanup_gcp_proxies(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, https_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
-
-
-@timeit
-def sync_gcp_ssl_proxies(
-    neo4j_session: neo4j.Session, compute: Resource, project_id: str, gcp_update_tag: int,
-    common_job_parameters: Dict,
-) -> None:
-    """
-    Get GCP SSL Proxies, ingest to Neo4j, and clean up old data.
-    :param neo4j_session: The Neo4j session
-    :param compute: The GCP Compute resource object
-    :param project_id: The project ID to sync
-    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
-    :param common_job_parameters: dict of other job parameters to pass to Neo4j
-    :return: Nothing
-    """
-    s_proxies = get_ssl_proxies(compute, project_id, common_job_parameters)
-    ssl_proxies = transform_ssl_proxies(s_proxies, project_id)
-    load_proxies(neo4j_session, ssl_proxies, project_id, gcp_update_tag)
-
-    # TODO scope the cleanup to the current project - https://github.com/lyft/cartography/issues/381
-    cleanup_gcp_proxies(neo4j_session, common_job_parameters)
-    label.sync_labels(neo4j_session, ssl_proxies, gcp_update_tag, common_job_parameters, 'proxies', 'GCPProxy')
 
 
 @timeit
@@ -1881,21 +1827,35 @@ def sync(
         regions = _zones_to_regions(zones)
         sync_gcp_vpcs(neo4j_session, compute, project_id, gcp_update_tag, common_job_parameters)
 
-        sync_gcp_firewall_rules(neo4j_session, compute, project_id, gcp_update_tag,
-                                common_job_parameters)
+        sync_gcp_firewall_rules(
+            neo4j_session, compute, project_id, gcp_update_tag,
+            common_job_parameters,
+        )
 
-        sync_gcp_subnets(neo4j_session, compute, project_id, regions,
-                         gcp_update_tag, common_job_parameters)
-        sync_gcp_instances(neo4j_session, compute, project_id, zones,
-                           gcp_update_tag, common_job_parameters)
-        sync_gcp_forwarding_rules(neo4j_session, compute, project_id, regions,
-                                  gcp_update_tag, common_job_parameters)
-        sync_compute_disks(neo4j_session, compute, project_id, zones,
-                           gcp_update_tag, common_job_parameters)
-        sync_gcp_https_proxies(neo4j_session, compute, project_id,
-                               gcp_update_tag, common_job_parameters)
-        sync_gcp_ssl_proxies(neo4j_session, compute, project_id,
-                             gcp_update_tag, common_job_parameters)
+        sync_gcp_subnets(
+            neo4j_session, compute, project_id, regions,
+            gcp_update_tag, common_job_parameters,
+        )
+        sync_gcp_instances(
+            neo4j_session, compute, project_id, zones,
+            gcp_update_tag, common_job_parameters,
+        )
+        sync_gcp_forwarding_rules(
+            neo4j_session, compute, project_id, regions,
+            gcp_update_tag, common_job_parameters,
+        )
+        sync_compute_disks(
+            neo4j_session, compute, project_id, zones,
+            gcp_update_tag, common_job_parameters,
+        )
+        sync_gcp_https_proxies(
+            neo4j_session, compute, project_id,
+            gcp_update_tag, common_job_parameters,
+        )
+        sync_gcp_ssl_proxies(
+            neo4j_session, compute, project_id,
+            gcp_update_tag, common_job_parameters,
+        )
 
     toc = time.perf_counter()
     logger.info(f"Time to process Compute: {toc - tic:0.4f} seconds")

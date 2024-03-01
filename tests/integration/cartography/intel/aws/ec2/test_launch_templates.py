@@ -50,11 +50,11 @@ def test_load_launch_templates(neo4j_session, *args):
             n['n.latest_version_number'],
         )
         for n in templates
-        
+
     }
-    
+
     assert actual_templates == expected_templates
-    
+
     expected_versions = {
         (
             "lt-00000000000000000-1",

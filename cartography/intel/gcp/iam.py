@@ -1,9 +1,9 @@
 import json
 import logging
 import time
+from datetime import datetime
 from typing import Dict
 from typing import List
-from datetime import datetime
 
 import neo4j
 from cloudconsolelink.clouds.gcp import GCPLinker
@@ -63,8 +63,8 @@ def get_service_account_last_used_activities(policyanalyzer: Resource,project_id
         parent=f"projects/{project_id}/locations/global/activityTypes/serviceAccountKeyLastAuthentication"
         res =policyanalyzer.projects().locations().activityTypes().activities().query(parent=parent).execute()
         activities.extend(res.get('activities', []))
-            
-    
+
+
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err['status'] == 'PERMISSION_DENIED':
@@ -76,7 +76,7 @@ def get_service_account_last_used_activities(policyanalyzer: Resource,project_id
             return []
         else:
             raise
-    
+
     return activities
 
 def get_last_authenticated_time(key_id:str,activities:List[Dict]):
@@ -149,7 +149,8 @@ def get_organization_custom_roles(iam: Resource, crm_v1: Resource, project_id: s
         res_project = req.execute()
         if res_project.get('parent',{}).get('type','') == 'organization':
             req = iam.organizations().roles().list(
-                parent=f"organizations/{res_project.get('parent',{}).get('id')}", view="FULL")
+                parent=f"organizations/{res_project.get('parent',{}).get('id')}", view="FULL",
+            )
             while req is not None:
                 res = req.execute()
                 page = res.get('roles', [])
@@ -587,7 +588,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     "name": dmn,
                     "parent": binding['parent'],
                     "parent_id": binding['parent_id'],
-                    "consolelink": gcp_console_link.get_console_link(project_id=project_id, resource_name='iam_domain')
+                    "consolelink": gcp_console_link.get_console_link(project_id=project_id, resource_name='iam_domain'),
                 }
                 attach_role_to_domain(
                     neo4j_session, role_id,
@@ -919,7 +920,7 @@ def _set_used_state_tx(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, iam: Resource,policyanalyzer: Resource, crm_v1: Resource, crm_v2: Resource, apikey: Resource,
-    project_id: str, gcp_update_tag: int, common_job_parameters: Dict
+    project_id: str, gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     tic = time.perf_counter()
 

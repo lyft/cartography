@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Dict
 from typing import List
 
@@ -9,8 +10,6 @@ from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +28,7 @@ def get_ec2_auto_scaling_groups(boto3_session: boto3.session.Session, region: st
         logger.warning(f"Failed retrieve autoscaling groups for region - {region}. Error - {e}")
 
     return asgs
+
 
 @timeit
 @aws_handle_regions

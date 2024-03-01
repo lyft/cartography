@@ -1,6 +1,7 @@
+import neo4j
+
 import cartography.intel.gcp.spanner
 import tests.data.gcp.spanner
-import neo4j
 
 TEST_PROJECT_ID = 'project123'
 TEST_UPDATE_TAG = 123456789
@@ -67,7 +68,7 @@ def test_spanner_instance_database(neo4j_session: neo4j.Session):
     cartography.intel.gcp.spanner.load_spanner_instances_databases(neo4j_session, data, TEST_PROJECT_ID, TEST_UPDATE_TAG)
     expected_nodes = {
         'projects/project-123/instances/instance1/databases/database1',
-        'projects/project-123/instances/instance1/databases/database2'
+        'projects/project-123/instances/instance1/databases/database2',
     }
 
     nodes = neo4j_session.run(
@@ -91,7 +92,7 @@ def test_spanner_instance_to_instance_config_to_replica_relation(neo4j_session: 
 
     expected_nodes = {
         ('projects/project-123/instanceConfigs/config1/replicas/us-central1', 'projects/project-123/instanceConfigs/config1', 'projects/project-123/instances/instance1'),
-        ('projects/project-123/instanceConfigs/config1/replicas/us-central2', 'projects/project-123/instanceConfigs/config2', 'projects/project-123/instances/instance2')
+        ('projects/project-123/instanceConfigs/config1/replicas/us-central2', 'projects/project-123/instanceConfigs/config2', 'projects/project-123/instances/instance2'),
     }
 
     nodes = neo4j_session.run(
@@ -113,12 +114,16 @@ def test_spanner_instance_to_database_to_backup_relation(neo4j_session: neo4j.Se
     data = tests.data.gcp.spanner.TEST_INSTANCE_DATABASE
     cartography.intel.gcp.spanner.load_spanner_instances_databases(neo4j_session, data, TEST_PROJECT_ID, TEST_UPDATE_TAG)
     expected_nodes = {
-        ('projects/project-123/instances/instance1/backups/backup1',
-         'projects/project-123/instances/instance1/databases/database1',
-         'projects/project-123/instances/instance1'),
-        ('projects/project-123/instances/instance1/backups/backup2',
-         'projects/project-123/instances/instance1/databases/database2',
-         'projects/project-123/instances/instance2')
+        (
+            'projects/project-123/instances/instance1/backups/backup1',
+            'projects/project-123/instances/instance1/databases/database1',
+            'projects/project-123/instances/instance1',
+        ),
+        (
+            'projects/project-123/instances/instance1/backups/backup2',
+            'projects/project-123/instances/instance1/databases/database2',
+            'projects/project-123/instances/instance2',
+        ),
     }
     nodes = neo4j_session.run(
         """
@@ -135,10 +140,14 @@ def test_spanner_instance_to_backup_relation(neo4j_session: neo4j.Session):
     data = tests.data.gcp.spanner.TEST_INSTANCE_BACKUP
     cartography.intel.gcp.spanner.load_spanner_instances_backups(neo4j_session, data, TEST_PROJECT_ID, TEST_UPDATE_TAG)
     expected_nodes = {
-        ('projects/project-123/instances/instance1/backups/backup1',
-         'projects/project-123/instances/instance1'),
-        ('projects/project-123/instances/instance1/backups/backup2',
-         'projects/project-123/instances/instance2')
+        (
+            'projects/project-123/instances/instance1/backups/backup1',
+            'projects/project-123/instances/instance1',
+        ),
+        (
+            'projects/project-123/instances/instance1/backups/backup2',
+            'projects/project-123/instances/instance2',
+        ),
     }
     nodes = neo4j_session.run(
         """

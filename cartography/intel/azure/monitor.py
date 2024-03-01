@@ -3,16 +3,15 @@ from typing import Dict
 from typing import List
 
 import neo4j
-from azure.core.exceptions import HttpResponseError
-from azure.mgmt.monitor import MonitorManagementClient
 from azure.core.exceptions import ClientAuthenticationError
 from azure.core.exceptions import HttpResponseError
 from azure.core.exceptions import ResourceNotFoundError
+from azure.mgmt.monitor import MonitorManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
-from cartography.util import run_cleanup_job
 from cartography.util import get_azure_resource_group_name
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -51,7 +50,8 @@ def transform_log_profiles(log_profiles: List[Dict], regions: List, common_job_p
     for log in log_profiles:
         log['resource_group'] = get_azure_resource_group_name(log.get('id'))
         log['consolelink'] = azure_console_link.get_console_link(
-            id=log['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            id=log['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+        )
         if regions is None:
             log_profiles_data.append(log)
         else:
@@ -93,7 +93,7 @@ def _load_monitor_log_profiles_tx(
     for log_profile in log_profiles_list:
         resource_group=get_azure_resource_group_name(log_profile.get('id'))
         _attach_resource_group_monitor_logs(tx,log_profile['id'],resource_group,update_tag)
-            
+
 
 def _attach_resource_group_monitor_logs(tx: neo4j.Transaction, log_profile_id:str,resource_group:str ,update_tag: int) -> None:
     query = """
@@ -117,7 +117,7 @@ def cleanup_monitor_log_profiles(neo4j_session: neo4j.Session, common_job_parame
 
 def sync_monitor_log_profiles(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     client = get_monitoring_client(credentials, subscription_id)
     log_profiles = get_log_profiles_list(client, regions, common_job_parameters)
@@ -130,7 +130,7 @@ def sync_monitor_log_profiles(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     logger.info("Syncing key Monitor Log Profiles for subscription '%s'.", subscription_id)
 

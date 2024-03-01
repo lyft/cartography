@@ -1,12 +1,12 @@
 import argparse
+import base64
 import getpass
+import json
 import logging
 import os
 import sys
-import json 
-import base64
 from typing import Optional
-from cartography.config import Config
+
 import cartography.config
 import cartography.sync
 import cartography.util
@@ -713,7 +713,7 @@ class CLI:
             return cartography.sync.run_with_config(self.sync, config)
         except KeyboardInterrupt:
             return cartography.util.STATUS_KEYBOARD_INTERRUPT
-    
+
     def process(self, config):
         # Logging config
         if config.verbose:
@@ -727,7 +727,7 @@ class CLI:
         # Run cartography
         try:
             output = cartography.sync.run_with_config(self.sync, config)
-        
+
             return {
                 "status": "success",
                 "message": f"output - {output}",
@@ -746,6 +746,7 @@ class CLI:
                 "status": "failure",
                 "message": f"error with: {str(e)}",
             }
+
 
 def main(argv=None):
     """
@@ -783,7 +784,7 @@ def run_aws(request):
         aws_requested_syncs=request.get('services', None),
         update_tag=request.get('updateTag', None),
         refresh_entitlements=request.get('refreshEntitlements', False),
-        aws_internal_accounts=request.get('awsInternalAccounts', None)
+        aws_internal_accounts=request.get('awsInternalAccounts', None),
     )
 
     if request['logging']['mode'] == "verbose":
@@ -818,7 +819,7 @@ def run_azure(request):
         azure_azure_scope=request['azure']['azure_scope'],
         params=request['params'],
         azure_requested_syncs=request.get('services', None),
-        update_tag=request.get('updateTag', None)
+        update_tag=request.get('updateTag', None),
     )
 
     if request['logging']['mode'] == "verbose":
@@ -845,7 +846,7 @@ def run_gcp(request):
         credentials=request['credentials'],
         params=request['params'],
         gcp_requested_syncs=request.get('services', None),
-        refresh_entitlements=request.get('refreshEntitlements', False)
+        refresh_entitlements=request.get('refreshEntitlements', False),
     )
 
     if request['logging']['mode'] == "verbose":
@@ -855,12 +856,12 @@ def run_gcp(request):
 
     return CLI(default_sync, prog='cartography').process(config)
 
+
 def run_github(request):
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
     default_sync = cartography.sync.build_github_sync()
-
 
     config = Config(
         request['neo4j']['uri'],
@@ -878,6 +879,7 @@ def run_github(request):
         config.quiet = True
 
     return CLI(default_sync, prog='cartography').process(config)
+
 
 def run_bitbucket(request):
     logging.basicConfig(level=logging.INFO)

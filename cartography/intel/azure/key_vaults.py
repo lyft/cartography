@@ -4,13 +4,13 @@ from typing import List
 
 import neo4j
 from azure.core.exceptions import HttpResponseError
-from azure.mgmt.keyvault import KeyVaultManagementClient
 from azure.keyvault.certificates import CertificateClient
+from azure.mgmt.keyvault import KeyVaultManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
-from cartography.util import run_cleanup_job
 from cartography.util import get_azure_resource_group_name
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -71,20 +71,20 @@ def update_access_policies(vault: Dict, common_job_parameters: Dict, client: Key
                         "permissions": {
                             "keys": [
                                 "List",
-                                "Get"
+                                "Get",
                             ],
                             "secrets": [
                                 "List",
-                                "Get"
+                                "Get",
                             ],
                             "certificates": [
                                 "List",
-                                "Get"
-                            ]
-                        }
-                    }
-                ]
-            }
+                                "Get",
+                            ],
+                        },
+                    },
+                ],
+            },
         }
         client.vaults.update_access_policy(resource_group_name=vault['resource_group'], vault_name=vault['name'], operation_kind='add', parameters=parameters)
 
@@ -95,7 +95,8 @@ def transform_key_vaults(key_vaults: List[Dict], regions: List, common_job_param
     for vault in key_vaults:
         vault['resource_group'] = get_azure_resource_group_name(vault.get('id'))
         vault['consolelink'] = azure_console_link.get_console_link(
-            id=vault['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            id=vault['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+        )
         if regions is None:
             key_vaults_data.append(vault)
         else:
@@ -136,8 +137,8 @@ def _load_key_vaults_tx(
     for key_vault in key_vaults_list:
         resource_group=get_azure_resource_group_name(key_vault.get('id'))
         _attach_resource_group_key_vaults(tx,key_vault['id'],resource_group,update_tag)
-        
-    
+
+
 def _attach_resource_group_key_vaults( tx: neo4j.Transaction, key_vault_id:str,resource_group:str, update_tag: int) -> None:
     ingest_vault = """
     MATCH (k:AzureKeyVault{id: $key_vault_id})
@@ -170,7 +171,8 @@ def transform_key_vaults_keys(keys: List[Dict], vault_id: str, common_job_parame
     keys_data = []
     for key in keys:
         key['consolelink'] = azure_console_link.get_console_link(
-            id=key['key_uri'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            id=key['key_uri'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+        )
         key['vault_id'] = vault_id
         keys_data.append(key)
     return keys_data
@@ -228,7 +230,8 @@ def transform_key_vault_secrets(secrets: List[Dict], vault_id: str, common_job_p
     secrets_data = []
     for secret in secrets:
         secret['consolelink'] = azure_console_link.get_console_link(
-            id=secret['properties']['secret_uri'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            id=secret['properties']['secret_uri'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+        )
         secret['vault_id'] = vault_id
         secrets_data.append(secret)
     return secrets_data
@@ -301,7 +304,8 @@ def transform_key_vault_certificates(certificates: List[Dict], vault_id: str, co
     for certificate in certificates:
         certificate['vault_id'] = vault_id
         certificate['consolelink'] = azure_console_link.get_console_link(
-            id=certificate['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            id=certificate['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+        )
         certificates_data.append(certificate)
 
     return certificates_data
@@ -348,7 +352,7 @@ def cleanup_key_vaults(neo4j_session: neo4j.Session, common_job_parameters: Dict
 
 def sync_key_vaults(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     client = get_key_vaults_client(credentials.arm_credentials, subscription_id)
     key_vaults = get_key_vaults_list(client)
@@ -382,7 +386,7 @@ def sync_key_vaults(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, region: list
+    common_job_parameters: Dict, region: list,
 ) -> None:
     logger.info("Syncing key vaults for subscription '%s'.", subscription_id)
 

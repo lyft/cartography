@@ -8,8 +8,8 @@ from azure.mgmt.network import NetworkManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
-from cartography.util import run_cleanup_job
 from cartography.util import get_azure_resource_group_name
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -118,7 +118,7 @@ def create_relationship_between_network_interface_and_load_balancer(
     session.write_transaction(
         _create_relationship_between_network_interface_and_load_balancer_tx,
         data_list,
-        update_tag
+        update_tag,
     )
 
 
@@ -132,6 +132,7 @@ def attach_subnet_to_network_interfaces(session: neo4j.Session, data_list: List[
 
 def load_public_ip_network_interfaces_relationship(session: neo4j.Session, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_public_ip_network_interfaces_relationship, interface_id, data_list, update_tag)
+
 
 def attach_public_ip_to_load_balancer(session: neo4j.Session, load_balancer_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_attach_public_ip_to_load_balancer_tx, load_balancer_id, data_list, update_tag)
@@ -159,7 +160,8 @@ def get_networks_list(client: NetworkManagementClient, regions: list, common_job
         for network in networks_list:
             network['resource_group'] = get_azure_resource_group_name(network.get('id'))
             network['consolelink'] = azure_console_link.get_console_link(
-                id=network['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=network['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 network_data.append(network)
             else:
@@ -219,7 +221,7 @@ def _attach_resource_group_networks(tx: neo4j.Transaction, network_id: str, reso
         ingest_net,
         network_id=network_id,
         resource_group=resource_group,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -229,7 +231,7 @@ def cleanup_networks(neo4j_session: neo4j.Session, common_job_parameters: Dict) 
 
 def sync_networks(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     networks_list = get_networks_list(client, regions, common_job_parameters)
 
@@ -264,7 +266,8 @@ def get_networks_subnets_list(networks_list: List[Dict], client: NetworkManageme
                 subnet['location'] = network.get('location', 'global')
                 subnet['network_security_group_id'] = subnet.get('network_security_group', {}).get('id', None)
                 subnet['consolelink'] = azure_console_link.get_console_link(
-                    id=subnet['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=subnet['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
             networks_subnets_list.extend(subnets_list)
         return networks_subnets_list
 
@@ -334,8 +337,9 @@ def _attach_resource_group_networks_subnets(tx: neo4j.Transaction, network_subne
         ingest_network_subnet,
         network_subnet_id=network_subnet_id,
         resource_group=resource_group,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
+
 
 def cleanup_networks_subnets(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_networks_subnets_cleanup.json', neo4j_session, common_job_parameters)
@@ -357,7 +361,8 @@ def get_network_routetables_list(client: NetworkManagementClient, regions: list,
         for routetable in network_routetables_list:
             routetable['resource_group'] = get_azure_resource_group_name(routetable.get('id'))
             routetable['consolelink'] = azure_console_link.get_console_link(
-                id=routetable['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=routetable['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 tables_data.append(routetable)
             else:
@@ -419,6 +424,7 @@ def _attach_resource_group_network_routetables(tx: neo4j.Transaction, network_ro
         update_tag=update_tag,
     )
 
+
 def _load_network_bastion_hosts_tx(
     tx: neo4j.Transaction, subscription_id: str, network_bastion_host_list: List[Dict], update_tag: int,
 ) -> None:
@@ -461,7 +467,7 @@ def _attach_network_routetables_to_subnet_tx(
     tx.run(
         attach_routetables_subnet,
         network_routetables_list=network_routetables_list,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -481,7 +487,7 @@ def _attach_network_bastion_hosts_to_subnet_tx(
     tx.run(
         attach_routetables_subnet,
         network_bastion_host_list=network_bastion_host_list,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -495,7 +501,7 @@ def cleanup_network_bastion_hosts(neo4j_session: neo4j.Session, common_job_param
 
 def sync_network_routetables(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     network_routetables_list = get_network_routetables_list(client, regions, common_job_parameters)
     load_network_routetables(neo4j_session, subscription_id, network_routetables_list, update_tag)
@@ -512,14 +518,15 @@ def get_network_bastion_list(client: NetworkManagementClient, regions: list, com
             bastion_host['subnets'] = []
             for ip_conf in bastion_host.get('ip_configurations', []):
                 bastion_host['public_ip_address'].append(
-                    {'public_ip_id': ip_conf.get('public_ip_address', {}).get('id', None)}
+                    {'public_ip_id': ip_conf.get('public_ip_address', {}).get('id', None)},
                 )
                 bastion_host['subnets'].append(
-                    {"subnet_id": ip_conf.get('subnet', {}).get('id', None)}
+                    {"subnet_id": ip_conf.get('subnet', {}).get('id', None)},
                 )
             bastion_host['subnets'] = list(set(bastion_host['subnets']))
             bastion_host['consolelink'] = azure_console_link.get_console_link(
-                id=bastion_host['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=bastion_host['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 data.append(bastion_host)
             else:
@@ -533,7 +540,7 @@ def get_network_bastion_list(client: NetworkManagementClient, regions: list, com
 
 def sync_network_bastion_hosts(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     network_bastion_list = get_network_bastion_list(client, regions, common_job_parameters)
     load_network_bastion_hosts(neo4j_session, subscription_id, network_bastion_list, update_tag)
@@ -541,7 +548,8 @@ def sync_network_bastion_hosts(
     cleanup_network_bastion_hosts(neo4j_session, common_job_parameters)
     for network_bastion in network_bastion_list:
         attach_public_ip_to_bastion_host(
-            neo4j_session, network_bastion.get('id'), network_bastion.get('public_ip_address', []), update_tag)
+            neo4j_session, network_bastion.get('id'), network_bastion.get('public_ip_address', []), update_tag,
+        )
 
 
 @timeit
@@ -562,7 +570,8 @@ def get_network_routes_list(network_routetables_list: List[Dict], client: Networ
                 route['routetable_id'] = route['id'][:route['id'].index("/routes")]
                 route['location'] = routetable.get('location', 'global')
                 route['consolelink'] = azure_console_link.get_console_link(
-                    id=route['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=route['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
             network_routes_list.extend(routes_list)
         return network_routes_list
 
@@ -621,6 +630,7 @@ def _attach_resource_group_network_routes(tx: neo4j.Transaction, network_routes_
         azure_update_tag=update_tag,
     )
 
+
 def cleanup_network_routes(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_network_routes_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -642,7 +652,8 @@ def get_network_security_groups_list(client: NetworkManagementClient, regions: l
         for network in network_security_groups_list:
             network['resource_group'] = get_azure_resource_group_name(network.get('id'))
             network['consolelink'] = azure_console_link.get_console_link(
-                id=network['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=network['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 group_list.append(network)
             else:
@@ -701,7 +712,7 @@ def _attach_resource_group_network_security_groups(tx: neo4j.Transaction, networ
         ingest_network,
         network_security_group_id=network_security_group_id,
         resource_group=resource_group,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -711,7 +722,7 @@ def cleanup_network_security_groups(neo4j_session: neo4j.Session, common_job_par
 
 def sync_network_security_groups(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     network_security_groups_list = get_network_security_groups_list(client, regions, common_job_parameters)
 
@@ -722,7 +733,7 @@ def sync_network_security_groups(
 
 def sync_nat_gateway(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     nat_gateway_list = get_network_nat_gateway(client, regions, common_job_parameters)
 
@@ -740,7 +751,8 @@ def get_network_nat_gateway(client: NetworkManagementClient, regions: list, comm
         for network in nat_gateways_list:
             network['resource_group'] = get_azure_resource_group_name(network.get('id'))
             network['consolelink'] = azure_console_link.get_console_link(
-                id=network['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=network['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 group_list.append(network)
             else:
@@ -802,7 +814,7 @@ def _attack_resource_group_network_nat_gateway(tx: neo4j.Transaction, nat_gatewa
         ingest_network,
         nat_gateway_id=nat_gateway_id,
         resource_group=resource_group,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -851,7 +863,7 @@ def cleanup_network_nat_gateway(neo4j_session: neo4j.Session, common_job_paramet
 
 @timeit
 def get_network_security_rules_list(
-    network_security_groups_list: List[Dict], client: NetworkManagementClient, common_job_parameters: Dict
+    network_security_groups_list: List[Dict], client: NetworkManagementClient, common_job_parameters: Dict,
 ) -> List[Dict]:
     try:
         network_security_rules_list: List[Dict] = []
@@ -868,10 +880,12 @@ def get_network_security_rules_list(
                 rule['protocol'] = rule.get('protocol', None)
                 rule['direction'] = rule.get('direction', None)
                 rule['destination_port_ranges'] = rule.get(
-                    'properties', {}).get('destination_port_ranges', None)
+                    'properties', {},
+                ).get('destination_port_ranges', None)
                 rule['destination_address_prefix'] = rule.get('destination_address_prefix', None)
                 rule['consolelink'] = azure_console_link.get_console_link(
-                    id=rule['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=rule['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
             network_security_rules_list.extend(security_rules_list)
         return network_security_rules_list
 
@@ -947,7 +961,8 @@ def sync_network_security_rules(
     common_job_parameters: Dict,
 ) -> None:
     network_security_rules_list = get_network_security_rules_list(
-        network_security_groups_list, client, common_job_parameters)
+        network_security_groups_list, client, common_job_parameters,
+    )
     load_network_security_rules(neo4j_session, network_security_rules_list, update_tag)
     cleanup_network_security_rules(neo4j_session, common_job_parameters)
 
@@ -958,7 +973,8 @@ def get_public_ip_addresses_list(client: NetworkManagementClient, regions: list,
         publicip_list = []
         for ip in public_ip_addresses_list:
             ip['consolelink'] = azure_console_link.get_console_link(
-                id=ip['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=ip['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 publicip_list.append(ip)
             else:
@@ -1011,7 +1027,7 @@ def cleanup_public_ip_addresses(neo4j_session: neo4j.Session, common_job_paramet
 
 def sync_public_ip_addresses(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     public_ip_addresses_list = get_public_ip_addresses_list(client, regions, common_job_parameters)
     load_public_ip_addresses(neo4j_session, subscription_id, public_ip_addresses_list, update_tag)
@@ -1028,13 +1044,15 @@ def get_network_interfaces_list(client: NetworkManagementClient, regions: list, 
             interface['subnet'] = []
             for conf in interface.get('ip_configurations', []):
                 interface['public_ip_address'].append(
-                    {'public_ip_id': conf.get('public_ip_address', {}).get('id', None)})
+                    {'public_ip_id': conf.get('public_ip_address', {}).get('id', None)},
+                )
                 interface['subnet'].append(
-                    {'subnet_id': conf.get('subnet', {}).get('id', None)}
+                    {'subnet_id': conf.get('subnet', {}).get('id', None)},
                 )
 
             interface['consolelink'] = azure_console_link.get_console_link(
-                id=interface['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=interface['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 interfaces_list.append(interface)
             else:
@@ -1058,10 +1076,11 @@ def get_load_balancers_list(client: NetworkManagementClient, regions: list, comm
                 public_ip_id = frontend_ip_configuration.get('public_ip_address', {}).get('id', None)
                 if public_ip_id:
                     load_balancer['public_ip_address'].append(
-                        {'public_ip_id': public_ip_id}
+                        {'public_ip_id': public_ip_id},
                     )
             load_balancer['consolelink'] = azure_console_link.get_console_link(
-                id=load_balancer['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=load_balancer['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 load_balancer_list.append(load_balancer)
             else:
@@ -1122,7 +1141,7 @@ def _attach_resource_group_network_interfaces(tx: neo4j.Transaction, network_int
         ingest_interface,
         network_interface_id=network_interface_id,
         resource_group=resource_group,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -1169,7 +1188,7 @@ def _attach_resource_group_load_balancers(tx: neo4j.Transaction, load_balancer_i
         ingest_load_balancer,
         load_balancer_id=load_balancer_id,
         resource_group=resource_group,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 
@@ -1280,6 +1299,7 @@ def _load_ip_configurations_tx(
         update_tag=update_tag,
     )
 
+
 def _attach_subnet_to_network_interfaces_tx(
         tx: neo4j.Transaction, network_interfaces_list: List[Dict], update_tag: int,
 ) -> None:
@@ -1322,7 +1342,7 @@ def cleanup_network_frontend_ip_configurations(neo4j_session: neo4j.Session, com
 
 def sync_network_interfaces(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     network_interfaces_list = get_network_interfaces_list(client, regions, common_job_parameters)
     load_network_interfaces(neo4j_session, subscription_id, network_interfaces_list, update_tag)
@@ -1331,13 +1351,16 @@ def sync_network_interfaces(
     cleanup_network_ip_configurations(neo4j_session, common_job_parameters)
     cleanup_network_interfaces(neo4j_session, common_job_parameters)
     for interface in network_interfaces_list:
-        load_public_ip_network_interfaces_relationship(neo4j_session, interface.get(
-            'id'), interface.get('public_ip_address', []), update_tag)
+        load_public_ip_network_interfaces_relationship(
+            neo4j_session, interface.get(
+                'id',
+            ), interface.get('public_ip_address', []), update_tag,
+        )
 
 
 def sync_load_balancer(
     neo4j_session: neo4j.Session, client: NetworkManagementClient, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     load_balancers_list = get_load_balancers_list(client, regions, common_job_parameters)
     load_load_balancers(neo4j_session, subscription_id, load_balancers_list, update_tag)
@@ -1480,7 +1503,7 @@ def sync_usages(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: list
+    common_job_parameters: Dict, regions: list,
 ) -> None:
     logger.info("Syncing networks for subscription '%s'.", subscription_id)
 

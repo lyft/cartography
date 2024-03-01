@@ -1,11 +1,10 @@
 # Used by AWS Lambda
 import json
-import os
 import logging
+import os
 
 import cartography.cli
 from libraries.authlibrary import AuthLibrary
-from libraries.kmslibrary import KMSLibrary
 from libraries.snslibrary import SNSLibrary
 from utils.context import AppContext
 from utils.logger import get_logger
@@ -47,7 +46,7 @@ def init_lambda(ctx):
     decrypted_value = ''
 
     # Read from config files in the project
-    with open(current_config(context.app_env), 'r') as f:
+    with open(current_config(context.app_env)) as f:
         decrypted_value = f.read()
 
     # Cloudanix AWS AccountID
@@ -109,8 +108,8 @@ def process_request(context, args):
                         "name": service,
                         "pagination": {
                             "pageSize": pagination.get('pageSize', 1),
-                            "pageNo": pagination.get('pageNo', 0) + 1
-                        }
+                            "pageNo": pagination.get('pageNo', 0) + 1,
+                        },
                     })
             if len(services) > 0:
                 resp['services'] = services
@@ -163,7 +162,7 @@ def publish_response(context, req, resp, args):
             # Result should be pushed to "resultTopic" passed in the request
             # status = sns_helper.publish(json.dumps(body), req['params']['resultTopic'])
 
-            context.logger.info(f'Result not published anywhere. since we want to avoid query when inventory is refreshed')
+            context.logger.info('Result not published anywhere. since we want to avoid query when inventory is refreshed')
             status = True
             publish_request_iam_entitlement(context, args, req)
 
@@ -275,52 +274,3 @@ def process_request_duplicate(context, args):
     publish_response(context, body, resp)
 
     context.logger.info(f'inventory sync aws response - {args["eventId"]}: {json.dumps(resp)}')
-
-
-def publish_response(context, req, resp):
-    if context.app_env != 'production':
-        try:
-            with open('response.json', 'w') as outfile:
-                json.dump(resp, outfile, indent=2)
-
-        except Exception as e:
-            context.logger.error(f'Failed to write to file: {e}', exc_info=True, stack_info=True)
-
-    else:
-        body = {
-            "status": resp['status'],
-            "params": req['params'],
-            "response": resp,
-        }
-
-        # context.logger.info(f'response from cartography: {body}')
-
-        sns_helper = SNSLibrary(context)
-        status = sns_helper.publish(json.dumps(body), context.aws_inventory_sync_response_topic)
-
-        context.logger.info(f'result published to SNS with status: {status}')
-
-
-def get_auth_creds(context, args):
-    auth_helper = AuthLibrary(context)
-
-    if context.app_env == 'production' or context.app_env == 'debug':
-        auth_params = {
-            'aws_access_key_id': auth_helper.get_assume_role_access_key(),
-            'aws_secret_access_key': auth_helper.get_assume_role_access_secret(),
-            'role_session_name': args['sessionString'],
-            'role_arn': args['externalRoleArn'],
-            'external_id': args['externalId'],
-        }
-
-        auth_creds = auth_helper.assume_role(auth_params)
-        auth_creds['type'] = 'assumerole'
-
-    else:
-        auth_creds = {
-            'type': 'self',
-            'aws_access_key_id': args['credentials']['awsAccessKeyID'] if 'credentials' in args else None,
-            'aws_secret_access_key': args['credentials']['awsSecretAccessKey'] if 'credentials' in args else None,
-        }
-
-    return auth_creds

@@ -5,7 +5,7 @@ TEST_UPDATE_TAG = 123456789
 common_job_parameters={'UPDATE_TAG':'123456789',"WORKSPACE_ID":"123445","WORKSPACE_UUID":"234"}
 
 def test_load_projects(neo4j_session):
-    
+
     cartography.intel.bitbucket.projects.load_projects_data(
         neo4j_session,
         tests.data.bitbucket.workspace.PROJECTS,
@@ -22,7 +22,5 @@ def test_load_projects(neo4j_session):
             n['g.name']
         ) for n in nodes
     }
-    
+
     assert actual_nodes == expected_nodes
-    
-    

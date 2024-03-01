@@ -68,7 +68,7 @@
 		},
 		{
 			"query": "MATCH (share:AzureStorageFileShare)<-[:CONTAINS]-(fs:AzureStorageFileService{exposed_internet: true})<-[:USES]-(:AzureStorageAccount)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET share.exposed_internet = true, share.exposed_internet_type = fs.exposed_internet_type;",
-			"iterative": false			
+			"iterative": false
 		}
 	],
 	"name": "Azure storage asset internet exposure"

@@ -61,7 +61,7 @@ def test_load_service_account_keys(neo4j_session):
     data = tests.data.gcp.iam.IAM_SERVICE_ACCOUNT_KEYS
     cartography.intel.gcp.iam.load_service_account_keys(
         neo4j_session,
-        data,None,
+        data, None,
         TEST_PROJECT_NUMBER,
         TEST_UPDATE_TAG,
     )
@@ -253,7 +253,7 @@ def test_service_accounts_keys_relationships(neo4j_session):
     data = tests.data.gcp.iam.IAM_SERVICE_ACCOUNT_KEYS
     cartography.intel.gcp.iam.load_service_account_keys(
         neo4j_session,
-        data,None,
+        data, None,
         TEST_PROJECT_NUMBER,
         TEST_UPDATE_TAG,
     )
@@ -273,7 +273,7 @@ def test_service_accounts_keys_relationships(neo4j_session):
     actual = {
         (r['n1.id'], r['n2.id']) for r in result
     }
-    
+
     assert actual == expected
 
 
@@ -397,6 +397,7 @@ def test_domains_relationships(neo4j_session):
 
     assert actual == expected
 
+
 def test_load_api_keys(neo4j_session):
     data = tests.data.gcp.iam.API_KEY
     cartography.intel.gcp.iam.load_api_keys(
@@ -419,6 +420,7 @@ def test_load_api_keys(neo4j_session):
     actual_nodes = {n['r.id'] for n in nodes}
 
     assert actual_nodes == expected_nodes
+
 
 def test_api_keys_relationships(neo4j_session):
     # Create Test GCPProject

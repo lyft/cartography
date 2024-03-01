@@ -28,18 +28,18 @@ DESCRIBE_VMS = [
             {
                 "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic",
                 "primary": False,
-                "delete_option": "Delete"
+                "delete_option": "Delete",
             },
             {
                 "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic1",
                 "primary": False,
-                "delete_option": "Detach"
+                "delete_option": "Detach",
             },
             {
                 "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic2",
                 "primary": True,
-                "delete_option": "Detach"
-            }
+                "delete_option": "Detach",
+            },
         ],
         "priority": "Low",
         "eviction_policy": "Deallocate",
@@ -73,18 +73,18 @@ DESCRIBE_VMS = [
             {
                 "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic3",
                 "primary": False,
-                "delete_option": "Delete"
+                "delete_option": "Delete",
             },
             {
                 "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic4",
                 "primary": False,
-                "delete_option": "Detach"
+                "delete_option": "Detach",
             },
             {
                 "id": "/subscriptions/subid/resourceGroups/rg1/providers/Microsoft.Network/networkInterfaces/test-nic5",
                 "primary": True,
-                "delete_option": "Detach"
-            }
+                "delete_option": "Detach",
+            },
         ],
         "priority": "Low",
         "eviction_policy": "Deallocate",

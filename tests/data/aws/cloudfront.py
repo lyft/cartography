@@ -11,5 +11,5 @@ DESCRIBE_DISTRIBUTION_RESPONSE = [
         'WebACLId': 'string',
         'HttpVersion': 'http1.1',
         'IsIPV6Enabled': True,
-    }
+    },
 ]

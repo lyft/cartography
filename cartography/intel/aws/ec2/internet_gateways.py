@@ -1,8 +1,8 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
-import time
+
 import boto3
 import neo4j
 
@@ -12,6 +12,7 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+
 
 @timeit
 @aws_handle_regions
@@ -25,6 +26,7 @@ def get_internet_gateways(boto3_session: boto3.session.Session, region: str) -> 
         logger.warning(f"Failed retrieve internet gateways for region - {region}. Error - {e}")
 
     return internet_gateways
+
 
 @timeit
 def load_internet_gateways(
@@ -92,4 +94,3 @@ def sync_internet_gateways(
     cleanup(neo4j_session, common_job_parameters)
     toc = time.perf_counter()
     logger.info(f"Time to process EC2 Internet Gateways: {toc - tic:0.4f} seconds")
-

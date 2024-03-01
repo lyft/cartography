@@ -9,7 +9,6 @@ import neo4j
 from cartography.intel.github.util import fetch_all
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
-
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -106,7 +105,7 @@ def load_organization_users(
         OrgLogin=org_data['login'],
         UserData=user_data,
         UpdateTag=common_job_parameters['UPDATE_TAG'],
-         workspace_id=common_job_parameters['WORKSPACE_ID'],
+        workspace_id=common_job_parameters['WORKSPACE_ID'],
     )
 
 

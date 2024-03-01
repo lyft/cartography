@@ -1,22 +1,22 @@
 import logging
+import time
+from concurrent.futures import as_completed
+from concurrent.futures import ThreadPoolExecutor
 from string import Template
 from typing import Dict
 from typing import List
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-import time
 import boto3
 import neo4j
 from neo4j import GraphDatabase
 
+from cartography.config import Config
+from cartography.graph.session import Session
 from cartography.intel.aws.iam import get_role_tags
 from cartography.util import aws_handle_regions
 from cartography.util import batch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cartography.config import Config
-from cartography.graph.session import Session
 
 logger = logging.getLogger(__name__)
 

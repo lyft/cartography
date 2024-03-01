@@ -13,7 +13,7 @@ TEST_SUBSCRIPTIONS = [
         },
         "topic": "projects/project-123/locations/us-central1/topics/topic1",
         "id": "projects/project-123/locations/us-central1/subscriptions/subscription1",
-        "name": "subscription1"
+        "name": "subscription1",
     },
     {
         "deliveryConfig": {
@@ -29,8 +29,8 @@ TEST_SUBSCRIPTIONS = [
         },
         "topic": "projects/project-123/locations/us-central1/topics/topic2",
         "id": "projects/project-123/locations/us-central1/subscriptions/subscription2",
-        "name": "subscription2"
-    }
+        "name": "subscription2",
+    },
 ]
 
 TEST_TOPICS = [

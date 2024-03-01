@@ -15,24 +15,24 @@ from statsd import StatsClient
 import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.azure
+import cartography.intel.bitbucket
 import cartography.intel.create_indexes
+import cartography.intel.gcp
+import cartography.intel.github
+import cloudanix
+from cartography.config import Config
+from cartography.stats import set_stats_client
+from cartography.util import STATUS_FAILURE
+from cartography.util import STATUS_SUCCESS
 # import cartography.intel.crowdstrike
 # import cartography.intel.crxcavator.crxcavator
 # import cartography.intel.cve
 # import cartography.intel.digitalocean
-import cartography.intel.gcp
-import cartography.intel.github
-import cartography.intel.bitbucket
 # import cartography.intel.gsuite
 # import cartography.intel.kubernetes
 # import cartography.intel.okta
 # import cartography.intel.oci
-from cartography.config import Config
 # from cartography.scoped_stats_client import ScopedStatsClient
-from cartography.stats import set_stats_client
-from cartography.util import STATUS_FAILURE, STATUS_SUCCESS
-
-import cloudanix
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ TOP_LEVEL_MODULES = OrderedDict({  # preserve order so that the default sync alw
     # 'oci': cartography.intel.oci.start_oci_ingestion,
     # 'okta': cartography.intel.okta.start_okta_ingestion,
     'github': cartography.intel.github.start_github_ingestion,
-    'bitbucket':cartography.intel.bitbucket.start_bitbucket_ingestion,
+    'bitbucket': cartography.intel.bitbucket.start_bitbucket_ingestion,
     # 'digitalocean': cartography.intel.digitalocean.start_digitalocean_ingestion,
     # 'kubernetes': cartography.intel.kubernetes.start_k8s_ingestion,
     # 'lastpass': cartography.intel.lastpass.start_lastpass_ingestion,
@@ -109,8 +109,8 @@ class Sync:
             for stage_name, stage_func in self._stages.items():
                 logger.info("Starting sync stage '%s'", stage_name)
                 try:
-                    if stage_name in ['aws', 'azure', 'gcp','github','bitbucket']:
-                        
+                    if stage_name in ['aws', 'azure', 'gcp', 'github', 'bitbucket']:
+
                         response = stage_func(neo4j_session, config)
                     else:
                         stage_func(neo4j_session, config)
@@ -306,59 +306,7 @@ def build_sync(selected_modules_as_str: str) -> Sync:
         [(sync_name, TOP_LEVEL_MODULES[sync_name]) for sync_name in selected_modules],
     )
     return sync
-def build_aws_sync():
-    """
-    Build the aws cartography sync, which runs all intelligence modules shipped with the cartography package.
 
-    :rtype: cartography.sync.Sync
-    :return: The aws cartography sync object.
-    """
-    sync = Sync()
-
-    stages = []
-    stages.append(('cloudanix-workspace', cloudanix.run))
-    stages.append(('aws', cartography.intel.aws.start_aws_ingestion))
-    stages.append(('analysis', cartography.intel.analysis.run))
-
-    sync.add_stages(stages)
-
-    return sync
-
-
-def build_azure_sync():
-    """
-    Build the azure cartography sync, which runs all intelligence modules shipped with the cartography package.
-
-    :rtype: cartography.sync.Sync
-    :return: The azure cartography sync object.
-    """
-    sync = Sync()
-
-    stages = []
-    stages.append(('cloudanix-workspace', cloudanix.run))
-    stages.append(('azure', cartography.intel.azure.start_azure_ingestion))
-    stages.append(('analysis', cartography.intel.analysis.run))
-    sync.add_stages(stages)             
-    return sync
-
-
-def build_gcp_sync():
-    """
-    Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
-
-    :rtype: cartography.sync.Sync
-    :return: The default cartography sync object.
-    """
-    sync = Sync()
-
-    stages = []
-    stages.append(('cloudanix-workspace', cloudanix.run))
-    stages.append(('gcp', cartography.intel.gcp.start_gcp_ingestion))
-    stages.append(('analysis', cartography.intel.analysis.run))
-
-    sync.add_stages(stages)
-
-    return sync
 
 def build_github_sync():
     """
@@ -376,6 +324,7 @@ def build_github_sync():
     sync.add_stages(stages)
 
     return sync
+
 
 def build_bitbucket_sync():
     """

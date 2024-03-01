@@ -7,13 +7,13 @@ DESCRIBE_IDENTITIES_RESPONSE = [
             "DkimTokens": [
                "EXAMPLEjcs5xoyqytjsotsijas7236gr",
                "EXAMPLEjr76cvoc6mysspnioorxsn6ep",
-               "EXAMPLEkbmkqkhlm2lyz77ppkulerm4k"
+               "EXAMPLEkbmkqkhlm2lyz77ppkulerm4k",
             ],
             "DkimEnabled": True,
-            "DkimVerificationStatus": "Success"
+            "DkimVerificationStatus": "Success",
         },
         "verification": {
-            "VerificationStatus": "Success"
-        }
-    }
+            "VerificationStatus": "Success",
+        },
+    },
 ]

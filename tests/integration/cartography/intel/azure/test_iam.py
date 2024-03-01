@@ -53,12 +53,12 @@ def test_load_user_relationships(neo4j_session):
     expected = {
         (
             '00-00-00-00',
-            'user-123'
+            'user-123',
         ),
         (
             '00-00-00-00',
-            'user-321'
-        )
+            'user-321',
+        ),
     }
 
     result = neo4j_session.run(
@@ -321,7 +321,7 @@ def test_load_roles(neo4j_session):
         TEST_TENANT_ID,
         DESCRIBE_ROLES,
         TEST_UPDATE_TAG,
-        SUBSCRIPTION_ID=None
+        SUBSCRIPTION_ID=None,
     )
 
     expected_nodes = {
@@ -361,7 +361,7 @@ def test_load_role_relationships(neo4j_session):
         TEST_TENANT_ID,
         DESCRIBE_ROLES,
         TEST_UPDATE_TAG,
-        SUBSCRIPTION_ID=None
+        SUBSCRIPTION_ID=None,
     )
 
     expected = {

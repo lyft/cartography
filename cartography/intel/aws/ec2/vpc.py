@@ -1,15 +1,15 @@
-import time
 import logging
+import time
 from string import Template
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
 from .util import get_botocore_config
-from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

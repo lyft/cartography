@@ -79,7 +79,7 @@ def test_cleanup_repositories(neo4j_session):
         """
         MATCH (a:AWSAccount{id: $TEST_ACCOUNT_ID})-[r:RESOURCE]->(repo:ECRRepository)
         RETURN count(repo)
-        """, TEST_ACCOUNT_ID=TEST_ACCOUNT_ID
+        """, TEST_ACCOUNT_ID=TEST_ACCOUNT_ID,
     )
     # there should be 103 nodes
     expected_nodes = {
@@ -114,7 +114,7 @@ def test_cleanup_repositories(neo4j_session):
         WITH w,aa
         MERGE (w)-[o:OWNER]->(aa)
         ON CREATE SET o.firstseen = timestamp()
-        SET o.lastupdated = $UPDATE_TAG""", WORKSPACE_ID=common_job_params['WORKSPACE_ID'], ACCOUNT_ID=TEST_ACCOUNT_ID, UPDATE_TAG=common_job_params['UPDATE_TAG']
+        SET o.lastupdated = $UPDATE_TAG""", WORKSPACE_ID=common_job_params['WORKSPACE_ID'], ACCOUNT_ID=TEST_ACCOUNT_ID, UPDATE_TAG=common_job_params['UPDATE_TAG'],
     )
 
     # Act
@@ -131,7 +131,7 @@ def test_cleanup_repositories(neo4j_session):
         """
         MATCH (a:AWSAccount{id: $TEST_ACCOUNT_ID})-[r:RESOURCE]->(repo:ECRRepository)
         RETURN repo.arn, repo.lastupdated
-        """, TEST_ACCOUNT_ID=TEST_ACCOUNT_ID
+        """, TEST_ACCOUNT_ID=TEST_ACCOUNT_ID,
     )
 
     actual_nodes = {(n['repo.arn'], n['repo.lastupdated']) for n in nodes}

@@ -5,9 +5,9 @@ from typing import Dict
 from typing import List
 
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
 from . import label
 from cartography.util import run_cleanup_job
@@ -269,7 +269,7 @@ def load_spanner_instances_databases_tx(tx: neo4j.Transaction, data: List[Dict],
         database.create_time = record.createTime,
         database.database_dialect = record.databaseDialect,
         database.default_leader = record.defaultLeader,
-        database.earliest_version_time = record.earliestVersionTime, 
+        database.earliest_version_time = record.earliestVersionTime,
         database.kms_key_name = record.encryptionConfig.kmsKeyName,
         database.backup = record.restoreInfo.backupInfo.backup,
         database.source_type = record.restoreInfo.sourceType,
@@ -392,7 +392,7 @@ def sync(
     load_spanner_instances(neo4j_session, transformed_instances, project_id, gcp_update_tag)
     label.sync_labels(
         neo4j_session, transformed_instances, gcp_update_tag, common_job_parameters,
-        'spanner_instances', 'GCPSpannerInstance'
+        'spanner_instances', 'GCPSpannerInstance',
     )
 
     instance_configs = get_spanner_instance_configs(spanner, project_id, regions, common_job_parameters)
@@ -400,7 +400,7 @@ def sync(
     load_spanner_instance_configs(neo4j_session, transformed_instance_configs, project_id, gcp_update_tag)
     label.sync_labels(
         neo4j_session, transformed_instance_configs, gcp_update_tag, common_job_parameters,
-        'spanner_instance_configs', 'GCPSpannerInstanceConfig'
+        'spanner_instance_configs', 'GCPSpannerInstanceConfig',
     )
 
     replicas = transform_spanner_instance_configs_replicas(instance_configs, project_id, regions, common_job_parameters)

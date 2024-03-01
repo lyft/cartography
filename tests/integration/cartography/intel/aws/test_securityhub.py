@@ -23,8 +23,9 @@ def test_transform_and_load_hub(neo4j_session, *args):
         (
             'arn:aws:securityhub:us-east-1:000000000000:hub/default',
             1606993517,
-            True
-        )}
+            True,
+        ),
+    }
     nodes = neo4j_session.run(
         """
         MATCH (n:SecurityHub)

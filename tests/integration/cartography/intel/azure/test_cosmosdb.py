@@ -1,4 +1,7 @@
+from copy import deepcopy
+
 from cartography.intel.azure import cosmosdb
+from cartography.util import run_analysis_job
 from tests.data.azure.cosmosdb import cors1_id
 from tests.data.azure.cosmosdb import cors2_id
 from tests.data.azure.cosmosdb import DESCRIBE_CASSANDRA_KEYSPACES
@@ -9,8 +12,6 @@ from tests.data.azure.cosmosdb import DESCRIBE_MONGODB_DATABASES
 from tests.data.azure.cosmosdb import DESCRIBE_SQL_CONTAINERS
 from tests.data.azure.cosmosdb import DESCRIBE_SQL_DATABASES
 from tests.data.azure.cosmosdb import DESCRIBE_TABLE_RESOURCES
-from cartography.util import run_analysis_job
-from copy import deepcopy
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'RG'
@@ -527,7 +528,7 @@ def test_load_cosmosdb_virtual_network_rules(neo4j_session):
             neo4j_session=neo4j_session,
             database_account=database_account,
             azure_update_tag=TEST_UPDATE_TAG,
-            common_job_parameters={'Azure_Primary_AD_Domain_Name': 'cdx'}
+            common_job_parameters={'Azure_Primary_AD_Domain_Name': 'cdx'},
         )
 
     expected_nodes = {
@@ -560,7 +561,7 @@ def test_load_cosmosdb_virtual_network_rules_relationships(neo4j_session):
             neo4j_session,
             database_account,
             TEST_UPDATE_TAG,
-            common_job_parameters={'Azure_Primary_AD_Domain_Name': '123'}
+            common_job_parameters={'Azure_Primary_AD_Domain_Name': '123'},
         )
 
     expected = {
@@ -1030,23 +1031,23 @@ def test_cosmosdb_asset_exposure(neo4j_session):
         "UPDATE_TAG": TEST_UPDATE_TAG + 1,
         "WORKSPACE_ID": TEST_WORKSPACE_ID,
         "AZURE_SUBSCRIPTION_ID": TEST_SUBSCRIPTION_ID,
-        "AZURE_TENANT_ID": TEST_TENANT_ID
+        "AZURE_TENANT_ID": TEST_TENANT_ID,
     }
 
     run_analysis_job(
         'azure_cosmosdb_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     expected_nodes = {
-        ('/subscriptions/00-00-00-00/resourceGroups/RG/providers/Microsoft.DocumentDB/databaseAccounts/DA2', 'public_network')
+        ('/subscriptions/00-00-00-00/resourceGroups/RG/providers/Microsoft.DocumentDB/databaseAccounts/DA2', 'public_network'),
     }
 
     nodes = neo4j_session.run(
         """
         MATCH (n:AzureCosmosDBAccount{exposed_internet: true}) return n.id, n.exposed_internet_type
-        """
+        """,
     )
 
     actual_nodes = {

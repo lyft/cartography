@@ -258,7 +258,7 @@ def test_ec2_load_balancer_analysis(neo4j_session):
         """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
-        workspace_id=TEST_WORKSPACE_ID
+        workspace_id=TEST_WORKSPACE_ID,
     )
     load_balancer_data = tests.data.aws.ec2.load_balancers.LOAD_BALANCER_DATA
 
@@ -293,7 +293,7 @@ def test_ec2_load_balancer_analysis(neo4j_session):
     actual_nodes = {
         (
             n['l.id'],
-            ", ".join(n['l.exposed_internet_type'])
+            ", ".join(n['l.exposed_internet_type']),
         )
         for n in nodes
     }

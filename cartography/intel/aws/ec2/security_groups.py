@@ -1,23 +1,20 @@
-import time
 import logging
+import time
 from string import Template
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
 from .util import get_botocore_config
 from cartography.graph.job import GraphJob
 from cartography.models.aws.ec2.securitygroup_instance import EC2SecurityGroupInstanceSchema
-from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-import time
-from cloudconsolelink.clouds.aws import AWSLinker
-from botocore.exceptions import ClientError
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
 
@@ -132,10 +129,9 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
                 )
 
 
-
 @timeit
 def load_ec2_security_groupinfo(
-    neo4j_session: neo4j.Session, data: List[Dict],region:str,
+    neo4j_session: neo4j.Session, data: List[Dict], region: str,
     current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_security_group = """
@@ -160,12 +156,12 @@ def load_ec2_security_groupinfo(
         region = group.get('region', '')
         group_id = group["GroupId"]
         group_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:security-group/{group_id}"
-        
+
         consolelink = ''
         try:
             consolelink = aws_console_link.get_console_link(arn=group_arn)
         except Exception as ex:
-            logger.error('failed to generate console link for security group', { "key": group_arn }, ex)
+            logger.error('failed to generate console link for security group', {"key": group_arn}, ex)
 
         neo4j_session.run(
             ingest_security_group,

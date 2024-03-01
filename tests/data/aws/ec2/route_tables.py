@@ -14,7 +14,7 @@ DESCRIBE_ROUTE_TABLES = [
                 'SubnetId': 'subnet-020b2f3928f190ce8',
                 'GatewayId': 'string',
                 'RouteTableId': 'route_table-1',
-            }
+            },
         ],
         'RouteTableId': 'route_table-1',
         'Routes': [
@@ -33,7 +33,7 @@ DESCRIBE_ROUTE_TABLES = [
         ],
         'VpcId': 'vpc-05326141848d1c681',
         'OwnerId': 'string',
-        'region': 'us-central1'
+        'region': 'us-central1',
     },
     {
         'Associations': [
@@ -62,6 +62,6 @@ DESCRIBE_ROUTE_TABLES = [
         ],
         'VpcId': 'vpc-025873e026b9e8ee6',
         'OwnerId': 'string',
-        'region': 'us-central1'
+        'region': 'us-central1',
     },
 ]

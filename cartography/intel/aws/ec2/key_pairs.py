@@ -1,17 +1,18 @@
 import logging
 import time
-from typing import Dict, List
+from typing import Dict
+from typing import List
 
 import boto3
 import neo4j
 from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from .util import get_botocore_config
 from cartography.graph.job import GraphJob
 from cartography.models.aws.ec2.keypairs import EC2KeyPairSchema
-from cartography.util import aws_handle_regions, timeit
-
-from .util import get_botocore_config
+from cartography.util import aws_handle_regions
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
@@ -36,6 +37,7 @@ def get_ec2_key_pairs(boto3_session: boto3.session.Session, region: str) -> List
             raise
 
     return keys
+
 
 @timeit
 def load_ec2_key_pairs(
@@ -65,13 +67,13 @@ def load_ec2_key_pairs(
             consolelink = aws_console_link.get_console_link(arn=key_pair_arn)
 
         except Exception as ex:
-            logger.error('failed to generate console link for key pair', { "key": key_pair_arn }, ex)
+            logger.error('failed to generate console link for key pair', {"key": key_pair_arn}, ex)
 
         consolelink = ''
         try:
             consolelink = aws_console_link.get_console_link(arn=key_pair_arn)
         except Exception as ex:
-            logger.error('failed to generate console link for key pair', { "key": key_pair_arn }, ex)
+            logger.error('failed to generate console link for key pair', {"key": key_pair_arn}, ex)
 
         neo4j_session.run(
             ingest_key_pair,

@@ -1,11 +1,13 @@
-import time
 import logging
+import time
 from typing import Any
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
@@ -13,11 +15,9 @@ from cartography.intel.aws.util.arns import build_arn
 from cartography.models.aws.ec2.volumes import EBSVolumeSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
-import time
-from botocore.exceptions import ClientError
-from cloudconsolelink.clouds.aws import AWSLinker
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
+
 
 @timeit
 @aws_handle_regions
@@ -40,7 +40,6 @@ def get_volumes(boto3_session: boto3.session.Session, region: str) -> List[Dict]
             raise
 
     return volumes
-
 
 
 def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_account_id: str) -> List[Dict[str, Any]]:
@@ -66,7 +65,7 @@ def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_ac
             'VolumeType': volume.get('VolumeType'),
             'VolumeId': volume_id,
             'KmsKeyId': volume.get('KmsKeyId'),
-            'consolelink':consolelink,
+            'consolelink': consolelink,
         })
 
         if not active_attachments:

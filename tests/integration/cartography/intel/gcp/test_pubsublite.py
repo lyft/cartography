@@ -72,10 +72,14 @@ def test_pubsublite_subcription_to_topic_relation(neo4j_session):
     )
 
     expected_nodes = {
-        ('projects/project-123/locations/us-central1/subscriptions/subscription1',
-         'projects/project-123/locations/us-central1/topics/topic1'),
-        ('projects/project-123/locations/us-central1/subscriptions/subscription2',
-         'projects/project-123/locations/us-central1/topics/topic2')
+        (
+            'projects/project-123/locations/us-central1/subscriptions/subscription1',
+            'projects/project-123/locations/us-central1/topics/topic1',
+        ),
+        (
+            'projects/project-123/locations/us-central1/subscriptions/subscription2',
+            'projects/project-123/locations/us-central1/topics/topic2',
+        ),
     }
 
     nodes = neo4j_session.run(

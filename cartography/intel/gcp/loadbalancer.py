@@ -1,16 +1,16 @@
 import json
 import logging
+import time
 from typing import Dict
 from typing import List
 
-import time
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
-from cartography.util import run_cleanup_job
 from . import label
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,7 @@ def get_compute_zones(compute: Resource, project_id: str) -> List[Dict]:
         else:
             raise
 
+
 @timeit
 def get_global_health_checks(compute: Resource, project_id: str, common_job_parameters) -> List[Dict]:
     global_health_checks = []
@@ -66,6 +67,7 @@ def get_global_health_checks(compute: Resource, project_id: str, common_job_para
         else:
             raise
 
+
 @timeit
 def transform_global_health_checks(health_checks: List, project_id: str):
     list_health_checks = []
@@ -74,11 +76,14 @@ def transform_global_health_checks(health_checks: List, project_id: str):
         health_check['id'] = f"projects/{project_id}/global/healthChecks/{health_check['name']}"
         health_check['region'] = 'global'
         health_check['type'] = 'global'
-        health_check['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
-                                                                        health_check_name=health_check['name'], resource_name='global_health_check')
+        health_check['consolelink'] = gcp_console_link.get_console_link(
+            project_id=project_id,
+            health_check_name=health_check['name'], resource_name='global_health_check',
+        )
         list_health_checks.append(health_check)
 
     return list_health_checks
+
 
 @timeit
 def get_regional_health_checks(compute: Resource, project_id: str, region: str, common_job_parameters) -> List[Dict]:
@@ -113,15 +118,19 @@ def transform_regional_health_checks(health_checks: List, project_id: str, regio
         health_check['id'] = f"projects/{project_id}/regions/{region}/healthChecks/{health_check['name']}"
         health_check['region'] = region
         health_check['type'] = 'regional'
-        health_check['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, health_check_name=health_check['name'],
-                                                                        region=health_check['region'], resource_name='regional_health_check')
+        health_check['consolelink'] = gcp_console_link.get_console_link(
+            project_id=project_id, health_check_name=health_check['name'],
+            region=health_check['region'], resource_name='regional_health_check',
+        )
         list_health_checks.append(health_check)
 
     return list_health_checks
 
+
 @timeit
 def load_health_checks(session: neo4j.Session, health_checks: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_health_checks_tx, health_checks, project_id, update_tag)
+
 
 @timeit
 def load_health_checks_tx(
@@ -157,9 +166,11 @@ def load_health_checks_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def cleanup_health_checks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('gcp_health_checks_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync_global_health_checks(
@@ -215,6 +226,7 @@ def get_global_instance_groups(compute: Resource, project_id: str, zone: Dict, c
         else:
             raise
 
+
 @timeit
 def transform_global_instance_groups(instance_groups: List, project_id: str, zone: dict):
     list_instance_groups = []
@@ -223,11 +235,14 @@ def transform_global_instance_groups(instance_groups: List, project_id: str, zon
         instancegroup['id'] = f"projects/{project_id}/zones/{zone['name']}/instanceGroups/{instancegroup['name']}"
         instancegroup['type'] = 'global'
         instancegroup['region'] = 'global'
-        instancegroup['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, instance_group_name=instancegroup['name'],
-                                                                         zone=zone['name'], resource_name='global_instance_group')
+        instancegroup['consolelink'] = gcp_console_link.get_console_link(
+            project_id=project_id, instance_group_name=instancegroup['name'],
+            zone=zone['name'], resource_name='global_instance_group',
+        )
         list_instance_groups.append(instancegroup)
 
     return list_instance_groups
+
 
 @timeit
 def get_regional_instance_groups(compute: Resource, project_id: str, region: str, common_job_parameters) -> List[Resource]:
@@ -253,6 +268,7 @@ def get_regional_instance_groups(compute: Resource, project_id: str, region: str
         else:
             raise
 
+
 @timeit
 def transform_regional_instance_groups(instance_groups: List, project_id: str, region: str):
     list_instance_groups = []
@@ -261,15 +277,19 @@ def transform_regional_instance_groups(instance_groups: List, project_id: str, r
         instancegroup['id'] = f"projects/{project_id}/regions/{region}/instanceGroups/{instancegroup['name']}"
         instancegroup['type'] = 'regional'
         instancegroup['region'] = region
-        instancegroup['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, instance_group_name=instancegroup['name'],
-                                                                         region=instancegroup['name'], resource_name='regional_instance_group')
+        instancegroup['consolelink'] = gcp_console_link.get_console_link(
+            project_id=project_id, instance_group_name=instancegroup['name'],
+            region=instancegroup['name'], resource_name='regional_instance_group',
+        )
         list_instance_groups.append(instancegroup)
 
     return list_instance_groups
 
+
 @timeit
 def load_instance_groups(session: neo4j.Session, instance_groups: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_instance_groups_tx, instance_groups, project_id, update_tag)
+
 
 @timeit
 def load_instance_groups_tx(
@@ -306,9 +326,11 @@ def load_instance_groups_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def cleanup_instance_groups(neo4j_session: neo4j.Session, common_job_parameters) -> None:
     run_cleanup_job('gcp_instance_groups_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync_global_instance_groups(
@@ -364,6 +386,7 @@ def get_global_url_maps(compute: Resource, project_id: str, common_job_parameter
         else:
             raise
 
+
 @timeit
 def transform_global_url_maps(url_maps: List, project_id: str):
     list_url_maps = []
@@ -376,6 +399,7 @@ def transform_global_url_maps(url_maps: List, project_id: str):
         list_url_maps.append(url_map)
 
     return list_url_maps
+
 
 @timeit
 def get_regional_url_maps(compute: Resource, project_id: str, region: str, common_job_parameters) -> List[Dict]:
@@ -401,6 +425,7 @@ def get_regional_url_maps(compute: Resource, project_id: str, region: str, commo
         else:
             raise
 
+
 @timeit
 def transform_regional_url_maps(maps: List, region: str, project_id: str):
     list_url_maps = []
@@ -418,6 +443,7 @@ def transform_regional_url_maps(maps: List, region: str, project_id: str):
 @timeit
 def load_url_maps(session: neo4j.Session, url_maps: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_url_maps_tx, url_maps, project_id, update_tag)
+
 
 @timeit
 def load_url_maps_tx(
@@ -453,9 +479,11 @@ def load_url_maps_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def cleanup_url_maps(neo4j_session: neo4j.Session, common_job_parameters) -> None:
     run_cleanup_job('gcp_url_maps_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync_global_url_maps(
@@ -509,6 +537,7 @@ def get_ssl_policies(compute: Resource, project_id: str, common_job_parameters) 
         else:
             raise
 
+
 @timeit
 def transform_ssl_policies(ssl_policies: List, project_id: str):
     list_ssl_policies = []
@@ -516,8 +545,10 @@ def transform_ssl_policies(ssl_policies: List, project_id: str):
     for policy in ssl_policies:
         policy['id'] = f"projects/{project_id}/global/sslPolicies/{policy['name']}"
         policy['region'] = 'global'
-        policy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
-                                                                  ssl_policy_name=policy['name'], resource_name='ssl_policy')
+        policy['consolelink'] = gcp_console_link.get_console_link(
+            project_id=project_id,
+            ssl_policy_name=policy['name'], resource_name='ssl_policy',
+        )
         list_ssl_policies.append(policy)
 
     return list_ssl_policies
@@ -526,6 +557,7 @@ def transform_ssl_policies(ssl_policies: List, project_id: str):
 @timeit
 def load_ssl_policies(session: neo4j.Session, ssl_policies: List[Dict], project_id: str, update_tag: int) -> None:
     session.write_transaction(load_ssl_policies_tx, ssl_policies, project_id, update_tag)
+
 
 @timeit
 def load_ssl_policies_tx(
@@ -560,9 +592,11 @@ def load_ssl_policies_tx(
         gcp_update_tag=gcp_update_tag,
     )
 
+
 @timeit
 def cleanup_ssl_policies(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('gcp_ssl_policies_cleanup.json', neo4j_session, common_job_parameters)
+
 
 @timeit
 def sync_ssl_policies(

@@ -1,19 +1,21 @@
 import logging
+from concurrent.futures import as_completed
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Dict
 from typing import List
+
 import neo4j
-from concurrent.futures import as_completed
-from concurrent.futures import ThreadPoolExecutor
-from requests import exceptions
-from .resources import RESOURCE_FUNCTIONS
 from neo4j import GraphDatabase
-from cartography.graph.session import Session
-import cartography.intel.bitbucket.workspace
-import cartography.intel.bitbucket.repositories
-import cartography.intel.bitbucket.projects
+from requests import exceptions
+
 import cartography.intel.bitbucket.members
+import cartography.intel.bitbucket.projects
+import cartography.intel.bitbucket.repositories
+import cartography.intel.bitbucket.workspace
+from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
+from cartography.graph.session import Session
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -40,24 +42,24 @@ def start_bitbucket_ingestion(neo4j_session: neo4j.Session, config: Config) -> N
 
     try:
         workspaces_list =cartography.intel.bitbucket.workspace.get_workspaces(refresh_token)
-        
+
         cartography.intel.bitbucket.workspace.sync(
                 neo4j_session,
                 workspaces_list,
                 common_job_parameters,
-                
-            )
-        
+
+        )
+
         _sync_multiple_workspaces(
             neo4j_session,
             refresh_token,
             workspaces_list,
             common_job_parameters,
-            config
-            )
-        
-            
-            
+            config,
+        )
+
+
+
     except exceptions.RequestException as e:
             logger.error("Could not complete request to the Bitbuket API: %s", e)
     return common_job_parameters
@@ -68,15 +70,15 @@ def _sync_multiple_workspaces(
     refresh_token: str,
     workspaces:List[Dict],
     common_job_parameters: Dict[str, Any],
-    config: Config
-    ) ->bool:
-    
-    
+    config: Config,
+) ->bool:
+
+
     for workspace in workspaces:
         common_job_parameters['WORKSPACE_UUID']=workspace.get('uuid')
         _sync_one_workspace(neo4j_session,workspace.get('name'),refresh_token,common_job_parameters,config)
         run_cleanup_job('bitbucket_workspace_cleanup.json', neo4j_session, common_job_parameters)
-        
+
     del common_job_parameters['WORKSPACE_UUID']
     return True
 
@@ -85,8 +87,8 @@ def _sync_one_workspace(
     workspace_name:str,
     refresh_token:str,
     common_job_parameters: Dict[str, Any],
-    config: Config
-  ):
+    config: Config,
+):
     requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
     with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
         futures = []
@@ -101,23 +103,24 @@ def _sync_one_workspace(
                         workspace_name,
                         refresh_token,
                         common_job_parameters,
-                        
-                    )
+
+                    ),
                 )
             else:
                 raise ValueError(
-                    f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?')
+                    f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?',
+                )
 
         for future in as_completed(futures):
             logger.info(f'Result from Future - Service Processing: {future.result()}')
-    
-    
-    
+
+
+
     return True
-    
+
 
 def concurrent_execution(
-    service: str, service_func: Any, config:Config,workspace_name:str, refresh_token:str,common_job_parameters: Dict, 
+    service: str, service_func: Any, config:Config,workspace_name:str, refresh_token:str,common_job_parameters: Dict,
 ):
     logger.info(f"BEGIN processing for service: {service}")
     neo4j_auth = (config.neo4j_user, config.neo4j_password)
@@ -126,7 +129,8 @@ def concurrent_execution(
         auth=neo4j_auth,
         max_connection_lifetime=config.neo4j_max_connection_lifetime,
     )
-    service_func(Session(neo4j_driver), workspace_name,refresh_token,
-                      common_job_parameters)
+    service_func(
+        Session(neo4j_driver), workspace_name,refresh_token,
+        common_job_parameters,
+    )
     logger.info(f"END processing for service: {service}")
-

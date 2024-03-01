@@ -1,10 +1,12 @@
-import requests
 import logging
 from typing import Any
 from typing import Dict
 from typing import List
-from requests.exceptions import RequestException
+
 import neo4j
+import requests
+from requests.exceptions import RequestException
+
 from cartography.util import make_requests_url
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -46,19 +48,19 @@ def _load_memebers_data(tx: neo4j.Transaction,members_data:List[Dict],common_job
         membersData=members_data,
         UpdateTag=common_job_parameters['UPDATE_TAG'],
     )
-    
-   
-    
+
+
+
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('bitbucket_workspace_member_cleanup.json', neo4j_session, common_job_parameters)
-         
-    
+
+
 def sync(
         neo4j_session: neo4j.Session,
         workspace_name:str,
         bitbucket_refresh_token:str,
         common_job_parameters: Dict[str, Any],
-        
+
 ) -> None:
     """
     Performs the sequential tasks to collect, transform, and sync bitbucket data
@@ -70,4 +72,3 @@ def sync(
     workspace_members=get_workspace_members(bitbucket_refresh_token,workspace_name)
     load_memebers_data(neo4j_session,workspace_members,common_job_parameters)
     cleanup(neo4j_session,common_job_parameters)
-    

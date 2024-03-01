@@ -1,19 +1,20 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
-from botocore.exceptions import ClientError
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
+
 
 @timeit
 @aws_handle_regions
@@ -37,6 +38,7 @@ def get_event_buses(boto3_session: boto3.session.Session, region):
 
     return event_buses
 
+
 @timeit
 def transform_event_buses(buses: List[Dict], region: str) -> List[Dict]:
     event_buses = []
@@ -45,9 +47,9 @@ def transform_event_buses(buses: List[Dict], region: str) -> List[Dict]:
         event_bus['arn'] = event_bus['Arn']
         event_bus['consolelink'] = aws_console_link.get_console_link(arn=event_bus['arn'])
         event_buses.append(event_bus)
-    
+
     return event_buses
-    
+
 
 def load_event_buses(session: neo4j.Session, event_buses: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_event_buses_tx, event_buses, current_aws_account_id, aws_update_tag)
@@ -101,6 +103,7 @@ def get_event_rules(boto3_session: boto3.session.Session, region, account_id):
         logger.error(f'Failed to call CloudWatch event list_rules: {region} - {e}')
     return event_rules
 
+
 @timeit
 def transform_rules(rules: List[Dict], region: str, account_id) -> List[Dict]:
     event_rules = []
@@ -111,6 +114,7 @@ def transform_rules(rules: List[Dict], region: str, account_id) -> List[Dict]:
         event_rules.append(event_rule)
 
     return event_rules
+
 
 def load_event_rules(session: neo4j.Session, event_buses: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_event_rules_tx, event_buses, current_aws_account_id, aws_update_tag)
@@ -180,6 +184,7 @@ def get_log_groups(boto3_session: boto3.session.Session, region):
 
     return log_groups
 
+
 @timeit
 def transform_log_groups(boto3_session: boto3.session.Session, groups: List, region: str) -> List[Dict]:
     log_groups = []
@@ -191,8 +196,11 @@ def transform_log_groups(boto3_session: boto3.session.Session, groups: List, reg
             log_group['consolelink'] = aws_console_link.get_console_link(arn=log_group['arn'])
             log_group['region'] = region
             if log_group.get('kmsKeyId'):
-                log_group['kms'] = kms_client.describe_key(KeyId=log_group.get(
-                    'kmsKeyId', None).split('/')[1]).get('KeyMetadata', {})
+                log_group['kms'] = kms_client.describe_key(
+                    KeyId=log_group.get(
+                        'kmsKeyId', None,
+                    ).split('/')[1],
+                ).get('KeyMetadata', {})
             log_groups.append(log_group)
     except ClientError as e:
         logger.error(f'Failed to call CloudWatch Logs describe_log_groups: {region} - {e}')
@@ -266,6 +274,7 @@ def get_metrics(boto3_session: boto3.session.Session, region):
 
     return metrics
 
+
 @timeit
 def transform_metrics(mets: List[Dict], account_id: str, region: str) -> List[Dict]:
     metrics = []
@@ -278,6 +287,7 @@ def transform_metrics(mets: List[Dict], account_id: str, region: str) -> List[Di
         metrics.append(metric)
 
     return metrics
+
 
 def load_metrics(session: neo4j.Session, metrics: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_metrics_tx, metrics, current_aws_account_id, aws_update_tag)
@@ -333,6 +343,7 @@ def get_cloudwatch_alarm(boto3_session: boto3.session.Session, region: str) -> L
         logger.error(f'Failed to call CloudWatch describe_alarms: {region} - {e}')
         return alarms
 
+
 @timeit
 def transform_alarms(alms: List[Dict], region: str) -> List[Dict]:
     alarms = []
@@ -343,6 +354,7 @@ def transform_alarms(alms: List[Dict], region: str) -> List[Dict]:
         alarms.append(alarm)
 
     return alarms
+
 
 def load_cloudwatch_alarm(session: neo4j.Session, alarms: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_cloudwatch_alarm_tx, alarms, current_aws_account_id, aws_update_tag)
@@ -404,6 +416,7 @@ def get_cloudwatch_flowlogs(boto3_session: boto3.session.Session, region: str) -
         logger.error(f'Failed to call EC2 describe_flow_logs: {region} - {e}')
         return flowlogs
 
+
 @timeit
 def transform_flow_logs(logs: List[Dict], current_aws_account_id: str, region: str) -> List[Dict]:
     flowlogs = []
@@ -413,6 +426,7 @@ def transform_flow_logs(logs: List[Dict], current_aws_account_id: str, region: s
         flowlogs.append(flowlog)
 
     return flowlogs
+
 
 def load_cloudwatch_flowlogs(session: neo4j.Session, flowlogs: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_cloudwatch_flowlogs_tx, flowlogs, current_aws_account_id, aws_update_tag)

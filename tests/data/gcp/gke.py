@@ -15,7 +15,7 @@ GKE_CLUSTERS = [{
     'initialClusterVersion': '1.12.10-gke.15',
     'currentMasterVersion': '1.14.10-gke.27',
     'status': 'RUNNING',
-    'exposed_internet':"true",
+    'exposed_internet': "true",
     'servicesIpv4Cidr': '0.0.0.0/15',
     'databaseEncryption': {
             'state': 'DECRYPTED',
@@ -89,7 +89,7 @@ GKE_CLUSTERS = [{
                 ],
             'metadata': {
                     'disable-legacy-endpoints': 'true',
-                    },
+            },
             'imageType': 'COS',
             'tags': ['default-node'],
             'serviceAccount':
@@ -97,7 +97,7 @@ GKE_CLUSTERS = [{
                 'diskType': 'pd-standard',
                 'shieldedInstanceConfig': {
                     'enableIntegrityMonitoring': True,
-                    },
+                },
         },
         'initialNodeCount': 2,
         'management': {

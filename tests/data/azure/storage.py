@@ -15,8 +15,8 @@ DESCRIBE_STORAGE_ACCOUNTS = [
         "type": "Microsoft.Storage/storageAccounts",
         "allowBlobPublicAccess": True,
         "network_rule_set": {
-            "default_action": "Deny"
-        }
+            "default_action": "Deny",
+        },
     },
     {
         "id": "/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Storage/storageAccounts/testSG2",
@@ -34,8 +34,8 @@ DESCRIBE_STORAGE_ACCOUNTS = [
         "type": "Microsoft.Storage/storageAccounts",
         "allowBlobPublicAccess": False,
         "network_rule_set": {
-            "default_action": "Allow"
-        }
+            "default_action": "Allow",
+        },
     },
 ]
 

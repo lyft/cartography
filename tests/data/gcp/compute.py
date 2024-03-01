@@ -8,7 +8,7 @@ VPC_RESPONSE = {
         'id': '123456',
         'kind': 'compute#network',
         'name': 'default',
-        "consolelink":"www.google.com",
+        "consolelink": "www.google.com",
         'routingConfig': {
             'routingMode': 'REGIONAL',
         },
@@ -47,7 +47,7 @@ VPC_SUBNET_RESPONSE = {
         'fingerprint': '!@#$%ASDF',
         'gatewayAddress': '10.0.0.1',
         'id': '98765',
-        "consolelink":"www.google.com",
+        "consolelink": "www.google.com",
         'ipCidrRange': '10.0.0.0/20',
         'kind': 'compute#subnetwork',
         'name': 'default',
@@ -87,7 +87,7 @@ GCP_LIST_INSTANCES_RESPONSE = {
                 'type': 'PERSISTENT',
             }],
             'id': '1234',
-            "consolelink":"www.google.com",
+            "consolelink": "www.google.com",
             'kind': 'compute#instance',
             'labelFingerprint': 'fingerprint1234=',
             'machineType': 'https://www.googleapis.com/compute/v1/projects/project-abc/zones/europe-west2-b/machineTypes/n1-standard-1',
@@ -104,7 +104,7 @@ GCP_LIST_INSTANCES_RESPONSE = {
                     'networkTier': 'PREMIUM',
                     'type': 'ONE_TO_ONE_NAT',
                 }],
-                "consolelink":"www.google.com",
+                "consolelink": "www.google.com",
                 'ipv6AccessConfigs': [{
                     'kind': 'compute#accessConfig',
                     'name': 'External NAT',
@@ -193,7 +193,7 @@ GCP_LIST_INSTANCES_RESPONSE = {
                 'fingerprint': 'fingerprint4567',
                 'kind': 'compute#networkInterface',
                 'name': 'nic0',
-                "consolelink":"www.google.com",
+                "consolelink": "www.google.com",
                 'network': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
                 'networkIP': '10.0.0.3',
                 'subnetwork': 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/subnetworks/default',
@@ -219,7 +219,7 @@ GCP_LIST_INSTANCES_RESPONSE = {
             'status': 'RUNNING',
             'tags': {
                 'fingerprint': 'fingerprint1234=',
-                'items': ["test1"]
+                'items': ["test1"],
             },
             'zone': 'https://www.googleapis.com/compute/v1/projects/project-abc/zones/europe-west2-b',
         },
@@ -235,7 +235,7 @@ TRANSFORMED_GCP_VPCS = [{
     'self_link': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/networks/default',
     'project_id': 'project-abc',
     'auto_create_subnetworks': True,
-    "consolelink":"www.google.com",
+    "consolelink": "www.google.com",
     'description': 'Default network for the project',
     'routing_config_routing_mode': 'REGIONAL',
 }]
@@ -256,9 +256,9 @@ TRANSFORMED_GCP_SUBNETS = [{
 }]
 
 TRANSFORMED_GCP_INSTANCES = [
-    
+
     {
-        "consolelink":"www.google.com",
+        "consolelink": "www.google.com",
         'canIpForward': False,
         'cpuPlatform': 'Intel Haswell',
         'creationTimestamp': '2018-02-16T10:42:04.362-08:00',
@@ -433,7 +433,7 @@ LIST_FIREWALLS_RESPONSE = {
             'priority': 65534,
             'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/global/firewalls/default-allow-icmp',
             'sourceRanges': ['0.0.0.0/0'],
-            "consolelink":"www.google.com",
+            "consolelink": "www.google.com",
             'targetTags': ["test"],
         }, {
             'allowed': [
@@ -451,7 +451,7 @@ LIST_FIREWALLS_RESPONSE = {
             'description': 'Allow internal traffic on the default network',
             'direction': 'INGRESS',
             'disabled': False,
-            "consolelink":"www.google.com",
+            "consolelink": "www.google.com",
             'id': '131313',
             'kind': 'compute#firewall',
             'logConfig': {
@@ -472,7 +472,7 @@ LIST_FIREWALLS_RESPONSE = {
             'description': 'Allow RDP from anywhere',
             'direction': 'INGRESS',
             'disabled': False,
-            "consolelink":"www.google.com",
+            "consolelink": "www.google.com",
             'id': '141414',
             'kind': 'compute#firewall',
             'logConfig': {
@@ -492,7 +492,7 @@ LIST_FIREWALLS_RESPONSE = {
             'creationTimestamp': '2018-05-10T17:33:45.759-07:00',
             'description': 'Allow SSH from anywhere',
             'direction': 'INGRESS',
-            "consolelink":"www.google.com",
+            "consolelink": "www.google.com",
             'disabled': False,
             'id': '151515',
             'kind': 'compute#firewall',
@@ -707,7 +707,7 @@ LIST_FORWARDING_RULES_RESPONSE = {
             'creationTimestamp': '2019-11-22T06:05:37.254-08:00',
             'name': 'internal-service-1111',
             'description': 'my-k8s-internal-service',
-            "consolelink":"www.google.com",
+            "consolelink": "www.google.com",
             'region': 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2',
             'IPAddress': '10.0.0.10',
             'IPProtocol': 'TCP',
@@ -737,7 +737,7 @@ LIST_FORWARDING_RULES_RESPONSE = {
             'selfLink': 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/forwardingRules/public-ingress-controller-1234567',
             'loadBalancingScheme': 'EXTERNAL',
             'networkTier': 'PREMIUM',
-            "consolelink":"www.google.com",
+            "consolelink": "www.google.com",
             'target': 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2/targetVpnGateways/vpn-12345',
             'fingerprint': '123456789',
             'kind': 'compute#forwardingRule',
@@ -749,7 +749,7 @@ LIST_FORWARDING_RULES_RESPONSE = {
             'description': 'shard-server',
             'region': 'https://www.googleapis.com/compute/v1/projects/project-abc/regions/europe-west2',
             'IPAddress': '10.0.0.20',
-            "consolelink":"www.google.com",
+            "consolelink": "www.google.com",
             'IPProtocol': 'TCP',
             'ports': [
                 '10203',
@@ -778,7 +778,7 @@ TEST_DISKS = [
         'source_snapshot_id': '123',
         'lastAttachTimestamp': '1234567888',
         'lastDetachTimestamp': '1234567888',
-        "consolelink":"www.google.com",
+        "consolelink": "www.google.com",
         'physicalBlockSizeBytes': '1234567888',
         'sourceDiskId': '1234',
 
@@ -789,9 +789,9 @@ TEST_DISKS = [
 TEST_PROXIES = [
     {
         'name': 'httpsproxy123',
-        "consolelink":"www.google.com",
+        "consolelink": "www.google.com",
         'id': 'projects/project123/global/targetHttpsProxies/httpsproxy123',
         'certificateMap': 'map123',
-        'sslPolicy': 'policy123'
-    }
+        'sslPolicy': 'policy123',
+    },
 ]

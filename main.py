@@ -1,13 +1,14 @@
 # Unused file
-
 # Used by GCP Functions
 import base64
 import json
 import logging
 import os
+
+import requests
 from requests import Response
 from requests.exceptions import RequestException
-import requests
+
 import cartography.cli
 import utils.logger as lgr
 from libraries.pubsublibrary import PubSubLibrary
@@ -47,13 +48,12 @@ def cartography_worker(event, ctx):
             "status": 'failure',
             "message": 'unable to parse request',
         }
-    if params.get("templateType")=="GCPINVENTORYVIEWS":
+    if params.get("templateType") == "GCPINVENTORYVIEWS":
         gcp_process_request(logger, params)
-    elif params.get("templateType")=="GITHUBINVENTORYVIEWS":
+    elif params.get("templateType") == "GITHUBINVENTORYVIEWS":
         github_process_request(logger, params)
-    elif params.get("templateType")=="BITBUCKETINVENTORYVIEWS":
+    elif params.get("templateType") == "BITBUCKETINVENTORYVIEWS":
         bitbucket_process_request(logger, params)
-    
 
     return {
         'statusCode': 200,
@@ -186,7 +186,7 @@ def publish_response(logger, req, resp, params):
         logger.error(f'Failed while publishing response to PubSub: {str(e)}')
 
 
-def bitbucket_process_request(logger,params):
+def bitbucket_process_request(logger, params):
     logger.info(f'request - {params.get("templateType")} - {params.get("eventId")} - {params.get("workspace")}')
 
     svcs = []
@@ -211,12 +211,12 @@ def bitbucket_process_request(logger,params):
         "logging": {
             "mode": "verbose",
         },
-        "bitbucket":{
-            'client_id':os.environ['bitbucket_client_id'],
-            'client_secret':os.environ['bitbucket_client_secret'],
-            "refresh_token":os.environ['bitbucket_refresh_token'],
-            "access_token":get_access_token(os.environ['bitbucket_client_id'],os.environ['bitbucket_client_secret'],os.environ['bitbucket_refresh_token'])
-            },
+        "bitbucket": {
+            'client_id': os.environ['bitbucket_client_id'],
+            'client_secret': os.environ['bitbucket_client_secret'],
+            "refresh_token": os.environ['bitbucket_refresh_token'],
+            "access_token": get_access_token(os.environ['bitbucket_client_id'], os.environ['bitbucket_client_secret'], os.environ['bitbucket_refresh_token']),
+        },
         "params": {
             "sessionString": params.get('sessionString'),
             "eventId": params.get('eventId'),
@@ -257,9 +257,9 @@ def bitbucket_process_request(logger,params):
     publish_response(logger, body, resp, params)
 
     logger.info(f'inventory sync gcp response - {params.get("eventId")}: {json.dumps(resp)}')
-    
-    
-def github_process_request(logger,params):
+
+
+def github_process_request(logger, params):
     logger.info(f'request - {params.get("templateType")} - {params.get("eventId")} - {params.get("workspace")}')
 
     svcs = []
@@ -269,7 +269,7 @@ def github_process_request(logger,params):
             svc['pagination']['pageSize'] = 10000
 
         svcs.append(svc)
-    # github_config must be encoded 
+    # github_config must be encoded
     # format={"organization":[{"token":"",url="","name":""}]}
     body = {
         "credentials": {
@@ -285,7 +285,7 @@ def github_process_request(logger,params):
         "logging": {
             "mode": "verbose",
         },
-        "github_config":params['github_config'],
+        "github_config": params['github_config'],
         "params": {
             "sessionString": params.get('sessionString'),
             "eventId": params.get('eventId'),
@@ -326,9 +326,9 @@ def github_process_request(logger,params):
     publish_response(logger, body, resp, params)
 
     logger.info(f'inventory sync gcp response - {params.get("eventId")}: {json.dumps(resp)}')
-    
 
-def get_access_token( client_id: str, client_secret: str, refresh_token: str):
+
+def get_access_token(client_id: str, client_secret: str, refresh_token: str):
     try:
         TOKEN_URL = 'https://bitbucket.org/site/oauth2/access_token'
         token_req_payload = {'grant_type': 'refresh_token', 'refresh_token': refresh_token}

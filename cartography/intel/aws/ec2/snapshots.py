@@ -1,15 +1,16 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
 from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
+
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
@@ -32,7 +33,7 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dic
             volume_permissions=get_snapshot_attribute(client=client,attribute_name='createVolumePermissions', snapshot_id=snapshot['SnapshotId'])
             for volume_permission in volume_permissions:
                snapshot['volume_permissions']=volume_permission.get("Group",'')
-              
+
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':

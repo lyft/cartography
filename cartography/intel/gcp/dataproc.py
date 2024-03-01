@@ -5,9 +5,9 @@ from typing import Dict
 from typing import List
 
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
 from . import label
 from cartography.util import run_cleanup_job
@@ -30,8 +30,10 @@ def get_dataproc_clusters(dataproc: Resource, project_id: str, regions: list) ->
                         for cluster in res['clusters']:
                             cluster['region'] = region
                             cluster['id'] = f"projects/{project_id}/clusters/{cluster['clusterName']}"
-                            cluster['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,\
-                                dataproc_cluster_name=cluster['clusterName'],region=cluster['region'], resource_name='dataproc_cluster')
+                            cluster['consolelink'] = gcp_console_link.get_console_link(
+                                project_id=project_id,
+                                dataproc_cluster_name=cluster['clusterName'], region=cluster['region'], resource_name='dataproc_cluster',
+                            )
                             clusters.append(cluster)
                     req = dataproc.projects().regions().clusters().list_next(previous_request=req, previous_response=res)
 

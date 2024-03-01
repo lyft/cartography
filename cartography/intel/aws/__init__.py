@@ -1,12 +1,12 @@
 import datetime
 import logging
 import traceback
+from concurrent.futures import as_completed
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Dict
 from typing import Iterable
 from typing import List
-
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import boto3
 import botocore.exceptions
@@ -15,16 +15,16 @@ from neo4j import GraphDatabase
 
 from . import ec2
 from . import organizations
-from .resources import RESOURCE_FUNCTIONS
 from .ec2.util import get_botocore_config
+from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
+from cartography.graph.session import Session
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cartography.graph.session import Session
 
 stat_handler = get_stats_client(__name__)
 logger = logging.getLogger(__name__)
@@ -106,13 +106,18 @@ def _sync_one_account(
             if func_name in RESOURCE_FUNCTIONS:
                 # Skip permission relationships and tags for now because they rely on data already being in the graph
                 if func_name not in ['permission_relationships', 'resourcegroupstaggingapi']:
-                    futures.append(executor.submit(concurrent_execution, func_name,
-                                   RESOURCE_FUNCTIONS[func_name], creds, config, **sync_args))
+                    futures.append(
+                        executor.submit(
+                            concurrent_execution, func_name,
+                            RESOURCE_FUNCTIONS[func_name], creds, config, **sync_args,
+                        ),
+                    )
                 else:
                     continue
             else:
                 raise ValueError(
-                    f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?')
+                    f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?',
+                )
 
         for future in as_completed(futures):
             logger.info(f'Result from Future - Service Processing: {future.result()}')
@@ -140,7 +145,7 @@ def _sync_one_account(
     run_analysis_job(
         'implicit_relationship_creation.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )  # NOTE temp solution (query has to be only executed after both subnet & route table is loaded)
 
     # # INFO: This is not a valid implementation. Because Security Groups are not public in general. Commenting out for future review.
@@ -191,49 +196,49 @@ def _sync_one_account(
     run_analysis_job(
         'aws_lambda_function_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     run_analysis_job(
         'aws_s3acl_analysis.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     run_analysis_job(
         'aws_s3_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     run_analysis_job(
         'aws_rds_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     run_analysis_job(
         'aws_cloudtrail_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     run_analysis_job(
         'aws_apigateway_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
     run_analysis_job(
         'aws_cloudfront_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
     run_analysis_job(
         'aws_ebs_snapshot_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
-   
+
     run_analysis_job(
         'aws_elasticache_cluster_asset_exposure.json',
         neo4j_session,
@@ -242,12 +247,12 @@ def _sync_one_account(
     run_analysis_job(
         'aws_ecs_service_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
     run_analysis_job(
         'aws_emr_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     run_analysis_job(
@@ -310,14 +315,16 @@ def _autodiscover_accounts(
 def list_all_regions(boto3_session, logger):
     try:
         client = boto3_session.client('ec2', region_name="us-east-1", config=get_botocore_config())
-        regions = client.describe_regions(Filters=[
-            {
-                'Name': 'opt-in-status',
-                'Values': [
-                        'opt-in-not-required',
-                ]
-            },
-        ])
+        regions = client.describe_regions(
+            Filters=[
+                {
+                    'Name': 'opt-in-status',
+                    'Values': [
+                            'opt-in-not-required',
+                    ],
+                },
+            ],
+        )
 
     except Exception as e:
         logger.error(f"Failed retrieve enabled regions. Error - {e}")
@@ -412,7 +419,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "AWS_ACCOUNT_ID": config.params['workspace']['account_id'],
         "pagination": {},
         "PUBLIC_PORTS": ['20', '21', '22', '3306', '3389', '4333'],
-        "AWS_INTERNAL_ACCOUNTS": config.aws_internal_accounts
+        "AWS_INTERNAL_ACCOUNTS": config.aws_internal_accounts,
     }
 
     try:

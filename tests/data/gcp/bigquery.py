@@ -7,8 +7,8 @@ TEST_DATASET = [
             'defaultPartitionExpirationMs': '20',
             'location': 'us-east1',
             'defaultCollation': 'und:ci',
-            'maxTimeTravelHours': '2'
-        }
+            'maxTimeTravelHours': '2',
+        },
     },
     {
         'id': 'dataset2',
@@ -18,9 +18,9 @@ TEST_DATASET = [
             'defaultPartitionExpirationMs': '26',
             'location': 'us-east1',
             'defaultCollation': 'und:ci',
-            'maxTimeTravelHours': '2'
-        }
-    }
+            'maxTimeTravelHours': '2',
+        },
+    },
 ]
 
 TEST_TABLE = [
@@ -32,8 +32,8 @@ TEST_TABLE = [
             'requirePartitionFilter': True,
             'numBytes': '34',
             'numLongTermBytes': '128',
-            'numRows': '4'
-        }
+            'numRows': '4',
+        },
     },
     {
         'id': 'table2',
@@ -43,15 +43,15 @@ TEST_TABLE = [
             'requirePartitionFilter': True,
             'numBytes': '35',
             'numLongTermBytes': '256',
-            'numRows': '3'
-        }
-    }
+            'numRows': '3',
+        },
+    },
 ]
 
 TEST_ACCESSES = [
     {
-        'id':"projects/000000000000/bigquery/dataset1/role/WRITER",
+        'id': "projects/000000000000/bigquery/dataset1/role/WRITER",
         'specialGroup': 'allAuthenticatedUsers',
         'role': 'WRITER',
-    }
+    },
 ]
