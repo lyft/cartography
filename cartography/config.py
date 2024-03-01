@@ -141,7 +141,8 @@ class Config:
         gsuite_auth_method=None,
         gsuite_config=None,
         refresh_entitlements=False,
-        identity_store_region=None
+        identity_store_region=None,
+        aws_internal_accounts=None
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
@@ -196,3 +197,4 @@ class Config:
         self.gsuite_config = gsuite_config
         self.refresh_entitlements = refresh_entitlements
         self.identity_store_region = identity_store_region
+        self.aws_internal_accounts = aws_internal_accounts

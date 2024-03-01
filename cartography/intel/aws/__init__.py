@@ -218,11 +218,31 @@ def _sync_one_account(
         neo4j_session,
         common_job_parameters
     )
-
+    run_analysis_job(
+        'aws_cloudfront_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+    run_analysis_job(
+        'aws_ebs_snapshot_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+   
     run_analysis_job(
         'aws_elasticache_cluster_asset_exposure.json',
         neo4j_session,
         common_job_parameters,
+    )
+    run_analysis_job(
+        'aws_ecs_service_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+    run_analysis_job(
+        'aws_emr_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
     )
 
     run_analysis_job(
@@ -388,7 +408,8 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "AWS_ACCOUNT_ID": config.params['workspace']['account_id'],
         "pagination": {},
         "PUBLIC_PORTS": ['20', '21', '22', '3306', '3389', '4333'],
-        "IDENTITY_STORE_REGION": config.identity_store_region
+        "IDENTITY_STORE_REGION": config.identity_store_region,
+        "AWS_INTERNAL_ACCOUNTS": config.aws_internal_accounts
     }
 
     try:

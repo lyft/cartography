@@ -29,6 +29,10 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dic
             snapshots.extend(page['Snapshots'])
         for snapshot in snapshots:
             snapshot['region'] = region
+            volume_permissions=get_snapshot_attribute(client=client,attribute_name='createVolumePermissions', snapshot_id=snapshot['SnapshotId'])
+            for volume_permission in volume_permissions:
+               snapshot['volume_permissions']=volume_permission.get("Group",'')
+              
 
     except ClientError as e:
         if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
@@ -40,6 +44,22 @@ def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dic
             raise
 
     return snapshots
+
+def get_snapshot_attribute(client, snapshot_id, attribute_name):
+        response = {}
+        try:
+            response = client.describe_snapshot_attribute(Attribute=attribute_name, SnapshotId=snapshot_id)
+
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'AccessDeniedException' or e.response['Error']['Code'] == 'UnauthorizedOperation':
+                logger.warning(
+                    f'ec2:describe_snapshot_attribute failed with AccessDeniedException; continuing sync.',
+                    exc_info=True,
+                )
+        else:
+            raise
+
+        return response
 
 
 @timeit
@@ -54,7 +74,7 @@ def load_snapshots(
     s.progress = snapshot.Progress, s.starttime = snapshot.StartTime, s.state = snapshot.State, s.consolelink = snapshot.consolelink,
     s.statemessage = snapshot.StateMessage, s.volumeid = snapshot.VolumeId, s.volumesize = snapshot.VolumeSize,
     s.outpostarn = snapshot.OutpostArn, s.dataencryptionkeyid = snapshot.DataEncryptionKeyId,
-    s.kmskeyid = snapshot.KmsKeyId, s.region = snapshot.region, s.arn = snapshot.Arn
+    s.kmskeyid = snapshot.KmsKeyId, s.region = snapshot.region, s.arn = snapshot.Arn,s.volume_permissions=snapshot.volume_permissions
     WITH s
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(s)
