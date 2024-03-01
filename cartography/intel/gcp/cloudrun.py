@@ -201,8 +201,10 @@ def transform_revisions(revisions: List[Dict], project_id: str) -> List[Dict]:
     for item in revisions:
         item['region'] = item.get('metadata').get('labels').get('cloud.googleapis.com/location')
         item['service_name'] = item.get('metadata').get('labels').get('serving.knative.dev/route')
-        item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
-                                                                cloud_run_service_name=item['service_name'], region=item['region'], resource_name='cloud_run_revision')
+        item['consolelink'] = gcp_console_link.get_console_link(
+            project_id=project_id,
+            cloud_run_service_name=item['service_name'], region=item['region'], resource_name='cloud_run_revision',
+        )
         item['id'] = f"projects/{project_id}/revisions/{item.get('metadata').get('name')}"
         revisions.append(item)
     return revisions
@@ -305,8 +307,10 @@ def transform_services(services: List[Dict], project_id: str) -> List[Dict]:
     services = []
     for item in services:
         item['region'] = item.get('metadata').get('labels').get('cloud.googleapis.com/location')
-        item['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
-                                                                cloud_run_service_name=item.get('metadata').get('name'), region=item['region'], resource_name='cloud_run_service')
+        item['consolelink'] = gcp_console_link.get_console_link(
+            project_id=project_id,
+            cloud_run_service_name=item.get('metadata').get('name'), region=item['region'], resource_name='cloud_run_service',
+        )
         item['id'] = f"projects/{project_id}/services/{item.get('metadata').get('name')}"
         services.append(item)
 

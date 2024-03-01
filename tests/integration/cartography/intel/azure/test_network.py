@@ -1,4 +1,5 @@
 from cartography.intel.azure import network
+from cartography.util import run_analysis_job
 from tests.data.azure.network import DESCRIBE_NETWORKROUTE
 from tests.data.azure.network import DESCRIBE_NETWORKS
 from tests.data.azure.network import DESCRIBE_NETWORKSECURITYGROUPS
@@ -7,7 +8,6 @@ from tests.data.azure.network import DESCRIBE_NETWORKSUBNETS
 from tests.data.azure.network import DESCRIBE_NETWORKUSAGES
 from tests.data.azure.network import DESCRIBE_PUBLICIPADDRESSES
 from tests.data.azure.network import DESCRIBE_ROUTETABLE
-from cartography.util import run_analysis_job
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
@@ -401,7 +401,7 @@ def test_load_network_security_rule_relationships(neo4j_session):
             'networkSecurityGroups/Testgroup1',
             '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/            '
             'networkSecurityGroups/Testgroup2/securityRules/rule4',
-        )
+        ),
     }
 
     result = neo4j_session.run(
@@ -571,22 +571,26 @@ def test_network_security_group_analysis(neo4j_session):
         "UPDATE_TAG": TEST_UPDATE_TAG + 1,
         "WORKSPACE_ID": TEST_WORKSPACE_ID,
         "AZURE_SUBSCRIPTION_ID": TEST_SUBSCRIPTION_ID,
-        "AZURE_TENANT_ID": TEST_TENANT_ID
+        "AZURE_TENANT_ID": TEST_TENANT_ID,
     }
 
     run_analysis_job(
         'azure_network_security_group_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     expected_nodes = {
-        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/            '
-         'networkSecurityGroups/Testgroup1',
-         'direct_ipv4,public_icmp'),
-        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/            '
-         'networkSecurityGroups/Testgroup2',
-         'inbound_public_ports'),
+        (
+            '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/            '
+            'networkSecurityGroups/Testgroup1',
+            'direct_ipv4,public_icmp',
+        ),
+        (
+            '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Network/            '
+            'networkSecurityGroups/Testgroup2',
+            'inbound_public_ports',
+        ),
     }
 
     nodes = neo4j_session.run(

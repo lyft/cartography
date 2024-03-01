@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -8,7 +9,6 @@ import neo4j
 from cartography.intel.github.util import fetch_all
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
-from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -55,14 +55,20 @@ def get(token: str, api_url: str, organization: str) -> Tuple[List[Dict], Dict]:
     :return: A 2-tuple containing 1. a list of dicts representing users - see tests.data.github.users.GITHUB_USER_DATA
     for shape, and 2. data on the owning GitHub organization - see tests.data.github.users.GITHUB_ORG_DATA for shape.
     """
-    users, org = fetch_all(token, api_url, organization, GITHUB_ORG_USERS_PAGINATED_GRAPHQL, 'membersWithRole', 'edges')
-    return users, org
+    users, org = fetch_all(
+        token,
+        api_url,
+        organization,
+        GITHUB_ORG_USERS_PAGINATED_GRAPHQL,
+        'membersWithRole',
+    )
+    return users.edges, org
 
 
 @timeit
 def load_organization_users(
     neo4j_session: neo4j.Session, user_data: List[Dict], org_data: Dict,
-    update_tag: int,
+    common_job_parameters: Dict[str, Any],
 ) -> None:
     query = """
     MERGE (org:GitHubOrganization{id: $OrgUrl})
@@ -87,25 +93,30 @@ def load_organization_users(
     MERGE (u)-[r:MEMBER_OF]->(org)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $UpdateTag
+    WITH org
+    match (owner:CloudanixWorkspace{id:$workspace_id})
+    merge (org)<-[o:OWNER1]-(owner)
+    ON CREATE SET o.firstseen = timestamp()
+    SET o.lastupdated = $UpdateTag
     """
     neo4j_session.run(
         query,
         OrgUrl=org_data['url'],
         OrgLogin=org_data['login'],
         UserData=user_data,
-        UpdateTag=update_tag,
+        UpdateTag=common_job_parameters['UPDATE_TAG'],
+        workspace_id=common_job_parameters['WORKSPACE_ID'],
     )
 
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, common_job_parameters: Dict, github_api_key: str, github_url: str,
-    organization: str,
+        neo4j_session: neo4j.Session,
+        user_data, org_data,
+        common_job_parameters: Dict[str, Any],
 ) -> None:
     logger.info("Syncing GitHub users")
-    user_data, org_data = get(github_api_key, github_url, organization)
-    load_organization_users(neo4j_session, user_data, org_data, common_job_parameters['UPDATE_TAG'])
-    run_cleanup_job('github_users_cleanup.json', neo4j_session, common_job_parameters)
+    load_organization_users(neo4j_session, user_data, org_data, common_job_parameters)
     merge_module_sync_metadata(
         neo4j_session,
         group_type='GitHubOrganization',

@@ -1,5 +1,5 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
 
@@ -50,7 +50,7 @@ def load_vpc_peerings(
     pcx.status_code = vpc_peering.Status.Code,
     pcx.status_message = vpc_peering.Status.Message,
     pcx.arn = vpc_peering.Arn
-    
+
 
     MERGE (avpc:AWSVpc{id: vpc_peering.AccepterVpcInfo.VpcId})
     ON CREATE SET avpc.firstseen = timestamp()

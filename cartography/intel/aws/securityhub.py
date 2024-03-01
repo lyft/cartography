@@ -1,15 +1,14 @@
-import time
 import datetime
 import logging
+import time
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
-from dateutil import parser
-
 from botocore.exceptions import ClientError
 from botocore.exceptions import ConnectTimeoutError
+from dateutil import parser
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit

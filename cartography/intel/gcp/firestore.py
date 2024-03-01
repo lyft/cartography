@@ -223,7 +223,7 @@ def _load_firestore_indexes_tx(
         ix.state = index.state,
         ix.lastupdated = $gcp_update_tag,
         ix.consolelink = index.consolelink
-        
+
     WITH ix,index
     MATCH (d:GCPFirestoreDatabase{id:index.database_id})
     MERGE (d)-[r:HAS_INDEX]->(ix)

@@ -1,9 +1,9 @@
 import json
 import logging
 import time
+from datetime import datetime
 from typing import Dict
 from typing import List
-from datetime import datetime
 
 import neo4j
 from cloudconsolelink.clouds.gcp import GCPLinker
@@ -57,9 +57,36 @@ def transform_service_accounts(service_accounts: List[Dict], project_id: str) ->
         )
     return service_accounts
 
+def get_service_account_last_used_activities(policyanalyzer: Resource,project_id:str):
+    activities=[]
+    try:
+        parent=f"projects/{project_id}/locations/global/activityTypes/serviceAccountKeyLastAuthentication"
+        res =policyanalyzer.projects().locations().activityTypes().activities().query(parent=parent).execute()
+        activities.extend(res.get('activities', []))
+
+
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve service accounts on project %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return []
+        else:
+            raise
+
+    return activities
+
+def get_last_authenticated_time(key_id:str,activities:List[Dict]):
+    for actvity in activities:
+        if key_id in actvity.get("fullResourceName",""):
+            return actvity.get("activity",{}).get("lastAuthenticatedTime","")
+    return ""
 
 @timeit
-def get_service_account_keys(iam: Resource, project_id: str, service_account: Dict) -> List[Dict]:
+def get_service_account_keys(iam: Resource, project_id: str, service_account: Dict,activities:List[Dict]) -> List[Dict]:
     service_keys: List[Dict] = []
     try:
         res = iam.projects().serviceAccounts().keys().list(name=service_account['name']).execute()
@@ -68,6 +95,7 @@ def get_service_account_keys(iam: Resource, project_id: str, service_account: Di
             key['id'] = key['name'].split('/')[-1]
             key['service_account_key_name'] = key['name'].split('/')[-1]
             key['serviceaccount'] = service_account['name']
+            key['lastAuthenticatedTime']=get_last_authenticated_time(key.get("id"),activities)
             key['consolelink'] = gcp_console_link.get_console_link(
                 resource_name='service_account_key', project_id=project_id, service_account_unique_id=service_account['uniqueId'],
             )
@@ -121,7 +149,8 @@ def get_organization_custom_roles(iam: Resource, crm_v1: Resource, project_id: s
         res_project = req.execute()
         if res_project.get('parent',{}).get('type','') == 'organization':
             req = iam.organizations().roles().list(
-                parent=f"organizations/{res_project.get('parent',{}).get('id')}", view="FULL")
+                parent=f"organizations/{res_project.get('parent',{}).get('id')}", view="FULL",
+            )
             while req is not None:
                 res = req.execute()
                 page = res.get('roles', [])
@@ -431,6 +460,7 @@ def load_service_account_keys(
     u.create_date = $createDate,
     u.keytype = sa.keyType, u.origin = sa.keyOrigin,
     u.consolelink = sa.consolelink,
+    u.lastauthenticatedtime=sa.lastAuthenticatedTime,
     u.algorithm = sa.keyAlgorithm, u.validbeforetime = sa.validBeforeTime,
 
     u.validaftertime = sa.validAfterTime, u.lastupdated = $gcp_update_tag,
@@ -558,7 +588,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     "name": dmn,
                     "parent": binding['parent'],
                     "parent_id": binding['parent_id'],
-                    "consolelink": gcp_console_link.get_console_link(project_id=project_id, resource_name='iam_domain')
+                    "consolelink": gcp_console_link.get_console_link(project_id=project_id, resource_name='iam_domain'),
                 }
                 attach_role_to_domain(
                     neo4j_session, role_id,
@@ -889,8 +919,8 @@ def _set_used_state_tx(
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, iam: Resource, crm_v1: Resource, crm_v2: Resource, apikey: Resource,
-    project_id: str, gcp_update_tag: int, common_job_parameters: Dict
+    neo4j_session: neo4j.Session, iam: Resource,policyanalyzer: Resource, crm_v1: Resource, crm_v2: Resource, apikey: Resource,
+    project_id: str, gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     tic = time.perf_counter()
 
@@ -898,10 +928,11 @@ def sync(
 
     service_accounts_list = get_service_accounts(iam, project_id)
     service_accounts_list = transform_service_accounts(service_accounts_list, project_id)
+    activities= get_service_account_last_used_activities(policyanalyzer,project_id)
     load_service_accounts(neo4j_session, service_accounts_list, project_id, gcp_update_tag)
 
     for service_account in service_accounts_list:
-        service_account_keys = get_service_account_keys(iam, project_id, service_account)
+        service_account_keys = get_service_account_keys(iam, project_id, service_account,activities)
         load_service_account_keys(neo4j_session, service_account_keys, service_account['id'], project_id, gcp_update_tag)
 
     cleanup_service_accounts(neo4j_session, common_job_parameters)

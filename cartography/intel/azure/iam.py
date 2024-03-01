@@ -1,5 +1,6 @@
 import logging
 import math
+from datetime import datetime
 from typing import Dict
 from typing import List
 
@@ -9,7 +10,6 @@ from azure.graphrbac import GraphRbacManagementClient
 from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.msi import ManagedServiceIdentityClient
 from cloudconsolelink.clouds.azure import AzureLinker
-from datetime import datetime
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
@@ -239,7 +239,7 @@ def get_tenant_groups_list(client: GraphRbacManagementClient, tenant_id: str) ->
         tenant_groups_list = list(map(lambda x: x.as_dict(), client.groups.list()))
 
         for group in tenant_groups_list:
-            group['id'] = f"tenants/{tenant_id}/Groups/{group.get('object_id',None)}"
+            group['id'] = f"tenants/{tenant_id}/Groups/{group.get('object_id', None)}"
             group['consolelink'] = azure_console_link.get_console_link(iam_entity_type='group', id=group['object_id'])
 
         return tenant_groups_list
@@ -291,7 +291,7 @@ def cleanup_tenant_groups(neo4j_session: neo4j.Session, common_job_parameters: D
 
 def sync_tenant_groups(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
     tenant_groups_list = get_tenant_groups_list(client, tenant_id)
@@ -306,7 +306,7 @@ def get_tenant_applications_list(client: GraphRbacManagementClient, tenant_id: s
         tenant_applications_list = list(map(lambda x: x.as_dict(), client.applications.list()))
 
         for app in tenant_applications_list:
-            app['id'] = f"tenants/{tenant_id}/Applications/{app.get('object_id',None)}"
+            app['id'] = f"tenants/{tenant_id}/Applications/{app.get('object_id', None)}"
             app['consolelink'] = azure_console_link.get_console_link(iam_entity_type='application', id=app['app_id'])
 
         return tenant_applications_list
@@ -355,7 +355,7 @@ def cleanup_tenant_applications(neo4j_session: neo4j.Session, common_job_paramet
 
 def sync_tenant_applications(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     client = get_graph_client(credentials, tenant_id)
     tenant_applications_list = get_tenant_applications_list(client, tenant_id)
@@ -372,9 +372,11 @@ def get_tenant_service_accounts_list(client: GraphRbacManagementClient, tenant_i
         )
 
         for account in tenant_service_accounts_list:
-            account['id'] = f"tenants/{tenant_id}/ServiceAccounts/{account.get('object_id',None)}"
-            account['consolelink'] = azure_console_link.get_console_link(id=account['object_id'],
-                                                                         app_id=account['app_id'], iam_entity_type='service_principal')
+            account['id'] = f"tenants/{tenant_id}/ServiceAccounts/{account.get('object_id', None)}"
+            account['consolelink'] = azure_console_link.get_console_link(
+                id=account['object_id'],
+                app_id=account['app_id'], iam_entity_type='service_principal',
+            )
 
         return tenant_service_accounts_list
 
@@ -438,7 +440,7 @@ def get_tenant_domains_list(client: GraphRbacManagementClient, tenant_id: str) -
         tenant_domains_list = list(map(lambda x: x.as_dict(), client.domains.list()))
 
         for domain in tenant_domains_list:
-            domain["id"] = f"tenants/{tenant_id}/domains/{domain.get('name',None)}"
+            domain["id"] = f"tenants/{tenant_id}/domains/{domain.get('name', None)}"
             domain['consolelink'] = azure_console_link.get_console_link(id=domain['name'], iam_entity_type='domain')
 
         return tenant_domains_list
@@ -523,7 +525,8 @@ def get_roles_list(client: AuthorizationManagementClient, common_job_parameters:
                 role['type'] = result.get('properties', {}).get('type')
                 role['roleName'] = result.get('properties', {}).get('roleName', '')
                 role['consolelink'] = azure_console_link.get_console_link(
-                    id=role_assignment['role_definition_id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=role_assignment['role_definition_id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 role['permissions'] = []
                 for permission in result.get('properties', {}).get('permissions', []):
                     for action in permission.get('actions', []):
@@ -548,7 +551,7 @@ def get_managed_identity_list(client: ManagedServiceIdentityClient, subscription
 
         for managed_identity in managed_identity_list:
             managed_identity['consolelink'] = azure_console_link.get_console_link(
-                id=managed_identity['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name']
+                id=managed_identity['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
             )
         return managed_identity_list
     except HttpResponseError as e:
@@ -557,7 +560,7 @@ def get_managed_identity_list(client: ManagedServiceIdentityClient, subscription
 
 
 def _load_roles_tx(
-    tx: neo4j.Transaction, tenant_id: str, roles_list: List[Dict], update_tag: int, SUBSCRIPTION_ID: str
+    tx: neo4j.Transaction, tenant_id: str, roles_list: List[Dict], update_tag: int, SUBSCRIPTION_ID: str,
 ) -> None:
     ingest_role = """
     UNWIND $roles_list AS role
@@ -608,7 +611,7 @@ def _load_roles_tx(
             attach_role,
             role=role['id'],
             principal_ids=role['principal_ids'],
-            update_tag=update_tag
+            update_tag=update_tag,
         )
 
 
@@ -653,7 +656,7 @@ def cleanup_managed_identities(neo4j_session: neo4j.Session, common_job_paramete
 
 def sync_roles(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     client = get_authorization_client(credentials.arm_credentials, credentials.subscription_id)
     roles_list = get_roles_list(client, common_job_parameters)
@@ -663,7 +666,7 @@ def sync_roles(
 
 def sync_managed_identity(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
-    common_job_parameters: Dict
+    common_job_parameters: Dict,
 ) -> None:
     client = get_managed_identity_client(credentials.arm_credentials, credentials.subscription_id)
     managed_identity_list = get_managed_identity_list(client, credentials.subscription_id, common_job_parameters)
@@ -717,13 +720,18 @@ def sync(
     common_job_parameters['AZURE_TENANT_ID'] = tenant_id
 
     try:
-        sync_tenant_users(neo4j_session, credentials.aad_graph_credentials, tenant_id,
-                          update_tag, common_job_parameters)
-        sync_tenant_groups(neo4j_session, credentials.aad_graph_credentials, tenant_id,
-                           update_tag, common_job_parameters)
+        sync_tenant_users(
+            neo4j_session, credentials.aad_graph_credentials, tenant_id,
+            update_tag, common_job_parameters,
+        )
+        sync_tenant_groups(
+            neo4j_session, credentials.aad_graph_credentials, tenant_id,
+            update_tag, common_job_parameters,
+        )
         sync_tenant_applications(
             neo4j_session, credentials.aad_graph_credentials,
-            tenant_id, update_tag, common_job_parameters)
+            tenant_id, update_tag, common_job_parameters,
+        )
         sync_tenant_service_accounts(
             neo4j_session, credentials.aad_graph_credentials,
             tenant_id, update_tag, common_job_parameters,
@@ -731,11 +739,11 @@ def sync(
         sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
 
         sync_managed_identity(
-            neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
+            neo4j_session, credentials, tenant_id, update_tag, common_job_parameters,
         )
 
         sync_roles(
-            neo4j_session, credentials, tenant_id, update_tag, common_job_parameters
+            neo4j_session, credentials, tenant_id, update_tag, common_job_parameters,
         )
         set_used_state(neo4j_session, tenant_id, common_job_parameters, update_tag)
 

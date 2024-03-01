@@ -1,19 +1,20 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
-from botocore.exceptions import ClientError
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
+
 
 @timeit
 @aws_handle_regions
@@ -33,6 +34,7 @@ def get_cloudformation_stack(boto3_session: boto3.session.Session, region: str) 
         logger.error(f'Failed to call cloudformation describe_stacks: {region} - {e}')
         return stacks
 
+
 @timeit
 def transform_stack(sts: List[Dict], region: str) -> List[Dict]:
     stacks = []
@@ -43,6 +45,7 @@ def transform_stack(sts: List[Dict], region: str) -> List[Dict]:
         stacks.append(stack)
 
     return stacks
+
 
 def load_cloudformation_stack(session: neo4j.Session, stacks: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_cloudformation_stack_tx, stacks, current_aws_account_id, aws_update_tag)

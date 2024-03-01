@@ -13,7 +13,8 @@ from azure.mgmt.storage import StorageManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
-from cartography.util import run_cleanup_job, get_azure_resource_group_name
+from cartography.util import get_azure_resource_group_name
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -52,9 +53,11 @@ def get_storage_account_list(credentials: Credentials, subscription_id: str, reg
     for storage_account in storage_account_list:
         storage_account['resourceGroup'] = get_azure_resource_group_name(storage_account.get('id'))
         storage_account['allowBlobPublicAccess'] = storage_account.get(
-            'properties', {}).get('allow_blob_public_access', False)
+            'properties', {},
+        ).get('allow_blob_public_access', False)
         storage_account['consolelink'] = azure_console_link.get_console_link(
-            id=storage_account['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            id=storage_account['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+        )
         if regions is None:
             account_list.append(storage_account)
         else:
@@ -110,7 +113,7 @@ def load_storage_account_data(
         _attach_resource_group_storage_account(neo4j_session, storage.get('id'), resource_group, azure_update_tag)
 
 
-def _attach_resource_group_storage_account(neo4j_session: neo4j.Session, storage_account_id: str, resource_group: str, azure_update_tag: int,) -> None:
+def _attach_resource_group_storage_account(neo4j_session: neo4j.Session, storage_account_id: str, resource_group: str, azure_update_tag: int) -> None:
     ingest_storage_account = """
     MATCH (s:AzureStorageAccount{id: $account_id})
     WITH s
@@ -123,14 +126,14 @@ def _attach_resource_group_storage_account(neo4j_session: neo4j.Session, storage
         ingest_storage_account,
         account_id=storage_account_id,
         resource_group=resource_group,
-        azure_update_tag=azure_update_tag
+        azure_update_tag=azure_update_tag,
     )
 
 
 @timeit
 def sync_storage_account_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        storage_account_list: List[Dict], sync_tag: int, common_job_parameters: Dict
+        storage_account_list: List[Dict], sync_tag: int, common_job_parameters: Dict,
 ) -> None:
     details = get_storage_account_details(credentials, subscription_id, storage_account_list, common_job_parameters)
     load_storage_account_details(neo4j_session, credentials, subscription_id, details, sync_tag, common_job_parameters)
@@ -138,7 +141,7 @@ def sync_storage_account_details(
 
 @timeit
 def get_storage_account_details(
-        credentials: Credentials, subscription_id: str, storage_account_list: List[Dict], common_job_parameters: Dict
+        credentials: Credentials, subscription_id: str, storage_account_list: List[Dict], common_job_parameters: Dict,
 ) -> Generator[Any, Any, Any]:
     """
     Iterates over all Storage Accounts to get the different storage services.
@@ -258,7 +261,7 @@ def get_blob_services(credentials: Credentials, subscription_id: str, storage_ac
 @timeit
 def load_storage_account_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict
+        details: List[Tuple[Any, Any, Any, Any, Any, Any, Any]], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     """
     Create dictionaries for every Azure storage service so we can import them in a single query
@@ -275,7 +278,8 @@ def load_storage_account_details(
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
                 service['consolelink'] = azure_console_link.get_console_link(
-                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
             queue_services.extend(queue_service)
 
         if len(table_service) > 0:
@@ -284,7 +288,8 @@ def load_storage_account_details(
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
                 service['consolelink'] = azure_console_link.get_console_link(
-                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
             table_services.extend(table_service)
 
         if len(file_service) > 0:
@@ -293,7 +298,8 @@ def load_storage_account_details(
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
                 service['consolelink'] = azure_console_link.get_console_link(
-                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
             file_services.extend(file_service)
 
         if len(blob_service) > 0:
@@ -302,7 +308,8 @@ def load_storage_account_details(
                 service['storage_account_id'] = account_id
                 service['resource_group_name'] = resourceGroup
                 service['consolelink'] = azure_console_link.get_console_link(
-                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=service['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
             blob_services.extend(blob_service)
 
     _load_queue_services(neo4j_session, queue_services, update_tag)
@@ -362,7 +369,7 @@ def _attach_resource_queue_service(neo4j_session: neo4j.Session, queue_service_i
         ingest_queue_services,
         queue_service_id=queue_service_id,
         resource_group=resource_group,
-        azure_update_tag=update_tag
+        azure_update_tag=update_tag,
     )
 
 
@@ -413,7 +420,7 @@ def _attach_resource_storage_table_service(neo4j_session: neo4j.Session, table_s
         ingest_table_services,
         tservice_id=table_service_id,
         resource_group=resource_group,
-        azure_update_tag=update_tag
+        azure_update_tag=update_tag,
     )
 
 
@@ -580,8 +587,10 @@ def load_queue_services_details(
         if len(queue) > 0:
             for q in queue:
                 q['service_id'] = queue_service_id
-                q['consolelink'] = azure_console_link.get_console_link(id=q['id'],
-                                                                       primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                q['consolelink'] = azure_console_link.get_console_link(
+                    id=q['id'],
+                    primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
             queues.extend(queue)
 
     _load_queues(neo4j_session, queues, update_tag)
@@ -699,8 +708,10 @@ def load_table_services_details(
         if len(table) > 0:
             for t in table:
                 t['service_id'] = table_service_id
-                t['consolelink'] = azure_console_link.get_console_link(id=t['id'],
-                                                                       primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                t['consolelink'] = azure_console_link.get_console_link(
+                    id=t['id'],
+                    primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
             tables.extend(table)
 
     _load_tables(neo4j_session, tables, update_tag)
@@ -822,8 +833,10 @@ def load_file_services_details(
         if len(share) > 0:
             for s in share:
                 s['service_id'] = file_service_id
-                s['consolelink'] = azure_console_link.get_console_link(id=s['id'],
-                                                                       primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                s['consolelink'] = azure_console_link.get_console_link(
+                    id=s['id'],
+                    primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
             shares.extend(share)
 
     _load_shares(neo4j_session, shares, update_tag)
@@ -891,7 +904,7 @@ def _attach_resource_storage_share(neo4j_session: neo4j.Session, share_id: str, 
 @timeit
 def sync_blob_services_details(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        blob_services: List[Dict], update_tag: int, common_job_parameters: Dict
+        blob_services: List[Dict], update_tag: int, common_job_parameters: Dict,
 ) -> None:
     blob_services_details = get_blob_services_details(credentials, subscription_id, blob_services)
     load_blob_services_details(neo4j_session, blob_services_details, update_tag, common_job_parameters)
@@ -952,8 +965,10 @@ def load_blob_services_details(
         if len(container) > 0:
             for c in container:
                 c['service_id'] = blob_service_id
-                c['consolelink'] = azure_console_link.get_console_link(id=c['id'],
-                                                                       primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                c['consolelink'] = azure_console_link.get_console_link(
+                    id=c['id'],
+                    primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 c['public_access'] = c['public_access'].lower()
             blob_containers.extend(container)
 
@@ -1032,11 +1047,13 @@ def cleanup_azure_storage_accounts(
 @timeit
 def sync(
         neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str,
-        sync_tag: int, common_job_parameters: Dict, regions: list
+        sync_tag: int, common_job_parameters: Dict, regions: list,
 ) -> None:
     logger.info("Syncing Azure Storage for subscription '%s'.", subscription_id)
     storage_account_list = get_storage_account_list(credentials, subscription_id, regions, common_job_parameters)
     load_storage_account_data(neo4j_session, subscription_id, storage_account_list, sync_tag)
-    sync_storage_account_details(neo4j_session, credentials, subscription_id,
-                                 storage_account_list, sync_tag, common_job_parameters)
+    sync_storage_account_details(
+        neo4j_session, credentials, subscription_id,
+        storage_account_list, sync_tag, common_job_parameters,
+    )
     cleanup_azure_storage_accounts(neo4j_session, common_job_parameters)

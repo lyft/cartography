@@ -1,7 +1,7 @@
-import cartography.intel.aws.elasticache
-import tests.data.aws.elasticache
-import tests.data.aws.ec2.security_groups
 import cartography.intel.aws.ec2.security_groups
+import cartography.intel.aws.elasticache
+import tests.data.aws.ec2.security_groups
+import tests.data.aws.elasticache
 from cartography.util import run_analysis_job
 
 TEST_ACCOUNT_ID = '000000000000'
@@ -19,14 +19,13 @@ def test_load_clusters(neo4j_session):
             """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
-        workspace_id=TEST_WORKSPACE_ID
+        workspace_id=TEST_WORKSPACE_ID,
     )
     elasticache_data = tests.data.aws.elasticache.DESCRIBE_CACHE_CLUSTERS
     clusters = elasticache_data['CacheClusters']
     cartography.intel.aws.elasticache.load_elasticache_clusters(
         neo4j_session,
         clusters,
-
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -71,7 +70,7 @@ def test_elasticache_cluster_analysis(neo4j_session):
             """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
-        workspace_id=TEST_WORKSPACE_ID
+        workspace_id=TEST_WORKSPACE_ID,
     )
 
     data = tests.data.aws.ec2.security_groups.DESCRIBE_SGS
@@ -101,7 +100,7 @@ def test_elasticache_cluster_analysis(neo4j_session):
     run_analysis_job(
         'aws_elasticache_cluster_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     nodes = neo4j_session.run(
@@ -111,5 +110,5 @@ def test_elasticache_cluster_analysis(neo4j_session):
     )
     actual_nodes = {(n['r.arn'], ",".join(n['r.exposed_internet_type'])) for n in nodes}
 
-    expected_nodes = {('arn:aws:elasticache:us-east-1:123456789000:cluster:test-group-0001-001', 'direct_ipv4'), }
+    expected_nodes = {('arn:aws:elasticache:us-east-1:123456789000:cluster:test-group-0001-001', 'direct_ipv4')}
     assert actual_nodes == expected_nodes

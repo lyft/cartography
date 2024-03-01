@@ -1,4 +1,4 @@
-import cartography.intel.aws.ec2
+import cartography.intel.aws.ec2.load_balancer_v2s
 import tests.data.aws.ec2.load_balancers
 from cartography.util import run_analysis_job
 
@@ -52,6 +52,7 @@ def test_load_load_balancer_v2s(neo4j_session, *args):
         load_balancer_data,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
+        TEST_REGION,
     )
 
     # verify the db has (aa)-[r:RESOURCE]->(elbv2)-[r:ELBV2_LISTENER]->(l)
@@ -257,7 +258,7 @@ def test_ec2_load_balancer_analysis(neo4j_session):
         """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
-        workspace_id=TEST_WORKSPACE_ID
+        workspace_id=TEST_WORKSPACE_ID,
     )
     load_balancer_data = tests.data.aws.ec2.load_balancers.LOAD_BALANCER_DATA
 
@@ -292,7 +293,7 @@ def test_ec2_load_balancer_analysis(neo4j_session):
     actual_nodes = {
         (
             n['l.id'],
-            ", ".join(n['l.exposed_internet_type'])
+            ", ".join(n['l.exposed_internet_type']),
         )
         for n in nodes
     }

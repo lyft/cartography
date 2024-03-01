@@ -1,7 +1,7 @@
-import cartography.intel.aws.redshift
-import tests.data.aws.redshift
-import tests.data.aws.ec2.security_groups
 import cartography.intel.aws.ec2.security_groups
+import cartography.intel.aws.redshift
+import tests.data.aws.ec2.security_groups
+import tests.data.aws.redshift
 from cartography.util import run_analysis_job
 
 TEST_ACCOUNT_ID = '1111'
@@ -186,7 +186,7 @@ def test_redshift_cluster_analysis(neo4j_session):
             """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
-        workspace_id=TEST_WORKSPACE_ID
+        workspace_id=TEST_WORKSPACE_ID,
     )
 
     data = tests.data.aws.ec2.security_groups.DESCRIBE_SGS
@@ -214,13 +214,13 @@ def test_redshift_cluster_analysis(neo4j_session):
     nodes = neo4j_session.run(
         """
         MATCH (n:RedshiftCluster{exposed_internet: true}) return n.id, n.exposed_internet_type;
-        """
+        """,
     )
 
     actual_nodes = {(n['n.id'], ",".join(n['n.exposed_internet_type'])) for n in nodes}
 
     expected_nodes = {
-        ('arn:aws:redshift:us-east-1:1111:cluster:my-cluster', 'direct_ipv4')
+        ('arn:aws:redshift:us-east-1:1111:cluster:my-cluster', 'direct_ipv4'),
     }
 
     assert actual_nodes == expected_nodes

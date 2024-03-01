@@ -12,7 +12,7 @@ DESCRIBE_SGS = [
                     },
                     {
                         'CidrIp': "0.0.0.0/0",
-                    }
+                    },
                 ],
                 "Ipv6Ranges": [],
                 "PrefixListIds": [],

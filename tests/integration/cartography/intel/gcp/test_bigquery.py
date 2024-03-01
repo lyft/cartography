@@ -1,6 +1,5 @@
 import cartography.intel.gcp.bigquery
 import tests.data.gcp.bigquery
-
 from cartography.util import run_analysis_job
 TEST_PROJECT_NUMBER = '000000000000'
 TEST_UPDATE_TAG = 123456789
@@ -161,12 +160,11 @@ def test_bigquey_dataset_table_relationship(neo4j_session):
 def test_cloud_function(neo4j_session):
     cloudanix_workspace_to_gcp_project(neo4j_session)
     data = tests.data.gcp.bigquery.TEST_DATASET
-    cartography.intel.gcp.bigquery.load_bigquery_datasets(neo4j_session, data, TEST_PROJECT_NUMBER, TEST_UPDATE_TAG,)
+    cartography.intel.gcp.bigquery.load_bigquery_datasets(neo4j_session, data, TEST_PROJECT_NUMBER, TEST_UPDATE_TAG)
     accesses_data = tests.data.gcp.bigquery.TEST_ACCESSES
 
     cartography.intel.gcp.bigquery.attach_dataset_to_accesses(neo4j_session, TEST_DATASET_ID, accesses_data, TEST_UPDATE_TAG)
 
-   
     query1 = """
     MATCH (access:GCPAcl)-[a:APPLIES_TO]->(dataset:GCPBigqueryDataset)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE dataset.exposed_internet=true
     RETURN dataset.id,dataset.exposed_internet,dataset.exposed_internet_type
@@ -175,13 +173,11 @@ def test_cloud_function(neo4j_session):
 
     objects1 = neo4j_session.run(query1, GCP_PROJECT_ID=TEST_PROJECT_NUMBER, WORKSPACE_ID=TEST_WORKSPACE_ID)
 
-    
-
     actual_nodes = {
         (
             o['dataset.id'],
             o['dataset.exposed_internet'],
-            ",".join(o['dataset.exposed_internet_type'])
+            ",".join(o['dataset.exposed_internet_type']),
 
         ) for o in objects1
 
@@ -191,9 +187,9 @@ def test_cloud_function(neo4j_session):
 
         (
             'dataset1',
-            True, 
-            'allAuthenticatedUsers'
-        )
+            True,
+            'allAuthenticatedUsers',
+        ),
 
     }
 

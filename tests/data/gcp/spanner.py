@@ -9,7 +9,7 @@ TEST_INSTANCES = [
         'nodeCount': 42,
         'processingUnits': 42,
         'state': 'READY',
-        'updateTime': '2014-10-02T15:01:23Z'
+        'updateTime': '2014-10-02T15:01:23Z',
     },
     {
         'config': 'projects/project-123/instanceConfigs/config2',
@@ -21,8 +21,8 @@ TEST_INSTANCES = [
         'nodeCount': 24,
         'processingUnits': 24,
         'state': 'READY',
-        'updateTime': '2014-10-02T15:01:23Z'
-    }
+        'updateTime': '2014-10-02T15:01:23Z',
+    },
 ]
 
 TEST_INSTANCE_CONFIG = [
@@ -43,7 +43,7 @@ TEST_INSTANCE_CONFIG = [
         "name": "config2",
         "reconciling": False,
         "state": "READY",
-    }
+    },
 ]
 
 TEST_INSTANCE_CONFIG_REPLICA = [
@@ -60,7 +60,7 @@ TEST_INSTANCE_CONFIG_REPLICA = [
         "type": "READ_WRITE",
         "id": "projects/project-123/instanceConfigs/config1/replicas/us-central2",
         "config": "projects/project-123/instanceConfigs/config2",
-    }
+    },
 ]
 
 TEST_INSTANCE_DATABASE = [

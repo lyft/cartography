@@ -11,9 +11,9 @@ def test_load_images(neo4j_session):
     cartography.intel.aws.ec2.images.load_images(
         neo4j_session,
         data,
-        TEST_REGION,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
+        region=TEST_REGION,
     )
 
     expected_nodes = {
@@ -45,11 +45,11 @@ def test_load_images_relationships(neo4j_session):
     # Load Test Images
     data = tests.data.aws.ec2.images.DESCRIBE_IMAGES
     cartography.intel.aws.ec2.images.load_images(
-        neo4j_session,
-        data,
-        TEST_REGION,
-        TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG,
+        neo4j_session=neo4j_session,
+        data=data,
+        current_aws_account_id=TEST_ACCOUNT_ID,
+        update_tag=TEST_UPDATE_TAG,
+        region=TEST_REGION,
     )
     expected = {
         (TEST_ACCOUNT_ID, 'img-01|us-west-1'),

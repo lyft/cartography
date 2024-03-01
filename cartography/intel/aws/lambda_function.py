@@ -1,5 +1,6 @@
-import time
+import json
 import logging
+import time
 from typing import Any
 from typing import Dict
 from typing import Generator
@@ -9,14 +10,13 @@ from typing import Tuple
 import boto3
 import botocore
 import neo4j
-from cloudconsolelink.clouds.aws import AWSLinker
-
 from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
+from policyuniverse.policy import Policy
+
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from policyuniverse.policy import Policy
-import json
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
@@ -38,6 +38,7 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
             lambda_functions.append(each_function)
 
     return lambda_functions
+
 
 @timeit
 @aws_handle_regions
@@ -266,7 +267,7 @@ def _load_lambda_event_source_mappings(
 
 
 @timeit
-def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict], update_tag: int,) -> None:
+def _load_lambda_layers(neo4j_session: neo4j.Session, lambda_layers: List[Dict], update_tag: int) -> None:
     ingest_layers = """
     UNWIND $layers_list AS layer
     MERGE (l:AWSLambdaLayer{id: layer.Arn})

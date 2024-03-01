@@ -10,13 +10,13 @@ DESCRIBE_INSTANCE_RESPONSE = [
         "ReservedElasticsearchInstanceId": "9a8a7a6a-5a4a-3a2a-1a0a-9a8a7a6a5a4a",
         "RecurringCharges": [{
             "RecurringChargeAmount": 0.603,
-            "RecurringChargeFrequency": "Hourly"
+            "RecurringChargeFrequency": "Hourly",
         }],
         "State": "payment-pending",
         "StartTime": 1522872571.229,
         "ElasticsearchInstanceCount": 3,
         "Duration": 31536000,
         "ElasticsearchInstanceType": "m4.2xlarge.elasticsearch",
-        "CurrencyCode": "USD"
-    }
+        "CurrencyCode": "USD",
+    },
 ]

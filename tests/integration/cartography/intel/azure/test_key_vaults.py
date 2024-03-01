@@ -1,6 +1,9 @@
 from cartography.intel.azure import key_vaults
-from tests.data.azure.key_vaults import DESCRIBE_KEYVAULTS, DESCRIBE_KEYS, DESCRIBE_SECRETS, DESCRIBE_CERTIFICATES
 from cartography.util import run_analysis_job
+from tests.data.azure.key_vaults import DESCRIBE_CERTIFICATES
+from tests.data.azure.key_vaults import DESCRIBE_KEYS
+from tests.data.azure.key_vaults import DESCRIBE_KEYVAULTS
+from tests.data.azure.key_vaults import DESCRIBE_SECRETS
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
@@ -105,10 +108,16 @@ def test_load_key_vauly_key_relationship(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    expected_nodes = {('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault1',
-                       '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2'),
-                      ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2',
-                       '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2')}
+    expected_nodes = {
+        (
+            '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault1',
+            '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2',
+        ),
+        (
+            '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2',
+            '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2',
+        ),
+    }
 
     result = neo4j_session.run(
         """
@@ -158,8 +167,8 @@ def test_key_vault_secrets_relationship(neo4j_session):
     )
 
     expected_nodes = {
-        ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault1", "https://vault1.vault.azure.net/secrets/secret1/abcdefg",),
-        ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2", "https://vault1.vault.azure.net/secrets/secret2/hijklm",),
+        ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault1", "https://vault1.vault.azure.net/secrets/secret1/abcdefg"),
+        ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2", "https://vault1.vault.azure.net/secrets/secret2/hijklm"),
     }
 
     result = neo4j_session.run(
@@ -210,8 +219,8 @@ def test_key_vault_certificates_relationship(neo4j_session):
     )
 
     expected_nodes = {
-        ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault1", "https://vault1.vault.azure.net/certificates/selfSignedCert01/012abc",),
-        ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2", "https://vault1.vault.azure.net/certificates/selfSignedCert02/123ghj",),
+        ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault1", "https://vault1.vault.azure.net/certificates/selfSignedCert01/012abc"),
+        ("/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2", "https://vault1.vault.azure.net/certificates/selfSignedCert02/123ghj"),
     }
 
     result = neo4j_session.run(
@@ -248,18 +257,20 @@ def test_key_vaults_public_exposure_analysis(neo4j_session):
         "UPDATE_TAG": TEST_UPDATE_TAG + 1,
         "WORKSPACE_ID": TEST_WORKSPACE_ID,
         "AZURE_SUBSCRIPTION_ID": TEST_SUBSCRIPTION_ID,
-        "AZURE_TENANT_ID": TEST_TENANT_ID
+        "AZURE_TENANT_ID": TEST_TENANT_ID,
     }
 
     run_analysis_job(
         'azure_keyvault_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     expected_nodes = {
-        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2',
-         'default_network_access'),
+        (
+            '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.KeyVault/vaults/vault2',
+            'default_network_access',
+        ),
     }
 
     nodes = neo4j_session.run(

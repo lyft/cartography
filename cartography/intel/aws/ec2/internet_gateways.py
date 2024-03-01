@@ -1,5 +1,5 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
 
@@ -81,7 +81,6 @@ def sync_internet_gateways(
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
     tic = time.perf_counter()
-
     logger.info("Syncing EC2 Internet Gateways for account '%s', at %s.", current_aws_account_id, tic)
 
     for region in regions:
@@ -93,6 +92,5 @@ def sync_internet_gateways(
         load_internet_gateways(neo4j_session, internet_gateways, region, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
-
     toc = time.perf_counter()
     logger.info(f"Time to process EC2 Internet Gateways: {toc - tic:0.4f} seconds")

@@ -23,17 +23,18 @@ def test_load_sqs_queues(neo4j_session, *args):
             1627539901900,
             'arn:aws:sqs:us-east-1:000000000000:test-queue-2',
             '1',
-            '10'
+            '10',
         ),
-        ('test-queue-2',
-         'arn:aws:sqs:us-east-1:000000000000:test-queue-2',
-         'arn:aws:sqs:us-east-1:000000000000:test-queue-2',
-         1627539901900,
-         1627539901900,
-         None,
-         None,
-         '10'
-         )
+        (
+            'test-queue-2',
+            'arn:aws:sqs:us-east-1:000000000000:test-queue-2',
+            'arn:aws:sqs:us-east-1:000000000000:test-queue-2',
+            1627539901900,
+            1627539901900,
+            None,
+            None,
+            '10',
+        ),
     }
 
     nodes = neo4j_session.run(

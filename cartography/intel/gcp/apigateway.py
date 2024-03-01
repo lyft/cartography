@@ -54,6 +54,7 @@ def get_apigateway_locations(apigateway: Resource, project_id: str, common_job_p
         else:
             raise
 
+
 @timeit
 def transform_locations(locations: List[Dict], project_id: str) -> List[Dict]:
     locations = []
@@ -65,6 +66,7 @@ def transform_locations(locations: List[Dict], project_id: str) -> List[Dict]:
         locations.append(location)
 
     return locations
+
 
 @timeit
 def get_apis(apigateway: Resource, project_id: str, regions: list, common_job_parameters) -> List[Dict]:

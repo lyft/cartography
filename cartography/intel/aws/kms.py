@@ -1,6 +1,6 @@
-import time
 import json
 import logging
+import time
 from typing import Any
 from typing import Dict
 from typing import Generator
@@ -142,7 +142,7 @@ def _load_kms_key_aliases(neo4j_session: neo4j.Session, aliases: List[Dict], upd
 
 @timeit
 def _load_kms_key_grants(
-    neo4j_session: neo4j.Session, grants_list: List[Dict], aws_account_id: str, update_tag: int
+    neo4j_session: neo4j.Session, grants_list: List[Dict], aws_account_id: str, update_tag: int,
 ) -> None:
     """
     Ingest KMS Key Grants into neo4j.

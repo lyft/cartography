@@ -3,7 +3,7 @@ DESCRIBE_EVENTBUS_RESPONSE = [
         "Arn": "arn:aws:cloudwatch:us-east-1:123456789012:eventbus/466df9e0-0dff-08e3-8e2f-5088487c4896",
         "Name": "string",
         "Policy": "string",
-    }
+    },
 ]
 DESCRIBE_LOG_GROUPS_RESPONSE = [
     {
@@ -26,10 +26,10 @@ DESCRIBE_LOG_GROUPS_RESPONSE = [
             "KeyManager": "AWS",
             "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
             "EncryptionAlgorithms": [
-                "SYMMETRIC_DEFAULT"
-            ]
-        }
-    }
+                "SYMMETRIC_DEFAULT",
+            ],
+        },
+    },
 ]
 DESCRIBE_METRICS_RESPONSE = [
     {
@@ -37,11 +37,11 @@ DESCRIBE_METRICS_RESPONSE = [
         "Dimensions": [
             {
                 "Name": "TopicName",
-                "Value": "NotifyMe"
-            }
+                "Value": "NotifyMe",
+            },
         ],
-        "MetricName": "PublishSize"
-    }
+        "MetricName": "PublishSize",
+    },
 ]
 DESCRIBE_EVENT_RULES_RESPONSE = [
     {
@@ -49,6 +49,6 @@ DESCRIBE_EVENT_RULES_RESPONSE = [
         "State": "DISABLED",
         "Name": "test",
         "Arn": "arn:aws:events:us-east-1:123456789012:rule/test",
-        "Description": "Test rule for Auto Scaling events"
-    }
+        "Description": "Test rule for Auto Scaling events",
+    },
 ]

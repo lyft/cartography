@@ -10,6 +10,7 @@ import neo4j
 from okta.framework.ApiClient import ApiClient
 from okta.framework.OktaError import OktaError
 
+from cartography.intel.okta.utils import check_rate_limit
 from cartography.intel.okta.utils import create_api_client
 from cartography.intel.okta.utils import is_last_page
 from cartography.util import timeit
@@ -43,6 +44,8 @@ def _get_okta_applications(api_client: ApiClient) -> List[Dict]:
             break
 
         app_list.extend(json.loads(paged_response.text))
+
+        check_rate_limit(paged_response)
 
         if not is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
@@ -79,6 +82,8 @@ def _get_application_assigned_users(api_client: ApiClient, app_id: str) -> List[
 
         app_users.append(paged_response.text)
 
+        check_rate_limit(paged_response)
+
         if not is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")
         else:
@@ -113,6 +118,8 @@ def _get_application_assigned_groups(api_client: ApiClient, app_id: str) -> List
             break
 
         app_groups.append(paged_response.text)
+
+        check_rate_limit(paged_response)
 
         if not is_last_page(paged_response):
             next_url = paged_response.links.get("next").get("url")

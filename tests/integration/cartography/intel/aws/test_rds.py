@@ -1,14 +1,14 @@
 import cartography.intel.aws.rds
+from cartography.util import run_analysis_job
+from tests.data.aws.ec2.route_tables import DESCRIBE_ROUTE_TABLES
+from tests.data.aws.ec2.security_groups import DESCRIBE_SGS
+from tests.data.aws.ec2.subnets import DESCRIBE_SUBNETS
 from tests.data.aws.rds import DESCRIBE_DBCLUSTERS_RESPONSE
 from tests.data.aws.rds import DESCRIBE_DBINSTANCES_RESPONSE
+from tests.data.aws.rds import DESCRIBE_DBSNAPSHOT_ATTRIBUTE_RESPONSE
+from tests.data.aws.rds import DESCRIBE_DBSNAPSHOTS_RESPONSE
 from tests.data.aws.rds import DESCRIBE_SECURITY_GROUPS_RESPONSE
 from tests.data.aws.rds import DESCRIBE_SNAPSHOTS_RESPONSE
-from tests.data.aws.rds import DESCRIBE_DBSNAPSHOTS_RESPONSE
-from tests.data.aws.rds import DESCRIBE_DBSNAPSHOT_ATTRIBUTE_RESPONSE
-from tests.data.aws.ec2.route_tables import DESCRIBE_ROUTE_TABLES
-from tests.data.aws.ec2.subnets import DESCRIBE_SUBNETS
-from tests.data.aws.ec2.security_groups import DESCRIBE_SGS
-from cartography.util import run_analysis_job
 
 TEST_UPDATE_TAG = 123456789
 
@@ -119,7 +119,7 @@ def test_load_rds_snapshots_data(neo4j_session):
     _ensure_local_neo4j_has_test_rds_snapshots_data(neo4j_session)
     expected_nodes = {
         'arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
-        'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0'
+        'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
     }
     nodes = neo4j_session.run(
         """
@@ -171,7 +171,7 @@ def test_load_rds_snapshots_basic(neo4j_session):
             'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
             'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
             'some-other-db-snapshot-identifier',
-            'some-prod-db-iad-0'
+            'some-prod-db-iad-0',
         ),
     }
     assert actual_snapshots == expected_snapshots
@@ -190,7 +190,7 @@ def test_load_rds_snapshots_basic(neo4j_session):
         ),
         (
             'arn:aws:rds:us-east-1:some-arn:db:some-prod-db-iad-0',
-            'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0'
+            'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
         ),
     }
     assert actual_results == expected_results
@@ -223,16 +223,26 @@ def test_snapshot_attributes(neo4j_session):
     }
 
     expected_nodes = {
-        ('arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
-         'attrib-1'),
-        ('arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
-         'backup'),
-        ('arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
-         'attrib-1'),
-        ('arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
-         'backup'),
-        ('arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
-         'restore'),
+        (
+            'arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
+            'attrib-1',
+        ),
+        (
+            'arn:aws:rds:us-east-1:some-arn:snapshot:some-prod-db-iad-0',
+            'backup',
+        ),
+        (
+            'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
+            'attrib-1',
+        ),
+        (
+            'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
+            'backup',
+        ),
+        (
+            'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
+            'restore',
+        ),
     }
 
     assert actual_nodes == expected_nodes
@@ -254,7 +264,7 @@ def test_rds_exposure(neo4j_session):
         neo4j_session,
         DESCRIBE_ROUTE_TABLES,
         '1234',
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
     cartography.intel.aws.ec2.subnets.load_subnets(
         neo4j_session,
@@ -296,7 +306,7 @@ def test_rds_exposure(neo4j_session):
     run_analysis_job(
         'aws_ec2_subnet_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     run_analysis_job(
@@ -313,8 +323,10 @@ def test_rds_exposure(neo4j_session):
     }
 
     expected_nodes = {
-        ('arn:aws:rds:us-east-1:some-arn:db:some-prod-db-iad-0',
-         'direct_ipv4,public_subnet')
+        (
+            'arn:aws:rds:us-east-1:some-arn:db:some-prod-db-iad-0',
+            'direct_ipv4,public_subnet',
+        ),
     }
 
     assert actual_nodes == expected_nodes
@@ -327,8 +339,10 @@ def test_rds_exposure(neo4j_session):
     }
 
     expected_nodes = {
-        ('arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
-         'restore_all_attrib'),
+        (
+            'arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0',
+            'restore_all_attrib',
+        ),
     }
 
     assert actual_nodes == expected_nodes

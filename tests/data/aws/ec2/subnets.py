@@ -103,5 +103,5 @@ DESCRIBE_SUBNETS = [
         "AssignIpv6AddressOnCreation": False,
         "Ipv6CidrBlockAssociationSet": [],
         "SubnetArn": "arn:aws:ec2:eu-north-1:000000000000:subnet/subnet-0fa9c8fa7cb241479",
-    }
+    },
 ]

@@ -1,21 +1,22 @@
-import math
 import logging
+import math
+from concurrent.futures import as_completed
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict
 from typing import List
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
 import neo4j
-from neo4j import GraphDatabase
-from cartography.graph.session import Session
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.resource import ResourceManagementClient
 from cloudconsolelink.clouds.azure import AzureLinker
+from neo4j import GraphDatabase
 
 from .util.credentials import Credentials
+from cartography.config import Config
+from cartography.graph.session import Session
+from cartography.util import batch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cartography.config import Config
 
 logger = logging.getLogger(__name__)
 azure_console_link = AzureLinker()
@@ -26,26 +27,9 @@ def load_resource_groups(session: neo4j.Session, subscription_id: str, data_list
 
 
 def load_tags(session: neo4j.Session, data_list: List[Dict], update_tag: int, common_job_parameters: Dict) -> None:
-    iteration_size = 100
-    total_items = len(data_list)
-    total_iterations = math.ceil(len(data_list) / iteration_size)
-    logger.info(f"total instances: {total_items}")
-    logger.info(f"total iterations: {total_iterations}")
-
-    for counter in range(0, total_iterations):
-        start = iteration_size * (counter)
-
-        if (start + iteration_size) >= total_items:
-            end = total_items
-            paginated_tags = data_list[start:]
-
-        else:
-            end = start + iteration_size
-            paginated_tags = data_list[start:end]
-
+    logger.info(f"Loading instances  {len(data_list)}")
+    for paginated_tags in batch(data_list, size=500):
         session.write_transaction(_load_tags_tx, paginated_tags, update_tag, common_job_parameters)
-
-        logger.info(f"Iteration {counter + 1} of {total_iterations}. {start} - {end} - {len(paginated_tags)}")
 
 
 @timeit
@@ -61,7 +45,8 @@ def get_resource_groups_list(client: ResourceManagementClient, common_job_parame
         for group in resource_groups_list:
             group['name']=group.get('name','').lower()
             group['consolelink'] = azure_console_link.get_console_link(
-                id=group['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=group['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
 
         return resource_groups_list
 
@@ -192,7 +177,7 @@ def _load_tags_tx(tx: neo4j.Transaction, tags_list: List[Dict], update_tag: int,
         update_tag=update_tag,
         WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
         AZURE_TENANT_ID=common_job_parameters['AZURE_TENANT_ID'],
-        AZURE_SUBSCRIPTION_ID=common_job_parameters['AZURE_SUBSCRIPTION_ID']
+        AZURE_SUBSCRIPTION_ID=common_job_parameters['AZURE_SUBSCRIPTION_ID'],
     )
 
 

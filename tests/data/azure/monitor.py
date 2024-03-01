@@ -7,7 +7,7 @@ DESCRIBE_LOGPROFILES = [
         "resource_group": "TestRG",
         "name": "logprofile1",
         "service_bus_rule_id": "rule123",
-        "storage_account_id": "storage123"
+        "storage_account_id": "storage123",
     },
     {
         "id":
@@ -17,6 +17,6 @@ DESCRIBE_LOGPROFILES = [
         "resource_group": "TestRG",
         "name": "logprofile2",
         "service_bus_rule_id": "rule456",
-        "storage_account_id": "storage456"
+        "storage_account_id": "storage456",
     },
 ]

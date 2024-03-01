@@ -1,16 +1,16 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cloudconsolelink.clouds.aws import AWSLinker
-from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
@@ -129,7 +129,8 @@ def _make_redshift_cluster_arn(region: str, aws_account_id: str, cluster_identif
 def transform_redshift_cluster_data(clusters: List[Dict], current_aws_account_id: str) -> None:
     for cluster in clusters:
         cluster['arn'] = _make_redshift_cluster_arn(
-            cluster['region'], current_aws_account_id, cluster["ClusterIdentifier"])
+            cluster['region'], current_aws_account_id, cluster["ClusterIdentifier"],
+        )
         cluster['ClusterCreateTime'] = str(cluster['ClusterCreateTime']) if 'ClusterCreateTime' in cluster else None
 
 
@@ -323,10 +324,14 @@ def sync(
     tic = time.perf_counter()
 
     logger.info("Syncing Redshift clusters for account '%s', at %s.", current_aws_account_id, tic)
-    sync_redshift_clusters(neo4j_session, boto3_session, regions,
-                           current_aws_account_id, update_tag, common_job_parameters)
-    sync_redshift_reserved_node(neo4j_session, boto3_session, regions,
-                                current_aws_account_id, update_tag, common_job_parameters)
+    sync_redshift_clusters(
+        neo4j_session, boto3_session, regions,
+        current_aws_account_id, update_tag, common_job_parameters,
+    )
+    sync_redshift_reserved_node(
+        neo4j_session, boto3_session, regions,
+        current_aws_account_id, update_tag, common_job_parameters,
+    )
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

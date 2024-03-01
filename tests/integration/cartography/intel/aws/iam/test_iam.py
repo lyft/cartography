@@ -6,6 +6,7 @@ import tests.data.aws.iam
 from cartography.cli import CLI
 from cartography.config import Config
 from cartography.sync import build_default_sync
+from tests.integration.util import check_nodes
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
@@ -64,15 +65,63 @@ def test_load_groups(neo4j_session):
     )
 
 
-def test_load_roles(neo4j_session):
-    data = tests.data.aws.iam.LIST_ROLES['Roles']
+def _get_principal_role_nodes(neo4j_session):
+    '''
+    Get AWSPrincipal node tuples (rolearn, arn) that have arns with substring `:role/`
+    '''
+    return {
+        (roleid, arn)
+        for (roleid, arn) in check_nodes(neo4j_session, 'AWSPrincipal', ['roleid', 'arn'])
+        if ':role/' in arn  # filter out other Principals nodes, like the ec2 service princiapl
+    }
 
+
+def test_load_roles(neo4j_session):
+    '''
+    Ensures that we load AWSRoles without duplicating against AWSPrincipal nodes
+    '''
+    # Arrange
+    assert set() == _get_principal_role_nodes(neo4j_session)
+    data = tests.data.aws.iam.LIST_ROLES['Roles']
+    expected_principals = {  # (roleid, arn)
+        (None, 'arn:aws:iam::000000000000:role/example-role-0'),
+        (None, 'arn:aws:iam::000000000000:role/example-role-1'),
+        (None, 'arn:aws:iam::000000000000:role/example-role-2'),
+        (None, 'arn:aws:iam::000000000000:role/example-role-3'),
+    }
+    # Act: Load the roles as bare Principals without other labels. This replicates the case where we discover a
+    # role from another account via an AssumeRolePolicy document or similar ways. See #1133.
+    neo4j_session.run(
+        '''
+        UNWIND $data as item
+            MERGE (p:AWSPrincipal{arn: item.Arn})
+        ''',
+        data=data,
+    )
+    actual_principals = _get_principal_role_nodes(neo4j_session)
+    # Assert
+    assert expected_principals == actual_principals
+    assert set() == check_nodes(neo4j_session, 'AWSRole', ['arn'])
+    # Arrange
+    expected_nodes = {  # (roleid, arn)
+        ('AROA00000000000000000', 'arn:aws:iam::000000000000:role/example-role-0'),
+        ('AROA00000000000000001', 'arn:aws:iam::000000000000:role/example-role-1'),
+        ('AROA00000000000000002', 'arn:aws:iam::000000000000:role/example-role-2'),
+        ('AROA00000000000000003', 'arn:aws:iam::000000000000:role/example-role-3'),
+    }
+    # Act: Load the roles normally
     cartography.intel.aws.iam.load_roles(
         neo4j_session,
         data,
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
+    # Ensure that the new AWSRoles are merged into pre-existing AWSPrincipal nodes,
+    # and we do not have duplicate AWSPrincipal nodes.
+    role_nodes = check_nodes(neo4j_session, 'AWSRole', ['roleid', 'arn'])
+    principal_nodes = _get_principal_role_nodes(neo4j_session)
+    assert expected_nodes == role_nodes
+    assert expected_nodes == principal_nodes
 
 
 def test_load_roles_creates_trust_relationships(neo4j_session):
@@ -126,7 +175,7 @@ def test_load_inline_policy_data(neo4j_session):
         "group_inline_policy",
         tests.data.aws.iam.INLINE_POLICY_STATEMENTS,
         TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG
+        TEST_UPDATE_TAG,
     )
 
 

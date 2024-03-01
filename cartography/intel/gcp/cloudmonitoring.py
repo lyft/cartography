@@ -5,9 +5,9 @@ from typing import Dict
 from typing import List
 
 import neo4j
+from cloudconsolelink.clouds.gcp import GCPLinker
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-from cloudconsolelink.clouds.gcp import GCPLinker
 
 from . import label
 from cartography.util import run_cleanup_job
@@ -30,8 +30,10 @@ def get_monitoring_alertpolicies(monitoring: Resource, project_id: str) -> List[
                     policy['id'] = policy['name']
                     policy['policy_name'] = policy.get('name').split('/')[-1]
                     policy['labels'] = policy.get('userLabels', {})
-                    policy['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
-                                                                              alert_policy_name=policy['name'], resource_name='cloud_monitoring_alert_policy')
+                    policy['consolelink'] = gcp_console_link.get_console_link(
+                        project_id=project_id,
+                        alert_policy_name=policy['name'], resource_name='cloud_monitoring_alert_policy',
+                    )
                     policies.append(policy)
             req = monitoring.projects().alertPolicies().list_next(previous_request=req, previous_response=res)
 
@@ -132,6 +134,7 @@ def get_monitoring_metric_descriptors(monitoring: Resource, project_id: str) -> 
         else:
             raise
 
+
 @timeit
 def transform_metric_descriptors(metric_descriptors: List[Dict], project_id: str) -> List[Dict]:
     metric_descriptors = []
@@ -140,8 +143,9 @@ def transform_metric_descriptors(metric_descriptors: List[Dict], project_id: str
         metric['id'] = f"projects/{project_id}/metricDescriptors/{metric['name']}"
         metric['consolelink'] = gcp_console_link.get_console_link(project_id=project_id, resource_name='cloud_logging_metric')
         metric_descriptors.append(metric)
-    
+
     return metric_descriptors
+
 
 @timeit
 def load_monitoring_metric_descriptors(session: neo4j.Session, data_list: List[Dict], project_id: str, update_tag: int) -> None:
@@ -305,8 +309,10 @@ def get_monitoring_uptimecheckconfigs(monitoring: Resource, project_id: str) -> 
                     config['id'] = config['name']
                     config['config_name'] = config.get('name').split('/')[-1]
                     config['labels'] = config.get('userLabels', {})
-                    config['consolelink'] = gcp_console_link.get_console_link(project_id=project_id,
-                                                                              uptimecheck_config_name=config['name'], resource_name='cloud_monitoring_uptime_check_config')
+                    config['consolelink'] = gcp_console_link.get_console_link(
+                        project_id=project_id,
+                        uptimecheck_config_name=config['name'], resource_name='cloud_monitoring_uptime_check_config',
+                    )
                     configs.append(config)
             req = monitoring.projects().uptimeCheckConfigs().list_next(previous_request=req, previous_response=res)
 

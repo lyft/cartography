@@ -75,7 +75,7 @@ def get_gcp_projects(crm_v1: Resource) -> List[Resource]:
 
 
 @timeit
-def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int, common_job_parameters: Dict,) -> None:
+def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int, common_job_parameters: Dict) -> None:
     """
     Ingest the GCP organizations to Neo4j
     :param neo4j_session: The Neo4j session

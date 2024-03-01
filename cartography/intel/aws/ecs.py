@@ -1,19 +1,19 @@
-import time
 import logging
+import time
 from typing import Any
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions
 from cartography.util import camel_to_snake
 from cartography.util import dict_date_to_epoch
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from botocore.exceptions import ClientError
-from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
@@ -34,13 +34,13 @@ def get_ecs_clusters(boto3_session: boto3.session.Session, region: str) -> List[
         for cluster_arn in cluster_arns:
             clusters.append({
                 'arn': cluster_arn,
-                'region': region
+                'region': region,
             })
 
         return clusters
 
     except ClientError as e:
-        logger.warning("Failed to get ecs clusters for region - {}. Error - {}".format(region, e))
+        logger.warning(f"Failed to get ecs clusters for region - {region}. Error - {e}")
 
         return []
 

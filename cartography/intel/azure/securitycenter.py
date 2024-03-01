@@ -4,12 +4,12 @@ from typing import List
 
 import neo4j
 from azure.core.exceptions import HttpResponseError
-from cloudconsolelink.clouds.azure import AzureLinker
 from azure.mgmt.security import SecurityCenter
+from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
-from cartography.util import run_cleanup_job
 from cartography.util import get_azure_resource_group_name
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,8 @@ def transform_security_contacts(security_contacts: List[Dict], subscription_id: 
         contact['subscriptionid'] = subscription_id
         contact['region'] = 'global'
         contact['consolelink'] = azure_console_link.get_console_link(
-            id=contact['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+            id=contact['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+        )
         security_contacts_data.append(contact)
 
     return security_contacts_data
@@ -78,8 +79,8 @@ def _load_security_contacts_tx(
     for security_contact in security_contacts:
         resource_group=get_azure_resource_group_name(security_contact.get('id'))
         _attach_resource_group_security_contacts(tx, security_contact['id'], resource_group,update_tag)
-            
-    
+
+
 def _attach_resource_group_security_contacts(tx: neo4j.Transaction, security_contact_id:str,resource_group:str ,update_tag: int) -> None:
     ingest_contacts = """
     MATCH(c:AzureSecurityContact{id: $security_contact_id})
@@ -93,7 +94,7 @@ def _attach_resource_group_security_contacts(tx: neo4j.Transaction, security_con
         ingest_contacts,
         security_contact_id=security_contact_id,
         resource_group=resource_group,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 def cleanup_security_contacts(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
@@ -102,7 +103,7 @@ def cleanup_security_contacts(neo4j_session: neo4j.Session, common_job_parameter
 
 def sync_security_contacts(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: List
+    common_job_parameters: Dict, regions: List,
 ) -> None:
 
     client = get_security_center_client(credentials, subscription_id)
@@ -116,7 +117,7 @@ def sync_security_contacts(
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
-    common_job_parameters: Dict, regions: List
+    common_job_parameters: Dict, regions: List,
 ) -> None:
     logger.info("Syncing key Security Contacts for subscription '%s'.", subscription_id)
 

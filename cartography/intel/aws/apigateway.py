@@ -1,6 +1,6 @@
-import time
 import json
 import logging
+import time
 from typing import Any
 from typing import Dict
 from typing import Generator
@@ -13,8 +13,8 @@ import botocore
 import neo4j
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from policyuniverse.policy import Policy
 from cloudconsolelink.clouds.aws import AWSLinker
+from policyuniverse.policy import Policy
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -143,7 +143,7 @@ def transform_apigateway_rest_apis(apis):
 @timeit
 @aws_handle_regions
 def get_rest_api_details(
-        boto3_session: boto3.session.Session, rest_apis: List[Dict], aws_account_id: str
+        boto3_session: boto3.session.Session, rest_apis: List[Dict], aws_account_id: str,
 ) -> Generator[Any, Any, Any]:
     """
     Iterates over all API Gateway REST APIs.

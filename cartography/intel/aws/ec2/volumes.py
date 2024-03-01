@@ -1,18 +1,20 @@
-import time
 import logging
+import time
 from typing import Any
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
-
 from botocore.exceptions import ClientError
-from cartography.util import aws_handle_regions
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from cartography.client.core.tx import load
+from cartography.graph.job import GraphJob
+from cartography.intel.aws.util.arns import build_arn
+from cartography.models.aws.ec2.volumes import EBSVolumeSchema
+from cartography.util import aws_handle_regions
+from cartography.util import timeit
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
 
@@ -41,11 +43,41 @@ def get_volumes(boto3_session: boto3.session.Session, region: str) -> List[Dict]
 
 
 def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_account_id: str) -> List[Dict[str, Any]]:
+    result = []
     for volume in volumes:
-        volume['VolumeArn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:volume/{volume['VolumeId']}"
-        volume['CreateTime'] = str(volume['CreateTime'])
-        volume['region'] = region
-    return volumes
+        attachments = volume.get('Attachments', [])
+        active_attachments = [a for a in attachments if a['State'] == 'attached']
+        volume_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:volume/{volume['VolumeId']}"
+        volume_id = volume['VolumeId']
+        consolelink = aws_console_link.get_console_link(arn=volume_arn)
+        raw_vol = ({
+            'Arn': build_arn('ec2', current_aws_account_id, 'volume', volume_id, region),
+            'AvailabilityZone': volume.get('AvailabilityZone'),
+            'CreateTime': volume.get('CreateTime'),
+            'Encrypted': volume.get('Encrypted'),
+            'Size': volume.get('Size'),
+            'State': volume.get('State'),
+            'OutpostArn': volume.get('OutpostArn'),
+            'SnapshotId': volume.get('SnapshotId'),
+            'Iops': volume.get('Iops'),
+            'FastRestored': volume.get('FastRestored'),
+            'MultiAttachEnabled': volume.get('MultiAttachEnabled'),
+            'VolumeType': volume.get('VolumeType'),
+            'VolumeId': volume_id,
+            'KmsKeyId': volume.get('KmsKeyId'),
+            'consolelink': consolelink,
+        })
+
+        if not active_attachments:
+            result.append(raw_vol)
+            continue
+
+        for attachment in active_attachments:
+            vol_with_attachment = raw_vol.copy()
+            vol_with_attachment['InstanceId'] = attachment['InstanceId']
+            result.append(vol_with_attachment)
+
+    return result
 
 
 @timeit
@@ -92,42 +124,34 @@ def load_volumes(
 
 def load_volume_relationships(
         neo4j_session: neo4j.Session,
-        volumes: List[Dict[str, Any]],
-        aws_update_tag: int,
+        ebs_data: List[Dict[str, Any]],
+        region: str,
+        current_aws_account_id: str,
+        update_tag: int,
 ) -> None:
-    add_relationship_query = """
-        MATCH (volume:EBSVolume{arn: $VolumeArn})
-        WITH volume
-        MATCH (instance:EC2Instance{instanceid: $InstanceId})
-        MERGE (volume)-[r:ATTACHED_TO_EC2_INSTANCE]->(instance)
-        ON CREATE SET r.firstseen = timestamp()
-        SET r.lastupdated = $aws_update_tag
-    """
-    for volume in volumes:
-        for attachment in volume.get('Attachments', []):
-            if attachment['State'] != 'attached':
-                continue
-            neo4j_session.run(
-                add_relationship_query,
-                VolumeArn=volume['VolumeArn'],
-                InstanceId=attachment['InstanceId'],
-                aws_update_tag=aws_update_tag,
-            )
-
-
-@timeit
-def cleanup_volumes(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job(
-        'aws_import_volumes_cleanup.json',
+    load(
         neo4j_session,
-        common_job_parameters,
+        EBSVolumeSchema(),
+        ebs_data,
+        Region=region,
+        AWS_ID=current_aws_account_id,
+        lastupdated=update_tag,
     )
 
 
 @timeit
+def cleanup_volumes(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any]) -> None:
+    GraphJob.from_node_schema(EBSVolumeSchema(), common_job_parameters).run(neo4j_session)
+
+
+@timeit
 def sync_ebs_volumes(
-        neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str],
-        current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
+        neo4j_session: neo4j.Session,
+        boto3_session: boto3.session.Session,
+        regions: List[str],
+        current_aws_account_id: str,
+        update_tag: int,
+        common_job_parameters: Dict[str, Any],
 ) -> None:
     tic = time.perf_counter()
 

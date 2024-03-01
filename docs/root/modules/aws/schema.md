@@ -691,6 +691,9 @@ Representation of an AWS [Access Key](https://docs.aws.amazon.com/IAM/latest/API
 | lastupdated |  Timestamp of the last time the node was updated
 | createdate | Date when access key was created |
 | status | Active: valid for API calls.  Inactive: not valid for API calls|
+| lastuseddate | Date when the key was last used |
+| lastusedservice | The service that was last used with the access key |
+| lastusedregion | The region where the access key was last used |
 | **accesskeyid** | The ID for this access key|
 
 #### Relationships
@@ -1703,6 +1706,7 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
         ```
         (LoadBalancerV2)-[EXPOSE]->(EC2Instance)
         ```
+`EXPOSE` relationshiohip also holds the protocol, port and TargetGroupArn the load balancer points to.
 
 - LoadBalancerV2's can be part of EC2SecurityGroups but only if their `type` = "application". NLBs don't have SGs.
 
@@ -3063,6 +3067,12 @@ Representation of an AWS ECS [Task Definition](https://docs.aws.amazon.com/Amazo
         (AWSAccount)-[RESOURCE]->(ECSTaskDefinition)
         ```
 
+- An ECSTask has an ECSTaskDefinition.
+
+        ```
+        (ECSTask)-[HAS_TASK_DEFINITION]->(ECSTaskDefinition)
+        ```
+
 ### ECSContainerDefinition
 
 Representation of an AWS ECS [Container Definition](https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_ContainerDefinition.html)
@@ -3162,7 +3172,7 @@ Representation of an AWS ECS [Task](https://docs.aws.amazon.com/AmazonECS/latest
 - ECSTasks have ECSTaskDefinitions
 
         ```
-        (ECSContainerInstance)-[HAS_TASK_DEFINITION]->(ECSTask)
+        (ECSTask)-[HAS_TASK_DEFINITION]->(ECSTaskDefinition)
         ```
 
 ### ECSContainer

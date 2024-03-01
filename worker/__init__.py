@@ -1,9 +1,9 @@
-from typing import Dict
 import datetime
 import json
 import logging
 import os
 import uuid
+from typing import Dict
 
 import azure.functions as func
 
@@ -68,8 +68,8 @@ def process_request(msg: Dict):
                         "name": service,
                         "pagination": {
                             "pageSize": pagination.get('pageSize', 1),
-                            "pageNo": pagination.get('pageNo', 0) + 1
-                        }
+                            "pageNo": pagination.get('pageNo', 0) + 1,
+                        },
                     })
             if len(services) > 0:
                 resp['services'] = services

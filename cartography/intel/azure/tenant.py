@@ -3,7 +3,6 @@ from typing import Dict
 from typing import List
 
 import neo4j
-
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.resource import SubscriptionClient
 
@@ -60,7 +59,7 @@ def get_tenant_id(credentials: Credentials) -> str:
 
 
 def load_azure_tenant(
-    neo4j_session: neo4j.Session, tenant_obj: Dict, current_user: str, update_tag: int, common_job_parameters: Dict
+    neo4j_session: neo4j.Session, tenant_obj: Dict, current_user: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     query = """
     MERGE (w:CloudanixWorkspace{id: $workspaceId})

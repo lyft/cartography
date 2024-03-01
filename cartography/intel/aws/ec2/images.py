@@ -1,18 +1,20 @@
-import time
 import logging
+import time
+from typing import Any
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
 from botocore.exceptions import ClientError
-
-from .util import get_botocore_config
-from cartography.util import aws_handle_regions
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from cartography.client.core.tx import load
+from cartography.graph.job import GraphJob
+from cartography.intel.aws.ec2.util import get_botocore_config
+from cartography.models.aws.ec2.images import EC2ImageSchema
+from cartography.util import aws_handle_regions
+from cartography.util import timeit
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
 
@@ -41,7 +43,7 @@ def get_images_in_use(neo4j_session: neo4j.Session, region: str, current_aws_acc
 @timeit
 @aws_handle_regions
 def get_images(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config(),)
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     images = []
     try:
         self_images = client.describe_images(Owners=['self'])['Images']
@@ -54,7 +56,7 @@ def get_images(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
 @timeit
 def transform_images(boto3_session: boto3.session.Session, imags: List[Dict], image_ids: List[str], region: str, account_id: str) -> List[Dict]:
     images = []
-    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config(),)
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     try:
         if image_ids:
             images_in_use = client.describe_images(ImageIds=image_ids)['Images']
@@ -113,12 +115,9 @@ def load_images(
 
 
 @timeit
-def cleanup_images(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job(
-        'aws_import_ec2_images_cleanup.json',
-        neo4j_session,
-        common_job_parameters,
-    )
+def cleanup_images(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any]) -> None:
+    cleanup_job = GraphJob.from_node_schema(EC2ImageSchema(), common_job_parameters)
+    cleanup_job.run(neo4j_session)
 
 
 @timeit

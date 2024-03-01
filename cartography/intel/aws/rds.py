@@ -1,13 +1,13 @@
-import time
 import logging
+import time
 from typing import Any
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
-
 from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
@@ -16,7 +16,6 @@ from cartography.util import dict_value_to_str
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
@@ -178,8 +177,10 @@ def cleanup_rds_security_groups(neo4j_session: neo4j.Session, common_job_paramet
 
 
 @timeit
-def attach_db_security_groups_to_ec2_security_groups(session: neo4j.Session, data: List[Dict],
-                                                     db_sg_id: str, aws_update_tag: int,):
+def attach_db_security_groups_to_ec2_security_groups(
+    session: neo4j.Session, data: List[Dict],
+    db_sg_id: str, aws_update_tag: int,
+):
     for sg in data:
         ingest_script = """
         MATCH (dbsg:RDSSecurityGroup{id:$DBSecurityGroupId})
@@ -212,8 +213,11 @@ def sync_rds_security_groups(
 
     load_rds_security_groups(neo4j_session, data, current_aws_account_id, update_tag)
     for db_sg in data:
-        attach_db_security_groups_to_ec2_security_groups(neo4j_session, db_sg.get(
-            'EC2SecurityGroups', []), db_sg.get('DBSecurityGroupArn'), update_tag)
+        attach_db_security_groups_to_ec2_security_groups(
+            neo4j_session, db_sg.get(
+                'EC2SecurityGroups', [],
+            ), db_sg.get('DBSecurityGroupArn'), update_tag,
+        )
     cleanup_rds_security_groups(neo4j_session, common_job_parameters)
 
 
@@ -599,7 +603,7 @@ def load_rds_snapshots(
             snapshot.original_snapshot_create_time = rds_snapshot.OriginalSnapshotCreateTime,
             snapshot.snapshot_database_time = rds_snapshot.SnapshotDatabaseTime,
             snapshot.snapshot_target = rds_snapshot.SnapshotTarget,
-            snapshot.storage_throughput = rds_snapshot.StorageThroughput,       
+            snapshot.storage_throughput = rds_snapshot.StorageThroughput,
             snapshot.consolelink = rds_snapshot.consolelink,
             snapshot.lastupdated = $aws_update_tag
         WITH snapshot
@@ -621,7 +625,7 @@ def load_rds_snapshots(
 
 
 @timeit
-def load_rds_snapshot_attributes(neo4j_session: neo4j.Session, data: Dict, aws_update_tag: int,) -> None:
+def load_rds_snapshot_attributes(neo4j_session: neo4j.Session, data: Dict, aws_update_tag: int) -> None:
     """
     Ingest the RDS snapshot attributes to neo4j and link them to RDS snapshot.
     """
@@ -632,7 +636,7 @@ def load_rds_snapshot_attributes(neo4j_session: neo4j.Session, data: Dict, aws_u
         UNWIND result.DBSnapshotAttributes as attribute
             MERGE (attrib:RDSSnapshotAttribute{name: attribute.AttributeName})
             ON CREATE SET attrib.firstseen = timestamp()
-            SET 
+            SET
                 attrib.values = attribute.AttributeValues,
                 attrib.lastupdated = $aws_update_tag
             WITH attrib, result, rdsSnapshot

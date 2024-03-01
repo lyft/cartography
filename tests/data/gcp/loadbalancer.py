@@ -5,8 +5,8 @@ TEST_GLOBAL_HEALTH_CHECK = [
         'region': 'global',
         'type': 'global',
         'checkIntervalSec': 5,
-        'timeoutSec': 10
-    }
+        'timeoutSec': 10,
+    },
 ]
 
 TEST_REGIONAL_HEALTH_CHECK = [
@@ -16,8 +16,8 @@ TEST_REGIONAL_HEALTH_CHECK = [
         'region': 'us-east1',
         'type': 'regional',
         'checkIntervalSec': 5,
-        'timeoutSec': 10
-    }
+        'timeoutSec': 10,
+    },
 ]
 
 TEST_GLOBAL_INSTANCE_GROUP = [
@@ -28,8 +28,8 @@ TEST_GLOBAL_INSTANCE_GROUP = [
         'type': 'global',
         'size': 3,
         'network': 'default',
-        'subnetwork': 'default'
-    }
+        'subnetwork': 'default',
+    },
 ]
 
 TEST_REGIONAL_INSTANCE_GROUP = [
@@ -40,8 +40,8 @@ TEST_REGIONAL_INSTANCE_GROUP = [
         'type': 'regional',
         'size': 3,
         'network': 'default',
-        'subnetwork': 'default'
-    }
+        'subnetwork': 'default',
+    },
 ]
 
 TEST_GLOBAL_URL_MAP = [
@@ -49,8 +49,8 @@ TEST_GLOBAL_URL_MAP = [
         "name": "globalmap123",
         "id": "projects/project123/global/urlmaps/globalmap123",
         "defaultService": "service123",
-        "type": "global"
-    }
+        "type": "global",
+    },
 ]
 
 TEST_REGIONAL_URL_MAP = [
@@ -59,14 +59,14 @@ TEST_REGIONAL_URL_MAP = [
         "id": "projects/project123/regions/us-east1-a/urlmaps/regionalmap123",
         "region": "us-east1-a",
         "defaultService": "service123",
-        "type": "regional"
-    }
+        "type": "regional",
+    },
 ]
 
 TEST_SSL_POLICY = [
     {
         "name": 'sslpolicy123',
         'id': 'projects/project123/global/urlmaps/sslpolicy123',
-        'minTlsVersion': 'TLS1.1'
-    }
+        'minTlsVersion': 'TLS1.1',
+    },
 ]

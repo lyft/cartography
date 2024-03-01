@@ -1,12 +1,11 @@
-import cartography.intel.gcp.dataflow
-import cartography.intel.gcp.bigtable
 import cartography.intel.gcp.bigquery
+import cartography.intel.gcp.bigtable
+import cartography.intel.gcp.dataflow
 import cartography.intel.gcp.pubsub
 import cartography.intel.gcp.spanner
-
-import tests.data.gcp.dataflow
-import tests.data.gcp.bigtable
 import tests.data.gcp.bigquery
+import tests.data.gcp.bigtable
+import tests.data.gcp.dataflow
 import tests.data.gcp.pubsub
 import tests.data.gcp.spanner
 
@@ -23,7 +22,7 @@ def test_dataflow_jobs(neo4j_session):
         TEST_UPDATE_TAG,
     )
     expected_nodes = {
-        'job1'
+        'job1',
     }
 
     nodes = neo4j_session.run(
@@ -53,7 +52,7 @@ def test_dataflow_job_bigtable_relation(neo4j_session):
         TEST_UPDATE_TAG,
     )
     expected_nodes = {
-        ('job1', 'table123'), ('job1', 'table456')
+        ('job1', 'table123'), ('job1', 'table456'),
     }
 
     nodes = neo4j_session.run(
@@ -83,7 +82,7 @@ def test_dataflow_job_bigquery_relation(neo4j_session):
         TEST_UPDATE_TAG,
     )
     expected_nodes = {
-        ('job1', 'table2'), ('job1', 'table1')
+        ('job1', 'table2'), ('job1', 'table1'),
     }
 
     nodes = neo4j_session.run(
@@ -123,7 +122,7 @@ def test_dataflow_job_pubsub_relation(neo4j_session):
         (
             'projects/project123/subscriptions/sub123',
             'job1',
-            'projects/project123/topic/topic123'
+            'projects/project123/topic/topic123',
         ),
     }
 
@@ -154,10 +153,14 @@ def test_dataflow_job_spanner_relation(neo4j_session):
         TEST_UPDATE_TAG,
     )
     expected_nodes = {
-        ('job1',
-         'projects/project-123/instances/instance1/databases/database1'),
-        ('job1',
-         'projects/project-123/instances/instance1/databases/database2'),
+        (
+            'job1',
+            'projects/project-123/instances/instance1/databases/database1',
+        ),
+        (
+            'job1',
+            'projects/project-123/instances/instance1/databases/database2',
+        ),
     }
 
     nodes = neo4j_session.run(

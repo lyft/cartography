@@ -91,8 +91,9 @@ LOAD_BALANCER_DATA = [
         'DNSName': 'myawesomeloadbalancer.amazonaws.com',
         'CreatedTime': '10-27-2019 12:35AM',
         'LoadBalancerName': 'myawesomeloadbalancer',
-        'LoadBalancerArn': 'string',
+        'LoadBalancerArn': 'arnlb123',
         'Type': 'application',
+        "region": "us-west-1",
         'Scheme': 'internet-facing',
         'AvailabilityZones': [
             {

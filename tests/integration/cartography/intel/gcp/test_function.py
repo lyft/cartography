@@ -98,12 +98,11 @@ def test_function_relationships(neo4j_session):
 def test_cloud_function(neo4j_session):
     cloudanix_workspace_to_gcp_project(neo4j_session)
     data = tests.data.gcp.function.CLOUD_FUNCTION
-    cartography.intel.gcp.cloudfunction.load_functions(neo4j_session, data, TEST_PROJECT_NUMBER, TEST_UPDATE_TAG,)
+    cartography.intel.gcp.cloudfunction.load_functions(neo4j_session, data, TEST_PROJECT_NUMBER, TEST_UPDATE_TAG)
     bindings_data = tests.data.gcp.function.FUNCTION_POLICY_BINDINGS
 
     cartography.intel.gcp.cloudfunction.attach_function_to_binding(neo4j_session, TEST_FUNCTION_ID, bindings_data, TEST_UPDATE_TAG)
 
-   
     query1 = """
     MATCH (function:GCPFunction)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE function.exposed_internet=true
     RETURN function.id,function.exposed_internet,function.exposed_internet_type
@@ -112,13 +111,11 @@ def test_cloud_function(neo4j_session):
 
     objects1 = neo4j_session.run(query1, GCP_PROJECT_ID=TEST_PROJECT_NUMBER, WORKSPACE_ID=TEST_WORKSPACE_ID)
 
-    
-
     actual_nodes = {
         (
             o['function.id'],
             o['function.exposed_internet'],
-            ",".join(o['function.exposed_internet_type'])
+            ",".join(o['function.exposed_internet_type']),
 
         ) for o in objects1
 
@@ -129,8 +126,8 @@ def test_cloud_function(neo4j_session):
         (
             'function123',
             True,
-            'allUsers,allAuthenticatedUsers'
-        )
+            'allUsers,allAuthenticatedUsers',
+        ),
 
     }
 

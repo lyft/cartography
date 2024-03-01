@@ -154,6 +154,6 @@ API_KEY = [
         "id": "projects/project123/locations/global/keys/key123",
         "updateTime": "2022-07-02T15:01:23Z",
         "deleteTime": "2022-08-02T15:01:23Z",
-        "region": "global"
-    }
+        "region": "global",
+    },
 ]

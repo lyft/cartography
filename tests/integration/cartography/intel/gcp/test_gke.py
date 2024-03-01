@@ -8,9 +8,9 @@ TEST_UPDATE_TAG = 123456789
 common_job_parameters = {
     "UPDATE_TAG": TEST_UPDATE_TAG,
     "WORKSPACE_ID": '1223344',
-    "GCP_PROJECT_ID": TEST_PROJECT_NUMBER 
-,
+    "GCP_PROJECT_ID": TEST_PROJECT_NUMBER,
 }
+
 
 def cloudanix_workspace_to_gcp_project(neo4j_session):
     query = """
@@ -23,8 +23,6 @@ def cloudanix_workspace_to_gcp_project(neo4j_session):
         WorkspaceId=TEST_WORKSPACE_ID,
         ProjectId=TEST_PROJECT_NUMBER,
     )
-
-
 
 
 def test_load_gke_clusters(neo4j_session):
@@ -75,7 +73,7 @@ def test_load_eks_clusters_relationships(neo4j_session):
     )
 
     expected = {
-        (TEST_PROJECT_NUMBER, 'projects/000000000000/clusters/test-cluster'),
+        (TEST_PROJECT_NUMBER, 'projects/000000000000/location/europe-west2/clusters/test-cluster'),
     }
 
     # Fetch relationships
@@ -90,13 +88,14 @@ def test_load_eks_clusters_relationships(neo4j_session):
     }
     assert actual == expected
 
+
 def test_gke_public_facing(neo4j_session):
 
     test_load_gke_clusters(neo4j_session)
     test_load_eks_clusters_relationships(neo4j_session)
     cloudanix_workspace_to_gcp_project(neo4j_session)
 
-    run_analysis_job('gcp_kubernetes_engine_analysis.json',neo4j_session,common_job_parameters)
+    run_analysis_job('gcp_kubernetes_engine_analysis.json', neo4j_session, common_job_parameters)
 
     query1 = """
     MATCH (cluster:GKECluster)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE cluster.exposed_internet=true
@@ -110,12 +109,12 @@ def test_gke_public_facing(neo4j_session):
             o['cluster.name'],
 
         ) for o in objects
-        
+
     }
 
     expected_nodes = {
         (
             'test-cluster',
-        )
+        ),
     }
     assert actual_nodes == expected_nodes

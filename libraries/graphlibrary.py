@@ -1,5 +1,6 @@
-from neo4j.exceptions import ServiceUnavailable, AuthError
 from neo4j import GraphDatabase
+from neo4j.exceptions import AuthError
+from neo4j.exceptions import ServiceUnavailable
 
 
 class GraphLibrary:

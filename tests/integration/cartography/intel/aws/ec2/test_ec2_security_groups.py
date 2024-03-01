@@ -1,4 +1,4 @@
-import cartography.intel.aws.ec2
+import cartography.intel.aws.ec2.security_groups
 import tests.data.aws.ec2.security_groups
 
 

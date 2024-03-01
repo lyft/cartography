@@ -12,13 +12,13 @@ import googleapiclient.discovery
 import neo4j
 from googleapiclient.discovery import Resource
 from neo4j import GraphDatabase
-from cartography.graph.session import Session
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
 from . import label
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
+from cartography.graph.session import Session
 from cartography.intel.gcp import crm
 from cartography.intel.gcp.auth import AuthHelper
 from cartography.intel.gcp.util.common import parse_and_validate_gcp_requested_syncs
@@ -29,13 +29,13 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun  \
-        iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage',
+        iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage policyanalyzer',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
-    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage',
+    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage policyanalyzer',
 )
 service_names = Services(
     compute='compute.googleapis.com',
@@ -65,6 +65,8 @@ service_names = Services(
     pubsublite='pubsublite.googleapis.com',
     cloudtasks='cloudtasks.googleapis.com',
     serviceusage='serviceusage.googleapis.com',
+    policyanalyzer='policyanalyzer.googleapis.com',
+
 )
 
 
@@ -89,6 +91,15 @@ def _get_crm_resource_v1(credentials: GoogleCredentials) -> Resource:
     # cache_discovery=False to suppress extra warnings.
     # See https://github.com/googleapis/google-api-python-client/issues/299#issuecomment-268915510 and related issues
     return googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials, cache_discovery=False)
+
+
+def _get_policyanalyzer_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a policyanalyzer resource object.
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('policyanalyzer', 'v1', credentials=credentials, cache_discovery=False)
 
 
 def _get_crm_resource_v2(credentials: GoogleCredentials) -> Resource:
@@ -201,16 +212,6 @@ def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
     :return: A serviceusage resource object
     """
     return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
-
-
-def _get_cloudfunction_resource(credentials: GoogleCredentials) -> Resource:
-    """
-    Instantiates a cloud function resource object.
-    See: https://cloud.google.com/functions/docs/reference/rest
-    :param credentials: The GoogleCredentials object
-    :return: A serviceusage resource object
-    """
-    return googleapiclient.discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
 
 
 def _get_cloudkms_resource(credentials: GoogleCredentials) -> Resource:
@@ -387,6 +388,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         cloudtasks=_get_cloudtasks_resource(credentials),
         spanner=_get_spanner_resource(credentials),
         pubsublite=_get_pubsublite_resource(credentials),
+        policyanalyzer=_get_policyanalyzer_resource(credentials),
     )
 
 
@@ -401,11 +403,13 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
     """
     try:
         req = serviceusage.services().list(parent=f'projects/{project_id}', filter='state:ENABLED')
-        res = req.execute()
-        if 'services' in res:
-            return {svc['config']['name'] for svc in res['services']}
-        else:
-            return set()
+        services = set()
+        while req is not None:
+            res = req.execute()
+            if 'services' in res:
+                services.update({svc['config']['name'] for svc in res['services']})
+            req = serviceusage.services().list_next(previous_request=req, previous_response=res)
+        return services
     except googleapiclient.discovery.HttpError as http_error:
         http_error = json.loads(http_error.content.decode('utf-8'))
         # This is set to log-level `info` because Google creates many projects under the hood that cartography cannot
@@ -421,7 +425,7 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 
 def concurrent_execution(
     service: str, service_func: Any, config: Config, resource: Resource,
-    common_job_parameters: Dict, gcp_update_tag: int, project_id: str, crm_v1: Resource,
+    common_job_parameters: Dict, gcp_update_tag: int, project_id: str, policyanalyzer: Resource, crm_v1: Resource,
     crm_v2: Resource, apikey: Resource,
 ):
     logger.info(f"BEGIN processing for service: {service}")
@@ -436,12 +440,16 @@ def concurrent_execution(
     )
 
     if service == 'iam':
-        service_func(Session(neo4j_driver), resource, crm_v1, crm_v2, apikey, project_id,
-                     gcp_update_tag, common_job_parameters)
+        service_func(
+            Session(neo4j_driver), resource, policyanalyzer, crm_v1, crm_v2, apikey, project_id,
+            gcp_update_tag, common_job_parameters,
+        )
 
     else:
-        service_func(Session(neo4j_driver), resource, project_id, gcp_update_tag,
-                     common_job_parameters, regions)
+        service_func(
+            Session(neo4j_driver), resource, project_id, gcp_update_tag,
+            common_job_parameters, regions,
+        )
 
     logger.info(f"END processing for service: {service}")
 
@@ -473,7 +481,7 @@ def _sync_single_project(
                     executor.submit(
                         concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
                             resources, request,
-                        ), common_job_parameters, gcp_update_tag, project_id, resources.crm_v1, resources.crm_v2, resources.apikey,
+                        ), common_job_parameters, gcp_update_tag, project_id, resources.policyanalyzer, resources.crm_v1, resources.crm_v2, resources.apikey,
                     ),
                 )
 
@@ -617,7 +625,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     if config.gcp_requested_syncs:
         gcp_requested_syncs_string = ""
         for service in config.gcp_requested_syncs:
-            gcp_requested_syncs_string += f"{service.get('name',' ')},"
+            gcp_requested_syncs_string += f"{service.get('name', ' ')},"
             if service.get('pagination', None):
                 pagination = service.get('pagination', {})
                 pagination['hasNextPage'] = False

@@ -1,19 +1,20 @@
-import time
 import logging
+import time
 from typing import Dict
 from typing import List
-from botocore.exceptions import ClientError
 
 import boto3
 import neo4j
+from botocore.exceptions import ClientError
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
+
 
 @timeit
 @aws_handle_regions
@@ -33,6 +34,7 @@ def get_cloudfront_distributions(boto3_session: boto3.session.Session) -> List[D
         logger.error(f'Failed to call CloudFront list_distributions: {e}')
         return distributions
 
+
 @timeit
 def trtansform_distribution(dists: List[Dict]) -> List[Dict]:
     distributions = []
@@ -43,6 +45,7 @@ def trtansform_distribution(dists: List[Dict]) -> List[Dict]:
         distributions.append(distribution)
 
     return distributions
+
 
 def load_cloudfront_distributions(session: neo4j.Session, distributions: List[Dict], current_aws_account_id: str, aws_update_tag: int) -> None:
     session.write_transaction(_load_cloudfront_distributions_tx, distributions, current_aws_account_id, aws_update_tag)

@@ -21,7 +21,7 @@ def test_load_s3_buckets(neo4j_session, *args):
             """,
         aws_account_id=TEST_ACCOUNT_ID,
         aws_update_tag=TEST_UPDATE_TAG,
-        workspace_id=TEST_WORKSPACE_ID
+        workspace_id=TEST_WORKSPACE_ID,
     )
     data = tests.data.aws.s3.LIST_BUCKETS
     cartography.intel.aws.s3.load_s3_buckets(neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
@@ -189,13 +189,13 @@ def test_load_s3_policy_statuses(neo4j_session, *args):
     run_analysis_job(
         'aws_s3_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     nodes = neo4j_session.run(
         """
         MATCH (s:S3Bucket{anonymous_access:true}) RETURN s.id;
-        """
+        """,
     )
 
     actual_nodes = {
@@ -206,6 +206,6 @@ def test_load_s3_policy_statuses(neo4j_session, *args):
     }
 
     expected_nodes = {
-        ('bucket-2',), ('bucket-1',)
+        ('bucket-2',), ('bucket-1',),
     }
     assert actual_nodes == expected_nodes

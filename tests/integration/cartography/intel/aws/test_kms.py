@@ -11,7 +11,6 @@ def test_load_kms_keys(neo4j_session):
     cartography.intel.aws.kms.load_kms_keys(
         neo4j_session,
         data,
-
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -48,7 +47,6 @@ def test_load_kms_keys_relationships(neo4j_session):
     cartography.intel.aws.kms.load_kms_keys(
         neo4j_session,
         data,
-
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -99,7 +97,6 @@ def test_load_kms_key_aliases_relationships(neo4j_session):
     cartography.intel.aws.kms.load_kms_keys(
         neo4j_session,
         data_kms,
-
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -165,7 +162,6 @@ def test_load_kms_key_grants_relationships(neo4j_session):
     cartography.intel.aws.kms.load_kms_keys(
         neo4j_session,
         data_kms,
-
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )

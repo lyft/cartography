@@ -130,7 +130,8 @@ DESCRIBE_INSTANCES = {
                     ],
                     'VirtualizationType': 'hvm',
                     'VpcId': 'vpc-025873e026b9e8ee6',
-                }],
+                },
+            ],
             'OwnerId': 'OWNER_ACCOUNT_ID',
             'RequesterId': 'REQUESTER_ID',
             'ReservationId': 'r-01',
@@ -257,7 +258,7 @@ DESCRIBE_INSTANCES = {
                     ],
                     'VirtualizationType': 'hvm',
                     'VpcId': 'vpc-025873e026b9e8ee6',
-                }
+                },
             ],
             'OwnerId': 'OWNER_ACCOUNT_ID',
             'RequesterId': 'REQUESTER_ID',

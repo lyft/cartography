@@ -1,9 +1,11 @@
 from cartography.intel.azure import sql
+from cartography.util import run_analysis_job
 from tests.data.azure.sql import DESCRIBE_AD_ADMINS
 from tests.data.azure.sql import DESCRIBE_DATABASES
 from tests.data.azure.sql import DESCRIBE_DNS_ALIASES
 from tests.data.azure.sql import DESCRIBE_ELASTIC_POOLS
 from tests.data.azure.sql import DESCRIBE_FAILOVER_GROUPS
+from tests.data.azure.sql import DESCRIBE_FIREWALL_RULES
 from tests.data.azure.sql import DESCRIBE_RECOVERABLE_DATABASES
 from tests.data.azure.sql import DESCRIBE_REPLICATION_LINKS
 from tests.data.azure.sql import DESCRIBE_RESTORABLE_DROPPED_DATABASES
@@ -11,8 +13,6 @@ from tests.data.azure.sql import DESCRIBE_RESTORE_POINTS
 from tests.data.azure.sql import DESCRIBE_SERVERS
 from tests.data.azure.sql import DESCRIBE_THREAT_DETECTION_POLICY
 from tests.data.azure.sql import DESCRIBE_TRANSPARENT_DATA_ENCRYPTIONS
-from tests.data.azure.sql import DESCRIBE_FIREWALL_RULES
-from cartography.util import run_analysis_job
 
 TEST_SUBSCRIPTION_ID = '00-00-00-00'
 TEST_RESOURCE_GROUP = 'TestRG'
@@ -774,7 +774,7 @@ def test_sql_server_analysis_public_exposure(neo4j_session):
         "UPDATE_TAG": TEST_UPDATE_TAG + 1,
         "WORKSPACE_ID": TEST_WORKSPACE_ID,
         "AZURE_SUBSCRIPTION_ID": TEST_SUBSCRIPTION_ID,
-        "AZURE_TENANT_ID": TEST_TENANT_ID
+        "AZURE_TENANT_ID": TEST_TENANT_ID,
     }
 
     sql.load_server_data(
@@ -791,14 +791,18 @@ def test_sql_server_analysis_public_exposure(neo4j_session):
     run_analysis_job(
         'azure_sql_asset_exposure.json',
         neo4j_session,
-        common_job_parameters
+        common_job_parameters,
     )
 
     expected_nodes = {
-        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1',
-         'unrestricted_firewall'),
-        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2',
-         'no_private_endpoints'),
+        (
+            '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL1',
+            'unrestricted_firewall',
+        ),
+        (
+            '/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Sql/servers/testSQL2',
+            'no_private_endpoints',
+        ),
     }
 
     nodes = neo4j_session.run(

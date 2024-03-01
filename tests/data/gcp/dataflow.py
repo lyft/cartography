@@ -23,5 +23,5 @@ TEST_DATAFLOW_JOBS = [
         'bigQueries': ['table1', 'table2'],
         'pubSub': [{'topicId': 'projects/project123/topic/topic123', 'subscriptionId': 'projects/project123/subscriptions/sub123'}],
         'spannerDatabases': ['projects/project-123/instances/instance1/databases/database1', 'projects/project-123/instances/instance1/databases/database2'],
-    }
+    },
 ]

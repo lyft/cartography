@@ -29,6 +29,7 @@ class GraphRequestError(ServerError):
 class PubSubPublishError(ServerError):
     """ Raised when publishing message to Google PubSub fails"""
 
+
 class TimeLimitError(ServerError):
     """Raised when Processing Time reaches limit"""
 

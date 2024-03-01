@@ -353,3 +353,8 @@ CREATE INDEX IF NOT EXISTS FOR (n:KubernetesService) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:KubernetesService) ON (n.name);
 CREATE INDEX IF NOT EXISTS FOR (n:AzureFunction) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:AzureLocation) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:BitbucketMember) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:BitbucketProject) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:BitbucketRepository) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:BitbucketWorkspace) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:ProgrammingLanguage) ON (n.id);

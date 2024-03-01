@@ -13,6 +13,7 @@ import botocore
 import neo4j
 from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
+from cloudconsolelink.clouds.aws import AWSLinker
 from policyuniverse.policy import Policy
 
 from cartography.stats import get_stats_client
@@ -20,7 +21,8 @@ from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cloudconsolelink.clouds.aws import AWSLinker
+from cartography.util import to_asynchronous
+from cartography.util import to_synchronous
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
@@ -287,7 +289,7 @@ def _load_s3_policy_statuses(
     ingest_policy_statuses = """
     UNWIND $policy_statuses as policy_status
     MATCH (bucket:S3Bucket{name: policy_status.bucket})
-    SET 
+    SET
         bucket.is_public = coalesce(policy_status.is_public, false),
         bucket.lastupdated = $UpdateTag
     """

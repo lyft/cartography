@@ -5,12 +5,12 @@ from typing import List
 import neo4j
 from azure.core.exceptions import HttpResponseError
 from azure.mgmt.web import WebSiteManagementClient
-from msrest.exceptions import DeserializationError
 from cloudconsolelink.clouds.azure import AzureLinker
+from msrest.exceptions import DeserializationError
 
 from .util.credentials import Credentials
-from cartography.util import run_cleanup_job
 from cartography.util import get_azure_resource_group_name
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -120,7 +120,8 @@ def get_function_apps_list(client: WebSiteManagementClient, regions: list, commo
             function['hostNamesDisabled'] = function.get('properties', {}).get('host_names_disabled', True)
             function['location'] = function.get('location', '').replace(" ", "").lower()
             function['consolelink'] = azure_console_link.get_console_link(
-                id=function['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                id=function['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
             if regions is None:
                 function_list.append(function)
             else:
@@ -174,7 +175,7 @@ def _load_function_apps_tx(
     for function_app in function_apps_list:
         resource_group = get_azure_resource_group_name(function_app.get('id'))
         _attach_resource_group_function_apps(tx,function_app['id'],resource_group,update_tag)
-            
+
 def _attach_resource_group_function_apps(tx: neo4j.Transaction,function_app_id: str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps = """
     MATCH (f:AzureFunctionApp{id: $function_app_id})
@@ -188,7 +189,7 @@ def _attach_resource_group_function_apps(tx: neo4j.Transaction,function_app_id: 
         ingest_function_apps,
         function_app_id=function_app_id,
         resource_group=resource_group,
-        update_tag=update_tag
+        update_tag=update_tag,
     )
 
 def cleanup_function_apps(
@@ -207,7 +208,7 @@ def sync_function_apps(
     subscription_id: str,
     update_tag: int,
     common_job_parameters: Dict,
-    regions: list
+    regions: list,
 ) -> None:
     client = get_client(credentials, subscription_id)
     function_apps_list = get_function_apps_list(client, regions, common_job_parameters)
@@ -249,7 +250,7 @@ def sync_function_apps(
 
 def get_function_apps_configuration_list(
         function_apps_list: List[Dict],
-        client: WebSiteManagementClient, common_job_parameters: Dict
+        client: WebSiteManagementClient, common_job_parameters: Dict,
 ) -> List[Dict]:
     try:
         function_apps_conf_list: List[Dict] = []
@@ -270,7 +271,8 @@ def get_function_apps_configuration_list(
                     index("/config/web")
                 ]
                 conf['consolelink'] = azure_console_link.get_console_link(
-                    id=conf['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=conf['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
                 conf["location"] = function.get("location")
                 conf['publicNetworkAccess'] = conf.get('properties', {}).get('public_network_access', 'Disabled')
             function_apps_conf_list.extend(apps_conf_list)
@@ -333,7 +335,7 @@ def _load_function_apps_configurations_tx(
         resource_group = get_azure_resource_group_name(function_apps_conf.get('id'))
         _attach_resource_group_function_apps_conf(tx,function_apps_conf['id'],resource_group,update_tag)
 
-            
+
 def _attach_resource_group_function_apps_conf(tx: neo4j.Transaction,function_apps_conf_id: str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_conf = """
     MATCH (fc:AzureFunctionAppConfiguration{id: $function_conf_id})
@@ -368,7 +370,7 @@ def sync_function_apps_conf(
     common_job_parameters: Dict,
 ) -> None:
     function_app_conf_list = get_function_apps_configuration_list(
-        function_apps_list, client, common_job_parameters
+        function_apps_list, client, common_job_parameters,
     )
     load_function_apps_configurations(
         neo4j_session, function_app_conf_list,
@@ -380,7 +382,7 @@ def sync_function_apps_conf(
 def get_function_apps_functions_list(
         function_apps_list: List[Dict],
         client: WebSiteManagementClient,
-        common_job_parameters: Dict
+        common_job_parameters: Dict,
 ) -> List[Dict]:
         function_apps_functions_list: List[Dict] = []
         for function in function_apps_list:
@@ -409,7 +411,8 @@ def get_function_apps_functions_list(
                 ]
                 fun["location"] = function.get("location", "global")
                 fun['consolelink'] = azure_console_link.get_console_link(
-                    id=fun['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+                    id=fun['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+                )
 
             function_apps_functions_list.extend(functions_list)
 
@@ -450,8 +453,8 @@ def _load_function_apps_functions_tx(
     for function_apps_function in function_apps_function_list:
         resource_group = get_azure_resource_group_name(function_apps_function.get('id'))
         _attach_resource_group_unction_apps_function(tx,function_apps_function['id'],resource_group,update_tag)
-            
-    
+
+
 def _attach_resource_group_unction_apps_function(tx: neo4j.Transaction,function_apps_function_id:str,resource_group:str,update_tag: int) -> None:
     ingest_function = """
     MATCH (f:AzureFunctionAppFunction{id: $function_id})
@@ -486,7 +489,7 @@ def sync_function_apps_functions(
     common_job_parameters: Dict,
 ) -> None:
     function_apps_function_list = get_function_apps_functions_list(
-        function_apps_list, client, common_job_parameters
+        function_apps_list, client, common_job_parameters,
     )
     load_function_apps_functions(
         neo4j_session, function_apps_function_list,
@@ -521,8 +524,10 @@ def get_function_apps_deployments_list(
 def transform_deployments(deployments_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_deployments_list: List[Dict] = []
     for deployment in deployments_list:
-        deployment['consolelink'] = azure_console_link.get_console_link(id=deployment['id'],
-                                                                        primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+        deployment['consolelink'] = azure_console_link.get_console_link(
+            id=deployment['id'],
+            primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+        )
         deployment['resource_group'] = get_azure_resource_group_name(deployment.get('id'))
         deployment['function_app_id'] = deployment[
             'id'
@@ -564,7 +569,7 @@ def _load_function_apps_deployments_tx(
     for function_apps_deployment in function_apps_deployments_list:
         resource_group = get_azure_resource_group_name(function_apps_deployment.get('id'))
         _attach_resource_group_function_apps_deployments(tx,function_apps_deployment['id'],resource_group,update_tag)
-            
+
 def _attach_resource_group_function_apps_deployments(tx: neo4j.Transaction,function_apps_deployment_id:str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_deploy = """
     MATCH (f:AzureFunctionAppDeployment{id: $function_deploy_id})
@@ -600,7 +605,7 @@ def sync_function_apps_deployments(
 ) -> None:
     for function in function_apps_list:
         deployments_list = get_function_apps_deployments_list(
-            function, client
+            function, client,
         )
         function_apps_deployments_list = transform_deployments(deployments_list, function, common_job_parameters)
         load_function_apps_deployments(
@@ -634,8 +639,10 @@ def get_function_apps_backups_list(
 def transform_backups(backups_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_backups_list: List[Dict] = []
     for backup in backups_list:
-        backup['consolelink'] = azure_console_link.get_console_link(id=backup['id'],
-                                                                    primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+        backup['consolelink'] = azure_console_link.get_console_link(
+            id=backup['id'],
+            primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+        )
         backup['resource_group'] = get_azure_resource_group_name(backup.get('id'))
         backup['function_app_id'] = backup['id'][
             :backup['id'].
@@ -677,7 +684,7 @@ def _load_function_apps_backups_tx(
     )
     for function_apps_backup in function_apps_backups_list:
         resource_group=get_azure_resource_group_name(function_apps_backup.get('id'))
-        _attach_resource_group_function_apps_backups(tx,function_apps_backup['id'],resource_group,update_tag)  
+        _attach_resource_group_function_apps_backups(tx,function_apps_backup['id'],resource_group,update_tag)
 
 def _attach_resource_group_function_apps_backups (tx: neo4j.Transaction,function_apps_backup_id: str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_backup = """
@@ -714,7 +721,7 @@ def sync_function_apps_backups(
 ) -> None:
     for function in function_apps_list:
         backups_list = get_function_apps_backups_list(
-            function, client
+            function, client,
         )
         function_apps_backups_list = transform_backups(backups_list, function, common_job_parameters)
         load_function_apps_backups(
@@ -750,8 +757,10 @@ def get_function_apps_processes_list(
 def transform_processes(processes_list: List[Dict], function: Dict, common_job_parameters: Dict) -> List[Dict]:
     function_apps_processes_list: List[Dict] = []
     for process in processes_list:
-        process['consolelink'] = azure_console_link.get_console_link(id=process['id'],
-                                                                     primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
+        process['consolelink'] = azure_console_link.get_console_link(
+            id=process['id'],
+            primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+        )
         process['resource_group'] = get_azure_resource_group_name(process.get('id'))
         process['function_app_id'] = process['id'][
             :process['id'].
@@ -793,7 +802,7 @@ def _load_function_apps_processes_tx(
     )
     for function_apps_process in function_apps_processes_list:
         resource_group=get_azure_resource_group_name(function_apps_process.get('id'))
-        _attach_resource_group_function_apps_processes(tx,function_apps_process['id'],resource_group,update_tag) 
+        _attach_resource_group_function_apps_processes(tx,function_apps_process['id'],resource_group,update_tag)
 
 def _attach_resource_group_function_apps_processes(tx: neo4j.Transaction,function_apps_process_id: str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_process = """
@@ -830,7 +839,7 @@ def sync_function_apps_processes(
 ) -> None:
     for function in function_apps_list:
         processes_list = get_function_apps_processes_list(
-            function, client, common_job_parameters
+            function, client, common_job_parameters,
         )
         function_apps_processes_list = transform_processes(processes_list, function, common_job_parameters)
         load_function_apps_processes(
@@ -908,7 +917,7 @@ def _load_function_apps_snapshots_tx(
     for function_apps_snapshot in function_apps_snapshots_list:
         resource_group=get_azure_resource_group_name(function_apps_snapshot.get('id'))
         _attach_resource_group_function_apps_snapshot(tx,function_apps_snapshot['id'],resource_group,update_tag)
-            
+
 def _attach_resource_group_function_apps_snapshot(tx: neo4j.Transaction,function_apps_snapshot_id:str,resource_group:str,update_tag: int) -> None:
     ingest_function_apps_snapshot = """
     MATCH (f:AzureFunctionAppSnapshot{id: $function_snapshot_id})
@@ -944,7 +953,7 @@ def sync_function_apps_snapshots(
 ) -> None:
     for function in function_apps_list:
         snapshots_list = get_function_apps_snapshots_list(
-            function, client
+            function, client,
         )
         function_apps_snapshots_list = transform_snapshots(snapshots_list, function, common_job_parameters)
         load_function_apps_snapshots(
@@ -1037,7 +1046,7 @@ def _attach_resource_group_function_apps_webjobs(tx: neo4j.Transaction,function_
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
-    
+
 def cleanup_function_apps_webjobs(
     neo4j_session: neo4j.Session,
     common_job_parameters: Dict,
@@ -1074,7 +1083,7 @@ def sync(
     subscription_id: str,
     update_tag: int,
     common_job_parameters: Dict,
-    regions: list
+    regions: list,
 ) -> None:
     logger.info(
         "Syncing function apps for subscription '%s'.",
@@ -1083,5 +1092,5 @@ def sync(
 
     sync_function_apps(
         neo4j_session, credentials, subscription_id, update_tag,
-        common_job_parameters, regions
+        common_job_parameters, regions,
     )

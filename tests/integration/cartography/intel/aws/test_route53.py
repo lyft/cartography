@@ -1,9 +1,9 @@
-import cartography.intel.aws.route53
 import cartography.intel.aws.ec2.load_balancer_v2s
-import cartography.util
-import tests.data.aws.route53
-import tests.data.aws.ec2.load_balancers
 import cartography.intel.aws.elasticsearch
+import cartography.intel.aws.route53
+import cartography.util
+import tests.data.aws.ec2.load_balancers
+import tests.data.aws.route53
 
 TEST_UPDATE_TAG = 123456789
 TEST_ZONE_ID = "TESTZONEID"
@@ -42,7 +42,7 @@ def _ensure_local_neo4j_has_test_route53_records(neo4j_session):
 def _ensure_local_neo4j_has_test_ec2_records(neo4j_session):
     cartography.intel.aws.ec2.load_balancer_v2s.load_load_balancer_v2s(
         neo4j_session, tests.data.aws.ec2.load_balancers.LOAD_BALANCER_DATA,
-        TEST_AWS_ACCOUNTID, TEST_UPDATE_TAG,
+        TEST_AWS_ACCOUNTID, TEST_UPDATE_TAG, TEST_AWS_REGION,
     )
 
 
@@ -148,13 +148,13 @@ def test_cleanup_dnspointsto_relationships(neo4j_session):
     new_job_parameters = {
         "UPDATE_TAG": new_update_tag,
         "AWS_ID": TEST_AWS_ACCOUNTID,
-        "WORKSPACE_ID": '123'
+        "WORKSPACE_ID": '123',
     }
     # Run all cleanup jobs where DNS_POINTS_TO is mentioned in the AWS sync.
     cartography.intel.aws.route53.cleanup_route53(neo4j_session, new_job_parameters)
 
     cartography.intel.aws.elasticsearch.cleanup(
-        neo4j_session, new_job_parameters
+        neo4j_session, new_job_parameters,
     )
 
     # Assert: Verify that the AWSDNSRecord-->AWSDNSRecord relationships don't exist anymore
