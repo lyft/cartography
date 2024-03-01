@@ -94,7 +94,9 @@ def process_request(context, args):
         "services": svcs,
         "updateTag": args.get("updateTag"),
         "refreshEntitlements": args.get("refreshEntitlements"),
-        "awsInternalAccounts": args.get("awsInternalAccounts"),
+        "identityStoreRegion": args.get("identityStoreRegion"),
+        "awsInternalAccounts": args.get("awsInternalAccounts")
+
     }
 
     resp = cartography.cli.run_aws(body)

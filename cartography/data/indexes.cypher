@@ -1,4 +1,6 @@
 CREATE INDEX IF NOT EXISTS FOR (n:CloudanixWorkspace) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:AWSOrganization) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:AWSPermissionSet) ON (n.arn);
 CREATE INDEX IF NOT EXISTS FOR (n:AWSConfigurationRecorder) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:AWSConfigDeliveryChannel) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:AWSConfigRule) ON (n.id);

@@ -7,6 +7,7 @@ from typing import Any
 from typing import Dict
 from typing import Iterable
 from typing import List
+import hashlib
 
 import boto3
 import botocore.exceptions
@@ -336,13 +337,14 @@ def list_all_regions(boto3_session, logger):
 def _sync_multiple_accounts(
     neo4j_session: neo4j.Session,
     accounts: Dict[str, str],
+    organization: Dict,
     config: Config,
     common_job_parameters: Dict[str, Any],
     aws_best_effort_mode: bool,
     aws_requested_syncs: List[str] = [],
 ) -> bool:
     logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
-    organizations.sync(neo4j_session, accounts, config.update_tag, common_job_parameters)
+    organizations.sync(neo4j_session, accounts, organization, config.update_tag, common_job_parameters)
 
     failed_account_ids = []
     exception_tracebacks = []
@@ -419,6 +421,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
         "AWS_ACCOUNT_ID": config.params['workspace']['account_id'],
         "pagination": {},
         "PUBLIC_PORTS": ['20', '21', '22', '3306', '3389', '4333'],
+        "IDENTITY_STORE_REGION": config.identity_store_region,
         "AWS_INTERNAL_ACCOUNTS": config.aws_internal_accounts,
     }
 
@@ -455,6 +458,14 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     else:
         aws_accounts = organizations.get_aws_account_default(boto3_session)
 
+    organization = organizations.get_organization(boto3_session)
+    if not organization:
+        organization = {
+            "Id": f"{hashlib.sha256(common_job_parameters['WORKSPACE_ID'].encode()).hexdigest()}",
+            "IsCloudanixGenerated": True
+        }
+    common_job_parameters["ORGANIZATION_ID"] = organization["Id"]
+
     if not aws_accounts:
         logger.warning(
             "No valid AWS credentials could be found. No AWS accounts can be synced. Exiting AWS sync stage.",
@@ -483,6 +494,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     sync_successful = _sync_multiple_accounts(
         neo4j_session,
         aws_accounts,
+        organization,
         config,
         common_job_parameters,
         config.aws_best_effort_mode,

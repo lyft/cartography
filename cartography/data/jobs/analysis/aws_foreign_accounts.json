@@ -7,7 +7,7 @@
 		},
 		{
 			"__comment": "Remove accounts that were set with foreign and inscope. This can happen as we finish the list of sync accounts through assume role mapping and vpc peering",
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(a:AWSAccount{id: $AWS_ID}) where EXISTS(a.inscope) AND EXISTS(a.foreign) REMOVE a.foreign",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(a:AWSAccount{id: $AWS_ID}) where EXISTS(a.inscope) AND EXISTS(a.foreign) REMOVE a.foreign",
 			"iterative": false
 		}
 	],

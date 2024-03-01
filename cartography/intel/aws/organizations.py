@@ -16,6 +16,15 @@ def get_account_from_arn(arn: str) -> str:
     return arn.split(":")[4]
 
 
+def get_organization(boto3_session: boto3.session.Session) -> Dict:
+    client = boto3_session.client('organizations')
+    try:
+        return client.describe_organization()['Organization']
+    except Exception as e:
+        logger.error(f"error to get organization details- {e}")
+        return
+
+
 def get_caller_identity(boto3_session: boto3.session.Session) -> Dict:
     client = boto3_session.client('sts')
     return client.get_caller_identity()
@@ -88,20 +97,33 @@ def get_aws_accounts_from_botocore_config(boto3_session: boto3.session.Session) 
 
 
 def load_aws_accounts(
-    neo4j_session: neo4j.Session, aws_accounts: Dict, aws_update_tag: int,
+    neo4j_session: neo4j.Session, aws_accounts: Dict, aws_update_tag: int, organization: Dict,
     common_job_parameters: Dict,
 ) -> None:
     query = """
     MERGE (w:CloudanixWorkspace{id: $WORKSPACE_ID})
     SET w.lastupdated = $UPDATE_TAG
     WITH w
+    MERGE (org:AWSOrganization{id: $organizationId})
+    ON CREATE SET org.firstseen = timestamp()
+    SET org.lastupdated = $UPDATE_TAG,
+    org.arn = $organizationArn,
+    org.masterAccountArn = $masterAccountArn,
+    org.masterAccountId = $masterAccountId,
+    org.masterAccountEmail = $masterAccountEmail,
+    org.isSystemGenerated = $isSystemGenerated
+    WITH w, org
+    MERGE (w)-[o:OWNER]->(org)
+    ON CREATE SET o.firstseen = timestamp()
+    SET o.lastupdated = $UPDATE_TAG
+    WITH org
     MERGE (aa:AWSAccount{id: $ACCOUNT_ID})
     ON CREATE SET aa.firstseen = timestamp()
     SET aa.lastupdated = $UPDATE_TAG,
     aa.region = $region,
     aa.name = $ACCOUNT_NAME
-    WITH w, aa
-    MERGE (w)-[o:OWNER]->(aa)
+    WITH aa, org
+    MERGE (org)-[o:OWNER]->(aa)
     ON CREATE SET o.firstseen = timestamp()
     SET o.lastupdated = $UPDATE_TAG
     MERGE (root:AWSPrincipal{arn: $RootArn})
@@ -122,6 +144,13 @@ def load_aws_accounts(
             RootArn=root_arn,
             region="global",
             UPDATE_TAG=aws_update_tag,
+            organizationId=organization.get("Id"),
+            isSystemGenerated=organization.get("IsSystemGenerated", None),
+            organizationArn=organization.get("Arn", None),
+            masterAccountArn=organization.get("MasterAccountArn", None),
+            masterAccountId=organization.get("MasterAccountId", None),
+            masterAccountEmail=organization.get("MasterAccountEmail", None)
+
         )
 
         cleanup(neo4j_session, account_id, common_job_parameters)
@@ -134,5 +163,5 @@ def cleanup(neo4j_session: neo4j.Session, account_id: str, common_job_parameters
 
 
 @timeit
-def sync(neo4j_session: neo4j.Session, accounts: Dict, update_tag: int, common_job_parameters: Dict) -> None:
-    load_aws_accounts(neo4j_session, accounts, update_tag, common_job_parameters)
+def sync(neo4j_session: neo4j.Session, accounts: Dict, organization: Dict, update_tag: int, common_job_parameters: Dict) -> None:
+    load_aws_accounts(neo4j_session, accounts, update_tag, organization, common_job_parameters)

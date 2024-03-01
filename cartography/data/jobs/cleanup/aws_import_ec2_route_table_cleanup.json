@@ -1,32 +1,32 @@
 {
 	"statements": [
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2RouteTable)-[:MEMBER_OF_ROUTE_TABLE]->(n:EC2Route) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2RouteTable)-[:MEMBER_OF_ROUTE_TABLE]->(n:EC2Route) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2RouteTable)-[r:MEMBER_OF_ROUTE_TABLE]->(:EC2Route) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2RouteTable)-[r:MEMBER_OF_ROUTE_TABLE]->(:EC2Route) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[:HAS_EXPLICIT_ROUTE_TABLE]->(:EC2RouteTable)-[:HAS_ASSOCIATION]->(n:EC2RouteTableAssociation) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[:HAS_EXPLICIT_ROUTE_TABLE]->(:EC2RouteTable)-[:HAS_ASSOCIATION]->(n:EC2RouteTableAssociation) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[:HAS_EXPLICIT_ROUTE_TABLE]->(:EC2RouteTable)-[r:HAS_ASSOCIATION]->(:EC2RouteTableAssociation) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[:HAS_EXPLICIT_ROUTE_TABLE]->(:EC2RouteTable)-[r:HAS_ASSOCIATION]->(:EC2RouteTableAssociation) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[:HAS_EXPLICIT_ROUTE_TABLE]->(n:EC2RouteTable) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[:HAS_EXPLICIT_ROUTE_TABLE]->(n:EC2RouteTable) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[r:HAS_EXPLICIT_ROUTE_TABLE]->(:EC2RouteTable) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:EC2Instance)-[:PART_OF_SUBNET]->(:EC2Subnet)-[r:HAS_EXPLICIT_ROUTE_TABLE]->(:EC2RouteTable) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		}

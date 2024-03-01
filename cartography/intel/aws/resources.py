@@ -29,6 +29,7 @@ from . import ses
 from . import sns
 from . import sqs
 from . import ssm
+from . import identitystore
 from .ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
 from .ec2.elastic_ip_addresses import sync_elastic_ip_addresses
 from .ec2.images import sync_ec2_images
@@ -50,6 +51,7 @@ from .ec2.vpc import sync_vpc
 from .ec2.vpc_peerings import sync_vpc_peerings
 
 RESOURCE_FUNCTIONS: Dict = {
+    'identitystore': identitystore.sync,
     'iam': iam.sync,
     's3': s3.sync,
     'dynamodb': dynamodb.sync,
