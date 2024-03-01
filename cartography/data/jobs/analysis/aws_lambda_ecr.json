@@ -7,7 +7,7 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(aa:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:AWSLambda)-[r:HAS]->(:ECRImage) WHERE r.lastupdated <> $UPDATE_TAG DELETE (r)",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(aa:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:AWSLambda)-[r:HAS]->(:ECRImage) WHERE r.lastupdated <> $UPDATE_TAG DELETE (r)",
 			"iterative": false
 		}
 	]
