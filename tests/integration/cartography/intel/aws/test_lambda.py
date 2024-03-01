@@ -1,9 +1,11 @@
 import cartography.intel.aws.lambda_function
 import tests.data.aws.lambda_function
+from cartography.util import run_analysis_job
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-west-2'
 TEST_UPDATE_TAG = 123456789
+TEST_WORKSPACE_ID = 123
 
 
 def test_load_lambda_functions(neo4j_session):
@@ -58,7 +60,6 @@ def test_load_lambda_relationships(neo4j_session):
     cartography.intel.aws.lambda_function.load_lambda_functions(
         neo4j_session,
         data,
-        
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -122,7 +123,6 @@ def test_load_lambda_function_aliases_relationships(neo4j_session):
     cartography.intel.aws.lambda_function.load_lambda_functions(
         neo4j_session,
         data,
-       
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -172,9 +172,7 @@ def test_load_lambda_event_source_mappings(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    expected_nodes = {
-       "arn:aws:sqs:us-west-2:123456789012:mySQSqueue"
-    }
+    expected_nodes = {'arn:aws:sqs:us-west-2:123456789012:mySQSqueue'}
 
     nodes = neo4j_session.run(
         """
@@ -194,7 +192,6 @@ def test_load_lambda_event_source_mappings_relationships(neo4j_session):
     cartography.intel.aws.lambda_function.load_lambda_functions(
         neo4j_session,
         data,
-       
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -207,7 +204,16 @@ def test_load_lambda_event_source_mappings_relationships(neo4j_session):
         TEST_UPDATE_TAG,
     )
 
-    expected_nodes={('arn:aws:lambda:us-west-2:000000000000:function:sample-function-8', 'arn:aws:sqs:us-west-2:123456789012:mySQSqueue'), ('arn:aws:lambda:us-west-2:000000000000:function:sample-function-7', 'arn:aws:sqs:us-west-2:123456789012:mySQSqueue')}
+    expected_nodes = {
+        (
+            'arn:aws:lambda:us-west-2:000000000000:function:sample-function-8',
+            'arn:aws:sqs:us-west-2:123456789012:mySQSqueue',
+        ),
+        (
+            "arn:aws:lambda:us-west-2:000000000000:function:sample-function-7",
+            "arn:aws:sqs:us-west-2:123456789012:mySQSqueue",
+        ),
+    }
 
     # Fetch relationships
     result = neo4j_session.run(
@@ -254,6 +260,10 @@ def test_load_lambda_layers_relationships(neo4j_session):
     cartography.intel.aws.lambda_function.load_lambda_functions(
         neo4j_session,
         data,
+<<<<<<< HEAD
+=======
+
+>>>>>>> cloudanix-all
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -292,3 +302,63 @@ def test_load_lambda_layers_relationships(neo4j_session):
     }
 
     assert actual == expected_nodes
+
+
+def test_lambda_exposure_analysis(neo4j_session):
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSAccount{id: $aws_account_id})<-[:OWNER]-(:CloudanixWorkspace{id: $workspace_id})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = $aws_update_tag
+        """,
+        aws_account_id=TEST_ACCOUNT_ID,
+        aws_update_tag=TEST_UPDATE_TAG,
+        workspace_id=TEST_WORKSPACE_ID
+    )
+    data = tests.data.aws.lambda_function.LIST_LAMBDA_FUNCTIONS
+
+    cartography.intel.aws.lambda_function.load_lambda_functions(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+
+    common_job_parameters = {
+        'UPDATE_TAG': TEST_UPDATE_TAG + 1,
+        'AWS_ID': TEST_ACCOUNT_ID,
+        'WORKSPACE_ID': TEST_WORKSPACE_ID,
+    }
+
+    run_analysis_job(
+        'aws_lambda_function_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (s:AWSLambda{exposed_internet: true}) RETURN s.id;
+        """
+    )
+
+    actual_nodes = {
+        (
+            n['s.id'],
+        )
+        for n in nodes
+    }
+
+    expected_nodes = {
+        ('arn:aws:lambda:us-west-2:000000000000:function:sample-function-1',),
+        ('arn:aws:lambda:us-west-2:000000000000:function:sample-function-2',),
+        ('arn:aws:lambda:us-west-2:000000000000:function:sample-function-3',),
+        ('arn:aws:lambda:us-west-2:000000000000:function:sample-function-4',),
+        ('arn:aws:lambda:us-west-2:000000000000:function:sample-function-5',),
+        ('arn:aws:lambda:us-west-2:000000000000:function:sample-function-6',),
+        ('arn:aws:lambda:us-west-2:000000000000:function:sample-function-7',),
+        ('arn:aws:lambda:us-west-2:000000000000:function:sample-function-8',),
+        ('arn:aws:lambda:us-west-2:000000000000:function:sample-function-9',),
+
+    }
+    assert actual_nodes == expected_nodes

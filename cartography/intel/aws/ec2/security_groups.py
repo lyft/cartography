@@ -1,3 +1,4 @@
+import time
 import logging
 from string import Template
 from typing import Dict
@@ -5,10 +6,12 @@ from typing import List
 
 import boto3
 import neo4j
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from .util import get_botocore_config
 from cartography.graph.job import GraphJob
 from cartography.models.aws.ec2.securitygroup_instance import EC2SecurityGroupInstanceSchema
+from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -17,7 +20,6 @@ from cloudconsolelink.clouds.aws import AWSLinker
 from botocore.exceptions import ClientError
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
-
 
 
 @timeit
@@ -155,6 +157,7 @@ def load_ec2_security_groupinfo(
     """
 
     for group in data:
+        region = group.get('region', '')
         group_id = group["GroupId"]
         group_arn = f"arn:aws:ec2:{region}:{current_aws_account_id}:security-group/{group_id}"
         
@@ -200,11 +203,15 @@ def sync_ec2_security_groupinfo(
 
     logger.info("Syncing EC2 security groups for account '%s', at %s.", current_aws_account_id, tic)
 
+    data = []
     for region in regions:
         logger.info("Syncing EC2 security groups for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_security_group_data(boto3_session, region)
-        load_ec2_security_groupinfo(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.extend(get_ec2_security_group_data(boto3_session, region))
+
+    logger.info(f"Total EC2 Security Groups: {len(data)}")
+
+    load_ec2_security_groupinfo(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_security_groupinfo(neo4j_session, common_job_parameters)
+
     toc = time.perf_counter()
     logger.info(f"Time to process EC2 security groups: {toc - tic:0.4f} seconds")
-

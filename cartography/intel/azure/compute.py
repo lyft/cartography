@@ -652,6 +652,30 @@ def load_vm_os_disk(neo4j_session: neo4j.Session, vm_id: str, os_disk: Dict, upd
     )
 
 
+def load_vm_os_disk(neo4j_session: neo4j.Session, vm_id: str, os_disk: Dict, update_tag: int) -> None:
+    ingest_os_disk = """
+    MERGE (osdisk:AzureDisk{id: $disk.managed_disk.id})
+    ON CREATE SET osdisk.firstseen = timestamp()
+    SET d.lastupdated = $update_tag, d.name = $disk.name,
+    d.vhd = $disk.vhd.uri, d.image = $disk.image.uri,
+    d.size = $disk.disk_size_gb, d.caching = $disk.caching,
+    d.createoption = $disk.create_option, d.write_accelerator_enabled=$disk.write_accelerator_enabled,
+    d.managed_disk_storage_type=$disk.managed_disk.storage_account_type, d.disk_type = 'osdisk'
+    WITH osdisk
+    MATCH (owner:AzureVirtualMachine{id: $VM_ID})
+    MERGE (owner)-[r:ATTACHED_TO]->(d)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    neo4j_session.run(
+        ingest_os_disk,
+        disk=os_disk,
+        VM_ID=vm_id,
+        update_tag=update_tag
+    )
+
+
 def cleanup_virtual_machine(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_virtual_machines_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -762,7 +786,7 @@ def load_snapshots(neo4j_session: neo4j.Session, subscription_id: str, snapshots
     s.type = snapshot.type, s.location = snapshot.location,
     s.consolelink = snapshot.consolelink,
     s.region = snapshot.location
-    SET s.lastupdated = $update_tag, s.name = snapshot.name,
+    SET s.lastupdated = $update_tag, s.name = snapshot.name, s.time_created = snapshot.time_created,
     s.createoption = snapshot.creation_data.create_option, s.disksizegb = snapshot.disk_size_gb,
     s.encryption = snapshot.encryption_settings_collection.enabled, s.incremental = snapshot.incremental,
     s.network_access_policy = snapshot.network_access_policy, s.ostype = snapshot.os_type,
@@ -811,6 +835,11 @@ def sync_virtual_machine(
 ) -> None:
     client = get_client(credentials, subscription_id)
     vm_list = get_vm_list(credentials, subscription_id, regions, common_job_parameters)
+
+    load_vms(neo4j_session, subscription_id, vm_list, update_tag)
+    cleanup_virtual_machine(neo4j_session, common_job_parameters)
+    sync_virtual_machine_extensions(neo4j_session, client, vm_list, update_tag, common_job_parameters)
+    # sync_virtual_machine_available_sizes(neo4j_session, client, vm_list, update_tag, common_job_parameters)
 
     load_vms(neo4j_session, subscription_id, vm_list, update_tag)
     sync_virtual_machine_extensions(neo4j_session, client, vm_list, update_tag, common_job_parameters)

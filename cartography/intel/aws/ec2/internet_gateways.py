@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -52,7 +53,7 @@ def load_internet_gateways(
 
         UNWIND igw.Attachments as attachment
         MATCH (vpc:AWSVpc{id: attachment.VpcId})
-        MERGE (ig)-[r:ATTACHED_TO]->(vpc)
+        MERGE (vpc)-[r:ATTACHED_TO]->(ig)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $aws_update_tag
     """
@@ -83,6 +84,9 @@ def sync_internet_gateways(
     for region in regions:
         logger.info("Syncing Internet Gateways for region '%s' in account '%s'.", region, current_aws_account_id)
         internet_gateways = get_internet_gateways(boto3_session, region)
+
+        logger.info(f"Total Internet Gateways: {len(internet_gateways)} for {region}")
+
         load_internet_gateways(neo4j_session, internet_gateways, region, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)

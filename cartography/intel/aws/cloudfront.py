@@ -64,6 +64,7 @@ def _load_cloudfront_distributions_tx(tx: neo4j.Transaction, distributions: List
         distribution.comment = record.Comment,
         distribution.price_class = record.PriceClass,
         distribution.enabled = record.Enabled,
+        distribution.viewer_protocol_policy = record.DefaultCacheBehavior.ViewerProtocolPolicy,
         distribution.web_acl_id = record.WebACLId,
         distribution.is_ipv6_enabled = record.IsIPV6Enabled,
         distribution.http_version = record.HttpVersion

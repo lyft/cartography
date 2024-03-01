@@ -395,7 +395,7 @@ def load_rds_clusters(
 @timeit
 def _attach_associate_roles(neo4j_session: neo4j.Session, cluster: Dict, aws_update_tag: int) -> None:
     attach_cluster_to_role = """
-    MATCH (c:RDSCluster{id:$ClusterArn})
+    MATCH (c:RDSCluster{id:$DBClusterArn})
     MERGE (p:AWSPrincipal{arn:$RoleArn})
     MERGE (c)-[s:RDS_ASSUMEROLE_ALLOW]->(p)
     ON CREATE SET s.firstseen = timestamp()

@@ -32,6 +32,7 @@ def test_transform_and_load_storage_buckets(neo4j_session):
     expected_nodes = {
         (expected_id, expected_project_num, expected_kind),
     }
+
     assert actual_nodes == expected_nodes
 
 

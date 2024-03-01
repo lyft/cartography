@@ -44,6 +44,15 @@ STATUS_FAILURE = 1
 STATUS_KEYBOARD_INTERRUPT = 130
 DEFAULT_BATCH_SIZE = 1000
 
+def get_azure_resource_group_name(id:str)->None:
+    resource_group=''
+    id=id.lower()
+    if id is not None and 'resourcegroups' in id:
+        x = id.split('/')
+        resource_group = x[x.index('resourcegroups') + 1]
+        return resource_group  
+    return resource_group
+
 
 def run_analysis_job(
     filename: str,
@@ -132,15 +141,19 @@ def run_cleanup_job(
     filename: str, neo4j_session: neo4j.Session, common_job_parameters: Dict,
     package: str = 'cartography.data.jobs.cleanup',
 ) -> None:
-    GraphJob.run_from_json(
-        neo4j_session,
-        read_text(
-            package,
-            filename,
-        ),
-        common_job_parameters,
-        get_job_shortname(filename),
-    )
+    try:
+        GraphJob.run_from_json(
+            neo4j_session,
+            read_text(
+                package,
+                filename,
+            ),
+            common_job_parameters,
+            get_job_shortname(filename),
+        )
+    
+    except Exception as e:
+        logger.warning("Failed to cleanup - {}. parameters - {}, Error - {}".format(filename, common_job_parameters, e))
 
 
 def merge_module_sync_metadata(

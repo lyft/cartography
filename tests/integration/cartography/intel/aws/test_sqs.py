@@ -16,25 +16,24 @@ def test_load_sqs_queues(neo4j_session, *args):
 
     expected_nodes = {
         (
-            "test-queue-1",
-            "arn:aws:secretsmanager:us-east-1:000000000000:test-queue-1",
-            "arn:aws:secretsmanager:us-east-1:000000000000:test-queue-1",
+            'test-queue-1',
+            'arn:aws:sqs:us-east-1:000000000000:test-queue-1',
+            'arn:aws:sqs:us-east-1:000000000000:test-queue-1',
             1627539901900,
             1627539901900,
-            "arn:aws:secretsmanager:us-east-1:000000000000:test-queue-2",
-            "1",
-            "10",
+            'arn:aws:sqs:us-east-1:000000000000:test-queue-2',
+            '1',
+            '10'
         ),
-        (
-            "test-queue-2",
-            "arn:aws:secretsmanager:us-east-1:000000000000:test-queue-2",
-            "arn:aws:secretsmanager:us-east-1:000000000000:test-queue-2",
-            1627539901900,
-            1627539901900,
-            None,
-            None,
-            "10",
-        ),
+        ('test-queue-2',
+         'arn:aws:sqs:us-east-1:000000000000:test-queue-2',
+         'arn:aws:sqs:us-east-1:000000000000:test-queue-2',
+         1627539901900,
+         1627539901900,
+         None,
+         None,
+         '10'
+         )
     }
 
     nodes = neo4j_session.run(
@@ -58,6 +57,7 @@ def test_load_sqs_queues(neo4j_session, *args):
         )
         for n in nodes
     }
+
     assert actual_nodes == expected_nodes
 
     expected_relationship = {
@@ -79,4 +79,5 @@ def test_load_sqs_queues(neo4j_session, *args):
         )
         for r in relation
     }
+
     assert actual_relationship == expected_relationship

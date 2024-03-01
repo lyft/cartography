@@ -1,13 +1,16 @@
+import time
 import logging
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from .util import get_botocore_config
 from cartography.graph.job import GraphJob
 from cartography.models.aws.ec2.subnet_instance import EC2SubnetInstanceSchema
+from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -47,7 +50,7 @@ def get_subnet_data(boto3_session: boto3.session.Session, region: str) -> List[D
 
 @timeit
 def load_subnets(
-    neo4j_session: neo4j.Session, data: List[Dict],region:str, aws_account_id: str,
+    neo4j_session: neo4j.Session, data: List[Dict], aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
 
@@ -109,11 +112,15 @@ def sync_subnets(
 
     logger.info("Syncing EC2 subnets for account '%s', at %s.", current_aws_account_id, tic)
 
+    data = []
     for region in regions:
         logger.info("Syncing EC2 subnets for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_subnet_data(boto3_session, region)
-        load_subnets(neo4j_session, data, region, current_aws_account_id, update_tag)
-    cleanup_subnets(neo4j_session, common_job_parameters)
-    toc = time.perf_counter()
-    logger.info(f"Time to process EC2 security groups: {toc - tic:0.4f} seconds")
+        data.extend(get_subnet_data(boto3_session, region))
 
+    logger.info(f"Total Subnets: {len(data)}")
+
+    load_subnets(neo4j_session, data, current_aws_account_id, update_tag)
+    cleanup_subnets(neo4j_session, common_job_parameters)
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process EC2 subnets: {toc - tic:0.4f} seconds")

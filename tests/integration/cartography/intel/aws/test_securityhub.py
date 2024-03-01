@@ -21,12 +21,10 @@ def test_transform_and_load_hub(neo4j_session, *args):
 
     expected_nodes = {
         (
-            "arn:aws:securityhub:us-east-1:000000000000:hub/default",
+            'arn:aws:securityhub:us-east-1:000000000000:hub/default',
             1606993517,
-            True,
-        ),
-    }
-
+            True
+        )}
     nodes = neo4j_session.run(
         """
         MATCH (n:SecurityHub)
@@ -41,4 +39,5 @@ def test_transform_and_load_hub(neo4j_session, *args):
         )
         for n in nodes
     }
+    print(actual_nodes)
     assert actual_nodes == expected_nodes

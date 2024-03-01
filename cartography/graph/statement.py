@@ -112,7 +112,6 @@ class GraphStatement:
     def _run_iterative(self, session: neo4j.Session) -> None:
         """
         Iterative statement execution.
-
         Expects the query to return the total number of records updated.
         """
         self.parameters["LIMIT_SIZE"] = self.iterationsize

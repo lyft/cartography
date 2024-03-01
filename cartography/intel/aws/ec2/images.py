@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Any
 from typing import Dict
@@ -14,11 +15,10 @@ from cartography.models.aws.ec2.images import EC2ImageSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
 from cloudconsolelink.clouds.aws import AWSLinker
-aws_console_link = AWSLinker()
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 
-@timeit
 def get_images_in_use(neo4j_session: neo4j.Session, region: str, current_aws_account_id: str) -> List[str]:
     # We use OPTIONAL here to allow query chaining with queries that may not match.
     get_images_query = """
@@ -74,14 +74,49 @@ def transform_images(boto3_session: boto3.session.Session, imags: List[Dict], im
 
 @timeit
 def load_images(
-        neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, update_tag: int,region: str
+        neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str, update_tag: int,
 ) -> None:
+    ingest_images = """
+    UNWIND $images_list as image
+    MERGE (i:EC2Image{id: image.ID})
+    ON CREATE SET i.firstseen = timestamp(), i.imageid = image.ImageId, i.name = image.Name,
+    i.creationdate = image.CreationDate
+    SET i.lastupdated = $update_tag,
+    i.architecture = image.Architecture, i.location = image.ImageLocation, i.type = image.ImageType,
+    i.ispublic = image.Public, i.platform = image.Platform,
+    i.platform_details = image.PlatformDetails, i.usageoperation = image.UsageOperation,
+    i.state = image.State, i.description = image.Description, i.enasupport = image.EnaSupport,
+    i.hypervisor = image.Hypervisor, i.rootdevicename = image.RootDeviceName,
+    i.consolelink = image.consolelink,
+    i.rootdevicetype = image.RootDeviceType, i.virtualizationtype = image.VirtualizationType,
+    i.sriov_net_support = image.SriovNetSupport,
+    i.bootmode = image.BootMode, i.owner = image.OwnerId, i.image_owner_alias = image.ImageOwnerAlias,
+    i.kernel_id = image.KernelId, i.ramdisk_id = image.RamdiskId,
+    i.region=image.region, i.arn=image.arn
+    WITH i
+    MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
+    MERGE (aa)-[r:RESOURCE]->(i)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
     # AMI IDs are unique to each AWS Region. Hence we make an 'ID' string that is a combo of ImageId and region
     for image in data:
-        image['ID'] = image['ImageId'] + '|' + region
-        image['arn'] = f"arn:aws:ec2:{region}:{current_aws_account_id}:image/{image['ImageId']}"
+        image['ID'] = image['ImageId'] + '|' + image.get('region', '')
+        image['arn'] = f"arn:aws:ec2:{image.get('region', '')}:{current_aws_account_id}:image/{image['ImageId']}"
 
-    load(
+    neo4j_session.run(
+        ingest_images,
+        images_list=data,
+        AWS_ACCOUNT_ID=current_aws_account_id,
+        update_tag=update_tag,
+    )
+
+
+@timeit
+def cleanup_images(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job(
+        'aws_import_ec2_images_cleanup.json',
         neo4j_session,
         EC2ImageSchema(),
         data,
@@ -101,16 +136,20 @@ def sync_ec2_images(
         current_aws_account_id: str, update_tag: int, common_job_parameters: Dict,
 ) -> None:
     tic = time.perf_counter()
+
     logger.info("Syncing images for account '%s', at %s.", current_aws_account_id, tic)
+
     data = []
     for region in regions:
         logger.info("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
         images_in_use = get_images_in_use(neo4j_session, region, current_aws_account_id)
         imgs = get_images(boto3_session, region)
         data = transform_images(boto3_session, imgs, images_in_use, region, current_aws_account_id)
-        logger.info(f"Total EC2 Images: {len(data)}")
-        load_images(neo4j_session, data, current_aws_account_id, update_tag,region)
-   
+
+    logger.info(f"Total EC2 Images: {len(data)}")
+
+    load_images(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_images(neo4j_session, common_job_parameters)
+
     toc = time.perf_counter()
     logger.info(f"Time to process Images: {toc - tic:0.4f} seconds")

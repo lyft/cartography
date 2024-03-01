@@ -5,6 +5,7 @@ import logging
 import math
 import time
 import ipaddress
+from ipaddress import AddressValueError, NetmaskValueError
 from collections import namedtuple
 from string import Template
 from typing import Any
@@ -1416,7 +1417,17 @@ def _attach_firewall_public_ip_address(neo4j_session: neo4j.Session, fw: Resourc
          SET
          r.lastupdated = $gcp_update_tag       
     """
-    public_ip_address = [ip for ip in fw.get('sourceRanges', []) if not ipaddress.IPv4Network(str(ip).split('/')[0]).is_private]
+    public_ip_address = []
+    for ip in fw.get('sourceRanges', []):
+        try:
+            if not ipaddress.IPv4Network(str(ip).split('/')[0]).is_private:
+                public_ip_address.append(ip)
+        except AddressValueError as e:
+            logger.warning(f"failed to check public ip, error related to the address - {e}")
+        except NetmaskValueError as e:
+            logger.warning(f" failed to check public ip, error related to the net mask - {e}")
+        except Exception as e:
+            logger.warning(f"failed to check public ip - {e}")
     neo4j_session.run(
         query=ingest_public_ip_address,
         PublicIpAddress=public_ip_address,

@@ -4,6 +4,8 @@ from unittest.mock import patch
 
 import cartography.intel.aws.ec2
 import cartography.intel.aws.resourcegroupstaggingapi as rgta
+import tests.data.aws.ec2.instances
+import cartography.intel.aws.ec2.instances
 import tests.data.aws.resourcegroupstaggingapi
 from cartography.intel.aws.ec2.instances import sync_ec2_instances
 from tests.data.aws.ec2.instances import DESCRIBE_INSTANCES
@@ -17,14 +19,9 @@ TEST_UPDATE_TAG = 123456789
 
 def _ensure_local_neo4j_has_test_ec2_instance_data(neo4j_session):
     create_test_account(neo4j_session, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
-    boto3_session = MagicMock()
-    sync_ec2_instances(
-        neo4j_session,
-        boto3_session,
-        [TEST_REGION],
-        TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG,
-        {'UPDATE_TAG': TEST_UPDATE_TAG, 'AWS_ID': TEST_ACCOUNT_ID},
+    data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
+        neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )
 
 
@@ -81,7 +78,7 @@ def test_transform_and_load_ec2_tags(mock_get_instances, neo4j_session):
 
     # Assert
     expected = {
-        ('TestKeyUpdated:TestValueUpdated'),
+        'TestKeyUpdated:TestValueUpdated', 'TestKey:TestValue'
     }
     result = neo4j_session.run('MATCH (t:AWSTag) RETURN t.id')
     actual = {

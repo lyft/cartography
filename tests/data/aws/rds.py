@@ -7,6 +7,7 @@ DESCRIBE_DBCLUSTERS_RESPONSE = {
             'AvailabilityZones': [
                 'us-east-1e',
             ],
+            'region': 'us-east-1',
             'BackupRetentionPeriod': 35,
             'CharacterSetName': 'utf8',
             'DatabaseName': 'prodprodDB',
@@ -71,6 +72,7 @@ DESCRIBE_DBINSTANCES_RESPONSE = {
              "region":"us-east-1",
             "AutoMinorVersionUpgrade": True,
             "AvailabilityZone": "us-east-1e",
+            'region': 'us-east-1',
             "BackupRetentionPeriod": 35,
             "CACertificateIdentifier": "abc-ca-2013",
             "CopyTagsToSnapshot": False,
@@ -96,7 +98,7 @@ DESCRIBE_DBINSTANCES_RESPONSE = {
                         "SubnetAvailabilityZone": {
                             "Name": "us-east-1a",
                         },
-                        "SubnetIdentifier": "subnet-abcd",
+                        "SubnetIdentifier": "subnet-020b2f3928f190ce8",
                         "SubnetStatus": "Active",
                     },
                     {
@@ -152,14 +154,14 @@ DESCRIBE_DBINSTANCES_RESPONSE = {
             "PreferredBackupWindow": "03:36-04:06",
             "PreferredMaintenanceWindow": "fri:04:01-fri:04:31",
             "PromotionTier": 0,
-            "PubliclyAccessible": False,
+            "PubliclyAccessible": True,
             "ReadReplicaDBInstanceIdentifiers": [],
             "StorageEncrypted": True,
             "StorageType": "aurora",
             "VpcSecurityGroups": [
                 {
                     "Status": "active",
-                    "VpcSecurityGroupId": "sg-some-othersg",
+                    "VpcSecurityGroupId": "sg-028e2522c72719996",
                 },
                 {
                     "Status": "active",
@@ -173,6 +175,46 @@ DESCRIBE_DBINSTANCES_RESPONSE = {
         },
     ],
 }
+DESCRIBE_SECURITY_GROUPS_RESPONSE = [
+    {
+        'region': 'us-east-1',
+        "OwnerId": "123456789012",
+        "DBSecurityGroupName": "mysecgroup",
+        "DBSecurityGroupDescription": "My Test Security Group",
+        "VpcId": "vpc-1234567f",
+        "EC2SecurityGroups": [],
+        "IPRanges": [],
+        "DBSecurityGroupArn": "arn:aws:rds:us-east-1:111122223333:secgrp:mysecgroup"
+    }
+]
+DESCRIBE_SNAPSHOTS_RESPONSE = [
+    {
+        "DBSnapshotIdentifier": "mydbsnapshot",
+        "DBInstanceIdentifier": "mysqldb",
+        'region': 'us-east-1',
+        'name': 'mydbsnapshot',
+        "SnapshotCreateTime": "2018-02-08T22:28:08.598Z",
+        "Engine": "mysql",
+        "AllocatedStorage": 20,
+        "Status": "available",
+        "Port": 3306,
+        "AvailabilityZone": "us-east-1f",
+        "VpcId": "vpc-6594f31c",
+        "InstanceCreateTime": "2018-02-08T22:24:55.973Z",
+        "MasterUsername": "mysqladmin",
+        "EngineVersion": "5.6.37",
+        "LicenseModel": "general-public-license",
+        "SnapshotType": "manual",
+        "OptionGroupName": "default:mysql-5-6",
+        "PercentProgress": 100,
+        "StorageType": "gp2",
+        "Encrypted": False,
+        "DBSnapshotArn": "arn:aws:rds:us-east-1:123456789012:snapshot:mydbsnapshot",
+        "IAMDatabaseAuthenticationEnabled": False,
+        "ProcessorFeatures": [],
+        "DbiResourceId": "db-AKIAIOSFODNN7EXAMPLE"
+    }
+]
 
 DESCRIBE_DBSNAPSHOTS_RESPONSE = {
     "DBSnapshots": [
@@ -212,5 +254,84 @@ DESCRIBE_DBSNAPSHOTS_RESPONSE = {
             "StorageThroughput": 1234,
              "region":"us-east-1",
         },
+        {
+            "DBSnapshotIdentifier": "some-other-db-snapshot-identifier",
+            "DBInstanceIdentifier": "some-prod-db-iad-0",
+            "SnapshotCreateTime": datetime.datetime(2022, 8, 15, 1, 58, 59, 852000),
+            "Engine": "aurora-postgresql",
+            "AllocatedStorage": 1,
+            "Status": "available",
+            "Port": 27017,
+            "AvailabilityZone": "us-east-1e",
+            "VpcId": "vpc-some-vpc",
+            "InstanceCreateTime": datetime.datetime(2021, 8, 15, 1, 58, 59, 852000),
+            "MasterUsername": "test_user",
+            "EngineVersion": "3.6.0",
+            "LicenseModel": "postgresql-license",
+            "SnapshotType": "automated",
+            "Iops": 1234,
+            "OptionGroupName": "default:aurora-postgresql-9-6",
+            "PercentProgress": 10,
+            "SourceRegion": "us-eat-1",
+            "SourceDBSnapshotIdentifier": "some-other-source-db-snapshot-identifier",
+            "StorageType": "aurora",
+            "TdeCredentialArn": "some-tde-credential-arn",
+            "Encrypted": True,
+            "KmsKeyId": "arn:aws:kms:us-east-2:some-arn:key/some-guid",
+            "DBSnapshotArn": "arn:aws:rds:us-east-2:some-arn:snapshot:some-prod-db-iad-0",
+            "Timezone": "utc",
+            "IAMDatabaseAuthenticationEnabled": True,
+            "ProcessorFeatures": [],
+            "DbiResourceId": "some-dbi-resource-id",
+            "TagList": [],
+            "OriginalSnapshotCreateTime": datetime.datetime(2022, 1, 1),
+            "SnapshotDatabaseTime": datetime.datetime(2022, 1, 1),
+            "SnapshotTarget": "some-snapshot-target",
+            "StorageThroughput": 1234,
+        },
     ],
 }
+
+
+DESCRIBE_DBSNAPSHOT_ATTRIBUTE_RESPONSE = [
+    {
+        'DBSnapshotIdentifier': 'some-db-snapshot-identifier',
+        'DBSnapshotAttributes': [
+            {
+                'AttributeName': 'backup',
+                'AttributeValues': [
+                    'all',
+                ]
+            },
+            {
+                'AttributeName': 'attrib-1',
+                'AttributeValues': [
+                    'all',
+                ]
+            }
+        ]
+    },
+    {
+        'DBSnapshotIdentifier': 'some-other-db-snapshot-identifier',
+        'DBSnapshotAttributes': [
+            {
+                'AttributeName': 'backup',
+                'AttributeValues': [
+                    'all',
+                ]
+            },
+            {
+                'AttributeName': 'attrib-1',
+                'AttributeValues': [
+                    'all',
+                ]
+            },
+            {
+                'AttributeName': 'restore',
+                'AttributeValues': [
+                    'all',
+                ]
+            }
+        ]
+    }
+]

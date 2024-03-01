@@ -39,14 +39,15 @@ def get_ec2_key_pairs(boto3_session: boto3.session.Session, region: str) -> List
 
 @timeit
 def load_ec2_key_pairs(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, data: List[Dict], current_aws_account_id: str,
     update_tag: int,
 ) -> None:
     ingest_key_pair = """
     MERGE (keypair:KeyPair:EC2KeyPair{arn: $ARN, id: $ARN})
     ON CREATE SET keypair.firstseen = timestamp()
     SET keypair.keyname = $KeyName, keypair.keyfingerprint = $KeyFingerprint, keypair.region = $Region,
-    keypair.lastupdated = $update_tag,keypair.consolelink=$consolelink
+    keypair.consolelink = $consolelink,
+    keypair.lastupdated = $update_tag
     WITH keypair
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(keypair)
@@ -55,6 +56,7 @@ def load_ec2_key_pairs(
     """
 
     for key_pair in data:
+        region = key_pair.get('region', '')
         key_name = key_pair["KeyName"]
         key_fingerprint = key_pair.get("KeyFingerprint")
         key_pair_arn = f'arn:aws:ec2:{region}:{current_aws_account_id}:key-pair/{key_name}'
@@ -62,6 +64,12 @@ def load_ec2_key_pairs(
         try:
             consolelink = aws_console_link.get_console_link(arn=key_pair_arn)
 
+        except Exception as ex:
+            logger.error('failed to generate console link for key pair', { "key": key_pair_arn }, ex)
+
+        consolelink = ''
+        try:
+            consolelink = aws_console_link.get_console_link(arn=key_pair_arn)
         except Exception as ex:
             logger.error('failed to generate console link for key pair', { "key": key_pair_arn }, ex)
 
@@ -91,10 +99,15 @@ def sync_ec2_key_pairs(
 
     logger.info("Syncing EC2 key pairs for account '%s', at %s.", current_aws_account_id, tic)
 
+    data = []
     for region in regions:
         logger.info("Syncing EC2 key pairs for region '%s' in account '%s'.", region, current_aws_account_id)
-        data = get_ec2_key_pairs(boto3_session, region)
-        load_ec2_key_pairs(neo4j_session, data, region, current_aws_account_id, update_tag)
+        data.extend(get_ec2_key_pairs(boto3_session, region))
+
+    logger.info(f"Total EC2 Key Pairs: {len(data)}")
+
+    load_ec2_key_pairs(neo4j_session, data, current_aws_account_id, update_tag)
     cleanup_ec2_key_pairs(neo4j_session, common_job_parameters)
+
     toc = time.perf_counter()
     logger.info(f"Time to process EC2 key pairs: {toc - tic:0.4f} seconds")

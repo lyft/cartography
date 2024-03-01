@@ -1,3 +1,4 @@
+import math
 import logging
 import time
 from collections import namedtuple
@@ -7,6 +8,7 @@ from typing import List
 
 import boto3
 import neo4j
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
@@ -18,6 +20,7 @@ from cartography.models.aws.ec2.reservations import EC2ReservationSchema
 from cartography.models.aws.ec2.securitygroup_instance import EC2SecurityGroupInstanceSchema
 from cartography.models.aws.ec2.subnet_instance import EC2SubnetInstanceSchema
 from cartography.models.aws.ec2.volumes import EBSVolumeInstanceSchema
+from botocore.exceptions import ClientError
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
 import math
@@ -26,6 +29,7 @@ from botocore.exceptions import ClientError
 aws_console_link = AWSLinker()
 
 logger = logging.getLogger(__name__)
+aws_console_link = AWSLinker()
 
 Ec2Data = namedtuple(
     'Ec2Data', [

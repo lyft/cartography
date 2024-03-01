@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Any
 from typing import Dict
@@ -11,12 +12,12 @@ from cartography.graph.job import GraphJob
 from cartography.models.aws.eks.clusters import EKSClusterSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit
+from cloudconsolelink.clouds.aws import AWSLinker
 
 from cloudconsolelink.clouds.aws import AWSLinker
 
 logger = logging.getLogger(__name__)
 aws_console_link = AWSLinker()
-
 
 
 @timeit
@@ -27,13 +28,22 @@ def get_eks_clusters(boto3_session: boto3.session.Session, region: str) -> List[
     paginator = client.get_paginator('list_clusters')
     for page in paginator.paginate():
         clusters.extend(page['clusters'])
-    return clusters
+    clusters_data = []
+    for cluster in clusters:
+        cluster_data = {}
+        cluster_data['name'] = cluster
+        cluster_data['region'] = region
+        # clusters_data['consolelink'] = aws_console_link.get_console_link(arn=clusters_data['arn'])
+        clusters_data.append(cluster_data)
+    return clusters_data
 
 
 @timeit
 def get_eks_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_name: str) -> Dict:
     client = boto3_session.client('eks', region_name=region)
     response = client.describe_cluster(name=cluster_name)
+    response['cluster']['region'] = region
+    # response['cluster']['arn'] = aws_console_link.get_console_link(arn=response['cluster']['arn'])
     return response['cluster']
 
 
@@ -98,20 +108,24 @@ def sync(
         common_job_parameters: Dict[str, Any],
 ) -> None:
     tic = time.perf_counter()
+
     logger.info("Syncing EKS for account '%s', at %s.", current_aws_account_id, tic)
+
+    clusters = []
     for region in regions:
         logger.info("Syncing EKS for region '%s' in account '%s'.", region, current_aws_account_id)
 
-        clusters: List[str] = get_eks_clusters(boto3_session, region)
-        cluster_data = {}
-        for cluster_name in clusters:
-            cluster_data[cluster_name] = get_eks_describe_cluster(boto3_session, region, cluster_name)
-        transformed_list = transform(cluster_data)
-        logger.info(f"Total EKS Clusters: {len(transformed_list)}")
-        
-        load_eks_clusters(neo4j_session, transformed_list, region, current_aws_account_id, update_tag)
+        clusters.extend(get_eks_clusters(boto3_session, region))
+
+    logger.info(f"Total EKS Clusters: {len(clusters)}")
+
+    cluster_data: Dict = {}
+    for cluster in clusters:
+        cluster_data[cluster['name']] = get_eks_describe_cluster(boto3_session, cluster['region'], cluster['name'])
+
+    load_eks_clusters(neo4j_session, cluster_data, current_aws_account_id, update_tag)
 
     cleanup(neo4j_session, common_job_parameters)
+
     toc = time.perf_counter()
     logger.info(f"Time to process EKS: {toc - tic:0.4f} seconds")
-

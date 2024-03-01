@@ -2,8 +2,13 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import cartography.intel.aws.ec2.instances
+import cartography.intel.aws.ec2.instances
+import cartography.intel.aws.ec2.route_tables
+import cartography.intel.aws.ec2.subnets
 import cartography.intel.aws.iam
 import tests.data.aws.ec2.instances
+import tests.data.aws.ec2.route_tables
+import tests.data.aws.ec2.subnets
 import tests.data.aws.iam
 from cartography.intel.aws.ec2.instances import sync_ec2_instances
 from cartography.util import run_analysis_job
@@ -23,18 +28,9 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
     """
     Ensure that instances actually get loaded and have their key fields
     """
-    # Arrange
-    boto3_session = MagicMock()
-    create_test_account(neo4j_session, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
-
-    # Act
-    sync_ec2_instances(
-        neo4j_session,
-        boto3_session,
-        [TEST_REGION],
-        TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG,
-        {'UPDATE_TAG': TEST_UPDATE_TAG, 'AWS_ID': TEST_ACCOUNT_ID},
+    data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
+        neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )
 
     # Assert EC2 instances exist
@@ -45,20 +41,47 @@ def test_sync_ec2_instances(mock_get_instances, neo4j_session):
         ("i-04", "i-04"),
     }
 
-    # Assert that instances are connected to their expected reservations
-    assert check_rels(
-        neo4j_session,
-        'EC2Reservation',
-        'reservationid',
-        'EC2Instance',
-        'id',
-        'MEMBER_OF_EC2_RESERVATION',
-        rel_direction_right=False,
-    ) == {
-        ("r-01", "i-01"),
-        ("r-02", "i-02"),
-        ("r-03", "i-03"),
-        ("r-03", "i-04"),
+    nodes = neo4j_session.run(
+        """
+        MATCH (i:EC2Instance) return i.id, i.instanceid
+        """,
+    )
+    actual_nodes = {
+        (
+            n['i.id'],
+            n['i.instanceid'],
+        )
+        for n in nodes
+    }
+    assert actual_nodes == expected_nodes
+
+
+def test_ec2_reservations_to_instances(neo4j_session, *args):
+    """
+    Ensure that instances are connected to their expected reservations
+    """
+    data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
+        neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+    )
+
+    expected_nodes = {
+        (
+            "r-01",
+            "i-01",
+        ),
+        (
+            "r-02",
+            "i-02",
+        ),
+        (
+            "r-03",
+            "i-03",
+        ),
+        (
+            "r-03",
+            "i-04",
+        ),
     }
 
     # Assert network interface to instances
@@ -259,23 +282,29 @@ def test_ec2_iaminstanceprofiles(mock_get_instances, neo4j_session):
     """
     Ensure that EC2Instances are attached to the IAM Roles that they can assume due to their IAM instance profiles
     """
-    # Arrange
-    boto3_session = MagicMock()
-    create_test_account(neo4j_session, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSAccount{id: $aws_account_id})<-[:OWNER]-(:CloudanixWorkspace{id: $workspace_id})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = $aws_update_tag
+        """,
+        aws_account_id=TEST_ACCOUNT_ID,
+        aws_update_tag=TEST_UPDATE_TAG,
+        workspace_id=TEST_WORKSPACE_ID,
+    )
+
+    data_instances = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
     data_iam = tests.data.aws.iam.INSTACE['Roles']
-    sync_ec2_instances(
-        neo4j_session,
-        boto3_session,
-        [TEST_REGION],
-        TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG,
-        {'UPDATE_TAG': TEST_UPDATE_TAG, 'AWS_ID': TEST_ACCOUNT_ID},
+
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
+        neo4j_session, data_instances, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )
     cartography.intel.aws.iam.load_roles(
         neo4j_session, data_iam, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )
     common_job_parameters = {
         "UPDATE_TAG": TEST_UPDATE_TAG,
+        "WORKSPACE_ID": TEST_WORKSPACE_ID,
     }
 
     # Act
@@ -319,6 +348,97 @@ def test_ec2_asset_exposure(neo4j_session):
     )
     data_instances = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
     cartography.intel.aws.ec2.instances.load_ec2_instance_data(
+        neo4j_session, data_instances, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
+    )
+
+    data = tests.data.aws.ec2.route_tables.DESCRIBE_ROUTE_TABLES
+    cartography.intel.aws.ec2.route_tables.load_route_tables(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG
+    )
+    data = tests.data.aws.ec2.subnets.DESCRIBE_SUBNETS
+    cartography.intel.aws.ec2.subnets.load_subnets(
+        neo4j_session,
+        data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG + 1,
+        "WORKSPACE_ID": TEST_WORKSPACE_ID,
+        "AWS_ID": TEST_ACCOUNT_ID,
+        "PUBLIC_PORTS": ['20', '21', '22', '3306', '3389', '4333'],
+    }
+
+    run_analysis_job(
+        'implicit_relationship_creation.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    run_analysis_job(
+        'aws_ec2_subnet_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'aws_ec2_security_group_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters
+    )
+
+    run_analysis_job(
+        'aws_ec2_instance_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    expected_nodes = {
+        ('i-03', 'public_ip, public_subnet_ipv4'),
+        ('i-04', 'public_ip, public_subnet_ipv6'),
+        ('i-02', 'public_ip, public_subnet_ipv4'),
+        ('i-01', 'public_ip, public_subnet_ipv6'),
+    }
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (instance:EC2Instance{exposed_internet: true}) return instance.id, instance.exposed_internet_type
+        """,
+    )
+
+    actual_nodes = {
+        (
+            n['instance.id'],
+            ", ".join(n['instance.exposed_internet_type'])
+        )
+        for n in nodes
+    }
+
+    assert actual_nodes == expected_nodes
+
+
+def test_ec2_asset_exposure(neo4j_session):
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSAccount{id: $aws_account_id})<-[:OWNER]-(:CloudanixWorkspace{id: $workspace_id})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = $aws_update_tag
+        """,
+        aws_account_id=TEST_ACCOUNT_ID,
+        aws_update_tag=TEST_UPDATE_TAG,
+        workspace_id=TEST_WORKSPACE_ID
+    )
+
+    neo4j_session.run(
+        """
+        MERGE (:AWSVpc{id : 'vpc-025873e026b9e8ee6'})
+        """
+    )
+    data_instances = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
         neo4j_session, data_instances, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )
 

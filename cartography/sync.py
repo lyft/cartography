@@ -172,7 +172,7 @@ def run_with_config(sync: Sync, config: Union[Config, argparse.Namespace]) -> in
             config.neo4j_uri,
             e,
         )
-        return STATUS_FAILURE
+        return 1
     except neo4j.exceptions.AuthError as e:
         logger.debug("Error occurred during Neo4j auth.", exc_info=True)
         if not neo4j_auth:
@@ -211,6 +211,64 @@ def build_default_sync() -> Sync:
     sync.add_stages([
         (stage_name, stage_func) for stage_name, stage_func in TOP_LEVEL_MODULES.items()
     ])
+
+    return sync
+
+
+def build_aws_sync():
+    """
+    Build the aws cartography sync, which runs all intelligence modules shipped with the cartography package.
+
+    :rtype: cartography.sync.Sync
+    :return: The aws cartography sync object.
+    """
+    sync = Sync()
+
+    stages = []
+    stages.append(('cloudanix-workspace', cloudanix.run))
+    stages.append(('aws', cartography.intel.aws.start_aws_ingestion))
+    stages.append(('analysis', cartography.intel.analysis.run))
+
+    sync.add_stages(stages)
+
+    return sync
+
+
+def build_azure_sync():
+    """
+    Build the azure cartography sync, which runs all intelligence modules shipped with the cartography package.
+
+    :rtype: cartography.sync.Sync
+    :return: The azure cartography sync object.
+    """
+    sync = Sync()
+
+    stages = []
+    stages.append(('cloudanix-workspace', cloudanix.run))
+    stages.append(('azure', cartography.intel.azure.start_azure_ingestion))
+    stages.append(('analysis', cartography.intel.analysis.run))
+
+    sync.add_stages(stages)
+
+    return sync
+
+
+def build_gcp_sync():
+    """
+    Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
+
+    :rtype: cartography.sync.Sync
+    :return: The default cartography sync object.
+    """
+    sync = Sync()
+
+    stages = []
+    stages.append(('cloudanix-workspace', cloudanix.run))
+    stages.append(('gcp', cartography.intel.gcp.start_gcp_ingestion))
+    stages.append(('analysis', cartography.intel.analysis.run))
+
+    sync.add_stages(stages)
+
     return sync
 
 

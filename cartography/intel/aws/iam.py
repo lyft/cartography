@@ -232,6 +232,20 @@ def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
 
 
 @timeit
+def transform_users_data(boto3_session: boto3.session.Session, users: List[Dict]) -> Dict:
+    client = boto3_session.client('iam')
+    for user in users:
+        try:
+            client.get_login_profile(UserName=user["UserName"])
+            user["consoleLoginEnabled"] = True
+        except client.exceptions.NoSuchEntityException:
+            user["consoleLoginEnabled"] = False
+        except Exception as e:
+            user["consoleLoginEnabled"] = False
+    return {'Users': users}
+
+
+@timeit
 def get_group_list_data(boto3_session: boto3.session.Session) -> Dict:
     client = boto3_session.client('iam')
     paginator = client.get_paginator('list_groups')
@@ -248,6 +262,68 @@ def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
     roles: List[Dict] = []
     for page in paginator.paginate():
         roles.extend(page['Roles'])
+    for role in roles:
+        role_data = client.get_role(RoleName=role.get("RoleName")).get("Role")
+        role['RoleLastUsed'] = role_data.get("RoleLastUsed")
+    return {'Roles': roles}
+
+
+@timeit
+def get_external_access_roles(boto3_session: boto3.session.Session) -> List[Dict]:
+    try:
+        analyzer_client = boto3_session.client('accessanalyzer')
+        # AWS allow to create only one analyzer per account per region with type (ACCOUNT, ORGANIZATION, ACCOUNT_UNUSED_ACCESS, and ORGANIZTAION_UNUSED_ACCESS) thats why uses analyzers_list index 0
+        analyzers_list = analyzer_client.list_analyzers(type='ACCOUNT').get("analyzers", [])
+        findings: List = []
+        if analyzers_list:
+            paginator = analyzer_client.get_paginator('list_findings_v2')
+            for page in paginator.paginate(analyzerArn=analyzers_list[0].get("arn"), filter={'resourceType': {'eq': ['AWS::IAM::Role']}}):
+                findings.extend(page.get("findings", []))
+            return findings
+        else:
+            analyzer_client.create_analyzer(analyzerName="cdx_analyzer", type="ACCOUNT", tags={'owner': 'cloudanix', 'project': 'iam-entitlements-analyzer'})
+            return findings
+    except (ClientError, Exception) as e:
+        logger.error(f'Failed to get external roles. {e}')
+        return []
+
+
+@timeit
+def transform_roles(boto3_session: boto3.session.Session, roles: List[Dict], external_access_roles: List[Dict], common_job_parameters: Dict) -> Dict:
+    external_access_roles_arn_list = [d['resource'] for d in external_access_roles if 'resource' in d]
+
+    try:
+        client = boto3_session.client('organizations')
+        response = client.list_accounts()
+        internal_accounts = [account["Id"] for account in response["Accounts"]]
+    except Exception as e:
+        internal_accounts = []
+
+    for role in roles:
+        ExternalAccess = None
+        ExternalAccounts = []
+        if role['arn'] in external_access_roles_arn_list:
+            for statement in role["AssumeRolePolicyDocument"]["Statement"]:
+                principal_entries = _parse_principal_entries(statement["Principal"])
+                for principal_type, principal_value in principal_entries:
+                    if principal_type == "AWS":
+                        try:
+                            account_id = principal_value.split(':')[4]
+                        except Exception as e:
+                            account_id = principal_value
+                        if internal_accounts:
+                            if account_id not in internal_accounts:
+                                ExternalAccess = True
+                                ExternalAccounts.append(account_id)
+
+                        if common_job_parameters["AWS_INTERNAL_ACCOUNTS"]:
+                            if account_id not in common_job_parameters["AWS_INTERNAL_ACCOUNTS"]:
+                                ExternalAccess = True
+                                ExternalAccounts.append(account_id)
+
+        role["ExternalAccess"] = ExternalAccess
+        role["ExternalAccounts"] = ExternalAccounts
+
     return {'Roles': roles}
 
 
@@ -259,8 +335,8 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
     try:
         access_keys = client.list_access_keys(UserName=username)
         for access_key in access_keys["AccessKeyMetadata"]:
-            last_used=client.get_access_key_last_used(AccessKeyId=access_key.get('AccessKeyId'))
-            access_key['LastUsedDate']=last_used.get('AccessKeyLastUsed',{}).get('LastUsedDate',None)
+            last_used = client.get_access_key_last_used(AccessKeyId=access_key.get('AccessKeyId'))
+            access_key['LastUsedDate'] = last_used.get('AccessKeyLastUsed', {}).get('LastUsedDate')
 
     except ClientError as e:
         if _is_common_exception(e, username):
@@ -283,6 +359,7 @@ def load_users(
     unode.createdate = $CREATE_DATE
     SET unode.name = $USERNAME, unode.path = $PATH, unode.passwordlastused = $PASSWORD_LASTUSED,
     unode.region = $region,
+    unode.consoleloginenabled = $CONSOLELOGINENABLED,
     unode.lastupdated = $aws_update_tag
     WITH unode
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
@@ -300,6 +377,7 @@ def load_users(
             CREATE_DATE=str(user["CreateDate"]),
             USERNAME=user["UserName"],
             PATH=user["Path"],
+            CONSOLELOGINENABLED=user.get("consoleLoginEnabled", False),
             PASSWORD_LASTUSED=str(user.get("PasswordLastUsed", "")),
             AWS_ACCOUNT_ID=current_aws_account_id,
             region="global",
@@ -366,7 +444,9 @@ def load_roles(
     rnode.consolelink = $consolelink,
     rnode.createdate = $CreateDate
     SET rnode.name = $RoleName, rnode.path = $Path,
-    rnode.lastuseddate = $LastUsedDate, rnode.lastusedregion = $LastUsedRegion
+    rnode.lastuseddate = $LastUsedDate, rnode.lastusedregion = $LastUsedRegion,
+    rnode.external_access = $ExternalAccess,
+    rnode.external_accounts = $ExternalAccounts
     SET rnode.lastupdated = $aws_update_tag
     WITH rnode
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
@@ -396,6 +476,8 @@ def load_roles(
             RoleId=role.get("RoleId",None),
             CreateDate=str(role["CreateDate"]),
             RoleName=role["RoleName"],
+            ExternalAccess=role["ExternalAccess"],
+            ExternalAccounts=role["ExternalAccounts"] if role["ExternalAccess"] else None,
             Path=role["Path"],
             region="global",
             LastUsedDate=role["RoleLastUsed"].get('LastUsedDate') if 'RoleLastUsed' in role else None,
@@ -536,8 +618,8 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
                     consolelink=consolelink,
                     UserName=username,
                     AccessKeyId=key['AccessKeyId'],
-                    LastUsedDate=str(key.get('LastUsedDate','')),
-                    CreateDate=str(key.get('CreateDate','')),
+                    LastUsedDate=str(key.get('LastUsedDate', '')),
+                    CreateDate=str(key.get('CreateDate', '')),
                     Status=key['Status'],
                     region="global",
                     aws_update_tag=aws_update_tag,
@@ -614,7 +696,10 @@ def _load_policy_tx(
     policy_arn = f"arn:aws:iam::{current_aws_account_id}:policy/{policy}"
     consolelink = aws_console_link.get_console_link(arn=policy_arn)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> cloudanix-all
     tx.run(
         ingest_policy,
         PolicyId=policy_id,
@@ -700,6 +785,8 @@ def sync_users(
 
     logger.info(f"Total Users: {len(data['Users'])}")
 
+    data = transform_users_data(boto3_session, data['Users'])
+
     load_users(neo4j_session, data['Users'], current_aws_account_id, aws_update_tag)
 
     sync_user_inline_policies(boto3_session, data, neo4j_session, current_aws_account_id, aws_update_tag)
@@ -777,6 +864,8 @@ def sync_roles(
 ) -> None:
     logger.info("Syncing IAM roles for account '%s'.", current_aws_account_id)
     data = get_role_list_data(boto3_session)
+    external_access_roles = get_external_access_roles(boto3_session)
+    data = transform_roles(boto3_session, data['Roles'], external_access_roles, common_job_parameters)
 
     logger.info(f"Total Roles: {len(data['Roles'])}")
 

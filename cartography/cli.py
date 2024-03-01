@@ -10,6 +10,7 @@ from cartography.config import Config
 import cartography.config
 import cartography.sync
 import cartography.util
+from cartography.config import Config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 
 
@@ -220,6 +221,26 @@ class CLI:
                 'Comma-separated list of AWS resources to sync. Example 1: "ecr,s3,ec2:instance" for ECR, S3, and all '
                 'EC2 instance resources. See the full list available in source code at cartography.intel.aws.resources.'
                 ' If not specified, cartography by default will run all AWS sync modules available.'
+            ),
+        )
+        parser.add_argument(
+            '--azure-requested-syncs',
+            type=str,
+            default=None,
+            help=(
+                'Comma-separated list of Azure resources to sync. Example 1: "compute,sql,iam".\
+                     See the full list available in source code at cartography.intel.azure.resources.'
+                ' If not specified, cartography by default will run all azure sync modules available.'
+            ),
+        )
+        parser.add_argument(
+            '--gcp-requested-syncs',
+            type=str,
+            default=None,
+            help=(
+                'Comma-separated list of GCP resources to sync. Example 1: "compute,storage,gke".\
+                     See the full list available in source code at cartography.intel.gcp.resources.'
+                ' If not specified, cartography by default will run all gcp sync modules available.'
             ),
         )
         parser.add_argument(
@@ -529,7 +550,7 @@ class CLI:
             logging.getLogger('cartography').setLevel(logging.WARNING)
         else:
             logging.getLogger('cartography').setLevel(logging.INFO)
-        logger.debug("Launching cartography with CLI configuration: %r", vars(config))
+        # logger.debug("Launching cartography with CLI configuration: %r", vars(config))
         # Neo4j config
         if config.neo4j_user:
             config.neo4j_password = None
@@ -740,7 +761,9 @@ def main(argv=None):
     logging.getLogger('googleapiclient').setLevel(logging.WARNING)
     logging.getLogger('neo4j').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
-    sys.exit(CLI(prog='cartography').main(argv))
+    default_sync = cartography.sync.build_default_sync()
+    return CLI(default_sync, prog='cartography').main(argv)
+
 
 def run_aws(request):
     logging.basicConfig(level=logging.INFO)
@@ -759,7 +782,8 @@ def run_aws(request):
         params=request['params'],
         aws_requested_syncs=request.get('services', None),
         update_tag=request.get('updateTag', None),
-        refresh_entitlements=request.get('refreshEntitlements', False)
+        refresh_entitlements=request.get('refreshEntitlements', False),
+        aws_internal_accounts=request.get('awsInternalAccounts', None)
     )
 
     if request['logging']['mode'] == "verbose":

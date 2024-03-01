@@ -1,9 +1,11 @@
 import cartography.intel.aws.ec2.load_balancer_v2s
 import tests.data.aws.ec2.load_balancers
+from cartography.util import run_analysis_job
 
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'us-east-1'
 TEST_UPDATE_TAG = 123456789
+TEST_WORKSPACE_ID = '123'
 
 
 def test_load_load_balancer_v2s(neo4j_session, *args):
@@ -244,4 +246,56 @@ def test_load_load_balancer_v2_subnets(neo4j_session, *args):
         )
         for n in nodes
     }
+    assert actual_nodes == expected_nodes
+
+
+def test_ec2_load_balancer_analysis(neo4j_session):
+    neo4j_session.run(
+        """
+        MERGE (aws:AWSAccount{id: $aws_account_id})<-[:OWNER]-(:CloudanixWorkspace{id: $workspace_id})
+        ON CREATE SET aws.firstseen = timestamp()
+        SET aws.lastupdated = $aws_update_tag
+        """,
+        aws_account_id=TEST_ACCOUNT_ID,
+        aws_update_tag=TEST_UPDATE_TAG,
+        workspace_id=TEST_WORKSPACE_ID
+    )
+    load_balancer_data = tests.data.aws.ec2.load_balancers.LOAD_BALANCER_DATA
+
+    cartography.intel.aws.ec2.load_balancer_v2s.load_load_balancer_v2s(
+        neo4j_session,
+        load_balancer_data,
+        TEST_ACCOUNT_ID,
+        TEST_UPDATE_TAG,
+    )
+
+    common_job_parameters = {
+        "UPDATE_TAG": TEST_UPDATE_TAG + 1,
+        "WORKSPACE_ID": TEST_WORKSPACE_ID,
+        "AWS_ID": TEST_ACCOUNT_ID,
+        "PUBLIC_PORTS": ['20', '21', '22', '3306', '3389', '4333'],
+    }
+
+    run_analysis_job(
+        'aws_ec2_elb_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    nodes = neo4j_session.run(
+        """
+        MATCH (l:LoadBalancerV2{exposed_internet: true}) return l.id, l.exposed_internet_type
+        """,
+    )
+
+    expected_nodes = {('myawesomeloadbalancer.amazonaws.com', 'scheme')}
+
+    actual_nodes = {
+        (
+            n['l.id'],
+            ", ".join(n['l.exposed_internet_type'])
+        )
+        for n in nodes
+    }
+
     assert actual_nodes == expected_nodes

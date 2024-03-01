@@ -9,7 +9,9 @@ from .util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+
 import time
+
 logger = logging.getLogger(__name__)
 
 
@@ -191,10 +193,12 @@ def load_ec2_auto_scaling_groups(
         group_arn = group["AutoScalingGroupARN"]
         if group.get('VPCZoneIdentifier'):
             vpclist = group["VPCZoneIdentifier"]
+
             if ',' in vpclist:
                 data = vpclist.split(',')
             else:
                 data = vpclist
+
             neo4j_session.run(
                 ingest_vpc,
                 vpc_id_list=data,

@@ -642,11 +642,13 @@ def test_vm_public_exposure_analysis(neo4j_session):
         common_job_parameters
     )
 
-    expected_nodes = {('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM',
-        'direct_ipv4,public_ip,inbound_public_ports,public_icmp'),
-       ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1',
-        'direct_ipv4,inbound_public_ports,public_icmp')}
-    
+    expected_nodes = {
+        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM',
+         'direct_ipv4,public_ip,inbound_public_ports,public_icmp,public_subnet'),
+        ('/subscriptions/00-00-00-00/resourceGroups/TestRG/providers/Microsoft.Compute/virtualMachines/TestVM1',
+            'direct_ipv4,inbound_public_ports,public_icmp,public_subnet'),
+    }
+
     nodes = neo4j_session.run(
         """
         MATCH (r:AzureVirtualMachine{exposed_internet: true}) RETURN r.id, r.exposed_internet_type;

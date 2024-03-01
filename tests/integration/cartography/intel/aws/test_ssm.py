@@ -15,14 +15,9 @@ TEST_UPDATE_TAG = 123456789
 
 
 def _ensure_load_instances(neo4j_session):
-    boto3_session = MagicMock()
-    sync_ec2_instances(
-        neo4j_session,
-        boto3_session,
-        [TEST_REGION],
-        TEST_ACCOUNT_ID,
-        TEST_UPDATE_TAG,
-        {'UPDATE_TAG': TEST_UPDATE_TAG, 'AWS_ID': TEST_ACCOUNT_ID},
+    data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
+        neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG,
     )
 
 

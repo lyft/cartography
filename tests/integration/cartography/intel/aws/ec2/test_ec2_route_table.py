@@ -43,16 +43,14 @@ def test_load_route_tables_explicit_relationships(neo4j_session):
     cartography.intel.aws.ec2.subnets.load_subnets(
         neo4j_session,
         data,
-        "us-east-1",
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
 
     data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
-    cartography.intel.aws.ec2.instances.load_ec2_instance_data(
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
         neo4j_session,
         data,
-         "us-east-1",
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -74,8 +72,6 @@ def test_load_route_tables_explicit_relationships(neo4j_session):
         MATCH (rtab:EC2RouteTable)<-[:HAS_EXPLICIT_ROUTE_TABLE]-(snet:EC2Subnet)<-[:PART_OF_SUBNET]-(instance:EC2Instance) return instance.id, snet.subnetid, rtab.id
         """,
     )
-    for n in nodes:
-        print("nonde",n)
     actual_nodes = {
         (
             n['instance.id'],
@@ -99,16 +95,14 @@ def test_load_route_tables_implicit_relationships(neo4j_session):
     cartography.intel.aws.ec2.subnets.load_subnets(
         neo4j_session,
         data,
-         "us-east-1",
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
 
     data = tests.data.aws.ec2.instances.DESCRIBE_INSTANCES['Reservations']
-    cartography.intel.aws.ec2.instances.load_ec2_instance_data(
+    cartography.intel.aws.ec2.instances.load_ec2_instances(
         neo4j_session,
         data,
-         "us-east-1",
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
@@ -122,8 +116,6 @@ def test_load_route_tables_implicit_relationships(neo4j_session):
         MATCH (rtab:EC2RouteTable)<-[:HAS_IMPLICIT_ROUTE_TABLE]-(instance:EC2Instance) return instance.id, rtab.id
         """,
     )
-    for n in nodes:
-        print("node::",n)
     actual_nodes = {
         (
             n['instance.id'],

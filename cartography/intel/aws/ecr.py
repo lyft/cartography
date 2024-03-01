@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Any
 from typing import Dict
@@ -36,20 +37,34 @@ def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> L
 
 
 @timeit
+def transform_repositories(repositories: List[Dict], region: str) -> List[Dict]:
+    ecr_repositories = []
+    for repo in repositories:
+        repo['region'] = region
+        repo['consolelink'] = aws_console_link.get_console_link(arn=repo['repositoryArn'])
+        ecr_repositories.append(repo)
+
+    return ecr_repositories
+
+
+@timeit
 @aws_handle_regions
-def get_ecr_repository_images(boto3_session: boto3.session.Session, region: str, repository_name: str) -> List[Dict]:
+def get_ecr_repository_images(boto3_session: boto3.session.Session, region: str, repository_name: str, current_aws_account_id: str) -> List[Dict]:
     logger.debug("Getting ECR images in repository '%s' for region '%s'.", repository_name, region)
     client = boto3_session.client('ecr', region_name=region)
     paginator = client.get_paginator('list_images')
     ecr_repository_images: List[Dict] = []
     for page in paginator.paginate(repositoryName=repository_name):
         ecr_repository_images.extend(page['imageIds'])
+    for image in ecr_repository_images:
+        image['region'] = region
+        image['consolelink'] = aws_console_link.get_console_link(arn=f"arn:aws:ecr::{current_aws_account_id}:image/{repository_name}")
     return ecr_repository_images
 
 
 @timeit
 def load_ecr_repositories(
-    neo4j_session: neo4j.Session, repos: List[Dict], region: str, current_aws_account_id: str,
+    neo4j_session: neo4j.Session, repos: List[Dict], current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
     query = """
@@ -58,8 +73,8 @@ def load_ecr_repositories(
         ON CREATE SET repo.firstseen = timestamp(),
             repo.arn = ecr_repo.repositoryArn,
             repo.name = ecr_repo.repositoryName,
-            repo.region = $Region,
             repo.consolelink = ecr_repo.consolelink,
+            repo.region = ecr_repo.region,
             repo.created_at = ecr_repo.createdAt
         SET repo.lastupdated = $aws_update_tag,
             repo.uri = ecr_repo.repositoryUri
@@ -70,11 +85,9 @@ def load_ecr_repositories(
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $aws_update_tag
     """
-    logger.info(f"Loading {len(repos)} ECR repositories for region {region} into graph.")
     neo4j_session.run(
         query,
         Repositories=repos,
-        Region=region,
         aws_update_tag=aws_update_tag,
         AWS_ACCOUNT_ID=current_aws_account_id,
     ).consume()  # See issue #440
@@ -103,7 +116,6 @@ def transform_ecr_repository_images(repo_data: Dict) -> List[Dict]:
 
 def _load_ecr_repo_img_tx(
     tx: neo4j.Transaction, repo_images_list: List[Dict], aws_update_tag: int,
-    region: str,
 ) -> None:
     query = """
     UNWIND $RepoList as repo_img
@@ -118,7 +130,8 @@ def _load_ecr_repo_img_tx(
         ON CREATE SET img.firstseen = timestamp(),
             img.digest = repo_img.imageDigest
         SET img.lastupdated = $aws_update_tag,
-            img.region = $Region
+            img.region = repo_img.region,
+            img.consolelink = repo_img.consolelink
         WITH ri, img, repo_img
 
         MERGE (ri)-[r1:IMAGE]->(img)
@@ -131,12 +144,12 @@ def _load_ecr_repo_img_tx(
         ON CREATE SET r2.firstseen = timestamp()
         SET r2.lastupdated = $aws_update_tag
     """
-    tx.run(query, RepoList=repo_images_list, Region=region, aws_update_tag=aws_update_tag)
+    tx.run(query, RepoList=repo_images_list, aws_update_tag=aws_update_tag)
 
 
 @timeit
 def load_ecr_repository_images(
-    neo4j_session: neo4j.Session, repo_images_list: List[Dict], region: str,
+    neo4j_session: neo4j.Session, repo_images_list: List[Dict],
     aws_update_tag: int,
 ) -> None:
     logger.info(f"Loading {len(repo_images_list)} ECR repository images in {region} into graph.")
@@ -181,19 +194,21 @@ def sync(
     repositories = []
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
-        image_data = {}
-        repositories = get_ecr_repositories(boto3_session, region)
-        
-        logger.info(f"Total ECR Repositories: {len(repositories)}")
-        
-        image_data = _get_image_data(boto3_session, region, repositories)
-        
-        load_ecr_repositories(neo4j_session, repositories, region, current_aws_account_id, update_tag)
-        
+        repos = get_ecr_repositories(boto3_session, region)
+        repositories = transform_repositories(repos, region)
 
-        repo_images_list = transform_ecr_repository_images(image_data)
-        load_ecr_repository_images(neo4j_session, repo_images_list, region, update_tag)
+    logger.info(f"Total ECR Repositories: {len(repositories)}")
+
+    load_ecr_repositories(neo4j_session, repositories, current_aws_account_id, update_tag)
+
+    image_data = {}
+    for repo in repositories:
+        repo_image_obj = get_ecr_repository_images(boto3_session, repo['region'], repo['repositoryName'], current_aws_account_id)
+        image_data[repo['repositoryUri']] = repo_image_obj
+
+    repo_images_list = transform_ecr_repository_images(image_data)
+    load_ecr_repository_images(neo4j_session, repo_images_list, update_tag)
     cleanup(neo4j_session, common_job_parameters)
+
     toc = time.perf_counter()
     logger.info(f"Time to process ECR: {toc - tic:0.4f} seconds")
-

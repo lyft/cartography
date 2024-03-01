@@ -10,7 +10,7 @@ CLUSTER_ARN = 'arn:aws:ecs:us-east-1:000000000000:cluster/test_cluster'
 
 def test_load_ecs_clusters(neo4j_session, *args):
     data = tests.data.aws.ecs.GET_ECS_CLUSTERS
-    cartography.intel.aws.ecs.load_ecs_clusters(neo4j_session, data,  TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
+    cartography.intel.aws.ecs.load_ecs_clusters(neo4j_session, data, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
 
     expected_nodes = {
         (
@@ -133,6 +133,7 @@ def test_load_ecs_services(neo4j_session, *args):
         )
         for n in nodes
     }
+
     assert actual_nodes == expected_nodes
 
     nodes = neo4j_session.run(

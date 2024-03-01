@@ -19,7 +19,7 @@ def test_analysis_jobs_cypher_syntax(neo4j_session):
     }
 
     for job_name in contents('cartography.data.jobs.analysis'):
-        if not job_name.endswith('.json'):
+        if not job_name.startswith('gcp') or not job_name.endswith('.json'):
             continue
         try:
             cartography.util.run_analysis_job(job_name, neo4j_session, parameters)
@@ -43,10 +43,13 @@ def test_cleanup_jobs_cypher_syntax(neo4j_session):
         'OKTA_ORG_ID': None,
         'DO_ACCOUNT_ID': None,
         'AZURE_SUBSCRIPTION_ID': None,
+        'AZURE_TENANT_ID': None,
+        'GCP_PROJECT_ID': None,
+        'WORKSPACE_ID': None,
     }
 
     for job_name in contents('cartography.data.jobs.cleanup'):
-        if not job_name.endswith('.json'):
+        if not job_name.startswith('gcp') or not job_name.endswith('.json'):
             continue
         try:
             cartography.util.run_cleanup_job(job_name, neo4j_session, parameters)

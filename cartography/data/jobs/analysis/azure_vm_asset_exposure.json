@@ -66,7 +66,7 @@
 			"iterative": false
 		},
 		{
-			"query": "MATCH (:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(:AzureNetworkBastionHost)<-[:CONTAIN]-(:AzureNetworkSubnet)<-[:SUBNET]-(interface:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.exposed_internet = true, (CASE WHEN NOT 'public_bastion' IN coalesce(vm.exposed_internet_type , []) THEN vm END).exposed_internet_type = coalesce(vm.exposed_internet_type , []) + 'public_bastion';",
+			"query": "MATCH (:AzurePublicIPAddress)<-[:MEMBER_PUBLIC_IP_ADDRESS]-(:AzureNetworkBastionHost)<-[:CONTAIN]-(:AzureNetworkSubnet)<-[:CONTAIN]-(AzureNetwork)-[:CONTAIN]->(:AzureNetworkSubnet)<-[:SUBNET]-(interface:AzureNetworkInterface)<-[:MEMBER_NETWORK_INTERFACE]-(vm:AzureVirtualMachine)<-[:RESOURCE]-(:AzureSubscription{id: $AZURE_SUBSCRIPTION_ID})<-[:RESOURCE]-(:AzureTenant{id: $AZURE_TENANT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vm.exposed_internet = true, (CASE WHEN NOT 'public_bastion' IN coalesce(vm.exposed_internet_type , []) THEN vm END).exposed_internet_type = coalesce(vm.exposed_internet_type , []) + 'public_bastion';",
 			"iterative": false
 		}
 	],

@@ -1,3 +1,4 @@
+import time
 import logging
 import re
 from collections import namedtuple
@@ -242,6 +243,15 @@ def cleanup_network_interfaces(neo4j_session: neo4j.Session, common_job_paramete
 
 
 @timeit
+def transform_network_interfaces(network_interfaces: List[Dict], region: str, aws_account_id: str) -> List[Dict]:
+    # arn:${Partition}:ec2:${Region}:${Account}:network-interface/${NetworkInterfaceId}
+    for ni in network_interfaces:
+        ni['Arn'] = f"arn:aws:ec2:{region}:{aws_account_id}:network-interface/{ni['NetworkInterfaceId']}"
+
+    return network_interfaces
+
+
+@timeit
 def sync_network_interfaces(
         neo4j_session: neo4j.Session,
         boto3_session: boto3.session.Session,
@@ -251,7 +261,9 @@ def sync_network_interfaces(
         common_job_parameters: Dict,
 ) -> None:
     tic = time.perf_counter()
+
     logger.info("Syncing EC2 Network Interfaces for account '%s', at %s.", current_aws_account_id, tic)
+
     for region in regions:
         logger.info(f"Syncing EC2 network interfaces for region '{region}' in account '{current_aws_account_id}'.")
         data = get_network_interface_data(boto3_session, region)

@@ -1,0 +1,22 @@
+{
+	"statements": [
+		{
+			"query": "MATCH ((n:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})) where EXISTS(n.exposed_internet) WITH n LIMIT $LIMIT_SIZE REMOVE n.exposed_internet, n.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		},
+		{
+			"query": "MATCH (instance:EC2Instance{exposed_internet: true})-[:MEMBER_AUTO_SCALE_GROUP]->(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET asg.exposed_internet = true,asg.exposed_internet_type = coalesce(instance.exposed_internet_type , [])",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (route:EC2Route{destination_cidr_block: '0.0.0.0/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation)<-[:HAS_EXPLICIT_ASSOCIATION|HAS_IMPLICIT_ASSOCIATION]-(:EC2Subnet)<-[:VPC_IDENTIFIER]-(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE route.gateway_id STARTS WITH 'igw-' SET asg.exposed_internet = true,(CASE WHEN NOT 'public_subnet_ipv4' IN coalesce(asg.exposed_internet_type , []) THEN asg END).exposed_internet_type = coalesce(asg.exposed_internet_type , []) + 'public_subnet_ipv4';",
+			"iterative": false
+		},
+		{
+			"query": "MATCH (route:EC2Route{destination_ipv6_cidr_block: '::/0'})<-[:MEMBER_OF_ROUTE_TABLE]-(:EC2RouteTable)-[:HAS_ASSOCIATION]->(:EC2RouteTableAssociation)<-[:HAS_EXPLICIT_ASSOCIATION|HAS_IMPLICIT_ASSOCIATION]-(:EC2Subnet)<-[:VPC_IDENTIFIER]-(asg:AutoScalingGroup)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE route.gateway_id STARTS WITH 'igw-' SET asg.exposed_internet = true,(CASE WHEN NOT 'public_subnet_ipv6' IN coalesce(asg.exposed_internet_type , []) THEN asg END).exposed_internet_type = coalesce(asg.exposed_internet_type , []) + 'public_subnet_ipv6';",
+			"iterative": false
+		}
+	],
+	"name": "AWS auto scale group asset internet exposure"
+}

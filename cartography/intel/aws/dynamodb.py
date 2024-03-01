@@ -11,6 +11,7 @@ from cartography.graph.job import GraphJob
 from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.models.aws.dynamodb.gsi import DynamoDBGSISchema
 from cartography.models.aws.dynamodb.tables import DynamoDBTableSchema
+import time
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
 from cartography.util import merge_module_sync_metadata
@@ -31,6 +32,7 @@ def get_dynamodb_tables(boto3_session: boto3.session.Session, region: str) -> Li
     for page in paginator.paginate():
         for table_name in page['TableNames']:
             dynamodb_tables.append(client.describe_table(TableName=table_name))
+
     return dynamodb_tables
 
 
@@ -121,14 +123,13 @@ def sync(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, regions: List[str], current_aws_account_id: str,
     update_tag: int, common_job_parameters: Dict,
 ) -> None:
+    tic = time.perf_counter()
+
+    logger.info("Syncing DynamoDB for account '%s', at %s.", current_aws_account_id, tic)
+
     sync_dynamodb_tables(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
     )
-    merge_module_sync_metadata(
-        neo4j_session,
-        group_type='AWSAccount',
-        group_id=current_aws_account_id,
-        synced_type='DynamoDBTable',
-        update_tag=update_tag,
-        stat_handler=stat_handler,
-    )
+
+    toc = time.perf_counter()
+    logger.info(f"Time to process DynamoDB: {toc - tic:0.4f} seconds")

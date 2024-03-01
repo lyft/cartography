@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Dict
 from typing import List
@@ -29,6 +30,18 @@ def get_elastic_ip_addresses(boto3_session: boto3.session.Session, region: str) 
 
     except Exception as e:
         logger.warning(f"Failed retrieve address for region - {region}. Error - {e}")
+
+    return addresses
+
+
+@timeit
+def transform_elastic_ip_addresses(elastic_ip_addresses: List[Dict], current_aws_account_id: str,) -> List[Dict]:
+    addresses: List[Dict] = []
+    for address in elastic_ip_addresses:
+        address['arn'] = f"arn:aws:ec2:{address.get('region')}:{current_aws_account_id}:elastic-ip/{address.get('AllocationId')}"
+        address['consolelink'] = aws_console_link.get_console_link(arn=address['arn'])
+        if address.get('AllocationId'):
+            addresses.append(address)
 
     return addresses
 
@@ -120,10 +133,10 @@ def sync_elastic_ip_addresses(
         logger.info(f"Syncing Elastic IP Addresses for region {region} in account {current_aws_account_id}.")
         addresses.extend(get_elastic_ip_addresses(boto3_session, region))
 
-        logger.info(f"Total Elastic IP Addresses: {len(addresses)}")
+    logger.info(f"Total Elastic IP Addresses: {len(addresses)}")
 
-        addresses = transform_elastic_ip_addresses(addresses, current_aws_account_id)
-        load_elastic_ip_addresses(neo4j_session, addresses,region, current_aws_account_id, update_tag,)
+    addresses = transform_elastic_ip_addresses(addresses, current_aws_account_id)
+    load_elastic_ip_addresses(neo4j_session, addresses, current_aws_account_id, update_tag)
     cleanup_elastic_ip_addresses(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

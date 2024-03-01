@@ -12,6 +12,7 @@ from tests.integration.util import check_rels
 TEST_ACCOUNT_ID = '000000000000'
 TEST_REGION = 'eu-west-1'
 TEST_UPDATE_TAG = 123456789
+TEST_WORKSPACE_ID = '12345'
 
 
 @patch.object(cartography.intel.aws.eks, 'get_eks_clusters', return_value=LIST_CLUSTERS)

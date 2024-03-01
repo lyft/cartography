@@ -133,6 +133,9 @@ def attach_subnet_to_network_interfaces(session: neo4j.Session, data_list: List[
 def load_public_ip_network_interfaces_relationship(session: neo4j.Session, interface_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_public_ip_network_interfaces_relationship, interface_id, data_list, update_tag)
 
+def attach_public_ip_to_load_balancer(session: neo4j.Session, load_balancer_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_attach_public_ip_to_load_balancer_tx, load_balancer_id, data_list, update_tag)
+
 
 def attach_public_ip_to_bastion_host(session: neo4j.Session, bastion_host_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_attach_public_ip_to_bastion_host_tx, bastion_host_id, data_list, update_tag)
@@ -237,6 +240,7 @@ def sync_networks(
     sync_network_interfaces(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
     sync_network_bastion_hosts(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
     sync_usages(neo4j_session, networks_list, client, update_tag, common_job_parameters)
+    sync_network_load_balancer(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
     cleanup_networks(neo4j_session, common_job_parameters)
 
 
@@ -333,7 +337,6 @@ def _attach_resource_group_networks_subnets(tx: neo4j.Transaction, network_subne
         update_tag=update_tag
     )
 
-
 def cleanup_networks_subnets(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_networks_subnets_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -415,7 +418,6 @@ def _attach_resource_group_network_routetables(tx: neo4j.Transaction, network_ro
         resource_group=resource_group,
         update_tag=update_tag,
     )
-
 
 def _load_network_bastion_hosts_tx(
     tx: neo4j.Transaction, subscription_id: str, network_bastion_host_list: List[Dict], update_tag: int,
@@ -618,7 +620,6 @@ def _attach_resource_group_network_routes(tx: neo4j.Transaction, network_routes_
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
-
 
 def cleanup_network_routes(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_network_routes_cleanup.json', neo4j_session, common_job_parameters)
@@ -1052,6 +1053,13 @@ def get_load_balancers_list(client: NetworkManagementClient, regions: list, comm
         load_balancer_list = []
         for load_balancer in network_load_balancer_list:
             load_balancer['resource_group'] = get_azure_resource_group_name(load_balancer.get('id'))
+            load_balancer['public_ip_address'] = []
+            for frontend_ip_configuration in load_balancer.get('frontend_ip_configurations', []):
+                public_ip_id = frontend_ip_configuration.get('public_ip_address', {}).get('id', None)
+                if public_ip_id:
+                    load_balancer['public_ip_address'].append(
+                        {'public_ip_id': public_ip_id}
+                    )
             load_balancer['consolelink'] = azure_console_link.get_console_link(
                 id=load_balancer['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'])
             if regions is None:
@@ -1271,7 +1279,6 @@ def _load_ip_configurations_tx(
         network_interfaces_list=network_interfaces_list,
         update_tag=update_tag,
     )
-
 
 def _attach_subnet_to_network_interfaces_tx(
         tx: neo4j.Transaction, network_interfaces_list: List[Dict], update_tag: int,
