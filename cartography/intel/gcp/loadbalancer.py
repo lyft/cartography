@@ -99,7 +99,7 @@ def get_regional_health_checks(compute: Resource, project_id: str, region: str, 
         return regional_health_checks
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
-        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden' or err.get('code') == 400:
             logger.warning(
                 (
                     "Could not retrieve regional health checks on project %s due to permissions issues. Code: %s, Message: %s"

@@ -131,7 +131,7 @@ def load_ec2_security_group_rule(neo4j_session: neo4j.Session, group: Dict, rule
 
 @timeit
 def load_ec2_security_groupinfo(
-    neo4j_session: neo4j.Session, data: List[Dict], region: str,
+    neo4j_session: neo4j.Session, data: List[Dict],
     current_aws_account_id: str, update_tag: int,
 ) -> None:
     ingest_security_group = """

@@ -46,7 +46,7 @@ def transform_elastic_ip_addresses(elastic_ip_addresses: List[Dict], current_aws
 
 @timeit
 def load_elastic_ip_addresses(
-    neo4j_session: neo4j.Session, elastic_ip_addresses: List[Dict], region: str,
+    neo4j_session: neo4j.Session, elastic_ip_addresses: List[Dict],
     current_aws_account_id: str, update_tag: int,
 ) -> None:
     """
@@ -69,7 +69,7 @@ def load_elastic_ip_addresses(
         address.private_ip_address = eia.PrivateIpAddress, address.public_ipv4_pool = eia.PublicIpv4Pool,
         address.network_border_group = eia.NetworkBorderGroup, address.customer_owned_ip = eia.CustomerOwnedIp,
         address.customer_owned_ipv4_pool = eia.CustomerOwnedIpv4Pool, address.carrier_ip = eia.CarrierIp,
-        address.region = $region, address.lastupdated = $update_tag, address.arn = eia.arn
+        address.region = eia.region, address.lastupdated = $update_tag, address.arn = eia.arn
         WITH address
 
         MATCH (account:AWSAccount{id: $aws_account_id})
@@ -95,7 +95,6 @@ def load_elastic_ip_addresses(
         elastic_ip_addresses=elastic_ip_addresses,
         aws_account_id=current_aws_account_id,
         update_tag=update_tag,
-        region=region,
     )
 
 

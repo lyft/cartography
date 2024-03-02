@@ -225,7 +225,7 @@ def get_regional_backend_services(compute: Resource, project_id: str, regions: l
         return regional_backend_services
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
-        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden' or err.get('code') == 400:
             logger.warning(
                 (
                     "Could not retrieve regional backend services on project %s due to permissions issues. Code: %s, Message: %s"
@@ -360,7 +360,7 @@ def get_regional_url_maps(compute: Resource, project_id: str, region: Dict) -> L
         return regional_url_maps
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
-        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
+        if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden' or err.get('code') == 400:
             logger.warning(
                 (
                     "Could not retrieve regional url maps on project %s due to permissions issues. Code: %s, Message: %s"

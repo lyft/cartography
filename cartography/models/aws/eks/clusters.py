@@ -16,7 +16,7 @@ class EKSClusterNodeProperties(CartographyNodeProperties):
     consolelink: PropertyRef = PropertyRef('consolelink')
     arn: PropertyRef = PropertyRef('arn', extra_index=True)
     name: PropertyRef = PropertyRef('name', extra_index=True)
-    region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
+    region: PropertyRef = PropertyRef('region')
     created_at: PropertyRef = PropertyRef('created_at')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     endpoint: PropertyRef = PropertyRef('endpoint')

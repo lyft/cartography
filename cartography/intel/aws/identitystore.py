@@ -46,12 +46,12 @@ def load_identity_center_instance(neo4j_session: neo4j.Session, instance: Dict, 
 def _load_identity_center_instance_tx(tx: neo4j.Transaction, instance: Dict, update_tag: int, organization_id: str) -> None:
     ingest_instances = """
         MATCH (i:AWSOrganization{id: $ORGANIZATION_ID})
-        SET 
+        SET
             i.firstseen = timestamp(),
             i.created_date = $instance.CreatedDate,
             i.identity_store_id = $instance.IdentityStoreId,
             i.identity_store_arn = $instance.InstanceArn,
-            i.is_sso = true, 
+            i.is_sso = true,
             i.lastupdated = $update_tag,
             i.name = $instance.Name
     """
@@ -90,22 +90,22 @@ def _load_identity_center_permissions_sets_tx(tx: neo4j.Transaction, instance_ar
     ingest_permissions_sets = """
     UNWIND $permissions_sets_list AS permissions_set
         MERGE (p:AWSPermissionSet{arn: permissions_set.PermissionSetArn})
-        ON CREATE SET 
+        ON CREATE SET
             p:AWSPrincipal,
             p.firstseen = timestamp(),
             p.created_date = permissions_set.CreatedDate,
             p.relay_state = permissions_set.RelayState,
             p.is_sso = true,
             p.session_duration = permissions_set.SessionDuration
-        SET 
+        SET
             p.lastupdated = $update_tag,
             p.name = permissions_set.Name
         WITH p
             MATCH (i:AWSOrganization{identity_store_arn: $INSTANCE_ARN})
             MERGE (i)-[r:RESOURCE]->(p)
-            ON CREATE SET 
+            ON CREATE SET
                 r.firstseen = timestamp()
-            SET 
+            SET
                 r.lastupdated = $update_tag
     """
 
@@ -187,9 +187,9 @@ def _load_identity_center_account_assignments_tx(tx: neo4j.Transaction, assignme
             MATCH (a:AWSAccount{id: $assignment.AccountId})
             WITH p,a
             MERGE (p)-[r:ATTACHED]->(a)
-            ON CREATE SET 
+            ON CREATE SET
                     r.firstseen = timestamp()
-                SET 
+                SET
                     r.lastupdated = $update_tag
         """
         tx.run(
@@ -204,9 +204,9 @@ def _load_identity_center_account_assignments_tx(tx: neo4j.Transaction, assignme
         MATCH (pr:AWSPrincipal{id: assignment.PrincipalId})
         WITH p,pr
         MERGE (p)-[r:ASSIGNED_TO]->(pr)
-        ON CREATE SET 
+        ON CREATE SET
                 r.firstseen = timestamp()
-        SET 
+        SET
                 r.lastupdated = $update_tag
     """
 
@@ -260,7 +260,7 @@ def _load_identity_center_users_tx(tx: neo4j.Transaction, instance_arn: str, use
     ingest_users = """
     UNWIND $users_list AS user
         MERGE (u:AWSUser{userid: user.UserId})
-        ON CREATE SET 
+        ON CREATE SET
             u:AWSPrincipal,
             u.firstseen = timestamp(),
             u.user_name = user.UserName,
@@ -269,15 +269,15 @@ def _load_identity_center_users_tx(tx: neo4j.Transaction, instance_arn: str, use
             u.identity_store_id = user.IdentityStoreId,
             u.id = user.UserId,
             u.arn = user.arn
-        SET 
+        SET
             u.lastupdated = $update_tag,
             u.name = user.DisplayName
         WITH u
             MATCH (i:AWSOrganization{identity_store_arn: $INSTANCE_ARN})
             MERGE (i)-[r:RESOURCE]->(u)
-            ON CREATE SET 
+            ON CREATE SET
                 r.firstseen = timestamp()
-            SET 
+            SET
                 r.lastupdated = $update_tag
     """
 
@@ -321,22 +321,22 @@ def _load_identity_center_groups_tx(tx: neo4j.Transaction, instance_arn: str, gr
     ingest_groups = """
     UNWIND $groups_list AS group
         MERGE (g:AWSGroup{groupid: group.GroupId})
-        ON CREATE SET 
+        ON CREATE SET
             g:AWSPrincipal,
             g.firstseen = timestamp(),
             g.identity_store_id = group.IdentityStoreId,
             g.id = group.GroupId,
             g.arn = group.arn
-        SET 
+        SET
             g.lastupdated = $update_tag,
             g.is_sso = true,
             g.name = group.DisplayName
         WITH g
             MATCH (i:AWSOrganization{identity_store_arn: $INSTANCE_ARN})
             MERGE (i)-[r:RESOURCE]->(g)
-            ON CREATE SET 
+            ON CREATE SET
                 r.firstseen = timestamp()
-            SET 
+            SET
                 r.lastupdated = $update_tag
     """
 
@@ -372,9 +372,9 @@ def _load_identity_center_group_memberships_tx(tx: neo4j.Transaction, membership
         MATCH (pr:AWSUser{id: membership.MemberId.UserId})
         WITH p,pr
         MERGE (pr)-[r:MEMBER_GROUP]->(p)
-        ON CREATE SET 
+        ON CREATE SET
                 r.firstseen = timestamp()
-        SET 
+        SET
                 r.lastupdated = $update_tag
     """
 

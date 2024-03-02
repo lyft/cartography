@@ -6,7 +6,7 @@
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (emr:EMRCluster{public_access_configuration: false})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET trail.anonymous_actions = emr.anonymous_actions, emr.anonymous_access = true, (CASE WHEN NOT 'assign_public_ip' IN  coalesce(trail.anonymous_access_type , []) THEN trail END).anonymous_access_type = coalesce(trail.anonymous_access_type , []) + 'assign_public_ip';",
+			"query": "MATCH (emr:EMRCluster{public_access_configuration: false})<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET emr.anonymous_access = true, (CASE WHEN NOT 'assign_public_ip' IN  coalesce(emr.anonymous_access_type , []) THEN emr END).anonymous_access_type = coalesce(emr.anonymous_access_type , []) + 'assign_public_ip';",
 			"iterative": false
 		}
 	],

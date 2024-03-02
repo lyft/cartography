@@ -66,6 +66,7 @@ def transform_volumes(volumes: List[Dict[str, Any]], region: str, current_aws_ac
             'VolumeId': volume_id,
             'KmsKeyId': volume.get('KmsKeyId'),
             'consolelink': consolelink,
+            'region': region,
         })
 
         if not active_attachments:
@@ -125,7 +126,6 @@ def load_volumes(
 def load_volume_relationships(
         neo4j_session: neo4j.Session,
         ebs_data: List[Dict[str, Any]],
-        region: str,
         current_aws_account_id: str,
         update_tag: int,
 ) -> None:
@@ -133,7 +133,6 @@ def load_volume_relationships(
         neo4j_session,
         EBSVolumeSchema(),
         ebs_data,
-        Region=region,
         AWS_ID=current_aws_account_id,
         lastupdated=update_tag,
     )
@@ -163,10 +162,10 @@ def sync_ebs_volumes(
         data = get_volumes(boto3_session, region)
         transformed_data.extend(transform_volumes(data, region, current_aws_account_id))
 
-    logger.info(f"Total EC2 Volumes: {len(data)}")
+    logger.info(f"Total EC2 Volumes: {len(transformed_data)}")
 
     load_volumes(neo4j_session, transformed_data, current_aws_account_id, update_tag)
-    load_volume_relationships(neo4j_session, transformed_data, update_tag)
+    load_volume_relationships(neo4j_session, transformed_data, current_aws_account_id, update_tag)
     cleanup_volumes(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

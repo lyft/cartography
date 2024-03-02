@@ -16,7 +16,7 @@ class EBSVolumeNodeProperties(CartographyNodeProperties):
     arn: PropertyRef = PropertyRef('Arn', extra_index=True)
     id: PropertyRef = PropertyRef('VolumeId')
     volumeid: PropertyRef = PropertyRef('VolumeId', extra_index=True)
-    region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
+    region: PropertyRef = PropertyRef('region')
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
     availabilityzone: PropertyRef = PropertyRef('AvailabilityZone')
     createtime: PropertyRef = PropertyRef('CreateTime')

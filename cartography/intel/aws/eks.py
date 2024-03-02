@@ -26,12 +26,12 @@ def get_eks_clusters(boto3_session: boto3.session.Session, region: str) -> List[
     paginator = client.get_paginator('list_clusters')
     for page in paginator.paginate():
         clusters.extend(page['clusters'])
+
     clusters_data = []
     for cluster in clusters:
         cluster_data = {}
         cluster_data['name'] = cluster
         cluster_data['region'] = region
-        # clusters_data['consolelink'] = aws_console_link.get_console_link(arn=clusters_data['arn'])
         clusters_data.append(cluster_data)
     return clusters_data
 
@@ -41,7 +41,7 @@ def get_eks_describe_cluster(boto3_session: boto3.session.Session, region: str, 
     client = boto3_session.client('eks', region_name=region)
     response = client.describe_cluster(name=cluster_name)
     response['cluster']['region'] = region
-    # response['cluster']['arn'] = aws_console_link.get_console_link(arn=response['cluster']['arn'])
+    response['cluster']['consolelink'] = aws_console_link.get_console_link(arn=response['cluster']['arn'])
     return response['cluster']
 
 
@@ -49,7 +49,6 @@ def get_eks_describe_cluster(boto3_session: boto3.session.Session, region: str, 
 def load_eks_clusters(
         neo4j_session: neo4j.Session,
         cluster_data: List[Dict[str, Any]],
-        region: str,
         current_aws_account_id: str,
         aws_update_tag: int,
 ) -> None:
@@ -57,7 +56,6 @@ def load_eks_clusters(
         neo4j_session,
         EKSClusterSchema(),
         cluster_data,
-        Region=region,
         AWS_ID=current_aws_account_id,
         lastupdated=aws_update_tag,
     )
@@ -117,9 +115,9 @@ def sync(
 
     logger.info(f"Total EKS Clusters: {len(clusters)}")
 
-    cluster_data: Dict = {}
+    cluster_data: List = []
     for cluster in clusters:
-        cluster_data[cluster['name']] = get_eks_describe_cluster(boto3_session, cluster['region'], cluster['name'])
+        cluster_data.append(get_eks_describe_cluster(boto3_session, cluster['region'], cluster['name']))
 
     load_eks_clusters(neo4j_session, cluster_data, current_aws_account_id, update_tag)
 

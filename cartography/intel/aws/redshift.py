@@ -166,13 +166,12 @@ def load_redshift_cluster_data(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $aws_update_tag
     """
-    # consolelink=aws_console_link.get_console_link(arn=cluster['arn']),
 
     for cluster in clusters:
         neo4j_session.run(
             ingest_cluster,
             Arn=cluster['arn'],
-            consolelink='',
+            consolelink=aws_console_link.get_console_link(arn=cluster['arn']),
             AZ=cluster['AvailabilityZone'],
             ClusterCreateTime=cluster['ClusterCreateTime'],
             ClusterIdentifier=cluster['ClusterIdentifier'],

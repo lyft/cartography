@@ -138,6 +138,24 @@ def attach_public_ip_to_load_balancer(session: neo4j.Session, load_balancer_id: 
     session.write_transaction(_attach_public_ip_to_load_balancer_tx, load_balancer_id, data_list, update_tag)
 
 
+def _attach_public_ip_to_load_balancer_tx(tx: neo4j.Transaction, load_balancer_id: str, data_list: List[Dict], update_tag: int) -> None:
+    attach_ip_lb = """
+    UNWIND $ip_list AS public_ip
+    MATCH (ip:AzurePublicIPAddress{id: public_ip.public_ip_id})
+    WITH ip
+    MATCH (lb:AzureNetworkLoadBalancer{id: $load_balancer_id})
+    MERGE (lb)-[r:MEMBER_PUBLIC_IP_ADDRESS]->(ip)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+    tx.run(
+        attach_ip_lb,
+        ip_list=data_list,
+        load_balancer_id=load_balancer_id,
+        update_tag=update_tag,
+    )
+
+
 def attach_public_ip_to_bastion_host(session: neo4j.Session, bastion_host_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_attach_public_ip_to_bastion_host_tx, bastion_host_id, data_list, update_tag)
 
@@ -242,7 +260,7 @@ def sync_networks(
     sync_network_interfaces(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
     sync_network_bastion_hosts(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
     sync_usages(neo4j_session, networks_list, client, update_tag, common_job_parameters)
-    sync_network_load_balancer(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
+    sync_load_balancer(neo4j_session, client, subscription_id, update_tag, common_job_parameters, regions)
     cleanup_networks(neo4j_session, common_job_parameters)
 
 

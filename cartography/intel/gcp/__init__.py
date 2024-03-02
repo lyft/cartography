@@ -26,6 +26,34 @@ from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
+from . import apigateway
+from . import bigtable
+from . import cloud_logging
+from . import cloudcdn
+from . import cloudfunction
+from . import cloudkms
+from . import cloudmonitoring
+from . import cloudrun
+from . import compute
+from . import dataproc
+from . import dns
+from . import firestore
+from . import gke
+from . import iam
+from . import pubsub
+from . import sql
+from . import storage
+from . import cloud_logging
+from . import cloudmonitoring
+from . import dataproc
+from . import cloudcdn
+from . import loadbalancer
+from . import bigquery
+from . import dataflow
+from . import spanner
+from . import pubsublite
+from . import cloudtasks
+
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun  \
@@ -66,7 +94,6 @@ service_names = Services(
     cloudtasks='cloudtasks.googleapis.com',
     serviceusage='serviceusage.googleapis.com',
     policyanalyzer='policyanalyzer.googleapis.com',
-
 )
 
 
@@ -91,6 +118,14 @@ def _get_crm_resource_v1(credentials: GoogleCredentials) -> Resource:
     # cache_discovery=False to suppress extra warnings.
     # See https://github.com/googleapis/google-api-python-client/issues/299#issuecomment-268915510 and related issues
     return googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials, cache_discovery=False)
+
+def _get_policyanalyzer_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a policyanalyzer resource object.
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('policyanalyzer', 'v1', credentials=credentials, cache_discovery=False)
 
 
 def _get_policyanalyzer_resource(credentials: GoogleCredentials) -> Resource:
@@ -388,7 +423,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         cloudtasks=_get_cloudtasks_resource(credentials),
         spanner=_get_spanner_resource(credentials),
         pubsublite=_get_pubsublite_resource(credentials),
-        policyanalyzer=_get_policyanalyzer_resource(credentials),
+        policyanalyzer= _get_policyanalyzer_resource(credentials),
     )
 
 

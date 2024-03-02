@@ -76,7 +76,6 @@ def get_service_account_last_used_activities(policyanalyzer: Resource,project_id
             return []
         else:
             raise
-
     return activities
 
 def get_last_authenticated_time(key_id:str,activities:List[Dict]):

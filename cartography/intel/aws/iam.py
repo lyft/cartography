@@ -268,8 +268,11 @@ def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
     for page in paginator.paginate():
         roles.extend(page['Roles'])
     for role in roles:
-        role_data = client.get_role(RoleName=role.get("RoleName")).get("Role")
-        role['RoleLastUsed'] = role_data.get("RoleLastUsed")
+        try:
+            role_data = client.get_role(RoleName=role.get("RoleName")).get("Role")
+            role['RoleLastUsed'] = role_data.get("RoleLastUsed")
+        except Exception as e:
+            logger.warning(f'Failed to get role info. {e}')
     return {'Roles': roles}
 
 
@@ -307,7 +310,7 @@ def transform_roles(boto3_session: boto3.session.Session, roles: List[Dict], ext
     for role in roles:
         ExternalAccess = None
         ExternalAccounts = []
-        if role['arn'] in external_access_roles_arn_list:
+        if role['Arn'] in external_access_roles_arn_list:
             for statement in role["AssumeRolePolicyDocument"]["Statement"]:
                 principal_entries = _parse_principal_entries(statement["Principal"])
                 for principal_type, principal_value in principal_entries:
@@ -767,7 +770,7 @@ def load_policy_data(
     for principal_arn, policy_list in policy_map.items():
         logger.debug(f"Syncing IAM inline policies for principal {principal_arn}")
         for policy_name, statements in policy_list.items():
-            # consolelink = aws_console_link.get_console_link(arn=f"arn:aws:iam::{current_aws_account_id}:policy_statement/{policy_name}")
+            consolelink = aws_console_link.get_console_link(arn=f"arn:aws:iam::{current_aws_account_id}:policy_statement/{policy_name}")
             consolelink = ''
             policy_id = transform_policy_id(principal_arn, policy_type, policy_name)
             load_policy(
