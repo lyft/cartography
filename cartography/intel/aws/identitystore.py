@@ -188,9 +188,9 @@ def _load_identity_center_account_assignments_tx(tx: neo4j.Transaction, assignme
             WITH p,a
             MERGE (p)-[r:ATTACHED]->(a)
             ON CREATE SET
-                    r.firstseen = timestamp()
-                SET
-                    r.lastupdated = $update_tag
+                r.firstseen = timestamp()
+            SET
+                r.lastupdated = $update_tag
         """
         tx.run(
             attach_permission_set_to_account,

@@ -533,6 +533,7 @@ def get_network_bastion_list(client: NetworkManagementClient, regions: list, com
         network_bastion_host_list = list(map(lambda x: x.as_dict(), client.bastion_hosts.list()))
         data = []
         for bastion_host in network_bastion_host_list:
+            bastion_host['public_ip_address'] = []
             bastion_host['subnets'] = []
             for ip_conf in bastion_host.get('ip_configurations', []):
                 bastion_host['public_ip_address'].append(
@@ -541,7 +542,6 @@ def get_network_bastion_list(client: NetworkManagementClient, regions: list, com
                 bastion_host['subnets'].append(
                     {"subnet_id": ip_conf.get('subnet', {}).get('id', None)},
                 )
-            bastion_host['subnets'] = list(set(bastion_host['subnets']))
             bastion_host['consolelink'] = azure_console_link.get_console_link(
                 id=bastion_host['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
             )
