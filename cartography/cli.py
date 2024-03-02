@@ -785,7 +785,7 @@ def run_aws(request):
         update_tag=request.get('updateTag', None),
         refresh_entitlements=request.get('refreshEntitlements', False),
         identity_store_region=request.get('identityStoreRegion', None),
-        aws_internal_accounts=request.get('awsInternalAccounts', None)
+        aws_internal_accounts=request.get('awsInternalAccounts', None),
     )
 
     if request['logging']['mode'] == "verbose":

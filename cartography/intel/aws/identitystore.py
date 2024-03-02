@@ -1,17 +1,17 @@
 import enum
-import time
-import logging
 import json
+import logging
+import time
 from typing import Dict
 from typing import List
 
 import boto3
 import neo4j
 
+from cartography.intel.aws.iam import load_policy_data
+from cartography.intel.aws.iam import transform_policy_data
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-
-from cartography.intel.aws.iam import transform_policy_data, load_policy_data
 
 logger = logging.getLogger(__name__)
 
@@ -292,7 +292,7 @@ def _load_identity_center_users_tx(tx: neo4j.Transaction, instance_arn: str, use
 @timeit
 def sync_identity_center_users(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, instance: Dict,
-    aws_update_tag: int, region: str
+    aws_update_tag: int, region: str,
 ) -> None:
     users = get_identity_center_users_list(boto3_session, instance, region)
     load_identity_center_users(neo4j_session, instance["InstanceArn"], users, aws_update_tag)
@@ -388,7 +388,7 @@ def _load_identity_center_group_memberships_tx(tx: neo4j.Transaction, membership
 @timeit
 def sync_identity_center_groups(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, instance: Dict,
-    aws_update_tag: int, region: str
+    aws_update_tag: int, region: str,
 ) -> None:
     groups = get_identity_center_groups_list(boto3_session, instance, region)
     load_identity_center_groups(neo4j_session, instance["InstanceArn"], groups, aws_update_tag)

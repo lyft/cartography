@@ -1,4 +1,4 @@
-import datetime
+import hashlib
 import logging
 import traceback
 from concurrent.futures import as_completed
@@ -7,7 +7,6 @@ from typing import Any
 from typing import Dict
 from typing import Iterable
 from typing import List
-import hashlib
 
 import boto3
 import botocore.exceptions
@@ -462,7 +461,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     if not organization:
         organization = {
             "Id": f"{hashlib.sha256(common_job_parameters['WORKSPACE_ID'].encode()).hexdigest()}",
-            "IsCloudanixGenerated": True
+            "IsCloudanixGenerated": True,
         }
     common_job_parameters["ORGANIZATION_ID"] = organization["Id"]
 

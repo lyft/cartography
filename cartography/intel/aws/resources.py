@@ -14,6 +14,7 @@ from . import elasticache
 from . import elasticsearch
 from . import emr
 from . import iam
+from . import identitystore
 from . import inspector
 from . import kms
 from . import lambda_function
@@ -29,7 +30,6 @@ from . import ses
 from . import sns
 from . import sqs
 from . import ssm
-from . import identitystore
 from .ec2.auto_scaling_groups import sync_ec2_auto_scaling_groups
 from .ec2.elastic_ip_addresses import sync_elastic_ip_addresses
 from .ec2.images import sync_ec2_images

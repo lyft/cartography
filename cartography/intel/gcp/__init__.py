@@ -15,7 +15,30 @@ from neo4j import GraphDatabase
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
+from . import apigateway
+from . import bigquery
+from . import bigtable
+from . import cloud_logging
+from . import cloudcdn
+from . import cloudfunction
+from . import cloudkms
+from . import cloudmonitoring
+from . import cloudrun
+from . import cloudtasks
+from . import compute
+from . import dataflow
+from . import dataproc
+from . import dns
+from . import firestore
+from . import gke
+from . import iam
 from . import label
+from . import loadbalancer
+from . import pubsub
+from . import pubsublite
+from . import spanner
+from . import sql
+from . import storage
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
 from cartography.graph.session import Session
@@ -25,34 +48,6 @@ from cartography.intel.gcp.util.common import parse_and_validate_gcp_requested_s
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-
-from . import apigateway
-from . import bigtable
-from . import cloud_logging
-from . import cloudcdn
-from . import cloudfunction
-from . import cloudkms
-from . import cloudmonitoring
-from . import cloudrun
-from . import compute
-from . import dataproc
-from . import dns
-from . import firestore
-from . import gke
-from . import iam
-from . import pubsub
-from . import sql
-from . import storage
-from . import cloud_logging
-from . import cloudmonitoring
-from . import dataproc
-from . import cloudcdn
-from . import loadbalancer
-from . import bigquery
-from . import dataflow
-from . import spanner
-from . import pubsublite
-from . import cloudtasks
 
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
@@ -118,6 +113,7 @@ def _get_crm_resource_v1(credentials: GoogleCredentials) -> Resource:
     # cache_discovery=False to suppress extra warnings.
     # See https://github.com/googleapis/google-api-python-client/issues/299#issuecomment-268915510 and related issues
     return googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials, cache_discovery=False)
+
 
 def _get_policyanalyzer_resource(credentials: GoogleCredentials) -> Resource:
     """
@@ -423,7 +419,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         cloudtasks=_get_cloudtasks_resource(credentials),
         spanner=_get_spanner_resource(credentials),
         pubsublite=_get_pubsublite_resource(credentials),
-        policyanalyzer= _get_policyanalyzer_resource(credentials),
+        policyanalyzer=_get_policyanalyzer_resource(credentials),
     )
 
 

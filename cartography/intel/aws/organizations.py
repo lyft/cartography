@@ -149,7 +149,7 @@ def load_aws_accounts(
             organizationArn=organization.get("Arn", None),
             masterAccountArn=organization.get("MasterAccountArn", None),
             masterAccountId=organization.get("MasterAccountId", None),
-            masterAccountEmail=organization.get("MasterAccountEmail", None)
+            masterAccountEmail=organization.get("MasterAccountEmail", None),
 
         )
 

@@ -12,6 +12,17 @@ from azure.graphrbac import GraphRbacManagementClient
 from azure.mgmt.resource import SubscriptionClient
 from neo4j import GraphDatabase
 
+from . import aks
+from . import compute
+from . import cosmosdb
+from . import function_app
+from . import iam
+from . import key_vaults
+from . import monitor
+from . import network
+from . import securitycenter
+from . import sql
+from . import storage
 from . import subscription
 from . import tag
 from . import tenant
