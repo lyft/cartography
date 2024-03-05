@@ -4,6 +4,7 @@ import re
 import sys
 from functools import partial
 from functools import wraps
+from inspect import signature
 from string import Template
 from typing import Any
 from typing import Awaitable
@@ -11,6 +12,7 @@ from typing import BinaryIO
 from typing import Callable
 from typing import cast
 from typing import Dict
+from typing import get_origin
 from typing import Iterable
 from typing import List
 from typing import Optional
@@ -225,7 +227,7 @@ If not, then the AWS datatype somehow does not have this key.''',
     return items
 
 
-AWSGetFunc = TypeVar('AWSGetFunc', bound=Callable[..., List])
+AWSGetFunc = TypeVar('AWSGetFunc', bound=Union[Callable[..., List], Callable[..., Dict[Any, Any]]])
 
 # fix for AWS TooManyRequestsException
 # https://github.com/lyft/cartography/issues/297
@@ -282,7 +284,9 @@ def aws_handle_regions(func: AWSGetFunc) -> AWSGetFunc:
             # so we can continue without raising an exception
             if e.response['Error']['Code'] in ERROR_CODES:
                 logger.warning("{} in this region. Skipping...".format(e.response['Error']['Message']))
-                return []
+                return_type = signature(func).return_annotation
+                return_type_base = get_origin(return_type)
+                return return_type_base.__new__(cast(Any, return_type_base))
             else:
                 raise
     return cast(AWSGetFunc, inner_function)
