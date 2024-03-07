@@ -1,5 +1,6 @@
 import logging
 import math
+import asyncio
 from datetime import datetime
 from typing import Dict
 from typing import List
@@ -9,6 +10,7 @@ from azure.core.exceptions import HttpResponseError
 from azure.graphrbac import GraphRbacManagementClient
 from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.msi import ManagedServiceIdentityClient
+from msgraph import GraphServiceClient
 from cloudconsolelink.clouds.azure import AzureLinker
 
 from .util.credentials import Credentials
@@ -17,6 +19,8 @@ from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 azure_console_link = AzureLinker()
+
+scopes = ['https://graph.microsoft.com/.default']
 
 
 def load_tenant_users(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
@@ -73,6 +77,12 @@ def set_used_state(session: neo4j.Session, tenant_id: str, common_job_parameters
 @timeit
 def get_graph_client(credentials: Credentials, tenant_id: str) -> GraphRbacManagementClient:
     client = GraphRbacManagementClient(credentials, tenant_id)
+    return client
+
+
+@timeit
+def get_default_graph_client(credentials: Credentials) -> GraphServiceClient:
+    client = GraphServiceClient(credentials, scopes)
     return client
 
 
@@ -285,6 +295,51 @@ def _load_tenant_groups_tx(
     )
 
 
+async def get_group_members(credentials: Credentials, group_id: str):
+    client: GraphServiceClient = get_default_graph_client(credentials.default_graph_credentials)
+    members_data = []
+    try:
+        members = await client.groups.by_group_id(group_id.split("/")[-1]).members.get()
+
+        if members and members.value:
+            for member in members.value:
+                members_data.append({
+                    "id": member.id,
+                    "display_name": member.display_name,
+                    "mail": member.mail,
+                    "group_id": group_id
+                })
+    except Exception as e:
+        logger.warning(f"error to get members of group {group_id} - {e}")
+    return members_data
+
+
+@timeit
+def load_group_memberships(neo4j_session: neo4j.Session, memberships: List[Dict], update_tag: int) -> None:
+    neo4j_session.write_transaction(_load_group_memberships_tx, memberships, update_tag)
+
+
+@timeit
+def _load_group_memberships_tx(tx: neo4j.Transaction, memberships: List[Dict], update_tag: int) -> None:
+    ingest_memberships = """
+    UNWIND $memberships AS membership
+        MATCH (p:AzureGroup{id: membership.group_id})
+        MATCH (pr:AzurePrincipal{object_id: membership.id})
+        WITH p,pr
+        MERGE (pr)-[r:MEMBER_AZURE_GROUP]->(p)
+        ON CREATE SET
+                r.firstseen = timestamp()
+        SET
+                r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_memberships,
+        memberships=memberships,
+        update_tag=update_tag,
+    )
+
+
 def cleanup_tenant_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_tenant_groups_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -293,10 +348,14 @@ def sync_tenant_groups(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
     common_job_parameters: Dict,
 ) -> None:
-    client = get_graph_client(credentials, tenant_id)
+    client = get_graph_client(credentials.aad_graph_credentials, tenant_id)
     tenant_groups_list = get_tenant_groups_list(client, tenant_id)
 
     load_tenant_groups(neo4j_session, tenant_id, tenant_groups_list, update_tag)
+    for group in tenant_groups_list:
+        memberships = asyncio.run(get_group_members(credentials, group["id"]))
+        load_group_memberships(neo4j_session, memberships, update_tag)
+
     cleanup_tenant_groups(neo4j_session, common_job_parameters)
 
 
@@ -725,7 +784,7 @@ def sync(
             update_tag, common_job_parameters,
         )
         sync_tenant_groups(
-            neo4j_session, credentials.aad_graph_credentials, tenant_id,
+            neo4j_session, credentials, tenant_id,
             update_tag, common_job_parameters,
         )
         sync_tenant_applications(

@@ -68,7 +68,8 @@ setup(
         "azure-mgmt-resource>=10.2.0",
         "azure-mgmt-network>=2.7.0",
         "azure-mgmt-web>=0.35.0",
-        "kubernetes>=22.6.0",
+        "msgraph-sdk==1.1.0"
+        "kubernetes=22.6.0",
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
         "python-dateutil",
