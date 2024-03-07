@@ -1378,7 +1378,7 @@ def load_gcp_ingress_firewalls(neo4j_session: neo4j.Session, fw_list: List[Resou
     ON CREATE SET nic.firstseen = timestamp()
     SET nic.lastupdated = $gcp_update_tag
 
-    MERGE (fw)-[c:ATTACH_TO]->(nic)
+    MERGE (fw)-[c:ATTACHED_TO]->(nic)
     ON CREATE SET c.firstseen = timestamp()
     SET c.lastupdated = $gcp_update_tag
     """
