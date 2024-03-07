@@ -91,6 +91,7 @@ CREATE INDEX IF NOT EXISTS FOR (n:ECSTask) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:ECSContainerDefinition) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:ECSContainer) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:EKSCluster) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:EKSClusterNodeGroup) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:ElasticacheCluster) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:ElasticacheCluster) ON (n.arn);
 CREATE INDEX IF NOT EXISTS FOR (n:EasticIPAddress) ON (n.id);
