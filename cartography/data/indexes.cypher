@@ -300,6 +300,7 @@ CREATE INDEX IF NOT EXISTS FOR (n:AzureSnapshot) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPDomain) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:AzureCluster) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:AzureCluster) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:AzureClusterAgentPool) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:AzureContainerRegistry) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:AzureContainerRegistryReplication) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:AzureContainerRegistryRun) ON (n.id);
