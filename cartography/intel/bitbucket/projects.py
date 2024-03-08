@@ -18,9 +18,9 @@ def get_projects(access_token:str,workspace:str):
     return make_requests_url(url,access_token)
 
 
-
 def load_projects_data(session: neo4j.Session, project_data:List[Dict],common_job_parameters:Dict) -> None:
     session.write_transaction(_load_projects_data, project_data,  common_job_parameters)
+
 
 def _load_projects_data(tx: neo4j.Transaction,project_data:List[Dict],common_job_parameters:Dict):
     ingest_workspace="""
@@ -43,7 +43,7 @@ def _load_projects_data(tx: neo4j.Transaction,project_data:List[Dict],common_job
 
     WITH pro,project
     MATCH (work:BitbucketWorkspace{id:project.workspace.uuid})
-    merge (work)-[o:PROJETS]->(pro)
+    merge (work)-[o:RESOURCE]->(pro)
     ON CREATE SET o.firstseen = timestamp()
     SET o.lastupdated = $UpdateTag
     """
@@ -62,9 +62,8 @@ def cleanup(neo4j_session: neo4j.Session,  common_job_parameters: Dict) -> None:
 def sync(
         neo4j_session: neo4j.Session,
         workspace_name:str,
-        bitbucket_refresh_token:str,
+        bitbucket_access_token:str,
         common_job_parameters: Dict[str, Any],
-
 ) -> None:
     """
     Performs the sequential tasks to collect, transform, and sync bitbucket data
@@ -73,6 +72,6 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Bitbucket All workspace Projects ")
-    workspace_projects=get_projects(bitbucket_refresh_token,workspace_name)
+    workspace_projects=get_projects(bitbucket_access_token,workspace_name)
     load_projects_data(neo4j_session,workspace_projects,common_job_parameters)
     cleanup(neo4j_session,common_job_parameters)

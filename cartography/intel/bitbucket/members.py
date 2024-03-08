@@ -12,18 +12,18 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
+
 @timeit
 def get_workspace_members(access_token:str,workspace:str):
     url = f"https://api.bitbucket.org/2.0/workspaces/{workspace}/members"
     return make_requests_url(url,access_token)
 
 
+def load_members_data(session: neo4j.Session, members_data:List[Dict],common_job_parameters:Dict) -> None:
+    session.write_transaction(_load_members_data, members_data,  common_job_parameters)
 
-def load_memebers_data(session: neo4j.Session, members_data:List[Dict],common_job_parameters:Dict) -> None:
-    session.write_transaction(_load_memebers_data, members_data,  common_job_parameters)
 
-
-def _load_memebers_data(tx: neo4j.Transaction,members_data:List[Dict],common_job_parameters:Dict):
+def _load_members_data(tx: neo4j.Transaction,members_data:List[Dict],common_job_parameters:Dict):
     ingest_workspace="""
     UNWIND $membersData as member
     MERGE (mem:BitbucketMember{id: member.user.uuid})
@@ -50,7 +50,6 @@ def _load_memebers_data(tx: neo4j.Transaction,members_data:List[Dict],common_job
     )
 
 
-
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('bitbucket_workspace_member_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -58,9 +57,8 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 def sync(
         neo4j_session: neo4j.Session,
         workspace_name:str,
-        bitbucket_refresh_token:str,
+        bitbucket_access_token:str,
         common_job_parameters: Dict[str, Any],
-
 ) -> None:
     """
     Performs the sequential tasks to collect, transform, and sync bitbucket data
@@ -69,6 +67,6 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Bitbucket All workspace members")
-    workspace_members=get_workspace_members(bitbucket_refresh_token,workspace_name)
-    load_memebers_data(neo4j_session,workspace_members,common_job_parameters)
+    workspace_members=get_workspace_members(bitbucket_access_token,workspace_name)
+    load_members_data(neo4j_session,workspace_members,common_job_parameters)
     cleanup(neo4j_session,common_job_parameters)

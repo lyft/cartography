@@ -300,5 +300,4 @@ def test_load_ecs_task_definitions(neo4j_session, *args):
     )
     # TODO test later
     for n in nodes:
-        print("nodes==", n['c'])
         assert n["c"] == 1

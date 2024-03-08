@@ -5,7 +5,7 @@ TEST_UPDATE_TAG = 123456789
 common_job_parameters={'UPDATE_TAG':'123456789',"WORKSPACE_ID":"123445","WORKSPACE_UUID":"234"}
 
 def test_load_member(neo4j_session):
-    cartography.intel.bitbucket.members.load_memebers_data(
+    cartography.intel.bitbucket.members.load_members_data(
         neo4j_session,
         tests.data.bitbucket.workspace.members,
         common_job_parameters,

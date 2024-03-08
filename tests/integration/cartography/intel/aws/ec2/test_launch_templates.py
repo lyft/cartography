@@ -80,5 +80,4 @@ def test_load_launch_templates(neo4j_session, *args):
         )
         for n in versions
     }
-    print(actual_versions)
     assert actual_versions == expected_versions

@@ -895,7 +895,7 @@ def run_bitbucket(request):
         neo4j_password=request['neo4j']['pwd'],
         neo4j_max_connection_lifetime=request['neo4j']['connection_lifetime'],
         params=request['params'],
-        bitbucket_access_token=request['bitbucket']['access_token'],
+        bitbucket_access_token=request['access_token'],
     )
 
     if request['logging']['mode'] == "verbose":

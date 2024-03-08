@@ -13,7 +13,7 @@ def test_load_projects(neo4j_session):
     )
     nodes = neo4j_session.run(
         """
-        MATCH (g:BitbucketProjects) RETURN g.name;
+        MATCH (g:BitbucketProject) RETURN g.name;
         """,
     )
     expected_nodes = {'bitbuket-test', 'firstproject'}

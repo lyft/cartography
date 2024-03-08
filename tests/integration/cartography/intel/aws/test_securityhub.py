@@ -40,5 +40,4 @@ def test_transform_and_load_hub(neo4j_session, *args):
         )
         for n in nodes
     }
-    print(actual_nodes)
     assert actual_nodes == expected_nodes

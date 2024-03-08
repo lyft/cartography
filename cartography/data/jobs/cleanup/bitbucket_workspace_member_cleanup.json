@@ -1,15 +1,15 @@
 {
-    "statements": [
-        {
+	"statements": [
+		{
 			"query": "MATCH  (n:BitbucketMember)<-[:MEMBER]-(:BitbucketWorkspace{uuid: $WORKSPACE_UUID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})  WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
-        {
-            "query": "MATCH (:BitbucketMember)<-[r:MEMBER]-(:BitbucketWorkspace{uuid: $WORKSPACE_UUID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
-            "iterative": true,
-            "iterationsize": 100
-        }
-    ],
-    "name": "cleanup workspaces members "
+		{
+			"query": "MATCH (:BitbucketMember)<-[r:MEMBER]-(:BitbucketWorkspace{uuid: $WORKSPACE_UUID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"iterative": true,
+			"iterationsize": 100
+		}
+	],
+	"name": "cleanup Workspaces Members"
 }

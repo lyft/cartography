@@ -181,7 +181,6 @@ def test_load_lambda_event_source_mappings(neo4j_session):
     )
 
     actual_nodes = {n['r.id'] for n in nodes}
-    print("1==", actual_nodes)
     assert actual_nodes == expected_nodes
 
 

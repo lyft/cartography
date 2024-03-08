@@ -132,5 +132,4 @@ def test_load_tags_relationships(neo4j_session):
     )
 
     actual = {(r['n1.id'], r['n2.id']) for r in result}
-    print(actual)
     assert actual == expected

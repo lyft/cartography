@@ -90,7 +90,9 @@ def start_github_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
 
     auth_tokens = json.loads(base64.b64decode(config.github_config).decode())
     common_job_parameters = {
+        "WORKSPACE_ID": config.params['workspace']['id_string'],
         "UPDATE_TAG": config.update_tag,
+        "ORGANIZATION_ID": config.params['workspace']['account_id'],
     }
 
     # run sync for the provided github tokens

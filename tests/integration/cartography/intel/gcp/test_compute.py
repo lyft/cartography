@@ -508,7 +508,6 @@ def test_compute_network_interfaces(neo4j_session):
     """
 
     objects = neo4j_session.run(nat_ip_query, GCP_PROJECT_ID=TEST_PROJECT_ID)
-    #print(objects)
     actual_nodes = {
         (
             o['i.id'],

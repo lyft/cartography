@@ -12,16 +12,19 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
+
 @timeit
 def get_repos(access_token:str,workspace:str):
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}"
     return make_requests_url(url,access_token)
 
-def load_repositeris_data(session: neo4j.Session, repos_data:List[Dict],common_job_parameters:Dict) -> None:
-    session.write_transaction(_load_repositeris_data, repos_data,  common_job_parameters)
 
-def _load_repositeris_data(tx: neo4j.Transaction,repos_data:List[Dict],common_job_parameters:Dict):
-    ingest_repositeris="""
+def load_repositories_data(session: neo4j.Session, repos_data:List[Dict],common_job_parameters:Dict) -> None:
+    session.write_transaction(_load_repositories_data, repos_data,  common_job_parameters)
+
+
+def _load_repositories_data(tx: neo4j.Transaction,repos_data:List[Dict],common_job_parameters:Dict):
+    ingest_repositories="""
     UNWIND $reposData as repo
     MERGE (re:BitbucketRepository{id:repo.uuid})
     ON CREATE SET re.firstseen = timestamp(),
@@ -40,15 +43,14 @@ def _load_repositeris_data(tx: neo4j.Transaction,repos_data:List[Dict],common_jo
     re.parent=repo.parent.name,
     re.lastupdated = $UpdateTag
     WITH re,repo
-    MATCH (project:BitbucketProjects{id:repo.project.uuid})
-    merge (project)<-[o:REPOSITORY]-(re)
+    MATCH (project:BitbucketProject{id:repo.project.uuid})
+    merge (project)<-[o:RESOURCE]-(re)
     ON CREATE SET o.firstseen = timestamp()
     SET o.lastupdated = $UpdateTag
-
     """
 
     tx.run(
-        ingest_repositeris,
+        ingest_repositories,
         reposData=repos_data,
         UpdateTag=common_job_parameters['UPDATE_TAG'],
     )
@@ -57,12 +59,12 @@ def _load_repositeris_data(tx: neo4j.Transaction,repos_data:List[Dict],common_jo
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('bitbucket_workspace_repositories_cleanup.json', neo4j_session, common_job_parameters)
 
+
 def sync(
         neo4j_session: neo4j.Session,
         workspace_name:str,
-        bitbucket_refresh_token:str,
+        bitbucket_access_token:str,
         common_job_parameters: Dict[str, Any],
-
 ) -> None:
     """
     Performs the sequential tasks to collect, transform, and sync bitbucket data
@@ -71,6 +73,6 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Bitbucket All Repositories")
-    workspace_repos=get_repos(bitbucket_refresh_token,workspace_name)
-    load_repositeris_data(neo4j_session,workspace_repos,common_job_parameters)
+    workspace_repos=get_repos(bitbucket_access_token,workspace_name)
+    load_repositories_data(neo4j_session,workspace_repos,common_job_parameters)
     cleanup(neo4j_session,common_job_parameters)

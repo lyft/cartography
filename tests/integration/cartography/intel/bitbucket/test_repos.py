@@ -6,7 +6,7 @@ common_job_parameters={'UPDATE_TAG':'123456789',"WORKSPACE_ID":"123445","WORKSPA
 
 def test_load_workspace(neo4j_session):
     # load repo
-    cartography.intel.bitbucket.repositories.load_repositeris_data(
+    cartography.intel.bitbucket.repositories.load_repositories_data(
         neo4j_session,
         tests.data.bitbucket.workspace.REPOSITORIES,
         common_job_parameters,
