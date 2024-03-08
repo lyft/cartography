@@ -47,8 +47,8 @@ GITHUB_ORG_REPOS_PAGINATED_GRAPHQL = """
                         }
                     }
                     defaultBranchRef{
-                      name
-                      id
+                        name
+                        id
                     }
                     isPrivate
                     isArchived
@@ -466,15 +466,17 @@ def load_github_owners(neo4j_session: neo4j.Session, update_tag: int, repo_owner
             WITH user
 
             MATCH (repo:GitHubRepository{id: $RepoId})
-            MERGE (user)<-[r:OWNER]-(repo)
+            MERGE (user)<-[r:RESOURCE]-(repo)
             ON CREATE SET r.firstseen = timestamp()
             SET r.lastupdated = $UpdateTag""")
 
-        account_type = {'User': "GitHubUser", 'Organization': "GitHubOrganization"}
+        # INFO: Only Organization is supported
+        # account_type = {'User': "GitHubUser", 'Organization': "GitHubOrganization"}
+        account_type = {'Organization': "GitHubOrganization"}
 
         neo4j_session.run(
             ingest_owner_template.safe_substitute(account_type=account_type[owner['type']]),
-            Id=owner['owner_id'],
+            Id=owner['owner'],
             UserName=owner['owner'],
             RepoId=owner['repo_id'],
             UpdateTag=update_tag,
@@ -563,4 +565,5 @@ def sync(
     repos_json = get(github_api_key, github_url, organization)
     repo_data = transform(repos_json)
     load(neo4j_session, common_job_parameters, repo_data)
+
     run_cleanup_job('github_repos_cleanup.json', neo4j_session, common_job_parameters)

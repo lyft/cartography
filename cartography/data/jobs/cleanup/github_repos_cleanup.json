@@ -1,45 +1,45 @@
 {
 	"statements": [
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER1]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[:OWNER]-> (n:GitHubRepository) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[:RESOURCE]-> (n:GitHubRepository) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER1]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[:OWNER]->(:GitHubRepository)<-[:BRANCH]-(n:GitHubBranch) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[:RESOURCE]->(:GitHubRepository)<-[:BRANCH]-(n:GitHubBranch) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER1]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[:OWNER]->(:GitHubRepository)-[:LANGUAGE]->(n:ProgrammingLanguage) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[:RESOURCE]->(:GitHubRepository)-[:LANGUAGE]->(n:ProgrammingLanguage) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH  (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER1]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[r:OWNER]->(:GitHubRepository)-[:REQUIRES]->(n:PythonLibrary) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
+			"query": "MATCH  (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[r:RESOURCE]->(:GitHubRepository)-[:REQUIRES]->(n:PythonLibrary) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:GitHubBranch)-[r:BRANCH]->(:GitHubRepository)<-[:OWNER]-(:GitHubOrganization{id:$ORGANIZATION_ID})<-[:OWNER1]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:GitHubBranch)-[r:BRANCH]->(:GitHubRepository)<-[:RESOURCE]-(:GitHubOrganization{id:$ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER1]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[r:OWNER]->(:GitHubRepository) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[r:RESOURCE]->(:GitHubRepository) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER1]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[:OWNER]->(:GitHubRepository)-[r:LANGUAGE]->(:ProgrammingLanguage) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[:RESOURCE]->(:GitHubRepository)-[r:LANGUAGE]->(:ProgrammingLanguage) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		},
 		{
-			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER1]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[:OWNER]->(:GitHubRepository)-[r:REQUIRES]->(:PythonLibrary) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+			"query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:GitHubOrganization{id:$ORGANIZATION_ID})-[:RESOURCE]->(:GitHubRepository)-[r:REQUIRES]->(:PythonLibrary) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 100
 		}
 	],
-	"name": "cleanup GitHub repos data"
+	"name": "cleanup GitHub Repositories data"
 }

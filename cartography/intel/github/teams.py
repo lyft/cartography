@@ -11,6 +11,7 @@ from cartography.graph.job import GraphJob
 from cartography.intel.github.util import fetch_all
 from cartography.intel.github.util import PaginatedGraphqlData
 from cartography.models.github.teams import GitHubTeamSchema
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -142,7 +143,7 @@ def load_team_repos(
         neo4j_session: neo4j.Session,
         data: List[Dict[str, Any]],
         update_tag: int,
-        organization_url: str,
+        organization_login: str,
 ) -> None:
     logger.info(f"Loading {len(data)} GitHub team-repos to the graph")
     load(
@@ -150,12 +151,15 @@ def load_team_repos(
         GitHubTeamSchema(),
         data,
         lastupdated=update_tag,
-        org_url=organization_url,
+        org_login=organization_login,
     )
 
 
 @timeit
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any]) -> None:
+    # TODO: implement the cleanup statements
+    run_cleanup_job('github_teams_cleanup.json', neo4j_session, common_job_parameters)
+
     GraphJob.from_node_schema(GitHubTeamSchema(), common_job_parameters).run(neo4j_session)
 
 
@@ -170,6 +174,6 @@ def sync_github_teams(
     teams_paginated, org_data = get_teams(organization, github_url, github_api_key)
     team_repos = _get_team_repos_for_multiple_teams(teams_paginated.nodes, organization, github_url, github_api_key)
     processed_data = transform_teams(teams_paginated, org_data, team_repos)
-    load_team_repos(neo4j_session, processed_data, common_job_parameters['UPDATE_TAG'], org_data['url'])
-    common_job_parameters['org_url'] = org_data['url']
+    load_team_repos(neo4j_session, processed_data, common_job_parameters['UPDATE_TAG'], org_data['login'])
+    common_job_parameters['org_login'] = org_data['login']
     cleanup(neo4j_session, common_job_parameters)

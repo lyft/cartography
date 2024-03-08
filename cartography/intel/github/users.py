@@ -9,6 +9,7 @@ import neo4j
 from cartography.intel.github.util import fetch_all
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ GITHUB_ORG_USERS_PAGINATED_GRAPHQL = """
 
 
 @timeit
-def get(token: str, api_url: str, organization: str) -> Tuple[List[Dict], Dict]:
+def get_users(token: str, api_url: str, organization: str) -> Tuple[List[Dict], Dict]:
     """
     Retrieve a list of users from the given GitHub organization as described in
     https://docs.github.com/en/graphql/reference/objects#organizationmemberedge.
@@ -71,10 +72,9 @@ def load_organization_users(
     common_job_parameters: Dict[str, Any],
 ) -> None:
     query = """
-    MERGE (org:GitHubOrganization{id: $OrgUrl})
+    MERGE (org:GitHubOrganization{id: $OrgLogin})
     ON CREATE SET org.firstseen = timestamp()
-    SET org.username = $OrgLogin,
-    org.lastupdated = $UpdateTag
+    SET org.lastupdated = $UpdateTag
     WITH org
 
     UNWIND $UserData as user
@@ -95,7 +95,7 @@ def load_organization_users(
     SET r.lastupdated = $UpdateTag
     WITH org
     match (owner:CloudanixWorkspace{id:$workspace_id})
-    merge (org)<-[o:OWNER1]-(owner)
+    merge (org)<-[o:OWNER]-(owner)
     ON CREATE SET o.firstseen = timestamp()
     SET o.lastupdated = $UpdateTag
     """
@@ -112,10 +112,16 @@ def load_organization_users(
 @timeit
 def sync(
         neo4j_session: neo4j.Session,
-        user_data, org_data,
         common_job_parameters: Dict[str, Any],
+        github_api_key: str,
+        github_url: str,
+        organization: str,
 ) -> None:
     logger.info("Syncing GitHub users")
+    user_data, org_data = get_users(github_api_key,github_url, organization)
+
+    common_job_parameters['ORGANIZATION_ID']=org_data.get('login')
+
     load_organization_users(neo4j_session, user_data, org_data, common_job_parameters)
     merge_module_sync_metadata(
         neo4j_session,
@@ -125,3 +131,5 @@ def sync(
         update_tag=common_job_parameters['UPDATE_TAG'],
         stat_handler=stat_handler,
     )
+
+    run_cleanup_job('github_users_cleanup.json', neo4j_session, common_job_parameters)
