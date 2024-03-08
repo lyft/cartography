@@ -1,6 +1,6 @@
+import asyncio
 import logging
 import math
-import asyncio
 from datetime import datetime
 from typing import Dict
 from typing import List
@@ -10,8 +10,8 @@ from azure.core.exceptions import HttpResponseError
 from azure.graphrbac import GraphRbacManagementClient
 from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.msi import ManagedServiceIdentityClient
-from msgraph import GraphServiceClient
 from cloudconsolelink.clouds.azure import AzureLinker
+from msgraph import GraphServiceClient
 
 from .util.credentials import Credentials
 from cartography.util import run_cleanup_job
@@ -307,7 +307,7 @@ async def get_group_members(credentials: Credentials, group_id: str):
                     "id": member.id,
                     "display_name": member.display_name,
                     "mail": member.mail,
-                    "group_id": group_id
+                    "group_id": group_id,
                 })
     except Exception as e:
         logger.warning(f"error to get members of group {group_id} - {e}")

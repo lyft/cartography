@@ -12,7 +12,8 @@ from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
 from cartography.models.aws.eks.clusters import EKSClusterSchema
 from cartography.models.aws.eks.nodegroups import EKSClusterNodeGroupSchema
-from cartography.util import aws_handle_regions, run_cleanup_job
+from cartography.util import aws_handle_regions
+from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
