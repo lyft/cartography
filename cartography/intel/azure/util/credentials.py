@@ -24,11 +24,12 @@ AUTHORITY_HOST_URI = 'https://login.microsoftonline.com'
 class Credentials:
 
     def __init__(
-        self, arm_credentials: Any, aad_graph_credentials: Any, vault_credentials: Any, tenant_id: str = None, subscription_id: str = None,
+        self, arm_credentials: Any, aad_graph_credentials: Any, default_graph_creds: Any, vault_credentials: Any, tenant_id: str = None, subscription_id: str = None,
         context: adal.AuthenticationContext = None, current_user: Dict = None,
     ) -> None:
         self.arm_credentials = arm_credentials  # Azure Resource Manager API credentials
         self.aad_graph_credentials = aad_graph_credentials  # Azure AD Graph API credentials
+        self.default_graph_credentials = default_graph_creds  # Azure Default Graph API credentials
         self.vault_credentials = vault_credentials  # Azure vault API credentials
         self.tenant_id = tenant_id
         self.subscription_id = subscription_id
@@ -198,7 +199,8 @@ class Authenticator:
             raise e
 
     # vault_scope: https://vault.azure.net/user_impersonation
-    def impersonate_user(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, graph_scope: str, azure_scope: str, vault_scope: str, subscription_id: str, tenant_id: str = None):
+    # default_graph_scope: https://graph.microsoft.com/.default
+    def impersonate_user(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, graph_scope: str, default_graph_scope: str, azure_scope: str, vault_scope: str, subscription_id: str, tenant_id: str = None):
         """
         Implements Impersonation authentication for the Azure provider
         """
@@ -212,6 +214,7 @@ class Authenticator:
 
         try:
             graph_creds = self.refresh_graph_token(client_id, client_secret, redirect_uri, refresh_token, graph_scope, tenant_id)
+            default_graph_creds = self.refresh_default_graph_token(client_id, client_secret, redirect_uri, refresh_token, default_graph_scope, tenant_id)
             vault_creds = self.refresh_vault_token(client_id, client_secret, redirect_uri, refresh_token, vault_scope, tenant_id)
             azure_creds = self.refresh_azure_token(client_id, client_secret, redirect_uri, refresh_token, azure_scope, tenant_id)
             user_tenant_id, user = self.decode_jwt(azure_creds.cred['id_token'])
@@ -219,7 +222,7 @@ class Authenticator:
             if tenant_id is None:
                 tenant_id = user_tenant_id
 
-            return Credentials(azure_creds, graph_creds, vault_creds, subscription_id=subscription_id, tenant_id=tenant_id, current_user=user)
+            return Credentials(azure_creds, graph_creds, default_graph_creds, vault_creds, subscription_id=subscription_id, tenant_id=tenant_id, current_user=user)
 
         except Exception as e:
             logging.error(f"failed to impersonate user: {e}", exc_info=True, stack_info=True)
@@ -228,6 +231,9 @@ class Authenticator:
 
     def refresh_graph_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str, tenant_id: str = None) -> ImpersonateCredentials:
         return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope, tenant_id), "graph")
+
+    def refresh_default_graph_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str, tenant_id: str = None) -> ImpersonateCredentials:
+        return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope, tenant_id), "default_graph")
 
     def refresh_vault_token(self, client_id: str, client_secret: str, redirect_uri: str, refresh_token: str, scope: str, tenant_id: str = None):
         return ImpersonateCredentials(self.get_access_token(client_id, client_secret, redirect_uri, refresh_token, scope, tenant_id), "vault")

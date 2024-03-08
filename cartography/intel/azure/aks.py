@@ -18,8 +18,12 @@ logger = logging.getLogger(__name__)
 azure_console_link = AzureLinker()
 
 
-def load_aks(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
-    session.write_transaction(_load_aks_tx, subscription_id, data_list, update_tag)
+def load_aks_managed_clusters(session: neo4j.Session, subscription_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_aks_managed_clusters_tx, subscription_id, data_list, update_tag)
+
+
+def load_aks_managed_cluster_agentpools(session: neo4j.Session, cluster_id: str, data_list: List[Dict], update_tag: int) -> None:
+    session.write_transaction(_load_aks_managed_cluster_agentpools_tx, cluster_id, data_list, update_tag)
 
 
 def load_container_registries(
@@ -71,32 +75,32 @@ def get_container_instance_Client(credentials: Credentials, subscription_id: str
 
 
 @timeit
-def get_aks_list(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
+def get_aks_managed_clusters_list(credentials: Credentials, subscription_id: str, regions: list, common_job_parameters: Dict) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
-        aks_list = list(map(lambda x: x.as_dict(), client.managed_clusters.list()))
-        aks_data = []
-        for aks in aks_list:
+        aks_managed_clusters_list = list(map(lambda x: x.as_dict(), client.managed_clusters.list()))
+        aks_managed_clusters_data = []
+        for aks in aks_managed_clusters_list:
             aks['resource_group'] = get_azure_resource_group_name(aks.get('id'))
             aks['publicNetworkAccess'] = aks.get('properties', {}).get('public_network_access', 'Disabled')
             aks['consolelink'] = azure_console_link.get_console_link(
                 id=aks['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
             )
             if regions is None:
-                aks_data.append(aks)
+                aks_managed_clusters_data.append(aks)
             else:
                 if aks.get('location') in regions or aks.get('location') == 'global':
-                    aks_data.append(aks)
-        return aks_data
+                    aks_managed_clusters_data.append(aks)
+        return aks_managed_clusters_data
 
     except HttpResponseError as e:
         logger.warning(f"Error while retrieving AKS - {e}")
         return []
 
 
-def _load_aks_tx(tx: neo4j.Transaction, subscription_id: str, aks_list: List[Dict], update_tag: int) -> None:
-    ingest_aks = """
-    UNWIND $aks_list AS aks
+def _load_aks_managed_clusters_tx(tx: neo4j.Transaction, subscription_id: str, aks_managed_clusters_list: List[Dict], update_tag: int) -> None:
+    ingest_aks_managed_clusters = """
+    UNWIND $aks_managed_clusters_list AS aks
     MERGE (a:AzureCluster{id: aks.id})
     ON CREATE SET a.firstseen = timestamp(),
     a.type = aks.type,
@@ -115,16 +119,17 @@ def _load_aks_tx(tx: neo4j.Transaction, subscription_id: str, aks_list: List[Dic
     """
 
     tx.run(
-        ingest_aks,
-        aks_list=aks_list,
+        ingest_aks_managed_clusters,
+        aks_managed_clusters_list=aks_managed_clusters_list,
         SUBSCRIPTION_ID=subscription_id,
         update_tag=update_tag,
     )
-    for aks in aks_list:
-        resource_group=get_azure_resource_group_name(aks.get('id'))
-        _attach_resource_group_aks(tx,aks['id'],resource_group,update_tag)
+    for aks in aks_managed_clusters_list:
+        resource_group = get_azure_resource_group_name(aks.get('id'))
+        _attach_resource_group_aks(tx, aks['id'], resource_group, update_tag)
 
-def _attach_resource_group_aks(tx: neo4j.Transaction, aks_id:str,resource_group:str ,update_tag: int) -> None:
+
+def _attach_resource_group_aks(tx: neo4j.Transaction, aks_id: str, resource_group: str, update_tag: int) -> None:
     ingest_aks_resource = """
     MATCH (a:AzureCluster{id: $aks_id})
     WITH a
@@ -141,6 +146,53 @@ def _attach_resource_group_aks(tx: neo4j.Transaction, aks_id:str,resource_group:
     )
 
 
+@timeit
+def get_aks_managed_cluster_agentpools_list(credentials: Credentials, subscription_id: str, resource_group_name: str, cluster_name: str, common_job_parameters: Dict) -> List[Dict]:
+    try:
+        client = get_client(credentials, subscription_id)
+        agentpools_list = list(map(lambda x: x.as_dict(), client.agent_pools.list(resource_group_name=resource_group_name, managed_cluster_name=cluster_name)))
+        agentpools_data = []
+        for agentpool in agentpools_list:
+            agentpool['resource_group'] = get_azure_resource_group_name(agentpool.get('id'))
+            agentpool['consolelink'] = azure_console_link.get_console_link(
+                id=agentpool['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
+            agentpools_data.append(agentpool)
+        return agentpools_data
+
+    except HttpResponseError as e:
+        logger.warning(f"Error while retrieving AKS agent pools - {e}")
+        return []
+
+
+def _load_aks_managed_cluster_agentpools_tx(tx: neo4j.Transaction, cluster_id: str, agentpools_list: List[Dict], update_tag: int) -> None:
+    ingest_aks_agentpools = """
+    UNWIND $agentpools_list AS pool
+    MERGE (a:AzureClusterAgentPool{id: pool.id})
+    ON CREATE SET a.firstseen = timestamp(),
+    a.type = pool.type,
+    a.count = pool.count,
+    a.host_group_id = pool.host_group_id,
+    a.max_pods = pool.max_pods,
+    a.consolelink = pool.consolelink,
+    a.resourcegroup = pool.resource_group
+    SET a.lastupdated = $update_tag,
+    a.name = pool.name
+    WITH a
+    MATCH (c:AzureCluster{id: $cluster_id})
+    MERGE (c)-[r:HAS]->(a)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $update_tag
+    """
+
+    tx.run(
+        ingest_aks_agentpools,
+        agentpools_list=agentpools_list,
+        cluster_id=cluster_id,
+        update_tag=update_tag,
+    )
+
+
 def cleanup_aks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_aks_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -149,9 +201,12 @@ def sync_aks(
     neo4j_session: neo4j.Session, credentials: Credentials, subscription_id: str, update_tag: int,
     common_job_parameters: Dict, regions: list,
 ) -> None:
-    aks_list = get_aks_list(credentials, subscription_id, regions, common_job_parameters)
+    aks_managed_clusters_list = get_aks_managed_clusters_list(credentials, subscription_id, regions, common_job_parameters)
 
-    load_aks(neo4j_session, subscription_id, aks_list, update_tag)
+    load_aks_managed_clusters(neo4j_session, subscription_id, aks_managed_clusters_list, update_tag)
+    for cluster in aks_managed_clusters_list:
+        agent_pools = get_aks_managed_cluster_agentpools_list(credentials, subscription_id, cluster["resource_group"], cluster["name"], common_job_parameters)
+        load_aks_managed_cluster_agentpools(neo4j_session, cluster["id"], agent_pools, update_tag)
     cleanup_aks(neo4j_session, common_job_parameters)
 
 
@@ -207,10 +262,10 @@ def _load_container_registries_tx(
     )
     for container_registries in container_registries_list:
         resource_group = get_azure_resource_group_name(container_registries.get('id'))
-        _attach_resource_group_container_registry(tx,container_registries['id'],resource_group,update_tag)
+        _attach_resource_group_container_registry(tx, container_registries['id'], resource_group, update_tag)
 
 
-def _attach_resource_group_container_registry(tx: neo4j.Transaction, container_registry_id: List[Dict],resource_group:str, update_tag: int) -> None:
+def _attach_resource_group_container_registry(tx: neo4j.Transaction, container_registry_id: List[Dict], resource_group: str, update_tag: int) -> None:
     ingest_container_registry = """
     MATCH (a:AzureContainerRegistry{id: $container_registry_id})
     WITH a
@@ -225,6 +280,8 @@ def _attach_resource_group_container_registry(tx: neo4j.Transaction, container_r
         resource_group=resource_group,
         update_tag=update_tag,
     )
+
+
 def cleanup_container_registries(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_container_registries_cleanup.json', neo4j_session, common_job_parameters)
 
@@ -311,9 +368,10 @@ def _load_container_registry_replications_tx(
     )
     for container_registry_replication in container_registry_replications_list:
         resource_group = get_azure_resource_group_name(container_registry_replication.get('id'))
-        _attach_resource_group_container_replication(tx,container_registry_replication['id'],resource_group,update_tag=update_tag)
+        _attach_resource_group_container_replication(tx, container_registry_replication['id'], resource_group, update_tag=update_tag)
 
-def _attach_resource_group_container_replication(tx: neo4j.Transaction, container_registry_replication_id:str, resource_group:str,update_tag: int) -> None:
+
+def _attach_resource_group_container_replication(tx: neo4j.Transaction, container_registry_replication_id: str, resource_group: str, update_tag: int) -> None:
     ingest_container_replication = """
         MATCH (a:AzureContainerRegistryReplication{id: $container_registry_replication_id})
         WITH a
@@ -328,6 +386,7 @@ def _attach_resource_group_container_replication(tx: neo4j.Transaction, containe
         resource_group=resource_group,
         update_tag=update_tag,
     )
+
 
 def cleanup_container_registry_replications(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_container_registry_replications_cleanup.json', neo4j_session, common_job_parameters)
@@ -404,11 +463,11 @@ def _load_container_registry_runs_tx(
         update_tag=update_tag,
     )
     for container_registry_run in container_registry_runs_list:
-       resource_group = get_azure_resource_group_name(container_registry_run.get('id'))
-       _attach_resource_group_container_registry_runs(tx,container_registry_run['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(container_registry_run.get('id'))
+        _attach_resource_group_container_registry_runs(tx, container_registry_run['id'], resource_group, update_tag)
 
 
-def _attach_resource_group_container_registry_runs(tx: neo4j.Transaction, container_registry_run_id:str,resource_group:str, update_tag: int) -> None:
+def _attach_resource_group_container_registry_runs(tx: neo4j.Transaction, container_registry_run_id: str, resource_group: str, update_tag: int) -> None:
     ingest_container_run = """
     MATCH (a:AzureContainerRegistryRun{id: $run_id})
     WITH a
@@ -423,6 +482,7 @@ def _attach_resource_group_container_registry_runs(tx: neo4j.Transaction, contai
         resource_group=resource_group,
         update_tag=update_tag,
     )
+
 
 def cleanup_container_registry_runs(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_container_registry_runs_cleanup.json', neo4j_session, common_job_parameters)
@@ -499,11 +559,11 @@ def _load_container_registry_tasks_tx(
     )
     for container_registry_task in container_registry_tasks_list:
         resource_group = get_azure_resource_group_name(container_registry_task.get('id'))
-        _attach_resource_group_container_task(tx,container_registry_task['id'],resource_group,update_tag)
+        _attach_resource_group_container_task(tx, container_registry_task['id'], resource_group, update_tag)
 
 
 def _attach_resource_group_container_task(
-    tx: neo4j.Transaction, container_registry_task_id:str,resource_group:str, update_tag: int,
+    tx: neo4j.Transaction, container_registry_task_id: str, resource_group: str, update_tag: int,
 ) -> None:
     ingest_container_task = """
     MATCH (a:AzureContainerRegistryTask{id:$container_registry_task_id})
@@ -519,6 +579,7 @@ def _attach_resource_group_container_task(
         resource_group=resource_group,
         update_tag=update_tag,
     )
+
 
 def cleanup_container_registry_tasks(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_container_registry_tasks_cleanup.json', neo4j_session, common_job_parameters)
@@ -595,9 +656,10 @@ def _load_container_registry_webhooks_tx(
     )
     for container_registry_webhook in container_registry_webhooks_list:
         resource_group = get_azure_resource_group_name(container_registry_webhook.get('id'))
-        _attach_resource_group_container_registry_webhooks(tx,container_registry_webhook['id'],resource_group,update_tag)
+        _attach_resource_group_container_registry_webhooks(tx, container_registry_webhook['id'], resource_group, update_tag)
 
-def _attach_resource_group_container_registry_webhooks( tx: neo4j.Transaction, container_registry_webhook_id: str,resource_group:str ,update_tag: int) -> None:
+
+def _attach_resource_group_container_registry_webhooks(tx: neo4j.Transaction, container_registry_webhook_id: str, resource_group: str, update_tag: int) -> None:
     ingest_container_webhook = """
     MATCH (a:AzureContainerRegistryWebhook{id:$container_registry_webhook_id})
     WITH a
@@ -682,10 +744,11 @@ def _load_container_groups_tx(
     )
     for container_group in container_groups_list:
         resource_group = get_azure_resource_group_name(container_group.get('id'))
-        _attach_resource_group_aks_container_group(tx,container_group['id'],resource_group,update_tag)
+        _attach_resource_group_aks_container_group(tx, container_group['id'], resource_group, update_tag)
+
 
 def _attach_resource_group_aks_container_group(
-    tx: neo4j.Transaction,container_group_id: str,resource_group:str, update_tag: int,
+    tx: neo4j.Transaction, container_group_id: str, resource_group: str, update_tag: int,
 ) -> None:
     ingest_container_group = """
     MATCH (a:AzureContainerGroup{id: $group_id})
@@ -701,6 +764,7 @@ def _attach_resource_group_aks_container_group(
         resource_group=resource_group,
         update_tag=update_tag,
     )
+
 
 def cleanup_container_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_container_groups_cleanup.json', neo4j_session, common_job_parameters)
@@ -764,11 +828,10 @@ def _load_containers_tx(tx: neo4j.Transaction, containers_list: List[Dict], upda
     )
     for container in containers_list:
         resource_group = get_azure_resource_group_name(container.get('id'))
-        _attach_resource_group_container(tx,container['id'],resource_group,update_tag)
+        _attach_resource_group_container(tx, container['id'], resource_group, update_tag)
 
 
-
-def _attach_resource_group_container(tx: neo4j.Transaction, container_id: str, resource_group:str,update_tag: int) -> None:
+def _attach_resource_group_container(tx: neo4j.Transaction, container_id: str, resource_group: str, update_tag: int) -> None:
     ingest_container = """
     MATCH (a:AzureContainer{id: $container_id})
     WITH a

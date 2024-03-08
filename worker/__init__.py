@@ -31,6 +31,7 @@ def process_request(msg: Dict):
             "tenant_id": msg.get('tenantId'),
             "refresh_token": msg.get('refreshToken'),
             "graph_scope": os.environ.get('graph_scope'),
+            "default_graph_scope": os.environ.get('default_graph_scope'),
             "azure_scope": os.environ.get('azure_scope'),
             "vault_scope": os.environ.get('vault_scope'),
         },

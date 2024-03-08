@@ -248,6 +248,7 @@ def start_azure_ingestion(
             config.azure_redirect_uri,
             config.azure_refresh_token,
             config.azure_graph_scope,
+            config.azure_default_graph_scope,
             config.azure_azure_scope,
             config.azure_vault_scope,
             config.azure_subscription_id,

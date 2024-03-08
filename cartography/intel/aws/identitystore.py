@@ -186,7 +186,7 @@ def _load_identity_center_account_assignments_tx(tx: neo4j.Transaction, assignme
             MATCH (p:AWSPermissionSet{arn: $assignment.PermissionSetArn})
             MATCH (a:AWSAccount{id: $assignment.AccountId})
             WITH p,a
-            MERGE (p)-[r:ATTACHED]->(a)
+            MERGE (p)-[r:ATTACHED_TO]->(a)
             ON CREATE SET
                 r.firstseen = timestamp()
             SET
@@ -371,7 +371,7 @@ def _load_identity_center_group_memberships_tx(tx: neo4j.Transaction, membership
         MATCH (p:AWSGroup{id: membership.GroupId})
         MATCH (pr:AWSUser{id: membership.MemberId.UserId})
         WITH p,pr
-        MERGE (pr)-[r:MEMBER_GROUP]->(p)
+        MERGE (pr)-[r:MEMBER_AWS_GROUP]->(p)
         ON CREATE SET
                 r.firstseen = timestamp()
         SET

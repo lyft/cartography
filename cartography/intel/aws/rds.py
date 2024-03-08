@@ -440,7 +440,7 @@ def _attach_db_subnet_group(neo4j_session: neo4j.Session, cluster: Dict, aws_upd
     attach_cluster_to_role = """
     MATCH (c:RDSCluster{id:$DBClusterArn})
     MERGE (p:DBSubnetGroup{name:$DBSubnetGroup})
-    MERGE (c)-[s:ATTACH_TO]->(p)
+    MERGE (c)-[s:ATTACHED_TO]->(p)
     ON CREATE SET s.firstseen = timestamp()
     SET s.lastupdated = $aws_update_tag
     """
