@@ -21,7 +21,8 @@ def get_repos(access_token:str,workspace:str):
 
 def transform_repos(workspace_repos: List[Dict]) -> List[Dict]:
     for repo in workspace_repos:
-        repo['id'] = repo['id'].replace('{','').replace('}','')
+        repo['workspace']['uuid'] = repo['workspace']['uuid'].replace('{','').replace('}','')
+        repo['project']['uuid'] = repo['project']['uuid'].replace('{','').replace('}','')
         repo['uuid'] = repo['uuid'].replace('{','').replace('}','')
 
     return workspace_repos

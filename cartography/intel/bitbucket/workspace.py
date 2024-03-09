@@ -19,6 +19,12 @@ def get_workspaces(access_token: str):
     return make_requests_url(url, access_token)
 
 
+def transform_workspaces(workspaces: List[Dict]) -> List[Dict]:
+    for workspace in workspaces:
+        workspace['uuid'] = workspace['uuid'].replace('{','').replace('}','')
+
+    return workspaces
+
 def load_workspace_data(session: neo4j.Session, workspace_data: List[Dict], common_job_parameters: Dict) -> None:
     session.write_transaction(_load_workspace_data, workspace_data, common_job_parameters)
 
@@ -75,4 +81,6 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Bitbucket All workspaces")
+    
+    workspaces=transform_workspaces(workspaces)
     load_workspace_data(neo4j_session, workspaces, common_job_parameters)

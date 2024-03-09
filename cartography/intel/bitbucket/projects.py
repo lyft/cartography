@@ -19,7 +19,7 @@ def get_projects(access_token:str,workspace:str):
 
 def transform_projects(workspace_projects: List[Dict]) -> List[Dict]:
     for project in workspace_projects:
-        project['id'] = project['id'].replace('{','').replace('}','')
+        project['workspace']['uuid'] = project['workspace']['uuid'].replace('{','').replace('}','')
         project['uuid'] = project['uuid'].replace('{','').replace('}','')
 
     return workspace_projects

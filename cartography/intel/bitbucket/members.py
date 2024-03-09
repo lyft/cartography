@@ -21,8 +21,8 @@ def get_workspace_members(access_token:str,workspace:str):
 
 def transform_members(workspace_members: List[Dict]) -> List[Dict]:
     for member in workspace_members:
-        member['id'] = member['id'].replace('{','').replace('}','')
-        member['uuid'] = member['uuid'].replace('{','').replace('}','')
+        member['workspace']['uuid'] = member['workspace']['uuid'].replace('{','').replace('}','')
+        member['user']['uuid'] = member['user']['uuid'].replace('{','').replace('}','')
 
     return workspace_members
 
