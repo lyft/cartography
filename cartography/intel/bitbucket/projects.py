@@ -17,6 +17,12 @@ def get_projects(access_token:str,workspace:str):
     url = f"https://api.bitbucket.org/2.0/workspaces/{workspace}/projects"
     return make_requests_url(url,access_token)
 
+def transform_projects(workspace_projects: List[Dict]) -> List[Dict]:
+    for project in workspace_projects:
+        project['id'] = project['id'].replace('{','').replace('}','')
+        project['uuid'] = project['uuid'].replace('{','').replace('}','')
+
+    return workspace_projects
 
 def load_projects_data(session: neo4j.Session, project_data:List[Dict],common_job_parameters:Dict) -> None:
     session.write_transaction(_load_projects_data, project_data,  common_job_parameters)
@@ -73,5 +79,6 @@ def sync(
     """
     logger.info("Syncing Bitbucket All workspace Projects ")
     workspace_projects=get_projects(bitbucket_access_token,workspace_name)
+    workspace_projects=transform_projects(workspace_projects)
     load_projects_data(neo4j_session,workspace_projects,common_job_parameters)
     cleanup(neo4j_session,common_job_parameters)

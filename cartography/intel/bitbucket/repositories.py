@@ -19,6 +19,14 @@ def get_repos(access_token:str,workspace:str):
     return make_requests_url(url,access_token)
 
 
+def transform_repos(workspace_repos: List[Dict]) -> List[Dict]:
+    for repo in workspace_repos:
+        repo['id'] = repo['id'].replace('{','').replace('}','')
+        repo['uuid'] = repo['uuid'].replace('{','').replace('}','')
+
+    return workspace_repos
+
+
 def load_repositories_data(session: neo4j.Session, repos_data:List[Dict],common_job_parameters:Dict) -> None:
     session.write_transaction(_load_repositories_data, repos_data,  common_job_parameters)
 
@@ -74,5 +82,6 @@ def sync(
     """
     logger.info("Syncing Bitbucket All Repositories")
     workspace_repos=get_repos(bitbucket_access_token,workspace_name)
+    workspace_repos=transform_repos(workspace_repos)
     load_repositories_data(neo4j_session,workspace_repos,common_job_parameters)
     cleanup(neo4j_session,common_job_parameters)
