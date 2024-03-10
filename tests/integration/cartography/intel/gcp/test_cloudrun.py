@@ -21,7 +21,7 @@ def test_load_cloudrun_authorized_domains(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPCloudRunAuthorizedDomain) RETURN r.id;
+        MATCH (r:GCPCloudRunAuthorized Domain) RETURN r.id;
         """,
     )
 
@@ -184,7 +184,7 @@ def test_authorized_domains_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPCloudRunAuthorizedDomain) RETURN n1.id, n2.id;
+        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPCloudRunAuthorized Domain) RETURN n1.id, n2.id;
         """,
     )
 

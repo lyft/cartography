@@ -345,7 +345,7 @@ def _load_cloudrun_authorized_domains_tx(
     """
     ingest_cloudrun_authorized_domains = """
     UNWIND $authorized_domains as ad
-    MERGE (authorized_domain:GCPCloudRunAuthorizedDomain{id:ad.id})
+    MERGE (authorized_domain:GCPCloudRunAuthorized Domain{id:ad.id})
     ON CREATE SET
         authorized_domain.firstseen = timestamp()
     SET
@@ -719,7 +719,7 @@ def sync(
     load_cloudrun_authorized_domains(neo4j_session, authorized_domains, project_id, gcp_update_tag)
     label.sync_labels(
         neo4j_session, domains, gcp_update_tag, common_job_parameters,
-        'cloudrun authorized domains', 'GCPCloudRunAuthorizedDomain',
+        'cloudrun authorized domains', 'GCPCloudRunAuthorized Domain',
     )
 
     # CLOUDRUN CONFIGURATIONS

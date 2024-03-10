@@ -370,7 +370,7 @@ def load_api_keys(
 
     query = """
     UNWIND $ApiKeys as key
-    MERGE (apikey:GCPApiKey{id: key.id})
+    MERGE (apikey:GCPAPIKey{id: key.id})
     ON CREATE SET
         apikey.firstseen = timestamp()
     SET

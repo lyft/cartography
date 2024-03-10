@@ -788,7 +788,7 @@ def get_containers_list(container_groups_list: List[Dict]) -> List[Dict]:
         containers_list: List[Dict] = []
         for container_group in container_groups_list:
             for container in container_group.get('containers', []):
-                container["id"] = f"{container_group.get('id',None)}/containers/{container.get('name',None)}"
+                container["id"] = f"{container_group.get('id', None)}/containers/{container.get('name', None)}"
                 container["container_group_id"] = container_group['id']
                 container["resource_group"] = container_group["resource_group"]
                 container["type"] = "Microsoft.ContainerInstance/containers"

@@ -413,7 +413,7 @@ def test_load_api_keys(neo4j_session):
 
     nodes = neo4j_session.run(
         """
-        MATCH (r:GCPApiKey) RETURN r.id;
+        MATCH (r:GCPAPIKey) RETURN r.id;
         """,
     )
 
@@ -450,7 +450,7 @@ def test_api_keys_relationships(neo4j_session):
     # Fetch relationships
     result = neo4j_session.run(
         """
-        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPApiKey) RETURN n1.id, n2.id;
+        MATCH (n1:GCPProject)-[:RESOURCE]->(n2:GCPAPIKey) RETURN n1.id, n2.id;
         """,
     )
 

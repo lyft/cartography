@@ -81,6 +81,6 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Bitbucket All workspaces")
-    
+
     workspaces=transform_workspaces(workspaces)
     load_workspace_data(neo4j_session, workspaces, common_job_parameters)
