@@ -139,7 +139,7 @@ CREATE INDEX IF NOT EXISTS FOR (n:GCPFunction) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPKMSKeyRing) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPKMSCryptoKey) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPPublicIpAddress) ON (n.id);
-CREATE INDEX IF NOT EXISTS FOR (n:GCPCloudRunAuthorized Domain) ON (n.id);
+CREATE INDEX IF NOT EXISTS FOR (n:GCPCloudRunAuthorizedDomain) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPCloudRunConfiguration) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPCloudRunDomainMap) ON (n.id);
 CREATE INDEX IF NOT EXISTS FOR (n:GCPCloudRunRevision) ON (n.id);
