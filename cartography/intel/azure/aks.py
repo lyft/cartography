@@ -883,5 +883,5 @@ def sync(
     #     }
 
     sync_aks(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
-    sync_container_registries(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
-    sync_container_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
+    # sync_container_registries(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
+    # sync_container_groups(neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, regions)
