@@ -111,6 +111,7 @@ def transform_ec2_instances(reservations: List[Dict[str, Any]], region: str, cur
                     'HibernationOptions': instance.get("HibernationOptions", {}).get("Configured"),
                     "Region": region,
                     "consolelink'": aws_console_link.get_console_link(arn=InstanceArn),
+                    "arn": InstanceArn,
                 },
             )
 
