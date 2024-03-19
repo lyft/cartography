@@ -174,9 +174,10 @@ def _load_function_apps_tx(
     )
     for function_app in function_apps_list:
         resource_group = get_azure_resource_group_name(function_app.get('id'))
-        _attach_resource_group_function_apps(tx,function_app['id'],resource_group,update_tag)
+        _attach_resource_group_function_apps(tx, function_app['id'], resource_group, update_tag)
 
-def _attach_resource_group_function_apps(tx: neo4j.Transaction,function_app_id: str,resource_group:str,update_tag: int) -> None:
+
+def _attach_resource_group_function_apps(tx: neo4j.Transaction, function_app_id: str, resource_group: str, update_tag: int) -> None:
     ingest_function_apps = """
     MATCH (f:AzureFunctionApp{id: $function_app_id})
     WITH f
@@ -191,6 +192,7 @@ def _attach_resource_group_function_apps(tx: neo4j.Transaction,function_app_id: 
         resource_group=resource_group,
         update_tag=update_tag,
     )
+
 
 def cleanup_function_apps(
     neo4j_session: neo4j.Session,
@@ -218,30 +220,30 @@ def sync_function_apps(
         update_tag,
     )
     cleanup_function_apps(neo4j_session, common_job_parameters)
-    sync_function_apps_conf(
-        neo4j_session, function_apps_list, client,
-        update_tag, common_job_parameters,
-    )
+    # sync_function_apps_conf(
+    #     neo4j_session, function_apps_list, client,
+    #     update_tag, common_job_parameters,
+    # )
     sync_function_apps_functions(
         neo4j_session, function_apps_list, client,
         update_tag, common_job_parameters,
     )
-    sync_function_apps_deployments(
-        neo4j_session, function_apps_list, client,
-        update_tag, common_job_parameters,
-    )
+    # sync_function_apps_deployments(
+    #     neo4j_session, function_apps_list, client,
+    #     update_tag, common_job_parameters,
+    # )
     # sync_function_apps_processes(
     #     neo4j_session, function_apps_list, client,
     #     update_tag, common_job_parameters,
     # )
-    sync_function_apps_backups(
-        neo4j_session, function_apps_list, client,
-        update_tag, common_job_parameters,
-    )
-    sync_function_apps_snapshots(
-        neo4j_session, function_apps_list, client,
-        update_tag, common_job_parameters,
-    )
+    # sync_function_apps_backups(
+    #     neo4j_session, function_apps_list, client,
+    #     update_tag, common_job_parameters,
+    # )
+    # sync_function_apps_snapshots(
+    #     neo4j_session, function_apps_list, client,
+    #     update_tag, common_job_parameters,
+    # )
     # sync_function_apps_webjobs(
     #     neo4j_session, function_apps_list, client,
     #     update_tag, common_job_parameters,
@@ -333,10 +335,10 @@ def _load_function_apps_configurations_tx(
     )
     for function_apps_conf in function_apps_conf_list:
         resource_group = get_azure_resource_group_name(function_apps_conf.get('id'))
-        _attach_resource_group_function_apps_conf(tx,function_apps_conf['id'],resource_group,update_tag)
+        _attach_resource_group_function_apps_conf(tx, function_apps_conf['id'], resource_group, update_tag)
 
 
-def _attach_resource_group_function_apps_conf(tx: neo4j.Transaction,function_apps_conf_id: str,resource_group:str,update_tag: int) -> None:
+def _attach_resource_group_function_apps_conf(tx: neo4j.Transaction, function_apps_conf_id: str, resource_group: str, update_tag: int) -> None:
     ingest_function_apps_conf = """
     MATCH (fc:AzureFunctionAppConfiguration{id: $function_conf_id})
     WITH fc
@@ -351,6 +353,7 @@ def _attach_resource_group_function_apps_conf(tx: neo4j.Transaction,function_app
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
+
 
 def cleanup_function_apps_conf(
     neo4j_session: neo4j.Session,
@@ -384,39 +387,39 @@ def get_function_apps_functions_list(
         client: WebSiteManagementClient,
         common_job_parameters: Dict,
 ) -> List[Dict]:
-        function_apps_functions_list: List[Dict] = []
-        for function in function_apps_list:
+    function_apps_functions_list: List[Dict] = []
+    for function in function_apps_list:
+        functions_list = []
+
+        try:
+            functions_list = list(
+                map(
+                    lambda x: x.as_dict(),
+                    client.web_apps.list_functions(
+                        function['resource_group'],
+                        function['name'],
+                    ),
+                ),
+            )
+
+        except HttpResponseError as e:
+            logger.warning(f"Error while retrieving function_apps functions - {e}")
             functions_list = []
 
-            try:
-                functions_list = list(
-                    map(
-                        lambda x: x.as_dict(),
-                        client.web_apps.list_functions(
-                            function['resource_group'],
-                            function['name'],
-                        ),
-                    ),
-                )
+        for fun in functions_list:
+            fun['resource_group'] = get_azure_resource_group_name(fun.get('id'))
+            fun['function_app_id'] = fun['id'][
+                :fun['id'].
+                index("/functions")
+            ]
+            fun["location"] = function.get("location", "global")
+            fun['consolelink'] = azure_console_link.get_console_link(
+                id=fun['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
+            )
 
-            except HttpResponseError as e:
-                logger.warning(f"Error while retrieving function_apps functions - {e}")
-                functions_list = []
+        function_apps_functions_list.extend(functions_list)
 
-            for fun in functions_list:
-                fun['resource_group'] = get_azure_resource_group_name(fun.get('id'))
-                fun['function_app_id'] = fun['id'][
-                    :fun['id'].
-                    index("/functions")
-                ]
-                fun["location"] = function.get("location", "global")
-                fun['consolelink'] = azure_console_link.get_console_link(
-                    id=fun['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],
-                )
-
-            function_apps_functions_list.extend(functions_list)
-
-        return function_apps_functions_list
+    return function_apps_functions_list
 
 
 def _load_function_apps_functions_tx(
@@ -452,10 +455,10 @@ def _load_function_apps_functions_tx(
     )
     for function_apps_function in function_apps_function_list:
         resource_group = get_azure_resource_group_name(function_apps_function.get('id'))
-        _attach_resource_group_unction_apps_function(tx,function_apps_function['id'],resource_group,update_tag)
+        _attach_resource_group_unction_apps_function(tx, function_apps_function['id'], resource_group, update_tag)
 
 
-def _attach_resource_group_unction_apps_function(tx: neo4j.Transaction,function_apps_function_id:str,resource_group:str,update_tag: int) -> None:
+def _attach_resource_group_unction_apps_function(tx: neo4j.Transaction, function_apps_function_id: str, resource_group: str, update_tag: int) -> None:
     ingest_function = """
     MATCH (f:AzureFunctionAppFunction{id: $function_id})
     WITH f
@@ -470,6 +473,7 @@ def _attach_resource_group_unction_apps_function(tx: neo4j.Transaction,function_
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
+
 
 def cleanup_function_apps_functions(
     neo4j_session: neo4j.Session,
@@ -568,9 +572,10 @@ def _load_function_apps_deployments_tx(
     )
     for function_apps_deployment in function_apps_deployments_list:
         resource_group = get_azure_resource_group_name(function_apps_deployment.get('id'))
-        _attach_resource_group_function_apps_deployments(tx,function_apps_deployment['id'],resource_group,update_tag)
+        _attach_resource_group_function_apps_deployments(tx, function_apps_deployment['id'], resource_group, update_tag)
 
-def _attach_resource_group_function_apps_deployments(tx: neo4j.Transaction,function_apps_deployment_id:str,resource_group:str,update_tag: int) -> None:
+
+def _attach_resource_group_function_apps_deployments(tx: neo4j.Transaction, function_apps_deployment_id: str, resource_group: str, update_tag: int) -> None:
     ingest_function_apps_deploy = """
     MATCH (f:AzureFunctionAppDeployment{id: $function_deploy_id})
     WITH f
@@ -585,6 +590,7 @@ def _attach_resource_group_function_apps_deployments(tx: neo4j.Transaction,funct
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
+
 
 def cleanup_function_apps_deployments(
     neo4j_session: neo4j.Session,
@@ -683,10 +689,11 @@ def _load_function_apps_backups_tx(
         azure_update_tag=update_tag,
     )
     for function_apps_backup in function_apps_backups_list:
-        resource_group=get_azure_resource_group_name(function_apps_backup.get('id'))
-        _attach_resource_group_function_apps_backups(tx,function_apps_backup['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(function_apps_backup.get('id'))
+        _attach_resource_group_function_apps_backups(tx, function_apps_backup['id'], resource_group, update_tag)
 
-def _attach_resource_group_function_apps_backups (tx: neo4j.Transaction,function_apps_backup_id: str,resource_group:str,update_tag: int) -> None:
+
+def _attach_resource_group_function_apps_backups(tx: neo4j.Transaction, function_apps_backup_id: str, resource_group: str, update_tag: int) -> None:
     ingest_function_apps_backup = """
     MATCH (f:AzureFunctionAppBackup{id: $function_backup_id})
     WITH f
@@ -701,6 +708,7 @@ def _attach_resource_group_function_apps_backups (tx: neo4j.Transaction,function
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
+
 
 def cleanup_function_apps_backups(
     neo4j_session: neo4j.Session,
@@ -801,10 +809,11 @@ def _load_function_apps_processes_tx(
         azure_update_tag=update_tag,
     )
     for function_apps_process in function_apps_processes_list:
-        resource_group=get_azure_resource_group_name(function_apps_process.get('id'))
-        _attach_resource_group_function_apps_processes(tx,function_apps_process['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(function_apps_process.get('id'))
+        _attach_resource_group_function_apps_processes(tx, function_apps_process['id'], resource_group, update_tag)
 
-def _attach_resource_group_function_apps_processes(tx: neo4j.Transaction,function_apps_process_id: str,resource_group:str,update_tag: int) -> None:
+
+def _attach_resource_group_function_apps_processes(tx: neo4j.Transaction, function_apps_process_id: str, resource_group: str, update_tag: int) -> None:
     ingest_function_apps_process = """
     MATCH (f:AzureFunctionAppProcess{id: $function_process_id})
     WITH f
@@ -819,6 +828,7 @@ def _attach_resource_group_function_apps_processes(tx: neo4j.Transaction,functio
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
+
 
 def cleanup_function_apps_processes(
     neo4j_session: neo4j.Session,
@@ -915,10 +925,11 @@ def _load_function_apps_snapshots_tx(
         azure_update_tag=update_tag,
     )
     for function_apps_snapshot in function_apps_snapshots_list:
-        resource_group=get_azure_resource_group_name(function_apps_snapshot.get('id'))
-        _attach_resource_group_function_apps_snapshot(tx,function_apps_snapshot['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(function_apps_snapshot.get('id'))
+        _attach_resource_group_function_apps_snapshot(tx, function_apps_snapshot['id'], resource_group, update_tag)
 
-def _attach_resource_group_function_apps_snapshot(tx: neo4j.Transaction,function_apps_snapshot_id:str,resource_group:str,update_tag: int) -> None:
+
+def _attach_resource_group_function_apps_snapshot(tx: neo4j.Transaction, function_apps_snapshot_id: str, resource_group: str, update_tag: int) -> None:
     ingest_function_apps_snapshot = """
     MATCH (f:AzureFunctionAppSnapshot{id: $function_snapshot_id})
     WITH f
@@ -933,6 +944,7 @@ def _attach_resource_group_function_apps_snapshot(tx: neo4j.Transaction,function
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
+
 
 def cleanup_function_apps_snapshots(
     neo4j_session: neo4j.Session,
@@ -1028,10 +1040,11 @@ def _load_function_apps_webjobs_tx(
         azure_update_tag=update_tag,
     )
     for function_apps_webjob in function_apps_webjobs_list:
-        resource_group=get_azure_resource_group_name(function_apps_webjob.get('id'))
-        _attach_resource_group_function_apps_webjobs(tx,function_apps_webjob['id'],resource_group,update_tag)
+        resource_group = get_azure_resource_group_name(function_apps_webjob.get('id'))
+        _attach_resource_group_function_apps_webjobs(tx, function_apps_webjob['id'], resource_group, update_tag)
 
-def _attach_resource_group_function_apps_webjobs(tx: neo4j.Transaction,function_apps_webjob_id:str,resource_group:str,update_tag: int) -> None:
+
+def _attach_resource_group_function_apps_webjobs(tx: neo4j.Transaction, function_apps_webjob_id: str, resource_group: str, update_tag: int) -> None:
     ingest_function_apps_webjob = """
     MERGE (f:AzureFunctionAppWebJob{id: $function_webjob_id})
     WITH f
@@ -1046,6 +1059,7 @@ def _attach_resource_group_function_apps_webjobs(tx: neo4j.Transaction,function_
         resource_group=resource_group,
         azure_update_tag=update_tag,
     )
+
 
 def cleanup_function_apps_webjobs(
     neo4j_session: neo4j.Session,

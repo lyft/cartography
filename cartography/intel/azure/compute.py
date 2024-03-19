@@ -797,11 +797,11 @@ def sync_virtual_machine(
 
     load_vms(neo4j_session, subscription_id, vm_list, update_tag)
     cleanup_virtual_machine(neo4j_session, common_job_parameters)
-    sync_virtual_machine_extensions(neo4j_session, client, vm_list, update_tag, common_job_parameters)
+    # sync_virtual_machine_extensions(neo4j_session, client, vm_list, update_tag, common_job_parameters)
     # sync_virtual_machine_available_sizes(neo4j_session, client, vm_list, update_tag, common_job_parameters)
 
     load_vms(neo4j_session, subscription_id, vm_list, update_tag)
-    sync_virtual_machine_extensions(neo4j_session, client, vm_list, update_tag, common_job_parameters)
+    # sync_virtual_machine_extensions(neo4j_session, client, vm_list, update_tag, common_job_parameters)
     cleanup_virtual_machine(neo4j_session, common_job_parameters)
 
 
