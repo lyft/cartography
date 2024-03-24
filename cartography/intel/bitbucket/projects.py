@@ -14,8 +14,16 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get_projects(access_token:str,workspace:str):
-    url = f"https://api.bitbucket.org/2.0/workspaces/{workspace}/projects"
-    return make_requests_url(url,access_token)
+    url = f"https://api.bitbucket.org/2.0/workspaces/{workspace}/projects?pagelen=100"
+
+    response = make_requests_url(url,access_token)
+    projects = response.get('values', [])
+
+    while 'next' in response:
+        response = make_requests_url(response.get('next'),access_token)
+        projects.extend(response.get('values', []))
+
+    return projects
 
 def transform_projects(workspace_projects: List[Dict]) -> List[Dict]:
     for project in workspace_projects:

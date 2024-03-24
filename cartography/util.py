@@ -448,8 +448,10 @@ def make_requests_url(url,access_token):
             headers=headers,
         )
         if response.status_code!=200:
-            return []
-        return response.json().get('values',[])
+            return {}
+
+        return response.json()
+
     except RequestException as e:
-        logger.info(f"failed to geting bitbucket response")
-        return []
+        logger.info(f"failed to get bitbucket response")
+        return {}

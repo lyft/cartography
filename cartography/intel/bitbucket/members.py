@@ -15,8 +15,16 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get_workspace_members(access_token:str,workspace:str):
-    url = f"https://api.bitbucket.org/2.0/workspaces/{workspace}/members"
-    return make_requests_url(url,access_token)
+    url = f"https://api.bitbucket.org/2.0/workspaces/{workspace}/members?pagelen=100"
+
+    response = make_requests_url(url,access_token)
+    members = response.get('values', [])
+
+    while 'next' in response:
+        response = make_requests_url(response.get('next'),access_token)
+        members.extend(response.get('values', []))
+
+    return members
 
 
 def transform_members(workspace_members: List[Dict]) -> List[Dict]:

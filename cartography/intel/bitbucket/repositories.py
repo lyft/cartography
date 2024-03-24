@@ -15,8 +15,16 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get_repos(access_token:str,workspace:str):
-    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}"
-    return make_requests_url(url,access_token)
+    url = f"https://api.bitbucket.org/2.0/repositories/{workspace}?pagelen=100"
+
+    response = make_requests_url(url,access_token)
+    repositories = response.get('values', [])
+
+    while 'next' in response:
+        response = make_requests_url(response.get('next'),access_token)
+        repositories.extend(response.get('values', []))
+
+    return repositories
 
 
 def transform_repos(workspace_repos: List[Dict]) -> List[Dict]:

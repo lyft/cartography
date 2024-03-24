@@ -83,7 +83,7 @@ def _sync_multiple_workspaces(
 ) ->bool:
     for workspace in workspaces:
         common_job_parameters['WORKSPACE_UUID']=workspace.get('uuid')
-        _sync_one_workspace(neo4j_session,workspace.get('name'),access_token,common_job_parameters,config)
+        _sync_one_workspace(neo4j_session,workspace.get('slug'),access_token,common_job_parameters,config)
         run_cleanup_job('bitbucket_workspace_cleanup.json', neo4j_session, common_job_parameters)
 
         del common_job_parameters['WORKSPACE_UUID']
