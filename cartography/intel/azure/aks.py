@@ -150,7 +150,7 @@ def _attach_resource_group_aks(tx: neo4j.Transaction, aks_id: str, resource_grou
 def get_aks_managed_cluster_agentpools_list(credentials: Credentials, subscription_id: str, resource_group_name: str, cluster_name: str, common_job_parameters: Dict) -> List[Dict]:
     try:
         client = get_client(credentials, subscription_id)
-        agentpools_list = list(map(lambda x: x.as_dict(), client.agent_pools.list(resource_group_name=resource_group_name, managed_cluster_name=cluster_name)))
+        agentpools_list = list(map(lambda x: x.as_dict(), client.agent_pools.list(resource_group_name=resource_group_name, resource_name=cluster_name)))
         agentpools_data = []
         for agentpool in agentpools_list:
             agentpool['resource_group'] = get_azure_resource_group_name(agentpool.get('id'))
