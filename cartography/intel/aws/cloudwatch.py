@@ -280,7 +280,7 @@ def transform_metrics(mets: List[Dict], account_id: str, region: str) -> List[Di
     metrics = []
     for metric in mets:
         console_arn = f"arn:aws:cloudwatch:{region if region else ''}:{account_id if account_id else ''}:metrics/{metric['MetricName']}"
-        metric['consolelink'] = aws_console_link.get_console_link(console_arn)
+        # metric['consolelink'] = aws_console_link.get_console_link(console_arn)
         metric['consolelink'] = ''
         metric['arn'] = metric['MetricName']
         metric['region'] = region

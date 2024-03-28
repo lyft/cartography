@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get_repos(access_token:str,workspace:str):
+    # https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-get
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}?pagelen=100"
 
     response = make_requests_url(url,access_token)

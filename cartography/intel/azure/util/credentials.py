@@ -205,6 +205,9 @@ class Authenticator:
         Implements Impersonation authentication for the Azure provider
         """
 
+        if not default_graph_scope:
+            default_graph_scope = "https://graph.microsoft.com/.default"
+
         # Set logging level to error for libraries as otherwise generates a lot of warnings
         logging.getLogger('adal-python').setLevel(logging.ERROR)
         logging.getLogger('msrest').setLevel(logging.ERROR)

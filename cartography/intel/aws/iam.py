@@ -292,7 +292,7 @@ def get_external_access_roles(boto3_session: boto3.session.Session) -> List[Dict
             analyzer_client.create_analyzer(analyzerName="cdx_analyzer", type="ACCOUNT", tags={'owner': 'cloudanix', 'project': 'iam-entitlements-analyzer'})
             return findings
     except (ClientError, Exception) as e:
-        logger.error(f'Failed to get external roles. {e}')
+        logger.warning(f'Failed to get external roles. {e}')
         return []
 
 

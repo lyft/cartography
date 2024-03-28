@@ -20,19 +20,23 @@ class PolicyType(enum.Enum):
     managed = 'managed'
     inline = 'inline'
 
+def get_boto3_client(boto3_session: boto3.session.Session, service: str, region: str):
+    client = boto3_session.client(service, region_name=region)
+    return client
 
 @timeit
 def get_identity_center_instances_list(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     instances: List[Dict] = []
     try:
-        client = boto3_session.client('sso-admin', region_name=region)
+        client = get_boto3_client(boto3_session, 'sso-admin', region)
 
         paginator = client.get_paginator('list_instances')
         for page in paginator.paginate():
             instances.extend(page['Instances'])
+
     except Exception as e:
         logger.warning(
-            f"Could not get instance for identity center skipping. - {e}",
+            f"Could not list identity center instances. skipping. - {e}",
         )
     return instances
 
@@ -66,17 +70,31 @@ def _load_identity_center_instance_tx(tx: neo4j.Transaction, instance: Dict, upd
 
 @timeit
 def get_identity_center_permissions_sets_list(boto3_session: boto3.session.Session, instance: Dict, region: str) -> List[Dict]:
-    client = boto3_session.client('sso-admin', region_name=region)
+    client = get_boto3_client(boto3_session, 'sso-admin', region)
 
-    paginator = client.get_paginator('list_permission_sets')
     permission_sets: List[str] = []
-    for page in paginator.paginate(InstanceArn=instance['InstanceArn']):
-        permission_sets.extend(page['PermissionSets'])
+    try:
+        paginator = client.get_paginator('list_permission_sets')
+
+        for page in paginator.paginate(InstanceArn=instance['InstanceArn']):
+            permission_sets.extend(page['PermissionSets'])
+
+    except Exception as e:
+        logger.warning(
+            f"Could not list permission sets for {instance['InstanceArn']}. skipping. - {e}",
+        )
 
     permission_sets_list: List[Dict] = []
     for permission_set in permission_sets:
-        response = client.describe_permission_set(InstanceArn=instance['InstanceArn'], PermissionSetArn=permission_set)
-        permission_sets_list.append(response["PermissionSet"])
+        try:
+            response = client.describe_permission_set(InstanceArn=instance['InstanceArn'], PermissionSetArn=permission_set)
+            permission_sets_list.append(response["PermissionSet"])
+
+        except Exception as e:
+            logger.warning(
+                f"Could not get permission set info for {instance['InstanceArn']} - {permission_set}. skipping. - {e}",
+            )
+
     return permission_sets_list
 
 
@@ -119,57 +137,75 @@ def _load_identity_center_permissions_sets_tx(tx: neo4j.Transaction, instance_ar
 
 @timeit
 def get_managed_policies(boto3_session: boto3.session.Session, instance_arn: str, permission_sets: List[Dict], region: str):
-
     managed_policies: Dict = {}
-    for permission_set in permission_sets:
-        client = boto3_session.client('sso-admin', region_name=region)
 
-        name = permission_set["Name"]
+    client = get_boto3_client(boto3_session, 'sso-admin', region)
+    iam_client = get_boto3_client(boto3_session, 'iam', region)
+    iam_resource = boto3_session.resource('iam')
+
+    for permission_set in permission_sets:
         permission_set_arn = permission_set["PermissionSetArn"]
 
-        managed_policies[permission_set_arn] = {}
         policies: List[Dict] = []
+        managed_policies[permission_set_arn] = {}
         try:
             paginator = client.get_paginator('list_managed_policies_in_permission_set')
-            for page in paginator.paginate(InstanceArn=instance_arn, PermissionSetArn=permission_set["PermissionSetArn"]):
+            for page in paginator.paginate(InstanceArn=instance_arn, PermissionSetArn=permission_set_arn):
                 policies.extend(page['AttachedManagedPolicies'])
-            for policy in policies:
-                client = boto3_session.client('iam')
-                policy.update(client.get_policy(PolicyArn=policy["Arn"])["Policy"])
-                iam = boto3_session.resource('iam')
-                managed_policies[permission_set_arn][policy["PolicyName"]] = iam.PolicyVersion(policy["Arn"], policy["DefaultVersionId"]).document["Statement"]
+
         except Exception as e:
             logger.warning(
-                f"Could not get policies for permission set {name} due to NoSuchEntityException; skipping.",
+                f"Could not get policies for permission set {instance_arn} - {permission_set_arn}; skipping. - {e}",
             )
+
+        for policy in policies:
+            try:
+                policy.update(iam_client.get_policy(PolicyArn=policy["Arn"])["Policy"])
+                managed_policies[permission_set_arn][policy["PolicyName"]] = iam_resource.PolicyVersion(policy["Arn"], policy["DefaultVersionId"]).document["Statement"]
+
+            except Exception as e:
+                logger.warning(
+                    f"Could not get policy info {policy['Arn']}; skipping. - {e}",
+                )
 
     return managed_policies
 
 
 @timeit
 def get_inline_policy(boto3_session: boto3.session.Session, instance_arn: str, permission_sets: dict, region: str):
+    client = get_boto3_client(boto3_session, 'sso-admin', region)
+
     inline_policies: Dict = {}
     for permission_set in permission_sets:
-        client = boto3_session.client('sso-admin', region_name=region)
-
         name = permission_set["Name"]
         permission_set_arn = permission_set["PermissionSetArn"]
 
-        InlinePolicy = client.get_inline_policy_for_permission_set(InstanceArn=instance_arn, PermissionSetArn=permission_set_arn).get("InlinePolicy")
-        if InlinePolicy:
-            InlinePolicy = json.loads(InlinePolicy)
-            inline_policies[permission_set_arn] = {name: InlinePolicy["Statement"]}
+        inline_policy = ''
+        try:
+            inline_policy = client.get_inline_policy_for_permission_set(InstanceArn=instance_arn, PermissionSetArn=permission_set_arn).get("InlinePolicy")
+
+        except Exception as e:
+            logger.warning(f"Could not get inline policy for {instance_arn} - {permission_set_arn}; skipping. - {e}")
+
+        if inline_policy:
+            inline_policy = json.loads(inline_policy)
+            inline_policies[permission_set_arn] = {name: inline_policy["Statement"]}
 
     return inline_policies
 
 
 @timeit
 def get_list_account_assignments(boto3_session: boto3.session.Session, instance_arn: str, permission_set_arn: str, current_aws_account_id: str, region: str):
-    client = boto3_session.client('sso-admin', region_name=region)
+    client = get_boto3_client(boto3_session, 'sso-admin', region)
     assignments: List[Dict] = []
-    paginator = client.get_paginator('list_account_assignments')
-    for page in paginator.paginate(InstanceArn=instance_arn, PermissionSetArn=permission_set_arn, AccountId=current_aws_account_id):
-        assignments.extend(page['AccountAssignments'])
+
+    try:
+        paginator = client.get_paginator('list_account_assignments')
+        for page in paginator.paginate(InstanceArn=instance_arn, PermissionSetArn=permission_set_arn, AccountId=current_aws_account_id):
+            assignments.extend(page['AccountAssignments'])
+
+    except Exception as e:
+        logger.warning(f"Could not list account assignments for {instance_arn} - {permission_set_arn} - {current_aws_account_id}; skipping. - {e}")
 
     return assignments
 
@@ -239,14 +275,23 @@ def sync_identity_center_permissions_sets(
 
 @timeit
 def get_identity_center_users_list(boto3_session: boto3.session.Session, instance: Dict, region: str) -> List[Dict]:
-    client = boto3_session.client('identitystore', region_name=region)
+    client = get_boto3_client(boto3_session, 'identitystore', region)
 
-    paginator = client.get_paginator('list_users')
     users: List[Dict] = []
-    for page in paginator.paginate(IdentityStoreId=instance['IdentityStoreId']):
-        users.extend(page['Users'])
+    try:
+        paginator = client.get_paginator('list_users')
+
+        for page in paginator.paginate(IdentityStoreId=instance['IdentityStoreId']):
+            users.extend(page['Users'])
+
+    except Exception as e:
+        logger.warning(
+            f"Could not list users for {instance['IdentityStoreId']}. skipping. - {e}",
+        )
+
     for user in users:
         user['arn'] = f"{instance['InstanceArn']}/user/{user['UserId']}"
+
     return users
 
 
@@ -300,14 +345,23 @@ def sync_identity_center_users(
 
 @timeit
 def get_identity_center_groups_list(boto3_session: boto3.session.Session, instance: Dict, region: str) -> List[Dict]:
-    client = boto3_session.client('identitystore', region_name=region)
+    client = get_boto3_client(boto3_session, 'identitystore', region)
 
-    paginator = client.get_paginator('list_groups')
     groups: List[Dict] = []
-    for page in paginator.paginate(IdentityStoreId=instance['IdentityStoreId']):
-        groups.extend(page['Groups'])
+    try:
+        paginator = client.get_paginator('list_groups')
+
+        for page in paginator.paginate(IdentityStoreId=instance['IdentityStoreId']):
+            groups.extend(page['Groups'])
+
+    except Exception as e:
+        logger.warning(
+            f"Could not list groups for {instance['IdentityStoreId']}. skipping. - {e}",
+        )
+
     for group in groups:
         group['arn'] = f"{instance['InstanceArn']}/group/{group['GroupId']}"
+
     return groups
 
 
@@ -350,12 +404,20 @@ def _load_identity_center_groups_tx(tx: neo4j.Transaction, instance_arn: str, gr
 
 @timeit
 def get_list_group_memberships(boto3_session: boto3.session.Session, group: str, instance: Dict, region: str) -> List[Dict]:
-    client = boto3_session.client('identitystore', region_name=region)
+    client = get_boto3_client(boto3_session, 'identitystore', region)
 
-    paginator = client.get_paginator('list_group_memberships')
     group_memberships: List[Dict] = []
-    for page in paginator.paginate(IdentityStoreId=instance['IdentityStoreId'], GroupId=group["GroupId"]):
-        group_memberships.extend(page['GroupMemberships'])
+    try:
+        paginator = client.get_paginator('list_group_memberships')
+
+        for page in paginator.paginate(IdentityStoreId=instance['IdentityStoreId'], GroupId=group["GroupId"]):
+            group_memberships.extend(page['GroupMemberships'])
+
+    except Exception as e:
+        logger.warning(
+            f"Could not list group memberships for {instance['IdentityStoreId']} - {group['GroupId']}. skipping. - {e}",
+        )
+
     return group_memberships
 
 

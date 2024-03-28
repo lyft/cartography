@@ -817,7 +817,7 @@ def run_azure(request):
         azure_refresh_token=request['azure']['refresh_token'],
         azure_vault_scope=request['azure']['vault_scope'],
         azure_graph_scope=request['azure']['graph_scope'],
-        azure_default_graph_scope=request['azure']['default_graph_scope'],
+        azure_default_graph_scope=request.get('azure',{}).get('default_graph_scope'),
         azure_azure_scope=request['azure']['azure_scope'],
         params=request['params'],
         azure_requested_syncs=request.get('services', None),
