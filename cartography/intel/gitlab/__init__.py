@@ -11,7 +11,6 @@ from requests import exceptions
 
 import cartography.intel.gitlab.members
 import cartography.intel.gitlab.projects
-import cartography.intel.gitlab.repositories
 import cartography.intel.gitlab.group
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
@@ -91,7 +90,7 @@ def _sync_multiple_groups(
 @timeit
 def start_gitlab_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     """
-    If this module is configured, perform ingestion of bitbucket  data. Otherwise warn and exit
+    If this module is configured, perform ingestion of gitlab  data. Otherwise warn and exit
     :param neo4j_session: Neo4J session for database interface
     :param config: A cartography.config object
     :return: None

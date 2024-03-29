@@ -15,10 +15,14 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get_groups(access_token: str):
-    url = f"https://gitlab.example.com/api/v4/groups"
+    url = f"https://gitlab.example.com/api/v4/groups?pagelen=100"
 
     response = make_requests_url(url,access_token)
     groups = response
+
+    while 'next' in response:
+        response = make_requests_url(response.get('next'),access_token)
+        groups.extend(response)
 
     return groups
 
