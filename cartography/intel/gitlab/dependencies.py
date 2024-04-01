@@ -49,7 +49,7 @@ def _load_dependencies_data(tx: neo4j.Transaction,dependencies_data:List[Dict],c
 
     WITH dep, dependency
     MATCH (repo:GitLabRepository {id: dependency.repository_id})
-    MERGE (dep)-[r:DEPENDS_ON]->(repo)
+    MERGE (dep)-[r:HAS]->(repo)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $UpdateTag
     """

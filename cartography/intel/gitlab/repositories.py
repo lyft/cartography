@@ -57,7 +57,7 @@ def _load_repositories_data(tx: neo4j.Transaction,repos_data:List[Dict],common_j
     re.lastupdated = $UpdateTag
     WITH re, repo
     MATCH (project:GitLabProject{id: repo.namespace.id})
-    MERGE (project)<-[o:HAS_REPOSITORY]-(re)
+    MERGE (project)<-[o:HAS]-(re)
     ON CREATE SET o.firstseen = timestamp()
     SET o.lastupdated = $UpdateTag
     """
