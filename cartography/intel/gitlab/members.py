@@ -15,14 +15,17 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get_group_members(access_token:str,group:str):
+    """
+    As per the rest api docs:https://docs.gitlab.com/ee/api/members.html
+    """
     url = f"https://gitlab.example.com/api/v4/groups/{group}/members?per_page=100"
 
     response = make_requests_url(url,access_token)
-    members = response
+    members = response.json()
 
     while 'next' in response:
         response = make_requests_url(response.get('next'),access_token)
-        members.extend(response)
+        members.extend(response.json())
 
     return members
 
@@ -63,7 +66,7 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 
 def sync(
         neo4j_session: neo4j.Session,
-        group_name:str,
+        group_id:str,
         gitlab_access_token:str,
         common_job_parameters: Dict[str, Any],
 ) -> None:
@@ -74,6 +77,6 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Gitlab All group members")
-    group_members=get_group_members(gitlab_access_token,group_name)
+    group_members=get_group_members(gitlab_access_token,group_id)
     load_members_data(neo4j_session,group_members,common_job_parameters)
     cleanup(neo4j_session,common_job_parameters)

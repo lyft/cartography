@@ -8,4 +8,5 @@ from . import repositories
 RESOURCE_FUNCTIONS: Dict = {
     'members': members.sync,
     'projects': projects.sync,
+    'repositories': repositories.sync,
 }

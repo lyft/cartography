@@ -15,14 +15,17 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get_groups(access_token: str):
+    """
+    As per the rest api docs:https://docs.gitlab.com/ee/api/api_resources.html
+    """
     url = f"https://gitlab.example.com/api/v4/groups?pagelen=100"
 
     response = make_requests_url(url,access_token)
-    groups = response
+    groups = response.json()
 
     while 'next' in response:
         response = make_requests_url(response.get('next'),access_token)
-        groups.extend(response)
+        groups.extend(response.json())
 
     return groups
 
@@ -69,7 +72,8 @@ def _load_group_data(tx: neo4j.Transaction, group_data: List[Dict], common_job_p
             workspace_id=common_job_parameters['WORKSPACE_ID'],
         )
 
-
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gitlab_group_cleanup.json', neo4j_session, common_job_parameters)
 
 def sync(
         neo4j_session: neo4j.Session,

@@ -63,7 +63,7 @@ def _sync_one_gitlab_group(
                 )
             else:
                 raise ValueError(
-                    f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?',
+                    f'Gitlab sync function "{request}" was specified but does not exist. Did you misspell it?',
                 )
 
         for future in as_completed(futures):

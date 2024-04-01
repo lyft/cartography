@@ -16,6 +16,7 @@ import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.azure
 import cartography.intel.bitbucket
+import cartography.intel.gitlab
 import cartography.intel.create_indexes
 import cartography.intel.gcp
 import cartography.intel.github
@@ -337,6 +338,23 @@ def build_bitbucket_sync():
     stages = []
     stages.append(('cloudanix-workspace', cloudanix.run))
     stages.append(('bitbucket', cartography.intel.bitbucket.start_bitbucket_ingestion))
+    stages.append(('analysis', cartography.intel.analysis.run))
+
+    sync.add_stages(stages)
+
+    return sync
+
+def build_gitlab_sync():
+    """
+    Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
+    :rtype: cartography.sync.Sync
+    :return: The default cartography sync object.
+    """
+    sync = Sync()
+
+    stages = []
+    stages.append(('cloudanix-workspace', cloudanix.run))
+    stages.append(('gitlab', cartography.intel.gitlab.start_gitlab_ingestion))
     stages.append(('analysis', cartography.intel.analysis.run))
 
     sync.add_stages(stages)

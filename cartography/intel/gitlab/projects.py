@@ -14,14 +14,18 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get_projects(access_token:str,group:str):
-    url = f"https://gitlab.example.com/api/v4/groups/{group}/projects?per_page=100"
+    """
+    As per the rest api docs:https://docs.gitlab.com/ee/api/api_resources.html#project-resources
+    """
+    
+    url = f"https://gitlab.example.com/api/v4/projects?per_page=100"
 
     response = make_requests_url(url,access_token)
-    projects = response
+    projects = response.json()
 
     while 'next' in response:
         response = make_requests_url(response.get('next'),access_token)
-        projects.extend(response)
+        projects.extend(response.json())
 
     return projects
 
@@ -49,7 +53,7 @@ def _load_projects_data(tx: neo4j.Transaction,project_data:List[Dict],common_job
 
     WITH pro,project
     MATCH (group:GitLabGroup {id: member.group_id})
-    merge (group)-[o:CONTAIN]->(pro)
+    merge (group)-[o:RESOURCE]->(pro)
     ON CREATE SET o.firstseen = timestamp()
     SET o.lastupdated = $UpdateTag
     """
