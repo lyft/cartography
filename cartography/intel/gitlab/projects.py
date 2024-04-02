@@ -39,23 +39,34 @@ def _load_projects_data(tx: neo4j.Transaction,project_data:List[Dict],common_job
     UNWIND $projectData as project
     MERGE (pro:GitLabProject {id: project.id})
     ON CREATE SET pro.firstseen = timestamp(),
-    pro.created_on = project.created_on
+    pro.created_at = project.created_at
 
     SET pro.description = project.description,
     pro.name = project.name,
+    pro.id = project.id,
     pro.visibility = project.visibility,
-    pro.path_with_namespace = project.path_with_namespace,
-    pro.http_url_to_repo = project.http_url_to_repo,
-    pro.ssh_url_to_repo = project.ssh_url_to_repo,
-    pro.web_url = project.web_url,
+    pro.owner = project.owner.name,
+    pro.namespace_id = project.namespace.id,
+    pro.namespace_name = project.namespace.name,
     pro.last_activity_at = project.last_activity_at,
+    pro.web_url = project.web_url,
+    pro.avatar_url = project.avatar_url,
+    pro.default_branch = project.default_branch,
+    pro.tag_list = project.tag_list,
+    pro.archived = project.archived,
+    pro.merge_requests_enabled = project.merge_requests_enabled,
+    pro.builds_enabled = project.builds_enabled,
+    pro.snippets_enabled = project.snippets_enabled,
+    pro.wiki_enabled = project.wiki_enabled,
+    pro.created_at = project.created_at,
+    pro.updated_at = project.updated_at,
     pro.lastupdated = $UpdateTag
 
-    WITH pro,project
-    MATCH (group:GitLabGroup {id: member.group_id})
-    merge (group)-[o:RESOURCE]->(pro)
-    ON CREATE SET o.firstseen = timestamp()
-    SET o.lastupdated = $UpdateTag
+    WITH pro, project
+    MATCH (group:GitLabGroup{id: project.namespace.id})
+    MERGE (group)-[r:OWNS]->(pro)
+    ON CREATE SET r.firstseen = timestamp()
+    SET r.lastupdated = $UpdateTag
     """
 
     tx.run(

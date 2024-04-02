@@ -39,7 +39,7 @@ def _load_repositories_data(tx: neo4j.Transaction,repos_data:List[Dict],common_j
     UNWIND $reposData as repo
     MERGE (re:GitLabRepository{id: repo.id})
     ON CREATE SET re.firstseen = timestamp(),
-    re.created_on = repo.created_on
+    re.created_at = repo.created_at
 
     SET re.name = repo.name,
     re.description = repo.description,
@@ -55,6 +55,7 @@ def _load_repositories_data(tx: neo4j.Transaction,repos_data:List[Dict],common_j
     re.namespace_id = repo.namespace.id,
     re.namespace_name = repo.namespace.name,
     re.lastupdated = $UpdateTag
+    
     WITH re, repo
     MATCH (project:GitLabProject{id: repo.namespace.id})
     MERGE (project)<-[o:HAS]-(re)

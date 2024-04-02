@@ -39,7 +39,7 @@ def _load_dependencies_data(tx: neo4j.Transaction,dependencies_data:List[Dict],c
     UNWIND $dependenciesData AS dependency
     MERGE (dep:GitLabDependency {id: dependency.id})
     ON CREATE SET dep.firstseen = timestamp()
-    dep.created_on = dependency.created_on
+    dep.created_at = dependency.created_at
 
     SET dep.name = dependency.name,
     dep.version = dependency.version,
