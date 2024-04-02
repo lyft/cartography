@@ -64,7 +64,7 @@ def _load_projects_data(tx: neo4j.Transaction,project_data:List[Dict],common_job
 
     WITH pro, project
     MATCH (group:GitLabGroup{id: project.namespace.id})
-    MERGE (group)-[r:OWNS]->(pro)
+    MERGE (group)-[r:RESOURCE]->(pro)
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $UpdateTag
     """
