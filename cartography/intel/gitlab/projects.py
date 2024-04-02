@@ -39,7 +39,7 @@ def _load_projects_data(tx: neo4j.Transaction,project_data:List[Dict],common_job
     UNWIND $projectData as project
     MERGE (pro:GitLabProject {id: project.id})
     ON CREATE SET pro.firstseen = timestamp(),
-    pro.created_on = project.created_at
+    pro.created_on = project.created_on
 
     SET pro.description = project.description,
     pro.name = project.name,
