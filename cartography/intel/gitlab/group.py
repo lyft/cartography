@@ -41,11 +41,10 @@ def _load_group_data(tx: neo4j.Transaction, group_data: List[Dict], common_job_p
 
     SET
         group.path = $path,
+        group.id = $id,
         group.name = $name,
         group.description = $description,
         group.visibility = $visibility,
-        group.web_url = $web_url,
-        group.avatar_url = $avatar_url,
         group.lastupdated = $UpdateTag
 
     WITH group

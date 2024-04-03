@@ -39,11 +39,13 @@ def _load_members_data(tx: neo4j.Transaction,members_data:List[Dict],common_job_
     UNWIND $membersData as member
     MERGE (mem:GitLabMember {id: member.id})
     ON CREATE SET mem.firstseen = timestamp()
+    mem.created_at = $created_at
 
     SET mem.name = member.name,
+    mem.id = member.id,
     mem.username = member.username,
     mem.state = member.state,
-    mem.avatar_url = member.avatar_url,
+    mem.created_by = member.created_by,
     mem.lastupdated = $UpdateTag
 
     WITH mem,member

@@ -42,18 +42,10 @@ def _load_repositories_data(tx: neo4j.Transaction,repos_data:List[Dict],common_j
     re.created_at = repo.created_at
 
     SET re.name = repo.name,
-    re.description = repo.description,
-    re.visibility = repo.visibility,
-    re.path_with_namespace = repo.path_with_namespace,
-    re.default_branch = repo.default_branch,
-    re.ssh_url_to_repo = repo.ssh_url_to_repo,
-    re.http_url_to_repo = repo.http_url_to_repo,
-    re.web_url = repo.web_url,
-    re.last_activity_at = repo.last_activity_at,
-    re.owner_username = repo.owner.username,
-    re.owner_id = repo.owner.id,
-    re.namespace_id = repo.namespace.id,
-    re.namespace_name = repo.namespace.name,
+    re.id = repo.id,
+    re.type = repo.type,
+    re.path = repo.path,
+    re.mode = repo.mode,
     re.lastupdated = $UpdateTag
     
     WITH re, repo

@@ -42,9 +42,11 @@ def _load_dependencies_data(tx: neo4j.Transaction,dependencies_data:List[Dict],c
     dep.created_at = dependency.created_at
 
     SET dep.name = dependency.name,
+    dep.id = dependency.id,
     dep.version = dependency.version,
-    dep.type = dependency.type,
-    dep.description = dependency.description,
+    dep.dependency_file_path = dependency.dependency_file_path,
+    dep.vulnerabilities = dependency.vulnerabilities,
+    dep.licenses = dependency.licenses,
     dep.lastupdated = $UpdateTag
 
     WITH dep, dependency

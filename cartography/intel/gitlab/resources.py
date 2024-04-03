@@ -11,5 +11,4 @@ RESOURCE_FUNCTIONS: Dict = {
     'projects': projects.sync,
     'repositories': repositories.sync,
     'dependencies': dependencies.sync,
-
 }

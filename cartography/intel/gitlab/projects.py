@@ -43,23 +43,12 @@ def _load_projects_data(tx: neo4j.Transaction,project_data:List[Dict],common_job
 
     SET pro.description = project.description,
     pro.name = project.name,
+    pro.name_with_namespace = project.name_with_namespace,
     pro.id = project.id,
     pro.visibility = project.visibility,
-    pro.owner = project.owner.name,
-    pro.namespace_id = project.namespace.id,
-    pro.namespace_name = project.namespace.name,
+    pro.namespace= project.namespace,
     pro.last_activity_at = project.last_activity_at,
-    pro.web_url = project.web_url,
-    pro.avatar_url = project.avatar_url,
     pro.default_branch = project.default_branch,
-    pro.tag_list = project.tag_list,
-    pro.archived = project.archived,
-    pro.merge_requests_enabled = project.merge_requests_enabled,
-    pro.builds_enabled = project.builds_enabled,
-    pro.snippets_enabled = project.snippets_enabled,
-    pro.wiki_enabled = project.wiki_enabled,
-    pro.created_at = project.created_at,
-    pro.updated_at = project.updated_at,
     pro.lastupdated = $UpdateTag
 
     WITH pro, project
