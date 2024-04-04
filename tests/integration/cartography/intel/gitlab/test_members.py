@@ -12,7 +12,7 @@ def test_load_member(neo4j_session):
     )
     nodes = neo4j_session.run(
         """
-        MATCH (g:BitbucketMember) RETURN g.name;
+        MATCH (g:GitlabMember) RETURN g.name;
         """,
     )
     expected_nodes = {'name', 'name2'}
