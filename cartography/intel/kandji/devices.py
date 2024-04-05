@@ -35,7 +35,7 @@ def _load_devices(data: Dict, neo4j_session: neo4j.Session, update_tag: int) -> 
 
 @timeit
 def _sync_devices(
-    neo4j_session: neo4j.Session, update_tag: int, kandji_base_uri: str, kandji_token: str
+    neo4j_session: neo4j.Session, update_tag: int, kandji_base_uri: str, kandji_token: str,
 ) -> bool:
     devices = _get_devices(kandji_base_uri, kandji_token)
     _load_devices(devices, neo4j_session, update_tag)  # type: ignore
@@ -47,7 +47,9 @@ def sync(
     neo4j_session: neo4j.Session, kandji_base_uri: str, kandji_token: str,
     common_job_parameters: Dict,
 ) -> None:
-    sync_successful = _sync_devices(neo4j_session, common_job_parameters['UPDATE_TAG'],
-        kandji_base_uri, kandji_token)
+    sync_successful = _sync_devices(
+        neo4j_session, common_job_parameters['UPDATE_TAG'],
+        kandji_base_uri, kandji_token,
+    )
     if sync_successful:
         logger.info('Kandji device sync successful')
