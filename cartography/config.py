@@ -196,8 +196,8 @@ class Config:
         self.jamf_base_uri = jamf_base_uri
         self.jamf_user = jamf_user
         self.jamf_password = jamf_password
-        self.kandji_base_uri = kandji_base_uri,
-        self.kandji_token = kandji_token ,
+        self.kandji_base_uri = kandji_base_uri
+        self.kandji_token = kandji_token
         self.k8s_kubeconfig = k8s_kubeconfig
         self.statsd_enabled = statsd_enabled
         self.statsd_prefix = statsd_prefix
