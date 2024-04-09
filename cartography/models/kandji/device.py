@@ -12,6 +12,12 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 
 @dataclass(frozen=True)
+class KandjiDeviceSchema(CartographyNodeSchema):
+    label: str = 'KandjiDevice'  # The label of the node
+    properties: KandjiDeviceNodeProperties = KandjiDeviceNodeProperties()  # An object representing all properties
+
+
+@dataclass(frozen=True)
 class KandjiDeviceNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')
     lastupdated: PropertyRef = PropertyRef('lastupdated')
