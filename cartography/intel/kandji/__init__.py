@@ -18,9 +18,9 @@ def start_kandji_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
     common_job_parameters = {
         "UPDATE_TAG": config.update_tag,
     }
-    if config.kandji_base_uri == None or config.kandji_token == None:
+    if config.kandji_base_uri is None or config.kandji_token is None:
         logger.warning(
-            "Required parameter(s) missing. Skipping sync."
+            "Required parameter(s) missing. Skipping sync.",
         )
         return
     devices.sync(neo4j_session, config.kandji_base_uri, config.kandji_token, common_job_parameters)
