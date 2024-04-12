@@ -643,6 +643,11 @@ class CLI:
                     config.kandji_token_env_var,
                 )
                 config.kandji_token = os.environ.get(config.kandji_token_env_var)
+            elif os.environ.get('KANDJI_TOKEN'):
+                logger.debug(
+                   "Reading Kandji API token from environment variable 'KANDJI_TOKEN'."
+                )
+                config.kandji_token = os.environ.get('KANDJI_TOKEN')
             else:
                 logger.warning("A Kandji base URI was provided but a token was not.")
                 config.kandji_token = None
