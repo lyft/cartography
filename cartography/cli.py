@@ -335,6 +335,15 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--kandji-tenant-id',
+            type=str,
+            default=None,
+            help=(
+                'Your Kandji tenant id e.g. company.'
+                'Required using the Kandji intel module. Ignored otherwise.'
+            ),
+        )
+        parser.add_argument(
             '--kandji-token-env-var',
             type=str,
             default=None,
