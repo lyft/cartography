@@ -10,6 +10,7 @@ class KandjiTenantNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')
     lastupdated: PropertyRef = PropertyRef('lastupdated')
 
+
 @dataclass(frozen=True)
 class KandjiTenantSchema(CartographyNodeSchema):
     label: str = 'KandjiTenant'  # The label of the node

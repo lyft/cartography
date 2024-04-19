@@ -2,9 +2,9 @@ import logging
 
 import neo4j
 
+import cartography.intel.kandji.devices
 from cartography.config import Config
 from cartography.util import timeit
-import cartography.intel.kandji.devices
 
 logger = logging.getLogger(__name__)
 
