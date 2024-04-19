@@ -4,79 +4,81 @@ from typing import Dict
 from typing import List
 
 import neo4j
+from requests import Session
 
-from cartography.intel import crowdstrike
-from cartography.intel.kandji.util import call_kandji_api
-from cartography.util import run_analysis_and_ensure_deps
+from cartography.client.core.tx import load
+from cartography.graph.job import GraphJob
+from cartography.models.kandji.device import KandjiDeviceSchema
+from cartography.models.kandji.tenant import KandjiTenantSchema
 from cartography.util import timeit
 
 
 logger = logging.getLogger(__name__)
+_TIMEOUT = (60, 60)
 
 
 @timeit
-def _get_devices(kandji_base_uri: str, kandji_token: str) -> List[Dict]:
-    return call_kandji_api("/api/v1/devices", kandji_base_uri, kandji_token)
+def get(kandji_base_uri: str, kandji_token: str) -> List[Dict[str, Any]]:
+    api_endpoint = f"{kandji_base_uri}/api/v1/devices"
+    headers = {
+        'Accept': 'application/json',
+        'Authorization': f'Bearer {kandji_token}',
+    }
+
+    session = Session()
+    req = session.get(api_endpoint, headers=headers, timeout=_TIMEOUT)
+    req.raise_for_status()
+    return req.json()
 
 
 @timeit
-def _load_devices(data: Dict, neo4j_session: neo4j.Session, update_tag: int) -> None:
-    ingest_kandji_device = """
-    UNWIND $JsonData as device
-    MERGE (d:KandjiDevice{device_id: device.device_id})
-    ON CREATE SET d.firstseen = timestamp()
-    SET d.lastupdated = $UpdateTag,
-        d.device_name = device.device_name,
-        d.last_check_in = device.last_check_in,
-        d.model = device.model,
-        d.os_version = device.os_version,
-        d.platform = device.platform,
-        d.serial_number = device.serial_number
-    """
-    neo4j_session.run(ingest_kandji_device, JsonData=data, UpdateTag=update_tag)
+def transform(api_result: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    result: List[Dict[str, Any]] = []
+    for device in api_result:
+        n_device = device
+        n_device['id'] = device['device_id']
+        result.append(n_device)
+    return result
 
 
 @timeit
-def _sync_devices(
-    neo4j_session: neo4j.Session, update_tag: int, kandji_base_uri: str, kandji_token: str,
-) -> bool:
-    devices = _get_devices(kandji_base_uri, kandji_token)
-    _load_devices(devices, neo4j_session, update_tag)  # type: ignore
-    return True
-
-
-@timeit
-def _perform_kandji_analysis(
-        neo4j_session: neo4j.Session,
-        common_job_parameters: Dict[str, Any],
+def load_devices(
+    neo4j_session: neo4j.Session,
+    common_job_parameters: Dict[str, Any],
+    data: List[Dict[str, Any]],
 ) -> None:
-    kandji_crowdstrike_link_requirements = {
-        'crowdstrike',
-    }
-    RESOURCE_FUNCTIONS: Dict = {
-        'crowdstrike': crowdstrike.endpoints.sync_hosts,
-    }
 
-    requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
+    tenant_id = common_job_parameters["TENANT_ID"]
+    update_tag = common_job_parameters["UPDATE_TAG"]
 
-    run_analysis_and_ensure_deps(
-        'kandji_crowdstrike_link.json',
-        kandji_crowdstrike_link_requirements,
-        set(requested_syncs),
-        common_job_parameters,
+    load(
         neo4j_session,
+        KandjiTenantSchema(),
+        [{'id': tenant_id}],
+        lastupdated=update_tag,
     )
+
+    load(
+        neo4j_session,
+        KandjiDeviceSchema(),
+        data,
+        lastupdated=update_tag,
+        TENANT_ID=tenant_id,
+    )
+
+
+def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict[str, Any]) -> None:
+    GraphJob.from_node_schema(KandjiDeviceSchema(), common_job_parameters).run(neo4j_session)
 
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, kandji_base_uri: str, kandji_token: str,
-    common_job_parameters: Dict,
+    neo4j_session: neo4j.Session,
+    kandji_base_uri: str,
+    kandji_token: str,
+    common_job_parameters: Dict[str, Any],
 ) -> None:
-    sync_successful = _sync_devices(
-        neo4j_session, common_job_parameters['UPDATE_TAG'],
-        kandji_base_uri, kandji_token,
-    )
-    if sync_successful:
-        logger.info('Kandji device sync successful')
-        _perform_kandji_analysis(neo4j_session, common_job_parameters)
+    devices = get(kandji_base_uri=kandji_base_uri, kandji_token=kandji_token)
+    formatted_devices = transform(devices)
+    load_devices(neo4j_session, common_job_parameters, formatted_devices)
+    cleanup(neo4j_session, common_job_parameters)
