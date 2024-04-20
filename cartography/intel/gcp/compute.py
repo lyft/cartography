@@ -538,6 +538,10 @@ def transform_gcp_instances(response_objects: List[Dict], compute: Resource) -> 
                     res['ipv6natIP'] = ipv6AccessConfig.get('natIP', None)
                 else:
                     break
+        for disk in res.get('disks', []):
+            if disk.get('boot'):
+                res['sourceImage'] = disk.get('initializeParams', {}).get('sourceImage')
+                break
         instance_list.append(res)
     return instance_list
 
@@ -895,7 +899,9 @@ def load_gcp_instances_tx(tx: neo4j.Transaction, instances: Dict, gcp_update_tag
     i.accessConfig = instance.accessConfig,
     i.status = instance.status,
     i.consolelink = instance.consolelink,
-    i.lastupdated = $gcp_update_tag
+    i.lastupdated = $gcp_update_tag,
+    i.machine_type = instance.machineType,
+    i.source_image = instance.sourceImage
     WITH i, p
 
     MERGE (p)-[r:RESOURCE]->(i)

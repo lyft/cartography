@@ -92,7 +92,13 @@ def load_vms(neo4j_session: neo4j.Session, subscription_id: str, vm_list: List[D
     v.license_type=vm.license_type, v.computer_name=vm.os_profile.computer_name,
     v.identity_type=vm.identity.type, v.zones=vm.zones,
     v.ultra_ssd_enabled=vm.additional_capabilities.ultra_ssd_enabled,
-    v.priority=vm.priority, v.eviction_policy=vm.eviction_policy
+    v.priority=vm.priority, v.eviction_policy=vm.eviction_policy,
+    v.vm_size=vm.hardware_profile.vm_size,
+    v.publisher=vm.storage_profile.image_reference.publisher,
+    v.offer=vm.storage_profile.image_reference.offer,
+    v.sku=vm.storage_profile.image_reference.sku,
+    v.version=vm.storage_profile.image_reference.version,
+    v.exact_version=vm.storage_profile.image_reference.exact_version
     WITH vm, v
     MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(v)
