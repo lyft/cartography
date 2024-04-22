@@ -21,7 +21,7 @@ class KandjiDeviceNodeProperties(CartographyNodeProperties):
     model: PropertyRef = PropertyRef('model')
     os_version: PropertyRef = PropertyRef('os_version')
     platform: PropertyRef = PropertyRef('platform')
-    serial_number: PropertyRef = PropertyRef('serial_number')
+    serial_number: PropertyRef = PropertyRef('serial_number', extra_index=True)
 
 
 @dataclass(frozen=True)
