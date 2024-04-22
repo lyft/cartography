@@ -2,6 +2,14 @@
 
 .. _kandji_schema:
 
+### KandjiTenant
+
+Representation of a Kandji Tenant.
+
+|Field | Description|
+|-------|-------------|
+| id | Kandji Tenant id|
+
 ### KandjiDevice
 
 Representation of a Kandji device.
@@ -18,4 +26,8 @@ Representation of a Kandji device.
 
 #### Relationships
 
-- Coming soon!
+- Kandji devices are enrolled to a Kandji Tenant
+
+    ```
+    (KandjiDevice)-[ENROLLED_TO]->(KandjiTenant)
+    ```
