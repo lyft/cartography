@@ -13,7 +13,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 @dataclass(frozen=True)
 class KandjiDeviceNodeProperties(CartographyNodeProperties):
     id: PropertyRef = PropertyRef('id')
-    lastupdated: PropertyRef = PropertyRef('lastupdated')
+    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
     device_id: PropertyRef = PropertyRef('device_id')
     device_name: PropertyRef = PropertyRef('device_name')
