@@ -7,6 +7,7 @@ The Kandji module has the following coverage:
 * Users (TODO)
 
 .. toctree::
+   :hidden:
    :glob:
 
    *
