@@ -30,7 +30,7 @@ class KandjiTenantToKandjiDeviceRelProperties(CartographyRelProperties):
 
 
 @dataclass(frozen=True)
-# (:KandjiTenant)<-[:DEVICE]-(:KandjiDevice)
+# (:KandjiDevice)-[:ENROLLED_TO]->(:KandjiTenant)
 class KandjiTenantToKandjiDeviceRel(CartographyRelSchema):
     target_node_label: str = 'KandjiTenant'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
