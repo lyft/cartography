@@ -1,17 +1,10 @@
 import logging
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Set
 
 import neo4j
 
-from cartography.client.core.tx import load
 from cartography.config import Config
-from cartography.graph.job import GraphJob
 from cartography.intel.snipeit import asset
 from cartography.intel.snipeit import user
-from cartography.models.snipeit.tenant import SnipeitTenantSchema
 from cartography.stats import get_stats_client
 from cartography.util import timeit
 
