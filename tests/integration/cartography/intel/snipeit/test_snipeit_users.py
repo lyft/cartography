@@ -3,7 +3,6 @@ import logging
 import cartography.intel.snipeit
 import tests.data.snipeit.tenants
 import tests.data.snipeit.users
-
 from tests.integration.util import check_nodes
 from tests.integration.util import check_rels
 
@@ -41,8 +40,8 @@ def test_load_snipeit_user_relationship(neo4j_session):
 
     # Make sure the expected Devices are created
     expected_nodes = {
-        (1, 'mcarter@example.net',),
-        (2, 'snipe@snipe.net',),
+        (1, 'mcarter@example.net'),
+        (2, 'snipe@snipe.net'),
     }
     assert check_nodes(
         neo4j_session,

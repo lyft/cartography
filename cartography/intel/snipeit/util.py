@@ -16,7 +16,7 @@ def call_snipeit_api(api_and_parameters: str, base_uri: str, token: str) -> Dict
     uri = base_uri + api_and_parameters
     try:
         logger.debug(
-            "SnipeIT: Get %s", uri
+            "SnipeIT: Get %s", uri,
         )
         response = requests.get(
             uri,

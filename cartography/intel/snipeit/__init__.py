@@ -1,26 +1,23 @@
+import logging
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Set
 
-import logging
-
 import neo4j
 
 from cartography.client.core.tx import load
-from cartography.graph.job import GraphJob
-
 from cartography.config import Config
+from cartography.graph.job import GraphJob
 from cartography.intel.snipeit import asset
 from cartography.intel.snipeit import user
-
+from cartography.models.snipeit.tenant import SnipeitTenantSchema
 from cartography.stats import get_stats_client
 from cartography.util import timeit
 
-from cartography.models.snipeit.tenant import SnipeitTenantSchema
-
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
+
 
 @timeit
 def start_snipeit_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
@@ -38,4 +35,3 @@ def start_snipeit_ingestion(neo4j_session: neo4j.Session, config: Config) -> Non
     # Ingest SnipeIT users and assets
     user.sync(neo4j_session, common_job_parameters, config.snipeit_base_uri, config.snipeit_token)
     asset.sync(neo4j_session, common_job_parameters, config.snipeit_base_uri, config.snipeit_token)
-

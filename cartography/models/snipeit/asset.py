@@ -35,6 +35,8 @@ class SnipeitAssetNodeProperties(CartographyNodeProperties):
 ###
 
 dataclass(frozen=True)
+
+
 class SnipeitTenantToSnipeitAssetRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
@@ -74,10 +76,9 @@ class SnipeitAssetToSnipeitUserRel(CartographyRelSchema):
 class SnipeitAssetSchema(CartographyNodeSchema):
     label: str = 'SnipeitAsset'  # The label of the node
     properties: SnipeitAssetNodeProperties = SnipeitAssetNodeProperties()  # An object representing all properties
-    sub_resource_relationship: SnipeitTenantToSnipeitAssetRel  = SnipeitTenantToSnipeitAssetRel()
+    sub_resource_relationship: SnipeitTenantToSnipeitAssetRel = SnipeitTenantToSnipeitAssetRel()
     other_relationships: OtherRelationships = OtherRelationships(
         [
             SnipeitAssetToSnipeitUserRel(),
-        ]
+        ],
     )
-

@@ -5,14 +5,12 @@ from typing import List
 
 import neo4j
 
+from .util import call_snipeit_api
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
-from cartography.util import timeit
-
-from .util import call_snipeit_api
-
-from cartography.models.snipeit.tenant import SnipeitTenantSchema
 from cartography.models.snipeit.asset import SnipeitAssetSchema
+from cartography.models.snipeit.tenant import SnipeitTenantSchema
+from cartography.util import timeit
 
 
 logger = logging.getLogger(__name__)
@@ -28,8 +26,8 @@ def get(base_uri: str, token: str) -> List[Dict[str, Any]]:
 def load_assets(
     neo4j_session: neo4j.Session,
     common_job_parameters: Dict,
-    data: List[Dict[str, Any]]
-    ) -> None:
+    data: List[Dict[str, Any]],
+) -> None:
     logger.debug(data[0])
 
     # Create the SnipeIT Tenant
@@ -62,5 +60,5 @@ def sync(
     token: str,
 ) -> None:
     assets = get(base_uri=base_uri, token=token)
-    load_assets(neo4j_session=neo4j_session,common_job_parameters=common_job_parameters,data=assets)
+    load_assets(neo4j_session=neo4j_session, common_job_parameters=common_job_parameters, data=assets)
     cleanup(neo4j_session, common_job_parameters)

@@ -1,10 +1,9 @@
 import logging
 
 import cartography.intel.snipeit
-import tests.data.snipeit.tenants
 import tests.data.snipeit.assets
+import tests.data.snipeit.tenants
 import tests.data.snipeit.users
-
 from tests.integration.util import check_nodes
 from tests.integration.util import check_rels
 
@@ -51,8 +50,8 @@ def test_load_snipeit_assets_relationship(neo4j_session):
 
     # Make sure the expected assets are created
     expected_nodes = {
-        (1373, "C02ZJ48XXXXX",),
-        (1372, "72ec94a8-b6dc-37f1-b2a9-0907806e8db7",),
+        (1373, "C02ZJ48XXXXX"),
+        (1372, "72ec94a8-b6dc-37f1-b2a9-0907806e8db7"),
     }
     assert check_nodes(
         neo4j_session,
@@ -62,8 +61,8 @@ def test_load_snipeit_assets_relationship(neo4j_session):
 
     # Make sure the expected relationships are created
     expected_nodes_relationships = {
-        ('Company A', "C02ZJ48XXXXX",),
-        ('Company A', "72ec94a8-b6dc-37f1-b2a9-0907806e8db7",),
+        ('Company A', "C02ZJ48XXXXX"),
+        ('Company A', "72ec94a8-b6dc-37f1-b2a9-0907806e8db7"),
     }
     assert check_rels(
         neo4j_session,
@@ -87,7 +86,6 @@ def test_load_snipeit_assets_relationship(neo4j_session):
         'HAS_CHECKED_OUT',
         rel_direction_right=True,
     ) == expected_nodes_relationships
-
 
     # Cleanup test data
     common_job_parameters = {
@@ -173,7 +171,6 @@ def test_cleanup_snipeit_assets(neo4j_session):
         "SnipeitAsset",
         ["id"],
     ) == expected_nodes_unrelated
-
 
     # Cleanup all test data
     common_job_parameters = {
