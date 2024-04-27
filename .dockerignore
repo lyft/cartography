@@ -1,4 +1,4 @@
 build/
 *.egg-info/
 venv/
-.git/
+# .git/ # Required for pyproject based automatic version detection
