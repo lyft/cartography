@@ -11,6 +11,9 @@ test_integration:
 
 build_py_pkg:
 	python -m ensurepip --default-pip --upgrade
+	python -m pip install --upgrade build twine
+	python -m build
+	python -m twine check dist/*
 
 clean:
 	rm -rf dist
