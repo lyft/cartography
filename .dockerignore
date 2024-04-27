@@ -2,3 +2,9 @@ build/
 *.egg-info/
 venv/
 # .git/ # Required for pyproject based automatic version detection
+.github/
+.venv/
+dist/
+docks/
+tests/
+.coverage
