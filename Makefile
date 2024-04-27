@@ -15,6 +15,9 @@ build_py_pkg:
 	python -m build
 	python -m twine check dist/*
 
+build_docker_image: build_py_pkg
+	docker buildx build --provenance=false --platform linux/amd64 --pull --load -t cartography:latest -f Dockerfile.multistage .
+
 clean:
 	rm -rf dist
 
