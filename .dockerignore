@@ -5,6 +5,6 @@ venv/
 .github/
 .venv/
 dist/
-docks/
+docs/
 tests/
 .coverage
