@@ -10,9 +10,7 @@ test_integration:
 	pytest -vvv --cov-report term-missing --cov=cartography tests/integration
 
 build_py_pkg:
-	python3 -m pip install --upgrade build twine
-	python3 -m build
-	python3 -m twine check dist/*
+	python -m ensurepip --default-pip --upgrade
 
 clean:
 	rm -rf dist
