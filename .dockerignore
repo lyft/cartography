@@ -2,6 +2,7 @@ build/
 *.egg-info/
 venv/
 # .git/ # Required for pyproject based automatic version detection
+.git/config
 .github/
 .venv/
 dist/
