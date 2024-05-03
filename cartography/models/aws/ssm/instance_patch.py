@@ -31,11 +31,6 @@ class SSMInstancePatchToAWSAccountRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 @dataclass(frozen=True)
-class AWSAccountToCloudanixWorkspaceRelProperties(CartographyRelProperties):
-    lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
-
-
-@dataclass(frozen=True)
 class SSMInstancePatchToAWSAccount(CartographyRelSchema):
     target_node_label: str = 'AWSAccount'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
@@ -72,13 +67,3 @@ class SSMInstancePatchSchema(CartographyNodeSchema):
             SSMInstancePatchToEC2Instance(),
         ],
     )
-
-@dataclass(frozen=True)
-class AWSAccountToCloudanixWorkspace(CartographyRelSchema):
-    target_node_label: str = 'CloudanixWorkspace'
-    target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('WORKSPACE_ID', set_in_kwargs=True)},
-    )
-    direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "OWNER"
-    properties: AWSAccountToCloudanixWorkspaceRelProperties = AWSAccountToCloudanixWorkspaceRelProperties()
