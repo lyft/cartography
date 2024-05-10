@@ -80,12 +80,12 @@ def call_github_api(query: str, variables: str, token: str, api_url: str) -> Dic
 
 
 def fetch_page(
-    token: str,
-    api_url: str,
-    organization: str,
-    query: str,
-    cursor: Optional[str] = None,
-    **kwargs: Any,
+        token: str,
+        api_url: str,
+        organization: str,
+        query: str,
+        cursor: Optional[str] = None,
+        **kwargs: Any,
 ) -> Dict[str, Any]:
     """
     Return a single page of max size 100 elements from the Github api_url using the given `query` and `cursor` params.
@@ -109,14 +109,14 @@ def fetch_page(
 
 
 def fetch_all(
-    token: str,
-    api_url: str,
-    organization: str,
-    query: str,
-    resource_type: str,
-    retries: int = 5,
-    resource_inner_type: Optional[str] = None,
-    **kwargs: Any,
+        token: str,
+        api_url: str,
+        organization: str,
+        query: str,
+        resource_type: str,
+        retries: int = 5,
+        resource_inner_type: Optional[str] = None,
+        **kwargs: Any,
 ) -> Tuple[PaginatedGraphqlData, Dict[str, Any]]:
     """
     Fetch and return all data items of the given `resource_type` and `field_name` from Github's paginated GraphQL API as
