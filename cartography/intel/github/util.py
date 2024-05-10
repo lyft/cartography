@@ -13,6 +13,7 @@ from typing import Tuple
 
 import requests
 
+
 logger = logging.getLogger(__name__)
 # Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
 _TIMEOUT = (60, 60)
@@ -80,12 +81,12 @@ def call_github_api(query: str, variables: str, token: str, api_url: str) -> Dic
 
 
 def fetch_page(
-        token: str,
-        api_url: str,
-        organization: str,
-        query: str,
-        cursor: Optional[str] = None,
-        **kwargs: Any,
+            token: str,
+            api_url: str,
+            organization: str,
+            query: str,
+            cursor: Optional[str] = None,
+            **kwargs: Any,
 ) -> Dict[str, Any]:
     """
     Return a single page of max size 100 elements from the Github api_url using the given `query` and `cursor` params.
