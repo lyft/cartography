@@ -139,6 +139,7 @@ def fetch_all(
     """
     cursor = None
     has_next_page = True
+    org_data: Dict[str, Any] = {}
     data: PaginatedGraphqlData = PaginatedGraphqlData(nodes=[], edges=[])
     retry = 0
 
@@ -170,6 +171,14 @@ def fetch_all(
             time.sleep(2 ** retry)
             continue
 
+        if 'data' not in resp:
+            logger.warning(
+                'Got no "data" attribute in response: %s. Stopping requests for organization: %s and resource_type: %s ',
+                resp, organization, resource_type
+            )
+            has_next_page = False
+            continue
+
         resource = resp['data']['organization'][resource_type]
         if resource_inner_type:
             resource = resp['data']['organization'][resource_type][resource_inner_type]
@@ -180,6 +189,14 @@ def fetch_all(
 
         cursor = resource['pageInfo']['endCursor']
         has_next_page = resource['pageInfo']['hasNextPage']
+        if not org_data:
+            org_data = {
+                'url': resp['data']['organization']['url'],
+                'login': resp['data']['organization']['login']
+            }
 
-    org_data = {'url': resp['data']['organization']['url'], 'login': resp['data']['organization']['login']}
+    if not org_data:
+        raise ValueError(
+            f"Didn't get any organization data for organization: {organization} and resource_type: {resource_type}"
+        )
     return data, org_data
