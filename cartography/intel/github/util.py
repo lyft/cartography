@@ -174,7 +174,7 @@ def fetch_all(
         if 'data' not in resp:
             logger.warning(
                 'Got no "data" attribute in response: %s. Stopping requests for organization: %s and resource_type: %s ',
-                resp, organization, resource_type
+                resp, organization, resource_type,
             )
             has_next_page = False
             continue
@@ -192,11 +192,11 @@ def fetch_all(
         if not org_data:
             org_data = {
                 'url': resp['data']['organization']['url'],
-                'login': resp['data']['organization']['login']
+                'login': resp['data']['organization']['login'],
             }
 
     if not org_data:
         raise ValueError(
-            f"Didn't get any organization data for organization: {organization} and resource_type: {resource_type}"
+            f"Didn't get any organization data for organization: {organization} and resource_type: {resource_type}",
         )
     return data, org_data
