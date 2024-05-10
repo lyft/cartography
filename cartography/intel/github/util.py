@@ -174,7 +174,7 @@ def fetch_all(
             logger.warning(
                 f'Got no "data" attribute in response: {resp}. '
                 f'Stopping requests for organization: {organization} and '
-                f'resource_type: {resource_type}'
+                f'resource_type: {resource_type}',
             )
             has_next_page = False
             continue
