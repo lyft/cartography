@@ -13,7 +13,6 @@ from typing import Tuple
 
 import requests
 
-
 logger = logging.getLogger(__name__)
 # Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
 _TIMEOUT = (60, 60)
@@ -81,12 +80,12 @@ def call_github_api(query: str, variables: str, token: str, api_url: str) -> Dic
 
 
 def fetch_page(
-        token: str,
-        api_url: str,
-        organization: str,
-        query: str,
-        cursor: Optional[str] = None,
-        **kwargs: Any,
+    token: str,
+    api_url: str,
+    organization: str,
+    query: str,
+    cursor: Optional[str] = None,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """
     Return a single page of max size 100 elements from the Github api_url using the given `query` and `cursor` params.
@@ -110,14 +109,14 @@ def fetch_page(
 
 
 def fetch_all(
-        token: str,
-        api_url: str,
-        organization: str,
-        query: str,
-        resource_type: str,
-        retries: int = 5,
-        resource_inner_type: Optional[str] = None,
-        **kwargs: Any,
+    token: str,
+    api_url: str,
+    organization: str,
+    query: str,
+    resource_type: str,
+    retries: int = 5,
+    resource_inner_type: Optional[str] = None,
+    **kwargs: Any,
 ) -> Tuple[PaginatedGraphqlData, Dict[str, Any]]:
     """
     Fetch and return all data items of the given `resource_type` and `field_name` from Github's paginated GraphQL API as
@@ -173,8 +172,9 @@ def fetch_all(
 
         if 'data' not in resp:
             logger.warning(
-                'Got no "data" attribute in response: %s. Stopping requests for organization: %s and resource_type: %s ',
-                resp, organization, resource_type,
+                f'Got no "data" attribute in response: {resp}. '
+                f'Stopping requests for organization: {organization} and '
+                f'resource_type: {resource_type}'
             )
             has_next_page = False
             continue
