@@ -1,9 +1,13 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = [
+  "setuptools",
+  "setuptools-scm",
+  "wheel"
+]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-# This empty section is required
+# See configuration details in https://github.com/pypa/setuptools_scm
 
 [project]
 name = "cartography"
