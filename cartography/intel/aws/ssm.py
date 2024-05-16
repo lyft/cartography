@@ -153,4 +153,5 @@ def sync(
         data = get_instance_patches(boto3_session, region, instance_ids)
         data = transform_instance_patches(data)
         load_instance_patches(neo4j_session, data, region, current_aws_account_id, update_tag)
+
     cleanup_ssm(neo4j_session, common_job_parameters)

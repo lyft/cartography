@@ -100,7 +100,7 @@ def sync_redshift_reserved_node(
     for region in regions:
         logger.info("Syncing redshift_reserved_node for region '%s' in account '%s'.", region, current_aws_account_id)
         rnodes = get_redshift_reserved_node(boto3_session, region)
-        data = transform_reserved_nodes(rnodes, region, current_aws_account_id)
+        data.extend(transform_reserved_nodes(rnodes, region, current_aws_account_id))
 
     logger.info(f"Total Redshift Reserved Nodes: {len(data)}")
 

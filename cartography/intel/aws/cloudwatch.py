@@ -488,15 +488,15 @@ def sync(
         logger.info("Syncing Cloudwatch for region '%s' in account '%s'.", region, current_aws_account_id)
 
         alms = get_cloudwatch_alarm(boto3_session, region)
-        alarms = transform_alarms(alms, region)
+        alarms.extend(transform_alarms(alms, region))
         flgs = get_cloudwatch_flowlogs(boto3_session, region)
-        flowlogs = transform_flow_logs(flgs, current_aws_account_id, region)
+        flowlogs.extend(transform_flow_logs(flgs, current_aws_account_id, region))
         ebs = get_event_buses(boto3_session, region)
-        event_buses = transform_event_buses(ebs, region)
+        event_buses.extend(transform_event_buses(ebs, region))
         log_g = get_log_groups(boto3_session, region)
-        log_groups = transform_log_groups(boto3_session, log_g, region)
+        log_groups.extend(transform_log_groups(boto3_session, log_g, region))
         mets = get_metrics(boto3_session, region)
-        metrics = transform_metrics(mets, current_aws_account_id, region)
+        metrics.extend(transform_metrics(mets, current_aws_account_id, region))
 
     logger.info(f"Total Cloudwatch Alarms: {len(alarms)}")
 

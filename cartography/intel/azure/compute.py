@@ -755,7 +755,7 @@ def load_snapshots(neo4j_session: neo4j.Session, subscription_id: str, snapshots
     s.createoption = snapshot.creation_data.create_option, s.disksizegb = snapshot.disk_size_gb,
     s.encryption = snapshot.encryption_settings_collection.enabled, s.incremental = snapshot.incremental,
     s.network_access_policy = snapshot.network_access_policy, s.ostype = snapshot.os_type,
-    s.tier = snapshot.tier, s.sku = snapshot.sku.name
+    s.tier = snapshot.tier, s.sku = snapshot.sku.name, s.disk_access_id = snapshot.disk_access_id
     WITH s
     MATCH (owner:AzureSubscription{id: $SUBSCRIPTION_ID})
     MERGE (owner)-[r:RESOURCE]->(s)

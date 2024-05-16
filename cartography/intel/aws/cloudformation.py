@@ -108,7 +108,7 @@ def sync(
 
         sts = get_cloudformation_stack(boto3_session, region)
 
-        stacks = transform_stack(sts, region)
+        stacks.extend(transform_stack(sts, region))
 
     logger.info(f"Total Cloudformation Stacks: {len(stacks)}")
 

@@ -115,6 +115,7 @@ def sync_dynamodb_tables(
         ddb_table_data, ddb_gsi_data = transform_dynamodb_tables(dynamodb_tables, region, current_aws_account_id)
         load_dynamodb_tables(neo4j_session, ddb_table_data, region, current_aws_account_id, aws_update_tag)
         load_dynamodb_gsi(neo4j_session, ddb_gsi_data, region, current_aws_account_id, aws_update_tag)
+
     cleanup_dynamodb_tables(neo4j_session, common_job_parameters)
 
 
