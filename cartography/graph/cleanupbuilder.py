@@ -117,7 +117,7 @@ def _build_cleanup_node_and_rel_queries(
         query_template = Template(
             """
             MATCH (n:$node_label)$sub_resource_link(:$sub_resource_label{$match_sub_res_clause})
-            <-[:OWNER]-(:GitHubOrganization{id: $ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
+            <-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
             $selected_rel_clause
             $delete_action_clause
             """,
