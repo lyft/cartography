@@ -98,6 +98,8 @@ def get_service_account_keys(iam: Resource, project_id: str, service_account: Di
             key['consolelink'] = gcp_console_link.get_console_link(
                 resource_name='service_account_key', project_id=project_id, service_account_unique_id=service_account['uniqueId'],
             )
+            key['validAfterTime'] = key.get('validAfterTime')
+            key['validBeforeTime'] = key.get('validBeforeTime')
 
         service_keys.extend(keys)
 
