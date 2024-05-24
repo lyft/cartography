@@ -93,6 +93,8 @@ def update_access_policies(vault: Dict, common_job_parameters: Dict, client: Key
 def transform_key_vaults(key_vaults: List[Dict], regions: List, common_job_parameters: Dict) -> List[Dict]:
     key_vaults_data = []
     for vault in key_vaults:
+        vault['created_on'] = vault.get('systemData',{}).get('createdAt')
+        vault['updated_on'] = vault.get('systemData',{}).get('lastModifiedAt')
         vault['resource_group'] = get_azure_resource_group_name(vault.get('id'))
         vault['consolelink'] = azure_console_link.get_console_link(
             id=vault['id'], primary_ad_domain_name=common_job_parameters['Azure_Primary_AD_Domain_Name'],

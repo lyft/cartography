@@ -51,10 +51,6 @@ def load_roles(session: neo4j.Session, tenant_id: str, data_list: List[Dict], up
 def load_managed_identities(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_managed_identities_tx, tenant_id, data_list, update_tag)
 
-def load_key_vaults(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
-    session.write_transaction(_load_key_vaults_tx, tenant_id, data_list, update_tag)
-
-
 def load_tenant_groups(session: neo4j.Session, tenant_id: str, data_list: List[Dict], update_tag: int) -> None:
     session.write_transaction(_load_tenant_groups_tx, tenant_id, data_list, update_tag)
 
@@ -99,12 +95,6 @@ def get_authorization_client(credentials: Credentials, subscription_id: str) -> 
 def get_managed_identity_client(credentials: Credentials, subscription_id: str) -> ManagedServiceIdentityClient:
     client = ManagedServiceIdentityClient(credentials, subscription_id)
     return client
-
-@timeit
-def get_key_vault_management_client(credentials: Credentials, subscription_id: str) -> KeyVaultManagementClient:
-    client = KeyVaultManagementClient(credentials, subscription_id)
-    return client
-
 
 @timeit
 def list_tenant_users(client: GraphRbacManagementClient, tenant_id: str) -> List[Dict]:
@@ -625,22 +615,6 @@ def get_managed_identity_list(client: ManagedServiceIdentityClient, subscription
         logger.warning(f"Error while retrieving managed identity - {e}")
         return []
 
-@timeit
-def get_key_vault_list(client: KeyVaultManagementClient, subscription_id: str, common_job_parameters: Dict) -> List[Dict]:
-    try:
-        key_vault_list = list(
-            map(lambda x: x.as_dict(), client.vaults.list_by_subscription()),
-        )
-
-        for key_vault in key_vault_list['value']:
-            key_vault['createdAt'] = key_vault.get('systemData',{}).get('createdAt')
-            key_vault['lastModifiedAt'] = key_vault.get('systemData',{}).get('lastModifiedAt')
-            
-        return key_vault_list
-    except HttpResponseError as e:
-        logger.warning(f"Error while retrieving key vault list - {e}")
-        return []
-
 def _load_roles_tx(
     tx: neo4j.Transaction, tenant_id: str, roles_list: List[Dict], update_tag: int, SUBSCRIPTION_ID: str,
 ) -> None:
@@ -727,41 +701,12 @@ def _load_managed_identities_tx(
         tenant_id=tenant_id,
     )
 
-def _load_key_vaults_tx(
-    tx: neo4j.Transaction, tenant_id: str, key_vault_list: List[Dict], update_tag: int,
-) -> None:
-    ingest_key_vault = """
-    UNWIND $key_vault_list AS key_vault
-    MERGE (i:AzureKeyVault{id: key_vault.id}})
-    ON CREATE SET i:AzurePrincipal,
-    i.firstseen = timestamp(),
-    i.name = key_vault.name,
-    i.location = key_vault.location,
-    i.type = key_vault.type,
-    SET i.lastupdated = $update_tag
-    WITH i
-    MATCH (t:AzureTenant{id: $tenant_id})
-    MERGE (t)-[tr:RESOURCE]->(i)
-    ON CREATE SET tr.firstseen = timestamp()
-    SET tr.lastupdated = $update_tag
-    """
-
-    tx.run(
-        ingest_key_vault,
-        key_vault_list=key_vault_list,
-        update_tag=update_tag,
-        tenant_id=tenant_id,
-    )
-
 def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_tenant_roles_cleanup.json', neo4j_session, common_job_parameters)
 
 
 def cleanup_managed_identities(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('azure_import_managed_identity_cleanup.json', neo4j_session, common_job_parameters)
-
-def cleanup_key_vaults(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
-    run_cleanup_job('azure_import_key_vaults_cleanup.json', neo4j_session, common_job_parameters)
 
 def sync_roles(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
@@ -818,16 +763,6 @@ def _set_used_state_tx(
         isUsed=False,
     )
 
-
-def sync_key_vault(
-    neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
-    common_job_parameters: Dict,
-) -> None:
-    client = get_key_vault_management_client(credentials.arm_credentials, credentials.subscription_id)
-    key_vault_list = get_key_vault_list(client,credentials.subscription_id, common_job_parameters)
-    load_key_vaults(neo4j_session, tenant_id, key_vault_list, update_tag)
-    cleanup_key_vaults(neo4j_session, common_job_parameters)
-
 @timeit
 def sync(
     neo4j_session: neo4j.Session, credentials: Credentials, tenant_id: str, update_tag: int,
@@ -855,9 +790,6 @@ def sync(
             tenant_id, update_tag, common_job_parameters,
         )
         sync_tenant_domains(neo4j_session, credentials.aad_graph_credentials, tenant_id, update_tag, common_job_parameters)
-        sync_key_vault(
-            neo4j_session, credentials, tenant_id, update_tag, common_job_parameters,
-        )
         sync_managed_identity(
             neo4j_session, credentials, tenant_id, update_tag, common_job_parameters,
         )
