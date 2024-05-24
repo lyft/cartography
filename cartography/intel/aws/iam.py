@@ -345,6 +345,7 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
         for access_key in access_keys["AccessKeyMetadata"]:
             last_used = client.get_access_key_last_used(AccessKeyId=access_key.get('AccessKeyId'))
             access_key['LastUsedDate'] = last_used.get('AccessKeyLastUsed', {}).get('LastUsedDate')
+            access_key['CreateDate'] = access_key.get('CreateDate')
 
     except ClientError as e:
         if _is_common_exception(e, username):
