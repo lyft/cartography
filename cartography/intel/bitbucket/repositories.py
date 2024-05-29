@@ -33,6 +33,7 @@ def transform_repos(workspace_repos: List[Dict]) -> List[Dict]:
         repo['workspace']['uuid'] = repo['workspace']['uuid'].replace('{','').replace('}','')
         repo['project']['uuid'] = repo['project']['uuid'].replace('{','').replace('}','')
         repo['uuid'] = repo['uuid'].replace('{','').replace('}','')
+        repo['default_branch'] = repo['mainbranch'].get('name',None)
 
     return workspace_repos
 
@@ -59,6 +60,7 @@ def _load_repositories_data(tx: neo4j.Transaction,repos_data:List[Dict],common_j
     re.language=repo.language,
     re.owner=repo.owner.display_name,
     re.parent=repo.parent.name,
+    re.default_branch=repo.default_branch,
     re.lastupdated = $UpdateTag
     WITH re,repo
     MATCH (project:BitbucketProject{id:repo.project.uuid})
