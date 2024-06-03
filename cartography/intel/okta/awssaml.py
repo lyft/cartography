@@ -1,16 +1,21 @@
 # Okta intel module - AWS SAML
 import logging
 import re
+from collections import namedtuple
 from typing import Dict
 from typing import List
 from typing import Optional
 
 import neo4j
 
-from cartography.client.core.tx import read_list_of_values_tx
+from cartography.client.core.tx import read_list_of_dicts_tx
 from cartography.client.core.tx import read_single_value_tx
 from cartography.util import timeit
 
+
+AccountRole = namedtuple('AccountRole', ['account_id', 'role_name'])
+OktaGroup = namedtuple('OktaGroup', ['group_id', 'group_name'])
+GroupRole = namedtuple('GroupRole', ['okta_group_id', 'aws_role_arn'])
 
 logger = logging.getLogger(__name__)
 
@@ -19,22 +24,23 @@ def _parse_regex(regex_string: str) -> str:
     return regex_string.replace("{{accountid}}", "P<accountid>").replace("{{role}}", "P<role>").strip()
 
 
-def _get_account_and_role_name(okta_group_name: str, mapping_regex: str) -> tuple[str, str] | None:
+def _parse_okta_group_name(okta_group_name: str, mapping_regex: str) -> AccountRole | None:
+    """
+    Extract AWS account id and AWS role name from the given Okta group name using the given mapping regex.
+    """
     regex = _parse_regex(mapping_regex)
     matches = re.search(regex, okta_group_name)
     if matches:
         account_id = matches.group("accountid")
-        role_slug = matches.group("role")
-        return account_id, role_slug
+        role_name = matches.group("role")
+        return AccountRole(account_id, role_name)
     return None
 
 
 def transform_okta_group_to_aws_role(group_id: str, group_name: str, mapping_regex: str) -> Optional[Dict]:
-    account_and_role = _get_account_and_role_name(group_name, mapping_regex)
-    if account_and_role:
-        accountid = account_and_role[0]
-        role = account_and_role[1]
-        role_arn = f"arn:aws:iam::{accountid}:role/{role}"
+    account_role = _parse_okta_group_name(group_name, mapping_regex)
+    if account_role:
+        role_arn = f"arn:aws:iam::{account_role.account_id}:role/{account_role.role_name}"
         return {"groupid": group_id, "role": role_arn}
     return None
 
@@ -117,76 +123,96 @@ def _load_human_can_assume_role(neo4j_session: neo4j.Session, okta_update_tag: i
     )
 
 
-def get_awssso_okta_groups(neo4j_session: neo4j.Session) -> list[str]:
+def get_awssso_okta_groups(neo4j_session: neo4j.Session, okta_org_id: str) -> list[OktaGroup]:
     """
-    Return list of all Okta group ids tied to the Okta Application named "amazon_aws_sso".
+    Return list of all Okta group ids in the current Okta organization tied to Okta Applications with name
+    "amazon_aws_sso".
     """
     query = """
-    MATCH (g:OktaGroup)--(a:OktaApplication{name:"amazon_aws_sso"})
-    RETURN g.id
+    MATCH (g:OktaGroup)-[:APPLICATION]->(a:OktaApplication{name:"amazon_aws_sso"})
+           <-[:RESOURCE]-(:OktaOrganization{id: $okta_org_id})
+    RETURN g.id as group_id, g.name as group_name
     """
-    return neo4j_session.read_transaction(read_list_of_values_tx, query)
+    result = neo4j_session.read_transaction(read_list_of_dicts_tx, query, okta_org_id=okta_org_id)
+    return [OktaGroup(group_name=og['group_name'], group_id=og['group_id']) for og in result]
 
 
-def get_aws_sso_role_arn(okta_group_name: str, mapping_regex: str, neo4j_session: neo4j.Session) -> str | None:
-    account_and_role = _get_account_and_role_name(okta_group_name, mapping_regex)
-    if not account_and_role:
-        return None
-    account_id = account_and_role[0]
-    role_name = account_and_role[1]
-
-    # The associated SSO role will have a 'AWSReservedSSO' prefix and a hashed suffix -- we remove those.
+def get_awssso_role_arn(account_id: str, role_hint: str, neo4j_session: neo4j.Session) -> str | None:
+    """
+    Attempt to return the AWS role ARN for the given AWS account ID and role hint string.
+    This function exists to handle that AWS SSO roles have a 'AWSReservedSSO' prefix and a hashed suffix
+    Input:
+    - account_id: AWS account ID
+    - role_hint (str): The `AccountRole.role_name` returned by _parse_okta_group_name(). This is the part of the Okta
+    group name that refers to the AWS role name.
+    Output:
+    - If we are able to find it, returns the matching AWS role ARN.
+    """
     query = """
     MATCH (:AWSAccount{id:$account_id})-[:RESOURCE]->(role:AWSRole{path:"/aws-reserved/sso.amazonaws.com/"})
-    WHERE SPLIT(role.name, '_')[1..-1][0] = $role_slug
+    WHERE SPLIT(role.name, '_')[1..-1][0] = $role_hint
     RETURN role.arn AS role_arn
     """
-    return neo4j_session.read_transaction(read_single_value_tx, query, account_id=account_id, role_slug=role_name)
+    return neo4j_session.read_transaction(read_single_value_tx, query, account_id=account_id, role_hint=role_hint)
 
 
-def query_for_okta_to_awssso_role_mapping(neo4j_session: neo4j.Session, mapping_regex: str) -> list[dict[str, str]]:
+def query_for_okta_to_awssso_role_mapping(
+        neo4j_session: neo4j.Session,
+        awssso_okta_groups: list[OktaGroup],
+        mapping_regex: str,
+) -> list[GroupRole]:
     """
-    Inputs:
+    Input:
     - neo4j session
-    - the okta group to aws role mapping regex as defined in cartography.config
+    - str list of Okta group names
+    - str regex that tells us how to find the AWS role name and account when given an Okta group name
     Output:
-    - a list of dicts with keys `groupid` and `role_arn`
+    - list of OktaGroup id to AWSRole arn pairs.
     """
     result = []
-    okta_groups = get_awssso_okta_groups(neo4j_session)
-    for group_id in okta_groups:
-        role_name = get_aws_sso_role_arn(group_id, mapping_regex, neo4j_session)
-        if role_name:
-            result.append({'groupid': group_id, 'role_arn': role_name})
+    for group in awssso_okta_groups:
+        account_role = _parse_okta_group_name(group.group_name, mapping_regex)
+        if not account_role:
+            logger.info(f"Okta group {group.group_name} has no associated AWS SSO role")
+            continue
+
+        role_arn = get_awssso_role_arn(account_role.account_id, account_role.role_name, neo4j_session)
+        if role_arn:
+            result.append(GroupRole(group.group_id, role_arn))
     return result
 
 
-def _load_awssso_tx(tx: neo4j.Transaction, group_to_role: list[dict[str, str]], okta_update_tag: int) -> None:
+def _load_awssso_tx(tx: neo4j.Transaction, group_to_role: list[GroupRole], okta_update_tag: int) -> None:
     ingest_statement = """
     UNWIND $GROUP_TO_ROLE as app_data
-        MATCH (role:AWSRole{arn: app_data.role_arn})
-        MATCH (group:OktaGroup{id: app_data.groupid})
+        MATCH (role:AWSRole{arn: app_data.aws_role_arn})
+        MATCH (group:OktaGroup{id: app_data.okta_group_id})
         MERGE (role)<-[r:ALLOWED_BY]-(group)
         ON CREATE SET r.firstseen = timestamp()
         SET r.lastupdated = $okta_update_tag
     """
     tx.run(
         ingest_statement,
-        GROUP_TO_ROLE=group_to_role,
+        GROUP_TO_ROLE=[g._asdict() for g in group_to_role],
         okta_update_tag=okta_update_tag,
     )
 
 
 def _load_okta_group_to_awssso_roles(
         neo4j_session: neo4j.Session,
-        group_to_role: list[dict[str, str]],
+        group_to_role: list[GroupRole],
         okta_update_tag: int,
 ) -> None:
     neo4j_session.write_transaction(_load_awssso_tx, group_to_role, okta_update_tag)
 
 
 @timeit
-def sync_okta_aws_saml(neo4j_session: neo4j.Session, mapping_regex: str, okta_update_tag: int) -> None:
+def sync_okta_aws_saml(
+        neo4j_session: neo4j.Session,
+        mapping_regex: str,
+        okta_update_tag: int,
+        okta_org_id: str,
+) -> None:
     """
     Sync okta integration with saml. This will link OktaGroups to the AWSRoles they enable.
     This is for people who use the okta saml provider for AWS
@@ -206,5 +232,6 @@ def sync_okta_aws_saml(neo4j_session: neo4j.Session, mapping_regex: str, okta_up
     _load_okta_group_to_aws_roles(neo4j_session, group_to_role_mapping, okta_update_tag)
     _load_human_can_assume_role(neo4j_session, okta_update_tag)
 
-    group_to_ssorole_mapping = query_for_okta_to_awssso_role_mapping(neo4j_session, mapping_regex)
+    sso_okta_groups = get_awssso_okta_groups(neo4j_session, okta_org_id)
+    group_to_ssorole_mapping = query_for_okta_to_awssso_role_mapping(neo4j_session, sso_okta_groups, mapping_regex)
     _load_okta_group_to_awssso_roles(neo4j_session, group_to_ssorole_mapping, okta_update_tag)
