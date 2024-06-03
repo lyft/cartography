@@ -12,14 +12,13 @@ from cartography.intel.okta.awssaml import transform_okta_group_to_aws_role
 
 
 SAMPLE_OKTA_GROUP_IDS = ['00g9oh2', '00g9oh3', '00g9oh4']
-DEFAULT_REGEX = r"AWS_(?{{accountid}}\d+)_(?{{role}}[a-zA-Z0-9+=,.@\-_]+)"
 
 
 def test_saml_with_default_regex():
     group_name = "aws#northamerica-production#Tier1_Support#828416469395"
     group_id = "groupid"
-
-    result = transform_okta_group_to_aws_role(group_id, group_name, DEFAULT_REGEX)
+    default_regex = r"^aws\#\S+\#(?{{role}}[\w\-]+)\#(?{{accountid}}\d+)$"
+    result = transform_okta_group_to_aws_role(group_id, group_name, default_regex)
 
     assert result
     assert result["groupid"] == group_id
@@ -40,9 +39,10 @@ def test_saml_with_custom_regex():
 
 def test_parse_okta_group_name() -> None:
     group_name = 'AWS_1234_myrole1'
+    mapping_regex = r"AWS_(?{{accountid}}\d+)_(?{{role}}[a-zA-Z0-9+=,.@\-_]+)"
 
     # Act
-    account_role: Optional[AccountRole] = _parse_okta_group_name(group_name, DEFAULT_REGEX)
+    account_role: Optional[AccountRole] = _parse_okta_group_name(group_name, mapping_regex)
 
     # Assert
     assert account_role is not None
@@ -62,6 +62,7 @@ def test_parse_okta_group_name() -> None:
 def test_query_for_okta_to_awssso_role_mapping(mock_get_awssso_role_arn: MagicMock) -> None:
     # Arrange
     neo4j_session = mock.MagicMock()
+    mapping_regex = r"AWS_(?{{accountid}}\d+)_(?{{role}}[a-zA-Z0-9+=,.@\-_]+)"
     okta_groups = [
         OktaGroup(group_id='0oaxm1', group_name='AWS_1234_myrole1'),
         OktaGroup(group_id='0oaxm2', group_name='AWS_1234_myrole2'),
@@ -69,7 +70,7 @@ def test_query_for_okta_to_awssso_role_mapping(mock_get_awssso_role_arn: MagicMo
     ]
 
     # Act
-    result = query_for_okta_to_awssso_role_mapping(neo4j_session, okta_groups, DEFAULT_REGEX)
+    result = query_for_okta_to_awssso_role_mapping(neo4j_session, okta_groups, mapping_regex)
 
     # Assert
     assert result == [
