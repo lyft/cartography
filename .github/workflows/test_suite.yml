@@ -106,7 +106,7 @@ jobs:
       - name: Build
         uses: docker/build-push-action@v3
         with:
-          file: dist.Dockerfile
+          file: Dockerfile.multistage
           push: false # only build the image, don't push it anywhere
           context: .
           tags: ${{ steps.meta.outputs.tags }}
