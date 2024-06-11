@@ -24,7 +24,7 @@ google-cloud-pubsub>=2.3.0
 click<8.0,>=7.0
 pyparsing==2.4.7
 markupsafe==2.0.1
-cloudconsolelink~=1.0.21
+cloudconsolelink~=1.0.23
 
 # Azure specific packages
 azure-eventgrid~=4.1.1
