@@ -57,13 +57,13 @@ def transform_service_accounts(service_accounts: List[Dict], project_id: str) ->
         )
     return service_accounts
 
-def get_service_account_last_used_activities(policyanalyzer: Resource,project_id:str):
-    activities=[]
-    try:
-        parent=f"projects/{project_id}/locations/global/activityTypes/serviceAccountKeyLastAuthentication"
-        res =policyanalyzer.projects().locations().activityTypes().activities().query(parent=parent).execute()
-        activities.extend(res.get('activities', []))
 
+def get_service_account_last_used_activities(policyanalyzer: Resource, project_id: str):
+    activities = []
+    try:
+        parent = f"projects/{project_id}/locations/global/activityTypes/serviceAccountKeyLastAuthentication"
+        res = policyanalyzer.projects().locations().activityTypes().activities().query(parent=parent).execute()
+        activities.extend(res.get('activities', []))
 
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
@@ -78,14 +78,16 @@ def get_service_account_last_used_activities(policyanalyzer: Resource,project_id
             raise
     return activities
 
-def get_last_authenticated_time(key_id:str,activities:List[Dict]):
+
+def get_last_authenticated_time(key_id: str, activities: List[Dict]):
     for actvity in activities:
-        if key_id in actvity.get("fullResourceName",""):
-            return actvity.get("activity",{}).get("lastAuthenticatedTime","")
+        if key_id in actvity.get("fullResourceName", ""):
+            return actvity.get("activity", {}).get("lastAuthenticatedTime", "")
     return ""
 
+
 @timeit
-def get_service_account_keys(iam: Resource, project_id: str, service_account: Dict,activities:List[Dict]) -> List[Dict]:
+def get_service_account_keys(iam: Resource, project_id: str, service_account: Dict, activities: List[Dict]) -> List[Dict]:
     service_keys: List[Dict] = []
     try:
         res = iam.projects().serviceAccounts().keys().list(name=service_account['name']).execute()
@@ -94,7 +96,7 @@ def get_service_account_keys(iam: Resource, project_id: str, service_account: Di
             key['id'] = key['name'].split('/')[-1]
             key['service_account_key_name'] = key['name'].split('/')[-1]
             key['serviceaccount'] = service_account['name']
-            key['lastAuthenticatedTime']=get_last_authenticated_time(key.get("id"),activities)
+            key['lastAuthenticatedTime'] = get_last_authenticated_time(key.get("id"), activities)
             key['consolelink'] = gcp_console_link.get_console_link(
                 resource_name='service_account_key', project_id=project_id, service_account_unique_id=service_account['uniqueId'],
             )
@@ -146,9 +148,9 @@ def get_organization_custom_roles(iam: Resource, crm_v1: Resource, project_id: s
     try:
         req = crm_v1.projects().get(projectId=project_id)
         res_project = req.execute()
-        if res_project.get('parent',{}).get('type','') == 'organization':
+        if res_project.get('parent', {}).get('type', '') == 'organization':
             req = iam.organizations().roles().list(
-                parent=f"organizations/{res_project.get('parent',{}).get('id')}", view="FULL",
+                parent=f"organizations/{res_project.get('parent', {}).get('id')}", view="FULL",
             )
             while req is not None:
                 res = req.execute()
@@ -239,20 +241,20 @@ def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> 
         req = crm_v1.projects().get(projectId=project_id)
         res_project = req.execute()
         if res_project.get('parent', {}).get('type', '') == 'organization':
-            req = crm_v1.organizations().getIamPolicy(resource=f"organizations/{res_project.get('parent', {}).get('id','')}")
+            req = crm_v1.organizations().getIamPolicy(resource=f"organizations/{res_project.get('parent', {}).get('id', '')}")
             res = req.execute()
             if res.get('bindings'):
                 for binding in res['bindings']:
                     binding['parent'] = 'organization'
-                    binding['parent_id'] = f"organizations/{res_project.get('parent', {}).get('id','')}"
+                    binding['parent_id'] = f"organizations/{res_project.get('parent', {}).get('id', '')}"
                     bindings.append(binding)
         elif res_project.get('parent', {}).get('type', '') == 'folder':
-            req = crm_v2.folders().getIamPolicy(resource=f"folders/{res_project.get('parent', {}).get('id','')}")
+            req = crm_v2.folders().getIamPolicy(resource=f"folders/{res_project.get('parent', {}).get('id', '')}")
             res = req.execute()
             if res.get('bindings'):
                 for binding in res['bindings']:
                     binding['parent'] = 'folder'
-                    binding['parent_id'] = f"folders/{res_project.get('parent', {}).get('id','')}"
+                    binding['parent_id'] = f"folders/{res_project.get('parent', {}).get('id', '')}"
                     bindings.append(binding)
 
         return bindings
@@ -529,7 +531,7 @@ def cleanup_roles(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
 
 
 @timeit
-def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id: str, gcp_update_tag: int) -> None:
+def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id: str, organization_id: str, gcp_update_tag: int) -> None:
     for binding in bindings:
         role_id = get_role_id(binding['role'], project_id)
 
@@ -547,7 +549,7 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                 }
                 attach_role_to_user(
                     neo4j_session, role_id, user,
-                    project_id, gcp_update_tag,
+                    project_id, organization_id, gcp_update_tag,
                 )
 
             elif member.startswith('serviceAccount:'):
@@ -576,7 +578,9 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                 attach_role_to_group(
                     neo4j_session, role_id,
                     group,
-                    project_id, gcp_update_tag,
+                    project_id,
+                    organization_id,
+                    gcp_update_tag,
                 )
 
             elif member.startswith('domain:'):
@@ -610,8 +614,12 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
 
                     }
                     attach_role_to_user(
-                        neo4j_session, role_id, user,
-                        project_id, gcp_update_tag,
+                        neo4j_session,
+                        role_id,
+                        user,
+                        project_id,
+                        organization_id,
+                        gcp_update_tag,
                     )
 
                 elif member.startswith('serviceAccount:'):
@@ -643,7 +651,9 @@ def load_bindings(neo4j_session: neo4j.Session, bindings: List[Dict], project_id
                     attach_role_to_group(
                         neo4j_session, role_id,
                         group,
-                        project_id, gcp_update_tag,
+                        project_id,
+                        organization_id,
+                        gcp_update_tag,
                     )
 
                 elif member.startswith('domain:'):
@@ -672,7 +682,7 @@ def cleanup_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
 @timeit
 def attach_role_to_user(
     neo4j_session: neo4j.Session, role_id: str, user: Dict,
-    project_id: str, gcp_update_tag: int,
+    project_id: str, organization_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_script = """
     MERGE (user:GCPUser{id: $UserId})
@@ -692,7 +702,7 @@ def attach_role_to_user(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     WITH user,role
-    MATCH (p:GCPProject{id: $project_id})
+    MATCH (p:GCPOrganization{id: $organization_id})
     MERGE (p)-[pr:RESOURCE]->(user)
     ON CREATE SET
     pr.firstseen = timestamp()
@@ -719,6 +729,7 @@ def attach_role_to_user(
         ParentId=user['parent_id'],
         isDeleted=user.get('is_deleted', False),
         project_id=project_id,
+        organization_id=organization_id,
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -762,7 +773,7 @@ def attach_role_to_service_account(
 @timeit
 def attach_role_to_group(
     neo4j_session: neo4j.Session, role_id: str, group: Dict,
-    project_id: str, gcp_update_tag: int,
+    project_id: str, organization_id: str, gcp_update_tag: int,
 ) -> None:
     ingest_script = """
     MERGE (group:GCPGroup{id: $GroupId})
@@ -782,7 +793,7 @@ def attach_role_to_group(
     ON CREATE SET r.firstseen = timestamp()
     SET r.lastupdated = $gcp_update_tag
     WITH group,role
-    MATCH (p:GCPProject{id: $project_id})
+    MATCH (p:GCPOrganization{id: $organization_id})
     MERGE (p)-[pr:RESOURCE]->(group)
     ON CREATE SET
     pr.firstseen = timestamp()
@@ -809,6 +820,7 @@ def attach_role_to_group(
         ParentId=group['parent_id'],
         isDeleted=group.get('is_deleted', False),
         project_id=project_id,
+        organization_id=organization_id,
         gcp_update_tag=gcp_update_tag,
     )
 
@@ -918,20 +930,22 @@ def _set_used_state_tx(
 
 @timeit
 def sync(
-    neo4j_session: neo4j.Session, iam: Resource,policyanalyzer: Resource, crm_v1: Resource, crm_v2: Resource, apikey: Resource,
+    neo4j_session: neo4j.Session, iam: Resource, policyanalyzer: Resource, crm_v1: Resource, crm_v2: Resource, apikey: Resource,
     project_id: str, gcp_update_tag: int, common_job_parameters: Dict,
 ) -> None:
     tic = time.perf_counter()
 
     logger.info("Syncing IAM for project '%s', at %s.", project_id, tic)
 
+    organization_id = common_job_parameters['GCP_ORGANIZATION_ID']
+
     service_accounts_list = get_service_accounts(iam, project_id)
     service_accounts_list = transform_service_accounts(service_accounts_list, project_id)
-    activities= get_service_account_last_used_activities(policyanalyzer,project_id)
+    activities = get_service_account_last_used_activities(policyanalyzer, project_id)
     load_service_accounts(neo4j_session, service_accounts_list, project_id, gcp_update_tag)
 
     for service_account in service_accounts_list:
-        service_account_keys = get_service_account_keys(iam, project_id, service_account,activities)
+        service_account_keys = get_service_account_keys(iam, project_id, service_account, activities)
         load_service_account_keys(neo4j_session, service_account_keys, service_account['id'], project_id, gcp_update_tag)
 
     cleanup_service_accounts(neo4j_session, common_job_parameters)
@@ -963,7 +977,7 @@ def sync(
 
     bindings = get_policy_bindings(crm_v1, crm_v2, project_id)
     # users_from_bindings, groups_from_bindings, domains_from_bindings = transform_bindings(bindings, project_id)
-    load_bindings(neo4j_session, bindings, project_id, gcp_update_tag)
+    load_bindings(neo4j_session, bindings, project_id, organization_id, gcp_update_tag)
     set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
 
     cleanup_users(neo4j_session, common_job_parameters)

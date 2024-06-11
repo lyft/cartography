@@ -232,7 +232,7 @@ def test_cloudkms_function(neo4j_session):
     cartography.intel.gcp.cloudkms.attach_keyring_to_binding(neo4j_session, TEST_KEYRING_ID, bindings_data, TEST_UPDATE_TAG)
 
     query1 = """
-    MATCH (binding:GCPBinding)<-[a:ATTACHED_BINDING]-(keyring:GCPKMSKeyRing)<-[r:RESOURCE]-(location:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE keyring.exposed_internet=true
+    MATCH (binding:GCPBinding)<-[a:ATTACHED_BINDING]-(keyring:GCPKMSKeyRing)<-[r:RESOURCE]-(location:GCPLocation)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE keyring.exposed_internet=true
     RETURN keyring.id,keyring.exposed_internet,keyring.exposed_internet_type
     """
     run_analysis_job('gcp_kms_keyring_analysis.json', neo4j_session, common_job_parameters)

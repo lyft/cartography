@@ -64,7 +64,7 @@ def _load_labels_tx(tx: neo4j.Transaction, labels: List[Dict], update_tag: int, 
     l.key = label.key
     WITH l,label
     MATCH (r:""" + service_label + """{id:label.resource_id})
-    <-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
+    <-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
     MERGE (r)-[lb:LABELED]->(l)
     ON CREATE SET lb.firstseen = timestamp()
     SET lb.lastupdated = $update_tag
@@ -75,6 +75,7 @@ def _load_labels_tx(tx: neo4j.Transaction, labels: List[Dict], update_tag: int, 
         data=labels,
         update_tag=update_tag,
         GCP_PROJECT_ID=common_job_parameters['GCP_PROJECT_ID'],
+        GCP_ORGANIZATION_ID=common_job_parameters['GCP_ORGANIZATION_ID'],
         WORKSPACE_ID=common_job_parameters['WORKSPACE_ID'],
     )
 

@@ -1,6 +1,7 @@
 # Google Compute Resource Manager
 # https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy
 import logging
+import hashlib
 from string import Template
 from typing import Dict
 from typing import List
@@ -93,7 +94,9 @@ def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_u
     org.region = $region,
     org.displayname = $DisplayName,
     org.lifecyclestate = $LifecycleState,
-    org.lastupdated = $gcp_update_tag
+    org.lastupdated = $gcp_update_tag,
+    org.directory_customer_id = $DirectoryCustomerId,
+    org.is_cloudanix_generated = $IsCloudanixGenerated
     WITH w, org
     MERGE (w)-[o:OWNER]->(org)
     ON CREATE SET o.firstseen = timestamp()
@@ -107,6 +110,8 @@ def load_gcp_organizations(neo4j_session: neo4j.Session, data: List[Dict], gcp_u
             DisplayName=org_object.get('displayName', None),
             region="global",
             LifecycleState=org_object.get('lifecycleState', None),
+            DirectoryCustomerId=org_object.get('owner', {}).get('directoryCustomerId', None),
+            IsCloudanixGenerated=org_object.get('IsCloudanixGenerated', None),
             gcp_update_tag=gcp_update_tag,
         )
 
@@ -139,6 +144,7 @@ def load_gcp_folders(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_
         folder.region = $region,
         folder.displayname = $DisplayName,
         folder.lifecyclestate = $LifecycleState,
+        folder.parent_id = $ParentId,
         folder.lastupdated = $gcp_update_tag
         WITH parent, folder
         MERGE (parent)-[r:RESOURCE]->(folder)
@@ -158,7 +164,7 @@ def load_gcp_folders(neo4j_session: neo4j.Session, data: List[Dict], gcp_update_
 
 @timeit
 def load_gcp_projects(
-    neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int, common_job_parameters: Dict,
+    neo4j_session: neo4j.Session, data: List[Dict], gcp_update_tag: int, common_job_parameters: Dict, crm_v2: Resource
 ) -> None:
     """
     Ingest the GCP projects to Neo4j
@@ -168,7 +174,7 @@ def load_gcp_projects(
     :return: Nothing
     """
     query = """
-    MERGE (w:CloudanixWorkspace{id: $WorkspaceId})
+    MERGE (w:GCPOrganization{id: $OrganizationId})
     SET w.lastupdated = $gcp_update_tag
     WITH w
     MERGE (project:GCPProject{id: $ProjectId})
@@ -189,13 +195,13 @@ def load_gcp_projects(
     for project in data:
         neo4j_session.run(
             query,
-            WorkspaceId=common_job_parameters['WORKSPACE_ID'],
+            OrganizationId=common_job_parameters['GCP_ORGANIZATION_ID'],
             ProjectId=project['projectId'],
             ProjectNumber=project['projectNumber'],
             DisplayName=project.get('name', None),
             LifecycleState=project.get('lifecycleState', None),
             region="global",
-            WorkspaceAccountId=common_job_parameters['GCP_PROJECT_ID'],
+            WorkspaceAccountId=project['projectId'],
             gcp_update_tag=gcp_update_tag,
         )
         if project.get('parent'):
@@ -288,6 +294,14 @@ def sync_gcp_organizations(
     """
     logger.debug("Syncing GCP organizations")
     data = get_gcp_organizations(crm_v1)
+    if not data:
+        data = [
+            {
+                "name": f"organizations/{hashlib.sha256(common_job_parameters['WORKSPACE_ID'].encode()).hexdigest()}",
+                "IsCloudanixGenerated": True,
+            }
+        ]
+    common_job_parameters['GCP_ORGANIZATION_ID'] = data[0]['name']
     load_gcp_organizations(neo4j_session, data, gcp_update_tag, common_job_parameters)
     cleanup_gcp_organizations(neo4j_session, common_job_parameters)
 
@@ -315,7 +329,7 @@ def sync_gcp_folders(
 @timeit
 def sync_gcp_projects(
     neo4j_session: neo4j.Session, projects: List[Dict], gcp_update_tag: int,
-    common_job_parameters: Dict,
+    common_job_parameters: Dict, crm_v2: Resource,
 ) -> None:
     """
     Load a given list of GCP project data to Neo4j and clean up stale nodes.
@@ -326,5 +340,5 @@ def sync_gcp_projects(
     :return: Nothing
     """
     logger.debug("Syncing GCP projects")
-    load_gcp_projects(neo4j_session, projects, gcp_update_tag, common_job_parameters)
+    load_gcp_projects(neo4j_session, projects, gcp_update_tag, common_job_parameters, crm_v2)
     cleanup_gcp_projects(neo4j_session, common_job_parameters)
