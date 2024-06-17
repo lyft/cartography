@@ -20,19 +20,19 @@ class LaunchTemplateVersionNodeProperties(CartographyNodeProperties):
     default_version: PropertyRef = PropertyRef('DefaultVersion')
     version_number: PropertyRef = PropertyRef('VersionNumber')
     version_description: PropertyRef = PropertyRef('VersionDescription')
-    kernel_id: PropertyRef = PropertyRef('KernelId')  # TODO need transform
-    ebs_optimized: PropertyRef = PropertyRef('EbsOptimized')  # TODO ""
-    iam_instance_profile_arn: PropertyRef = PropertyRef('IamInstanceProfileArn')  # TODO ""
-    iam_instance_profile_name: PropertyRef = PropertyRef('IamInstanceProfileName')  # TODO ""
-    image_id: PropertyRef = PropertyRef('ImageId')  # TODO ""
-    instance_type: PropertyRef = PropertyRef('InstanceType')  # TODO ""
-    key_name: PropertyRef = PropertyRef('KeyName')  # TODO ""
-    monitoring_enabled: PropertyRef = PropertyRef('MonitoringEnabled')  # TODO ""
-    ramdisk_id: PropertyRef = PropertyRef('RamdiskId')  # TODO ""
-    disable_api_termination: PropertyRef = PropertyRef('DisableApiTermination')  # TODO ""
+    kernel_id: PropertyRef = PropertyRef('KernelId')
+    ebs_optimized: PropertyRef = PropertyRef('EbsOptimized')
+    iam_instance_profile_arn: PropertyRef = PropertyRef('IamInstanceProfileArn')
+    iam_instance_profile_name: PropertyRef = PropertyRef('IamInstanceProfileName')
+    image_id: PropertyRef = PropertyRef('ImageId')
+    instance_type: PropertyRef = PropertyRef('InstanceType')
+    key_name: PropertyRef = PropertyRef('KeyName')
+    monitoring_enabled: PropertyRef = PropertyRef('MonitoringEnabled')
+    ramdisk_id: PropertyRef = PropertyRef('RamdiskId')
+    disable_api_termination: PropertyRef = PropertyRef('DisableApiTermination')
     instance_initiated_shutdown_behavior: PropertyRef = PropertyRef('InstanceInitiatedShutdownBehavior')
-    security_group_ids: PropertyRef = PropertyRef('SecurityGroupIds')  # TODO ""
-    security_groups: PropertyRef = PropertyRef('SecurityGroups')  # TODO ""
+    security_group_ids: PropertyRef = PropertyRef('SecurityGroupIds')
+    security_groups: PropertyRef = PropertyRef('SecurityGroups')
     region: PropertyRef = PropertyRef('Region', set_in_kwargs=True)
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
