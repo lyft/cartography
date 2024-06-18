@@ -16,6 +16,7 @@ def test_load_subnets(neo4j_session):
         TEST_ACCOUNT_ID,
         TEST_UPDATE_TAG,
     )
+    # Assert that we create EC2Subnet nodes and correctly include their subnetid field
     assert check_nodes(neo4j_session, 'EC2Subnet', ['subnetid', 'subnet_arn']) == {
         (
             'subnet-020b2f3928f190ce8',
