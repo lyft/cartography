@@ -673,7 +673,7 @@ def transform_policy_data(policy_map: Dict, policy_type: str) -> None:
                 principal_arn,
                 policy_type,
                 policy_key,
-            ) if policy_type == PolicyType.inline.value else policy_key
+            )
             policy_statement_map[policy_key] = _transform_policy_statements(statements, policy_id)
 
 
