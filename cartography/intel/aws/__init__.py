@@ -104,6 +104,8 @@ def _sync_one_account(
 
         for func_name in aws_requested_syncs:
             if func_name in RESOURCE_FUNCTIONS:
+                if func_name == "identitystore" and not config.params['workspace'].get('is_identity_sso_used'):
+                    continue
                 # Skip permission relationships and tags for now because they rely on data already being in the graph
                 if func_name not in ['permission_relationships', 'resourcegroupstaggingapi']:
                     futures.append(

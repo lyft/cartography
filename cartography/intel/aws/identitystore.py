@@ -20,9 +20,11 @@ class PolicyType(enum.Enum):
     managed = 'managed'
     inline = 'inline'
 
+
 def get_boto3_client(boto3_session: boto3.session.Session, service: str, region: str):
     client = boto3_session.client(service, region_name=region)
     return client
+
 
 @timeit
 def get_identity_center_instances_list(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
@@ -211,40 +213,58 @@ def get_list_account_assignments(boto3_session: boto3.session.Session, instance_
 
 
 @timeit
+def get_list_account_assignments_for_principal(boto3_session: boto3.session.Session, instance_arn: str, PrincipalId: str, PrincipalType: str, region: str):
+    client = get_boto3_client(boto3_session, 'sso-admin', region)
+    assignments: List[Dict] = []
+
+    try:
+        paginator = client.get_paginator('list_account_assignments_for_principal')
+        for page in paginator.paginate(InstanceArn=instance_arn, PrincipalId=PrincipalId, PrincipalType=PrincipalType):
+            assignments.extend(page['AccountAssignments'])
+
+    except Exception as e:
+        logger.warning(f"Could not list account assignments for {instance_arn} - {PrincipalId} - {PrincipalType}; skipping. - {e}")
+
+    return assignments
+
+
+@timeit
 def load_identity_center_account_assignments(neo4j_session: neo4j.Session, assignments: List[Dict], update_tag: int) -> None:
     neo4j_session.write_transaction(_load_identity_center_account_assignments_tx, assignments, update_tag)
 
 
 @timeit
 def _load_identity_center_account_assignments_tx(tx: neo4j.Transaction, assignments: List[Dict], update_tag: int) -> None:
-    if len(assignments) > 0:
+    for assignment in assignments:
         attach_permission_set_to_account = """
-            MATCH (p:AWSPermissionSet{arn: $assignment.PermissionSetArn})
-            MATCH (a:AWSAccount{id: $assignment.AccountId})
-            WITH p,a
-            MERGE (p)-[r:ATTACHED_TO]->(a)
-            ON CREATE SET
-                r.firstseen = timestamp()
-            SET
-                r.lastupdated = $update_tag
-        """
+                MATCH (p:AWSPermissionSet{arn: $assignment.PermissionSetArn})
+                MERGE (a:AWSAccount{id: $assignment.AccountId})
+                    ON CREATE SET a.firstseen = timestamp()
+                    SET a.lastupdated = $update_tag
+                WITH p,a
+                MERGE (p)-[r:ATTACHED_TO]->(a)
+                ON CREATE SET
+                    r.firstseen = timestamp()
+                SET
+                    r.lastupdated = $update_tag
+            """
         tx.run(
             attach_permission_set_to_account,
-            assignment=assignments[0],
+            assignment=assignment,
             update_tag=update_tag,
         )
 
     ingest_assignments = """
-    UNWIND $assignments AS assignment
-        MATCH (p:AWSPermissionSet{arn: assignment.PermissionSetArn})
-        MATCH (pr:AWSPrincipal{id: assignment.PrincipalId})
-        WITH p,pr
-        MERGE (p)-[r:ASSIGNED_TO]->(pr)
-        ON CREATE SET
-                r.firstseen = timestamp()
-        SET
-                r.lastupdated = $update_tag
-    """
+        UNWIND $assignments AS assignment
+            MATCH (p:AWSPermissionSet{arn: assignment.PermissionSetArn})
+            MATCH (pr:AWSPrincipal{id: assignment.PrincipalId})
+            WITH p,pr
+            MERGE (p)-[r:ASSIGNED_TO]->(pr)
+            ON CREATE SET
+                    r.firstseen = timestamp()
+            SET
+                    r.lastupdated = $update_tag
+        """
 
     tx.run(
         ingest_assignments,
@@ -267,9 +287,13 @@ def sync_identity_center_permissions_sets(
     inline_policies = get_inline_policy(boto3_session, instance["InstanceArn"], permissions_sets, region)
     transform_policy_data(inline_policies, PolicyType.inline.value)
     load_policy_data(neo4j_session, inline_policies, PolicyType.inline.value, current_aws_account_id, aws_update_tag)
-
-    for permission_set in permissions_sets:
-        assignments = get_list_account_assignments(boto3_session, instance["InstanceArn"], permission_set["PermissionSetArn"], current_aws_account_id, region)
+    users = get_identity_center_users_list(boto3_session, instance, region)
+    groups = get_identity_center_groups_list(boto3_session, instance, region)
+    for user in users:
+        assignments = get_list_account_assignments_for_principal(boto3_session, instance["InstanceArn"], user['UserId'], "USER", region)
+        load_identity_center_account_assignments(neo4j_session, assignments, aws_update_tag)
+    for group in groups:
+        assignments = get_list_account_assignments_for_principal(boto3_session, instance["InstanceArn"], group['GroupId'], "GROUP", region)
         load_identity_center_account_assignments(neo4j_session, assignments, aws_update_tag)
 
 
