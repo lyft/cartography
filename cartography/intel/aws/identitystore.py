@@ -213,8 +213,7 @@ def get_list_account_assignments(boto3_session: boto3.session.Session, instance_
 
 
 @timeit
-def get_list_account_assignments_for_principal(boto3_session: boto3.session.Session, instance_arn: str, principal_id: str, principal_type: str, region: str):
-    client = get_boto3_client(boto3_session, 'sso-admin', region)
+def get_list_account_assignments_for_principal(client: boto3.session.Session, instance_arn: str, principal_id: str, principal_type: str, region: str):
     assignments: List[Dict] = []
 
     try:
@@ -289,11 +288,12 @@ def sync_identity_center_permissions_sets(
     load_policy_data(neo4j_session, inline_policies, PolicyType.inline.value, current_aws_account_id, aws_update_tag)
     users = get_identity_center_users_list(boto3_session, instance, region)
     groups = get_identity_center_groups_list(boto3_session, instance, region)
+    client = get_boto3_client(boto3_session, 'sso-admin', region)
     for user in users:
-        assignments = get_list_account_assignments_for_principal(boto3_session, instance["InstanceArn"], user['UserId'], "USER", region)
+        assignments = get_list_account_assignments_for_principal(client, instance["InstanceArn"], user['UserId'], "USER", region)
         load_identity_center_account_assignments(neo4j_session, assignments, aws_update_tag)
     for group in groups:
-        assignments = get_list_account_assignments_for_principal(boto3_session, instance["InstanceArn"], group['GroupId'], "GROUP", region)
+        assignments = get_list_account_assignments_for_principal(client, instance["InstanceArn"], group['GroupId'], "GROUP", region)
         load_identity_center_account_assignments(neo4j_session, assignments, aws_update_tag)
 
 
