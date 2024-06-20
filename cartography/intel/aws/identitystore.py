@@ -213,17 +213,17 @@ def get_list_account_assignments(boto3_session: boto3.session.Session, instance_
 
 
 @timeit
-def get_list_account_assignments_for_principal(boto3_session: boto3.session.Session, instance_arn: str, PrincipalId: str, PrincipalType: str, region: str):
+def get_list_account_assignments_for_principal(boto3_session: boto3.session.Session, instance_arn: str, principal_id: str, principal_type: str, region: str):
     client = get_boto3_client(boto3_session, 'sso-admin', region)
     assignments: List[Dict] = []
 
     try:
         paginator = client.get_paginator('list_account_assignments_for_principal')
-        for page in paginator.paginate(InstanceArn=instance_arn, PrincipalId=PrincipalId, PrincipalType=PrincipalType):
+        for page in paginator.paginate(InstanceArn=instance_arn, PrincipalId=principal_id, PrincipalType=principal_type):
             assignments.extend(page['AccountAssignments'])
 
     except Exception as e:
-        logger.warning(f"Could not list account assignments for {instance_arn} - {PrincipalId} - {PrincipalType}; skipping. - {e}")
+        logger.warning(f"Could not list account assignments for {instance_arn} - {principal_id} - {principal_type}; skipping. - {e}")
 
     return assignments
 
