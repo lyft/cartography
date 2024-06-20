@@ -12,6 +12,7 @@ import neo4j
 from cartography.intel.aws.permission_relationships import parse_statement_node
 from cartography.intel.aws.permission_relationships import principal_allowed_on_resource
 from cartography.stats import get_stats_client
+from cartography.util import aws_handle_regions
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -33,6 +34,7 @@ def get_policy_name_from_arn(arn: str) -> str:
 
 
 @timeit
+@aws_handle_regions
 def get_group_policies(boto3_session: boto3.session.Session, group_name: str) -> Dict:
     client = boto3_session.client('iam')
     paginator = client.get_paginator('list_group_policies')
@@ -43,6 +45,7 @@ def get_group_policies(boto3_session: boto3.session.Session, group_name: str) ->
 
 
 @timeit
+@aws_handle_regions
 def get_group_policy_info(
         boto3_session: boto3.session.Session, group_name: str, policy_name: str,
 ) -> Any:
@@ -51,6 +54,7 @@ def get_group_policy_info(
 
 
 @timeit
+@aws_handle_regions
 def get_group_membership_data(boto3_session: boto3.session.Session, group_name: str) -> Dict:
     client = boto3_session.client('iam')
     try:
@@ -63,6 +67,7 @@ def get_group_membership_data(boto3_session: boto3.session.Session, group_name: 
 
 
 @timeit
+@aws_handle_regions
 def get_group_policy_data(boto3_session: boto3.session.Session, group_list: List[Dict]) -> Dict:
     resource_client = boto3_session.resource('iam')
     policies = {}
@@ -75,6 +80,7 @@ def get_group_policy_data(boto3_session: boto3.session.Session, group_list: List
 
 
 @timeit
+@aws_handle_regions
 def get_group_managed_policy_data(boto3_session: boto3.session.Session, group_list: List[Dict]) -> Dict:
     resource_client = boto3_session.resource('iam')
     policies = {}
@@ -90,6 +96,7 @@ def get_group_managed_policy_data(boto3_session: boto3.session.Session, group_li
 
 
 @timeit
+@aws_handle_regions
 def get_user_policy_data(boto3_session: boto3.session.Session, user_list: List[Dict]) -> Dict:
     resource_client = boto3_session.resource('iam')
     policies = {}
@@ -107,6 +114,7 @@ def get_user_policy_data(boto3_session: boto3.session.Session, user_list: List[D
 
 
 @timeit
+@aws_handle_regions
 def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list: List[Dict]) -> Dict:
     resource_client = boto3_session.resource('iam')
     policies = {}
@@ -127,6 +135,7 @@ def get_user_managed_policy_data(boto3_session: boto3.session.Session, user_list
 
 
 @timeit
+@aws_handle_regions
 def get_role_policy_data(boto3_session: boto3.session.Session, role_list: List[Dict]) -> Dict:
     resource_client = boto3_session.resource('iam')
     policies = {}
@@ -144,6 +153,7 @@ def get_role_policy_data(boto3_session: boto3.session.Session, role_list: List[D
 
 
 @timeit
+@aws_handle_regions
 def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list: List[Dict]) -> Dict:
     resource_client = boto3_session.resource('iam')
     policies = {}
@@ -164,6 +174,7 @@ def get_role_managed_policy_data(boto3_session: boto3.session.Session, role_list
 
 
 @timeit
+@aws_handle_regions
 def get_role_tags(boto3_session: boto3.session.Session) -> List[Dict]:
     role_list = get_role_list_data(boto3_session)['Roles']
     resource_client = boto3_session.resource('iam')
@@ -186,6 +197,7 @@ def get_role_tags(boto3_session: boto3.session.Session) -> List[Dict]:
 
 
 @timeit
+@aws_handle_regions
 def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
     client = boto3_session.client('iam')
 
@@ -197,6 +209,7 @@ def get_user_list_data(boto3_session: boto3.session.Session) -> Dict:
 
 
 @timeit
+@aws_handle_regions
 def get_group_list_data(boto3_session: boto3.session.Session) -> Dict:
     client = boto3_session.client('iam')
     paginator = client.get_paginator('list_groups')
@@ -207,6 +220,7 @@ def get_group_list_data(boto3_session: boto3.session.Session) -> Dict:
 
 
 @timeit
+@aws_handle_regions
 def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
     client = boto3_session.client('iam')
     paginator = client.get_paginator('list_roles')
@@ -217,6 +231,7 @@ def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
 
 
 @timeit
+@aws_handle_regions
 def get_account_access_key_data(boto3_session: boto3.session.Session, username: str) -> Dict:
     client = boto3_session.client('iam')
     # NOTE we can get away without using a paginator here because users are limited to two access keys
@@ -427,6 +442,7 @@ def load_group_memberships(neo4j_session: neo4j.Session, group_memberships: Dict
 
 
 @timeit
+@aws_handle_regions
 def get_policies_for_principal(neo4j_session: neo4j.Session, principal_arn: str) -> Dict:
     get_policy_query = """
     MATCH
