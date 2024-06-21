@@ -112,6 +112,7 @@ def _load_identity_center_permissions_sets_tx(tx: neo4j.Transaction, instance_ar
         MERGE (p:AWSPermissionSet{arn: permissions_set.PermissionSetArn})
         ON CREATE SET
             p:AWSPrincipal,
+            p.id = permissions_set.id,
             p.firstseen = timestamp(),
             p.created_date = permissions_set.CreatedDate,
             p.relay_state = permissions_set.RelayState,
@@ -119,7 +120,8 @@ def _load_identity_center_permissions_sets_tx(tx: neo4j.Transaction, instance_ar
             p.session_duration = permissions_set.SessionDuration
         SET
             p.lastupdated = $update_tag,
-            p.name = permissions_set.Name
+            p.name = permissions_set.Name,
+            p.description = permissions_set.Description
         WITH p
             MATCH (i:AWSOrganization{identity_store_arn: $INSTANCE_ARN})
             MERGE (i)-[r:RESOURCE]->(p)
@@ -272,12 +274,20 @@ def _load_identity_center_account_assignments_tx(tx: neo4j.Transaction, assignme
     )
 
 
+def transform_permission_sets(permissions_sets: list[dict]) -> list[dict]:
+    for permission_set in permissions_sets:
+        permission_set["id"] = permission_set.get('arn', '').split('/')[-1]
+
+    return permissions_sets
+
+
 @timeit
 def sync_identity_center_permissions_sets(
     neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, instance: Dict,
     aws_update_tag: int, region: str, current_aws_account_id: str,
 ) -> None:
     permissions_sets = get_identity_center_permissions_sets_list(boto3_session, instance, region)
+    permissions_sets = transform_permission_sets(permissions_sets)
     load_identity_center_permissions_sets(neo4j_session, instance["InstanceArn"], permissions_sets, aws_update_tag)
 
     managed_policies = get_managed_policies(boto3_session, instance["InstanceArn"], permissions_sets, region)

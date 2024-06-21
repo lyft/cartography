@@ -245,7 +245,7 @@ def transform_users_data(boto3_session: boto3.session.Session, users: List[Dict]
             user["consoleLoginEnabled"] = True
         except client.exceptions.NoSuchEntityException:
             user["consoleLoginEnabled"] = False
-        except Exception as e:
+        except Exception:
             user["consoleLoginEnabled"] = False
     return {'Users': users}
 
@@ -304,7 +304,7 @@ def transform_roles(boto3_session: boto3.session.Session, roles: List[Dict], ext
         client = boto3_session.client('organizations')
         response = client.list_accounts()
         internal_accounts = [account["Id"] for account in response["Accounts"]]
-    except Exception as e:
+    except Exception:
         internal_accounts = []
 
     for role in roles:
@@ -317,7 +317,7 @@ def transform_roles(boto3_session: boto3.session.Session, roles: List[Dict], ext
                     if principal_type == "AWS":
                         try:
                             account_id = principal_value.split(':')[4]
-                        except Exception as e:
+                        except Exception:
                             account_id = principal_value
                         if internal_accounts:
                             if account_id not in internal_accounts:
@@ -366,7 +366,8 @@ def load_users(
     ON CREATE SET unode:AWSPrincipal, unode.userid = $USERID, unode.firstseen = timestamp(),
     unode.consolelink = $consolelink,
     unode.createdate = $CREATE_DATE
-    SET unode.name = $USERNAME, unode.path = $PATH, unode.passwordlastused = $PASSWORD_LASTUSED,
+    SET unode.name = $USERNAME, unode.user_name = $USERNAME,
+    unode.path = $PATH, unode.passwordlastused = $PASSWORD_LASTUSED,
     unode.region = $region,
     unode.consoleloginenabled = $CONSOLELOGINENABLED,
     unode.lastupdated = $aws_update_tag
