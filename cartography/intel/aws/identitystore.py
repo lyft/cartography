@@ -112,16 +112,16 @@ def _load_identity_center_permissions_sets_tx(tx: neo4j.Transaction, instance_ar
         MERGE (p:AWSPermissionSet{arn: permissions_set.PermissionSetArn})
         ON CREATE SET
             p:AWSPrincipal,
-            p.id = permissions_set.id,
             p.firstseen = timestamp(),
-            p.created_date = permissions_set.CreatedDate,
-            p.relay_state = permissions_set.RelayState,
-            p.is_sso = true,
-            p.session_duration = permissions_set.SessionDuration
+            p.created_date = permissions_set.CreatedDate
         SET
             p.lastupdated = $update_tag,
+            p.id = permissions_set.id,
             p.name = permissions_set.Name,
-            p.description = permissions_set.Description
+            p.is_sso = true,
+            p.description = permissions_set.Description,
+            p.session_duration = permissions_set.SessionDuration,
+            p.relay_state = permissions_set.RelayState
         WITH p
             MATCH (i:AWSOrganization{identity_store_arn: $INSTANCE_ARN})
             MERGE (i)-[r:RESOURCE]->(p)
@@ -275,10 +275,12 @@ def _load_identity_center_account_assignments_tx(tx: neo4j.Transaction, assignme
 
 
 def transform_permission_sets(permissions_sets: list[dict]) -> list[dict]:
+    items = []
     for permission_set in permissions_sets:
-        permission_set["id"] = permission_set.get('arn', '').split('/')[-1]
+        permission_set["id"] = permission_set.get('PermissionSetArn', '').split('/')[-1]
+        items.append(permission_set)
 
-    return permissions_sets
+    return items
 
 
 @timeit
