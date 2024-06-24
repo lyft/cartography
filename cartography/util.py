@@ -453,5 +453,5 @@ def make_requests_url(url,access_token):
         return response.json()
 
     except RequestException as e:
-        logger.info(f"failed to get bitbucket response")
+        logger.info(f"failed to get response: {e}")
         return {}
