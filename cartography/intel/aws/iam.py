@@ -717,6 +717,33 @@ def _load_policy_tx(
         aws_update_tag=aws_update_tag,
     )
 
+    ingest_sso_policy = """
+    MERGE (policy:AWSPolicy{id: $PolicyId})
+    ON CREATE SET
+    policy.firstseen = timestamp(),
+    policy.type = $PolicyType,
+    policy.region = $region,
+    policy.name = $PolicyName,
+    policy.arn = $PolicyArn,
+    policy.consolelink = $consolelink
+    SET policy.lastupdated = $aws_update_tag
+    WITH policy
+    MATCH (principal:AWSPrincipal{id: $PrincipalArn})
+    MERGE (policy) <-[r:POLICY]-(principal)
+    SET r.lastupdated = $aws_update_tag
+    """
+    tx.run(
+        ingest_sso_policy,
+        PolicyId=policy_id,
+        PolicyName=policy_name,
+        PolicyType=policy_type,
+        PrincipalArn=principal_arn,
+        consolelink=consolelink,
+        PolicyArn=policy_arn,
+        region="global",
+        aws_update_tag=aws_update_tag,
+    )
+
 
 @timeit
 def load_policy(

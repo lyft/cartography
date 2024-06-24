@@ -147,9 +147,14 @@ def get_managed_policies(boto3_session: boto3.session.Session, instance_arn: str
 
     for permission_set in permission_sets:
         permission_set_arn = permission_set["PermissionSetArn"]
+        permission_set_id = permission_set.get('id')
 
         policies: List[Dict] = []
-        managed_policies[permission_set_arn] = {}
+        if permission_set_id:
+            managed_policy_key = permission_set_id
+        else:
+            managed_policy_key = permission_set_arn
+        managed_policies[managed_policy_key] = {}
         try:
             paginator = client.get_paginator('list_managed_policies_in_permission_set')
             for page in paginator.paginate(InstanceArn=instance_arn, PermissionSetArn=permission_set_arn):
@@ -163,7 +168,7 @@ def get_managed_policies(boto3_session: boto3.session.Session, instance_arn: str
         for policy in policies:
             try:
                 policy.update(iam_client.get_policy(PolicyArn=policy["Arn"])["Policy"])
-                managed_policies[permission_set_arn][policy["PolicyName"]] = iam_resource.PolicyVersion(policy["Arn"], policy["DefaultVersionId"]).document["Statement"]
+                managed_policies[managed_policy_key][policy["PolicyName"]] = iam_resource.PolicyVersion(policy["Arn"], policy["DefaultVersionId"]).document["Statement"]
 
             except Exception as e:
                 logger.warning(
@@ -181,6 +186,12 @@ def get_inline_policy(boto3_session: boto3.session.Session, instance_arn: str, p
     for permission_set in permission_sets:
         name = permission_set["Name"]
         permission_set_arn = permission_set["PermissionSetArn"]
+        permission_set_id = permission_set.get('id')
+
+        if permission_set_id:
+            inline_policy_key = permission_set_id
+        else:
+            inline_policy_key = permission_set_arn
 
         inline_policy = ''
         try:
@@ -191,7 +202,7 @@ def get_inline_policy(boto3_session: boto3.session.Session, instance_arn: str, p
 
         if inline_policy:
             inline_policy = json.loads(inline_policy)
-            inline_policies[permission_set_arn] = {name: inline_policy["Statement"]}
+            inline_policies[inline_policy_key] = {name: inline_policy["Statement"]}
 
     return inline_policies
 
@@ -228,46 +239,89 @@ def get_list_account_assignments_for_principal(client: boto3.session.Session, in
 
 
 @timeit
-def load_identity_center_account_assignments(neo4j_session: neo4j.Session, assignments: List[Dict], update_tag: int) -> None:
-    neo4j_session.write_transaction(_load_identity_center_account_assignments_tx, assignments, update_tag)
+def load_identity_center_account_assignments(neo4j_session: neo4j.Session, boto3_session: boto3.session.Session, assignments: List[Dict], permissions_sets: List[Dict], instance_arn: str, current_aws_account_id: str, region: str, update_tag: int) -> List[str]:
+    loaded_permissions_sets = []
+    for assignment in assignments:
+        for permissions_set in permissions_sets:
+            if permissions_set['PermissionSetArn'] == assignment['PermissionSetArn']:
+                permissions_set_id = f"{assignment['PrincipalId']}/{permissions_set['Name']}"
+
+                neo4j_session.write_transaction(_load_identity_center_account_assignments_tx, assignment, permissions_set, instance_arn, update_tag)
+
+                permissions_set['id'] = permissions_set_id
+                managed_policies = get_managed_policies(boto3_session, instance_arn, [permissions_set], region)
+                transform_policy_data(managed_policies, PolicyType.managed.value)
+                load_policy_data(neo4j_session, managed_policies, PolicyType.managed.value, current_aws_account_id, update_tag)
+                inline_policies = get_inline_policy(boto3_session, instance_arn, [permissions_set], region)
+                transform_policy_data(inline_policies, PolicyType.inline.value)
+                load_policy_data(neo4j_session, inline_policies, PolicyType.inline.value, current_aws_account_id, update_tag)
+                del permissions_set['id']
+                loaded_permissions_sets.append(permissions_set['PermissionSetArn'])
+
+                break
+    return loaded_permissions_sets
 
 
 @timeit
-def _load_identity_center_account_assignments_tx(tx: neo4j.Transaction, assignments: List[Dict], update_tag: int) -> None:
-    for assignment in assignments:
-        attach_permission_set_to_account = """
-                MATCH (p:AWSPermissionSet{arn: $assignment.PermissionSetArn})
-                MERGE (a:AWSAccount{id: $assignment.AccountId})
-                    ON CREATE SET a.firstseen = timestamp()
-                    SET a.lastupdated = $update_tag
-                WITH p,a
-                MERGE (p)-[r:ATTACHED_TO]->(a)
-                ON CREATE SET
-                    r.firstseen = timestamp()
-                SET
-                    r.lastupdated = $update_tag
-            """
-        tx.run(
-            attach_permission_set_to_account,
-            assignment=assignment,
-            update_tag=update_tag,
-        )
+def _load_identity_center_account_assignments_tx(tx: neo4j.Transaction, assignment: Dict, permissions_set: Dict, instance_arn: str, update_tag: int) -> None:
 
-    ingest_assignments = """
-        UNWIND $assignments AS assignment
-            MATCH (p:AWSPermissionSet{arn: assignment.PermissionSetArn})
-            MATCH (pr:AWSPrincipal{id: assignment.PrincipalId})
-            WITH p,pr
-            MERGE (p)-[r:ASSIGNED_TO]->(pr)
-            ON CREATE SET
-                    r.firstseen = timestamp()
-            SET
-                    r.lastupdated = $update_tag
-        """
+    permissions_set_id = f"{assignment['PrincipalId']}/{permissions_set['Name']}"
+    attach_permission_set_to_account = """
+                MERGE (p:AWSPermissionSet{id: $permissions_set_id})
+                    ON CREATE SET
+                        p:AWSPrincipal,
+                        p.firstseen = timestamp(),
+                        p.created_date = $permissions_set.CreatedDate,
+                        p.relay_state = $permissions_set.RelayState,
+                        p.is_sso = true,
+                        p.session_duration = $permissions_set.SessionDuration
+                    SET
+                        p.lastupdated = $update_tag,
+                        p.name = $permissions_set.Name,
+                        p.arn = $permissions_set.PermissionSetArn
+                MERGE (a:AWSAccount{id: $assignment.AccountId})
+                    ON CREATE SET 
+                        a.firstseen = timestamp()
+                    SET 
+                        a.lastupdated = $update_tag
+                WITH p,a
+                    MERGE (p)-[r:ATTACHED_TO]->(a)
+                    ON CREATE SET
+                        r.firstseen = timestamp()
+                    SET
+                        r.lastupdated = $update_tag
+                WITH p
+                MATCH (i:AWSOrganization{identity_store_arn: $INSTANCE_ARN})
+                MERGE (i)-[r1:RESOURCE]->(p)
+                    ON CREATE SET
+                        r1.firstseen = timestamp()
+                    SET
+                        r1.lastupdated = $update_tag
+            """
+    tx.run(
+        attach_permission_set_to_account,
+        assignment=assignment,
+        permissions_set=permissions_set,
+        permissions_set_id=permissions_set_id,
+        INSTANCE_ARN=instance_arn,
+        update_tag=update_tag,
+    )
+
+    ingest_assignment = """
+                MATCH (p:AWSPermissionSet{id: $permissions_set_id})
+                MATCH (pr:AWSPrincipal{id: $assignment.PrincipalId})
+                WITH p,pr
+                MERGE (p)-[r:ASSIGNED_TO]->(pr)
+                ON CREATE SET
+                        r.firstseen = timestamp()
+                SET
+                        r.lastupdated = $update_tag
+            """
 
     tx.run(
-        ingest_assignments,
-        assignments=assignments,
+        ingest_assignment,
+        assignment=assignment,
+        permissions_set_id=permissions_set_id,
         update_tag=update_tag,
     )
 
@@ -278,23 +332,31 @@ def sync_identity_center_permissions_sets(
     aws_update_tag: int, region: str, current_aws_account_id: str,
 ) -> None:
     permissions_sets = get_identity_center_permissions_sets_list(boto3_session, instance, region)
-    load_identity_center_permissions_sets(neo4j_session, instance["InstanceArn"], permissions_sets, aws_update_tag)
-
-    managed_policies = get_managed_policies(boto3_session, instance["InstanceArn"], permissions_sets, region)
-    transform_policy_data(managed_policies, PolicyType.managed.value)
-    load_policy_data(neo4j_session, managed_policies, PolicyType.managed.value, current_aws_account_id, aws_update_tag)
-    inline_policies = get_inline_policy(boto3_session, instance["InstanceArn"], permissions_sets, region)
-    transform_policy_data(inline_policies, PolicyType.inline.value)
-    load_policy_data(neo4j_session, inline_policies, PolicyType.inline.value, current_aws_account_id, aws_update_tag)
     users = get_identity_center_users_list(boto3_session, instance, region)
     groups = get_identity_center_groups_list(boto3_session, instance, region)
     client = get_boto3_client(boto3_session, 'sso-admin', region)
+    loaded_permissions_sets = []
     for user in users:
         assignments = get_list_account_assignments_for_principal(client, instance["InstanceArn"], user['UserId'], "USER", region)
-        load_identity_center_account_assignments(neo4j_session, assignments, aws_update_tag)
+        loaded_permissions_sets.extend(load_identity_center_account_assignments(neo4j_session, boto3_session, assignments, permissions_sets, instance["InstanceArn"], current_aws_account_id, region, aws_update_tag))
     for group in groups:
         assignments = get_list_account_assignments_for_principal(client, instance["InstanceArn"], group['GroupId'], "GROUP", region)
-        load_identity_center_account_assignments(neo4j_session, assignments, aws_update_tag)
+        loaded_permissions_sets.extend(load_identity_center_account_assignments(neo4j_session, boto3_session, assignments, permissions_sets, instance["InstanceArn"], current_aws_account_id, region, aws_update_tag))
+
+    unloaded_permissions_sets = []
+    for permissions_set in permissions_sets:
+        if permissions_set['PermissionSetArn'] in loaded_permissions_sets:
+            continue
+        unloaded_permissions_sets.append(permissions_set)
+
+    load_identity_center_permissions_sets(neo4j_session, instance["InstanceArn"], unloaded_permissions_sets, aws_update_tag)
+
+    managed_policies = get_managed_policies(boto3_session, instance["InstanceArn"], unloaded_permissions_sets, region)
+    transform_policy_data(managed_policies, PolicyType.managed.value)
+    load_policy_data(neo4j_session, managed_policies, PolicyType.managed.value, current_aws_account_id, aws_update_tag)
+    inline_policies = get_inline_policy(boto3_session, instance["InstanceArn"], unloaded_permissions_sets, region)
+    transform_policy_data(inline_policies, PolicyType.inline.value)
+    load_policy_data(neo4j_session, inline_policies, PolicyType.inline.value, current_aws_account_id, aws_update_tag)
 
 
 @timeit
