@@ -14,17 +14,22 @@ from statsd import StatsClient
 import cartography.intel.analysis
 import cartography.intel.aws
 import cartography.intel.azure
+import cartography.intel.bigfix
 import cartography.intel.create_indexes
 import cartography.intel.crowdstrike
 import cartography.intel.crxcavator.crxcavator
 import cartography.intel.cve
 import cartography.intel.digitalocean
+import cartography.intel.duo
 import cartography.intel.gcp
 import cartography.intel.github
 import cartography.intel.gsuite
+import cartography.intel.kandji
 import cartography.intel.kubernetes
+import cartography.intel.lastpass
 import cartography.intel.oci
 import cartography.intel.okta
+import cartography.intel.semgrep
 from cartography.config import Config
 from cartography.stats import set_stats_client
 from cartography.util import STATUS_FAILURE
@@ -46,7 +51,12 @@ TOP_LEVEL_MODULES = OrderedDict({  # preserve order so that the default sync alw
     'okta': cartography.intel.okta.start_okta_ingestion,
     'github': cartography.intel.github.start_github_ingestion,
     'digitalocean': cartography.intel.digitalocean.start_digitalocean_ingestion,
+    'kandji': cartography.intel.kandji.start_kandji_ingestion,
     'kubernetes': cartography.intel.kubernetes.start_k8s_ingestion,
+    'lastpass': cartography.intel.lastpass.start_lastpass_ingestion,
+    'bigfix': cartography.intel.bigfix.start_bigfix_ingestion,
+    'duo': cartography.intel.duo.start_duo_ingestion,
+    'semgrep': cartography.intel.semgrep.start_semgrep_ingestion,
     'analysis': cartography.intel.analysis.run,
 })
 
