@@ -17,9 +17,11 @@ from cartography.config import Config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
+from cartography.util import run_analysis_and_ensure_deps
 from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+
 
 stat_handler = get_stats_client(__name__)
 logger = logging.getLogger(__name__)
@@ -150,10 +152,16 @@ def _sync_multiple_accounts(
     failed_account_ids = []
     exception_tracebacks = []
 
+    num_accounts = len(accounts)
+
     for profile_name, account_id in accounts.items():
         logger.info("Syncing AWS account with ID '%s' using configured profile '%s'.", account_id, profile_name)
         common_job_parameters["AWS_ID"] = account_id
-        boto3_session = boto3.Session(profile_name=profile_name)
+        if num_accounts == 1:
+            # Use the default boto3 session because boto3 gets confused if you give it a profile name with 1 account
+            boto3_session = boto3.Session()
+        else:
+            boto3_session = boto3.Session(profile_name=profile_name)
 
         _autodiscover_accounts(neo4j_session, boto3_session, account_id, sync_tag, common_job_parameters)
 
@@ -173,6 +181,12 @@ def _sync_multiple_accounts(
                 exception_traceback = traceback.TracebackException.from_exception(e)
                 traceback_string = ''.join(exception_traceback.format())
                 exception_tracebacks.append(f'{timestamp} - Exception for account ID: {account_id}\n{traceback_string}')
+                logger.warning(
+                    f"Caught exception syncing account {account_id}. aws-best-effort-mode is on so we are continuing "
+                    f"on to the next AWS account. All exceptions will be aggregated and re-logged at the end of the "
+                    f"sync.",
+                    exc_info=True,
+                )
                 continue
             else:
                 raise
@@ -189,6 +203,53 @@ def _sync_multiple_accounts(
         run_cleanup_job('aws_post_ingestion_principals_cleanup.json', neo4j_session, common_job_parameters)
         return True
     return False
+
+
+@timeit
+def _perform_aws_analysis(
+        requested_syncs: List[str],
+        neo4j_session: neo4j.Session,
+        common_job_parameters: Dict[str, Any],
+) -> None:
+    requested_syncs_as_set = set(requested_syncs)
+
+    ec2_asset_exposure_requirements = {
+        'ec2:instance',
+        'ec2:security_group',
+        'ec2:load_balancer',
+        'ec2:load_balancer_v2',
+    }
+    run_analysis_and_ensure_deps(
+        'aws_ec2_asset_exposure.json',
+        ec2_asset_exposure_requirements,
+        requested_syncs_as_set,
+        common_job_parameters,
+        neo4j_session,
+    )
+
+    run_analysis_and_ensure_deps(
+        'aws_ec2_keypair_analysis.json',
+        {'ec2:keypair'},
+        requested_syncs_as_set,
+        common_job_parameters,
+        neo4j_session,
+    )
+
+    run_analysis_and_ensure_deps(
+        'aws_eks_asset_exposure.json',
+        {'eks'},
+        requested_syncs_as_set,
+        common_job_parameters,
+        neo4j_session,
+    )
+
+    run_analysis_and_ensure_deps(
+        'aws_foreign_accounts.json',
+        set(),  # This job has no requirements
+        requested_syncs_as_set,
+        common_job_parameters,
+        neo4j_session,
+    )
 
 
 @timeit
@@ -226,7 +287,7 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
             (
                 "There are duplicate AWS accounts in your AWS configuration. It is strongly recommended that you run "
                 "cartography with an AWS configuration which has exactly one profile for each AWS account you want to "
-                "sync. Doing otherwise will result in undefined and untested behavior."
+                f"sync. Doing otherwise will result in undefined and untested behavior. Account list: {aws_accounts}"
             ),
         )
 
@@ -244,20 +305,4 @@ def start_aws_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
     )
 
     if sync_successful:
-        run_analysis_job(
-            'aws_ec2_asset_exposure.json',
-            neo4j_session,
-            common_job_parameters,
-        )
-
-        run_analysis_job(
-            'aws_ec2_keypair_analysis.json',
-            neo4j_session,
-            common_job_parameters,
-        )
-
-        run_analysis_job(
-            'aws_eks_asset_exposure.json',
-            neo4j_session,
-            common_job_parameters,
-        )
+        _perform_aws_analysis(requested_syncs, neo4j_session, common_job_parameters)

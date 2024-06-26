@@ -61,12 +61,22 @@
             "iterationsize": 100
         },
         {
-            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:RedshiftCluster) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:RedshiftCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
             "iterative": true,
             "iterationsize": 100
         },
         {
             "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:RedshiftCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:RDSCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:RDSCluster)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
             "iterative": true,
             "iterationsize": 100
         },
@@ -77,6 +87,16 @@
         },
         {
             "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:RDSInstance)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:RDSSnapshot)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:RDSSnapshot)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
             "iterative": true,
             "iterationsize": 100
         },
@@ -97,6 +117,16 @@
         },
         {
             "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:S3Bucket)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (n:AWSTag)<-[:TAGGED]-(:AWSRole)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE n.lastupdated <> $UPDATE_TAG WITH n LIMIT $LIMIT_SIZE DETACH DELETE (n)",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (:AWSTag)<-[r:TAGGED]-(:AWSRole)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
             "iterative": true,
             "iterationsize": 100
         },

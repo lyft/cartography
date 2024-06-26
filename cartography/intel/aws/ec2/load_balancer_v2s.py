@@ -123,12 +123,6 @@ def load_load_balancer_v2s(
                 current_aws_account_id, update_tag,
             )
 
-        if lb['TargetGroups']:
-            load_load_balancer_v2_target_groups(
-                neo4j_session, load_balancer_id, lb['TargetGroups'],
-                current_aws_account_id, update_tag,
-            )
-
 
 @timeit
 def load_load_balancer_v2_subnets(
@@ -164,7 +158,9 @@ def load_load_balancer_v2_target_groups(
     MATCH (elbv2:LoadBalancerV2{id: $ID}), (instance:EC2Instance{instanceid: $INSTANCE_ID})
     MERGE (elbv2)-[r:EXPOSE]->(instance)
     ON CREATE SET r.firstseen = timestamp()
-    SET r.lastupdated = $update_tag
+    SET r.lastupdated = $update_tag,
+        r.port = $PORT, r.protocol = $PROTOCOL,
+        r.target_group_arn = $TARGET_GROUP_ARN
     WITH instance
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(instance)
@@ -183,6 +179,9 @@ def load_load_balancer_v2_target_groups(
                 ID=load_balancer_id,
                 INSTANCE_ID=instance,
                 AWS_ACCOUNT_ID=current_aws_account_id,
+                TARGET_GROUP_ARN=target_group.get('TargetGroupArn'),
+                PORT=target_group.get('Port'),
+                PROTOCOL=target_group.get('Protocol'),
                 update_tag=update_tag,
             )
 

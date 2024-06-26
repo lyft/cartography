@@ -1,13 +1,15 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.66.0rc1'
+__version__ = '0.92.0'
 
 
 setup(
     name='cartography',
     version=__version__,
     description='Explore assets and their relationships across your technical infrastructure.',
+    long_description='file: README.md',
+    long_description_content_type='text/markdown',
     url='https://www.github.com/lyft/cartography',
     maintainer='Lyft',
     maintainer_email='security@lyft.com',
@@ -20,6 +22,9 @@ setup(
             '*.yaml',
         ],
         'cartography.data.jobs.analysis': [
+            '*.json',
+        ],
+        'cartography.data.jobs.scoped_analysis': [
             '*.json',
         ],
         'cartography.data.jobs.cleanup': [
@@ -56,6 +61,9 @@ setup(
         "kubernetes>=22.6.0",
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
+        "python-dateutil",
+        "xmltodict",
+        "duo-client",
     ],
     extras_require={
         ':python_version<"3.7"': [
@@ -75,8 +83,7 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.10',
         'Topic :: Security',
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules',
