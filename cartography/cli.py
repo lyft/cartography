@@ -452,6 +452,54 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--rapid7-user',
+            type=str,
+            default=None,
+            help=(
+                'The rapid7 user for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--rapid7-password-env-var',
+            type=str,
+            default=None,
+            help=(
+                'The name of environment variable containing the rapid7 user password for authentication.'
+            ),
+        )
+        parser.add_argument(
+            '--rapid7-server-url',
+            type=str,
+            default=None,
+            help=(
+                'The url of the Rapid7 InsightsVM server. Required in all Rapid7 data retrieval.'
+            ),
+        )
+        parser.add_argument(
+            '--rapid7-verify-cert',
+            type=str,
+            default="True",
+            help=(
+                'Validate https certificate of Rapid7 InsightsVM server.'
+            ),
+        )
+        parser.add_argument(
+            '--rapid7-report-id',
+            type=str,
+            default=None,
+            help=(
+                'Rapid7 report id if downloading report option. Use a negative id to list accessible reports.'
+            ),
+        )
+        parser.add_argument(
+            '--rapid7-dirpath',
+            type=str,
+            default=None,
+            help=(
+                'Directory path where to find Rapid7 csv data if using that option.'
+            ),
+        )
+        parser.add_argument(
             '--gsuite-auth-method',
             type=str,
             default='delegated',
@@ -693,6 +741,14 @@ class CLI:
             config.crowdstrike_client_secret = os.environ.get(config.crowdstrike_client_secret_env_var)
         else:
             config.crowdstrike_client_secret = None
+
+        if config.rapid7_password_env_var:
+            logger.debug(
+                f"Reading password for rapid7 from environment variable {config.rapid7_password_env_var}",
+            )
+            config.rapid7_password = os.environ.get(config.rapid7_password_env_var)
+        else:
+            config.rapid7_password = None
 
         # GSuite config
         if config.gsuite_tokens_env_var:

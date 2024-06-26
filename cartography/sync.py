@@ -29,7 +29,9 @@ import cartography.intel.kubernetes
 import cartography.intel.lastpass
 import cartography.intel.oci
 import cartography.intel.okta
+import cartography.intel.rapid7
 import cartography.intel.semgrep
+
 from cartography.config import Config
 from cartography.stats import set_stats_client
 from cartography.util import STATUS_FAILURE
@@ -49,6 +51,7 @@ TOP_LEVEL_MODULES = OrderedDict({  # preserve order so that the default sync alw
     'cve': cartography.intel.cve.start_cve_ingestion,
     'oci': cartography.intel.oci.start_oci_ingestion,
     'okta': cartography.intel.okta.start_okta_ingestion,
+    'rapid7': cartography.intel.rapid7.start_rapid7_ingestion,
     'github': cartography.intel.github.start_github_ingestion,
     'digitalocean': cartography.intel.digitalocean.start_digitalocean_ingestion,
     'kandji': cartography.intel.kandji.start_kandji_ingestion,
