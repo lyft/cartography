@@ -12,7 +12,7 @@ from cartography.models.core.relationships import TargetNodeMatcher
 
 @dataclass(frozen=True)
 class EMRClusterNodeProperties(CartographyNodeProperties):
-    arn: PropertyRef = PropertyRef('ClusterArn')
+    arn: PropertyRef = PropertyRef('ClusterArn', extra_index=True)
     auto_terminate: PropertyRef = PropertyRef('AutoTerminate')
     autoscaling_role: PropertyRef = PropertyRef('AutoScalingRole')
     custom_ami_id: PropertyRef = PropertyRef('CustomAmiId')
@@ -46,7 +46,7 @@ class EMRClusterToAwsAccountRelProperties(CartographyRelProperties):
 class EMRClusterToAWSAccount(CartographyRelSchema):
     target_node_label: str = 'AWSAccount'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
-        {'id': PropertyRef('AccountId', set_in_kwargs=True)},
+        {'id': PropertyRef('AWS_ID', set_in_kwargs=True)},
     )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "RESOURCE"

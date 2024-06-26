@@ -1,61 +1,43 @@
 from dataclasses import asdict
 from string import Template
+from typing import Dict
 from typing import List
-from typing import Optional
-from typing import Set
 
 from cartography.graph.querybuilder import _build_match_clause
-from cartography.graph.querybuilder import filter_selected_relationships
 from cartography.graph.querybuilder import rel_present_on_node_schema
+from cartography.models.core.common import PropertyRef
 from cartography.models.core.nodes import CartographyNodeSchema
 from cartography.models.core.relationships import CartographyRelSchema
 from cartography.models.core.relationships import LinkDirection
 from cartography.models.core.relationships import TargetNodeMatcher
 
 
-def build_cleanup_queries(
-        node_schema: CartographyNodeSchema,
-        selected_rels: Optional[Set[CartographyRelSchema]] = None,
-) -> List[str]:
+def build_cleanup_queries(node_schema: CartographyNodeSchema) -> List[str]:
     """
     Generates queries to clean up stale nodes and relationships from the given CartographyNodeSchema.
-    :param node_schema: The given CartographyNodeSchema to generate cleanup queries for.
-    :param selected_rels: Optional. If specified, only generate cleanup queries where the `node_schema` is bound to this
-    given set of selected relationships. Raises an exception if any of the rels in `selected_rels` aren't actually
-    defined on the `node_schema`.
-    If `selected_rels` is not specified (default), we generate cleanup queries against all relationships defined on the
-    `node_schema`.
-    :return: A list of Neo4j queries to clean up nodes and relationships. Order matters: we always clean up the sub
-    resource relationship last because we only clean up stale nodes and rels that are associated with a given sub
-    resource, so if we delete the sub resource first then we will not be able to reach the stale nodes and rels, thus
-    leaving orphaned objects behind.
-    Note also that we return the empty list if the node_schema has no relationships. Doing cleanups of nodes without
-    relationships can be resource expensive for a large graph, and you might risk deleting unintended objects. Please
-    write a manual cleanup job if you wish to do this.
+    Note that auto-cleanups for a node with no relationships is not currently supported.
+    Algorithm:
+    1. First delete all stale nodes attached to the node_schema's sub resource
+    2. Delete all stale node to sub resource relationships
+        - We don't expect this to be very common (never for AWS resources, at least), but in case it is possible for an
+          asset to change sub resources, we want to handle it properly.
+    3. For all relationships defined on the node schema, delete all stale ones.
+    :param node_schema: The given CartographyNodeSchema
+    :return: A list of Neo4j queries to clean up nodes and relationships.
     """
-    other_rels = node_schema.other_relationships
-    sub_resource_rel = node_schema.sub_resource_relationship
-
-    if selected_rels:
-        # Ensure that the selected rels actually exist on the node_schema
-        sub_resource_rel, other_rels = filter_selected_relationships(node_schema, selected_rels)
-
-    if not sub_resource_rel:
+    if not node_schema.sub_resource_relationship:
         raise ValueError(
             "Auto-creating a cleanup job for a node_schema without a sub resource relationship is not supported. "
-            f'Please check the class definition of "{node_schema.__class__.__name__}". If the optional `selected_rels` '
-            'param was specified to build_cleanup_queries(), then ensure that the sub resource relationship is '
-            'present.',
+            f'Please check the class definition of "{node_schema.__class__.__name__}".',
         )
 
-    result = []
-    if other_rels:
-        for rel in other_rels.rels:
-            result.extend(_build_cleanup_node_and_rel_queries(node_schema, rel))
+    result = _build_cleanup_node_and_rel_queries(node_schema, node_schema.sub_resource_relationship)
+    if node_schema.other_relationships:
+        for rel in node_schema.other_relationships.rels:
+            # [0] is the delete node query, [1] is the delete relationship query. We only want the latter.
+            _, rel_query = _build_cleanup_node_and_rel_queries(node_schema, rel)
+            result.append(rel_query)
 
-    # Make sure that the sub resource cleanup job is last in the list; order matters.
-    result.extend(_build_cleanup_node_and_rel_queries(node_schema, sub_resource_rel))
-    # Note that auto-cleanups for a node with no relationships does not happen at all - we don't support it.
     return result
 
 
@@ -170,11 +152,12 @@ def _validate_target_node_matcher_for_cleanup_job(tgm: TargetNodeMatcher):
     class injects the sub resource id via a query kwarg parameter. See GraphJob and GraphStatement classes.
     This is a private function meant only to be called when we clean up the sub resource relationship.
     """
-    tgm_asdict = asdict(tgm)
+    tgm_asdict: Dict[str, PropertyRef] = asdict(tgm)
 
     for key, prop_ref in tgm_asdict.items():
         if not prop_ref.set_in_kwargs:
             raise ValueError(
                 f"TargetNodeMatcher PropertyRefs in the sub_resource_relationship must have set_in_kwargs=True. "
-                f"{key} has set_in_kwargs=False, please check.",
+                f"{key} has set_in_kwargs=False, please check by reviewing the full stack trace to know which object"
+                f"this message was raised from. Debug information: PropertyRef name = {prop_ref.name}.",
             )

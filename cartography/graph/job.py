@@ -16,7 +16,6 @@ from cartography.graph.cleanupbuilder import build_cleanup_queries
 from cartography.graph.statement import get_job_shortname
 from cartography.graph.statement import GraphStatement
 from cartography.models.core.nodes import CartographyNodeSchema
-from cartography.models.core.relationships import CartographyRelSchema
 
 logger = logging.getLogger(__name__)
 
@@ -129,24 +128,25 @@ class GraphJob:
             cls,
             node_schema: CartographyNodeSchema,
             parameters: Dict[str, Any],
-            selected_rels: Optional[Set[CartographyRelSchema]] = None,
     ) -> 'GraphJob':
         """
         Create a cleanup job from a CartographyNodeSchema object.
         For a given node, the fields used in the node_schema.sub_resource_relationship.target_node_node_matcher.keys()
         must be provided as keys and values in the params dict.
         """
-        queries: List[str] = build_cleanup_queries(node_schema, selected_rels)
+        queries: List[str] = build_cleanup_queries(node_schema)
 
-        # Validate params
         expected_param_keys: Set[str] = get_parameters(queries)
         actual_param_keys: Set[str] = set(parameters.keys())
         # Hacky, but LIMIT_SIZE is specified by default in cartography.graph.statement, so we exclude it from validation
         actual_param_keys.add('LIMIT_SIZE')
-        if actual_param_keys != expected_param_keys:
+
+        missing_params: Set[str] = expected_param_keys - actual_param_keys
+
+        if missing_params:
             raise ValueError(
-                f'Expected query params "{expected_param_keys}" but got "{actual_param_keys}". Please check the value '
-                f'passed to `parameters`.',
+                f'GraphJob is missing the following expected query parameters: "{missing_params}". Please check the '
+                f'value passed to `parameters`.',
             )
 
         statements: List[GraphStatement] = [

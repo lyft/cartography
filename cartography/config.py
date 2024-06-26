@@ -19,6 +19,8 @@ class Config:
     :param neo4j_database: The name of the database in Neo4j to connect to. If not specified, uses your Neo4j database
     settings to infer which database is set to default.
     See https://neo4j.com/docs/api/python-driver/4.4/api.html#database. Optional.
+    :type selected_modules: str
+    :param selected_modules: Comma-separated list of cartography top-level modules to sync. Optional.
     :type update_tag: int
     :param update_tag: Update tag for a cartography sync run. Optional.
     :type aws_sync_all_profiles: bool
@@ -67,6 +69,12 @@ class Config:
     :param jamf_user: User name used to authenticate to the Jamf data provider. Optional.
     :type jamf_password: string
     :param jamf_password: Password used to authenticate to the Jamf data provider. Optional.
+    :type kandji_base_uri: string
+    :param kandji_base_uri: Kandji data provider base URI, e.g. https://company.api.kandji.io. Optional.
+    :type kandji_tenant_id: string
+    :param kandji_tenant_id: Kandji tenant id. e.g. company Optional.
+    :type kandji_token: string
+    :param kandji_token: Token used to authenticate to the Kandji data provider. Optional.
     :type statsd_enabled: bool
     :param statsd_enabled: Whether to collect statsd metrics such as sync execution times. Optional.
     :type statsd_host: str
@@ -85,6 +93,24 @@ class Config:
     :param gsuite_auth_method: Auth method (delegated, oauth) used for Google Workspace. Optional.
     :type gsuite_config: str
     :param gsuite_config: Base64 encoded config object or config file path for Google Workspace. Optional.
+    :type lastpass_cid: str
+    :param lastpass_cid: Lastpass account ID. Optional.
+    :type lastpass_provhash: str
+    :param lastpass_provhash: Lastpass API KEY. Optional.
+    :type bigfix_username: str
+    :param bigfix_username: The username to authenticate to BigFix. Optional.
+    :type bigfix_password: str
+    :param bigfix_password: The password to authenticate to BigFix. Optional.
+    :type bigfix_root_url: str
+    :param bigfix_root_url: The API URL to use for BigFix, e.g. "https://example.com:52311". Optional.
+    :type duo_api_key: str
+    :param duo_api_key: The Duo api key. Optional.
+    :type duo_api_key: str
+    :param duo_api_key: The Duo api secret. Optional.
+    :type duo_api_hostname: str
+    :param duo_api_hostname: The Duo api hostname, e.g. "api-abc123.duosecurity.com". Optional.
+    :param semgrep_app_token: The Semgrep api token. Optional.
+    :type semgrep_app_token: str
     """
 
     def __init__(
@@ -94,6 +120,7 @@ class Config:
         neo4j_password=None,
         neo4j_max_connection_lifetime=None,
         neo4j_database=None,
+        selected_modules=None,
         update_tag=None,
         aws_sync_all_profiles=False,
         aws_best_effort_mode=False,
@@ -116,6 +143,9 @@ class Config:
         jamf_base_uri=None,
         jamf_user=None,
         jamf_password=None,
+        kandji_base_uri=None,
+        kandji_tenant_id=None,
+        kandji_token=None,
         k8s_kubeconfig=None,
         statsd_enabled=False,
         statsd_prefix=None,
@@ -125,17 +155,28 @@ class Config:
         pagerduty_request_timeout=None,
         nist_cve_url=None,
         cve_enabled=False,
+        cve_api_key=None,
         crowdstrike_client_id=None,
         crowdstrike_client_secret=None,
         crowdstrike_api_url=None,
         gsuite_auth_method=None,
         gsuite_config=None,
+        lastpass_cid=None,
+        lastpass_provhash=None,
+        bigfix_username=None,
+        bigfix_password=None,
+        bigfix_root_url=None,
+        duo_api_key=None,
+        duo_api_secret=None,
+        duo_api_hostname=None,
+        semgrep_app_token=None,
     ):
         self.neo4j_uri = neo4j_uri
         self.neo4j_user = neo4j_user
         self.neo4j_password = neo4j_password
         self.neo4j_max_connection_lifetime = neo4j_max_connection_lifetime
         self.neo4j_database = neo4j_database
+        self.selected_modules = selected_modules
         self.update_tag = update_tag
         self.aws_sync_all_profiles = aws_sync_all_profiles
         self.aws_best_effort_mode = aws_best_effort_mode
@@ -158,6 +199,9 @@ class Config:
         self.jamf_base_uri = jamf_base_uri
         self.jamf_user = jamf_user
         self.jamf_password = jamf_password
+        self.kandji_base_uri = kandji_base_uri
+        self.kandji_tenant_id = kandji_tenant_id
+        self.kandji_token = kandji_token
         self.k8s_kubeconfig = k8s_kubeconfig
         self.statsd_enabled = statsd_enabled
         self.statsd_prefix = statsd_prefix
@@ -167,8 +211,18 @@ class Config:
         self.pagerduty_request_timeout = pagerduty_request_timeout
         self.nist_cve_url = nist_cve_url
         self.cve_enabled = cve_enabled
+        self.cve_api_key = cve_api_key
         self.crowdstrike_client_id = crowdstrike_client_id
         self.crowdstrike_client_secret = crowdstrike_client_secret
         self.crowdstrike_api_url = crowdstrike_api_url
         self.gsuite_auth_method = gsuite_auth_method
         self.gsuite_config = gsuite_config
+        self.lastpass_cid = lastpass_cid
+        self.lastpass_provhash = lastpass_provhash
+        self.bigfix_username = bigfix_username
+        self.bigfix_password = bigfix_password
+        self.bigfix_root_url = bigfix_root_url
+        self.duo_api_key = duo_api_key
+        self.duo_api_secret = duo_api_secret
+        self.duo_api_hostname = duo_api_hostname
+        self.semgrep_app_token = semgrep_app_token

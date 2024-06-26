@@ -227,6 +227,17 @@ def get_account_access_key_data(boto3_session: boto3.session.Session, username: 
         logger.warning(
             f"Could not get access key for user {username} due to NoSuchEntityException; skipping.",
         )
+        return access_keys
+    for access_key in access_keys['AccessKeyMetadata']:
+        access_key_id = access_key['AccessKeyId']
+        last_used_info = client.get_access_key_last_used(
+            AccessKeyId=access_key_id,
+        )['AccessKeyLastUsed']
+        # only LastUsedDate may be null
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/iam/client/get_access_key_last_used.html
+        access_key['LastUsedDate'] = last_used_info.get('LastUsedDate')
+        access_key['LastUsedService'] = last_used_info['ServiceName']
+        access_key['LastUsedRegion'] = last_used_info['Region']
     return access_keys
 
 
@@ -309,11 +320,15 @@ def load_roles(
     neo4j_session: neo4j.Session, roles: List[Dict], current_aws_account_id: str, aws_update_tag: int,
 ) -> None:
     ingest_role = """
-    MERGE (rnode:AWSRole{arn: $Arn})
-    ON CREATE SET rnode:AWSPrincipal, rnode.roleid = $RoleId, rnode.firstseen = timestamp(),
-    rnode.createdate = $CreateDate
-    ON MATCH SET rnode.name = $RoleName, rnode.path = $Path
-    SET rnode.lastupdated = $aws_update_tag
+    MERGE (rnode:AWSPrincipal{arn: $Arn})
+    ON CREATE SET rnode.firstseen = timestamp()
+    SET
+        rnode:AWSRole,
+        rnode.roleid = $RoleId,
+        rnode.createdate = $CreateDate,
+        rnode.name = $RoleName,
+        rnode.path = $Path,
+        rnode.lastupdated = $aws_update_tag
     WITH rnode
     MATCH (aa:AWSAccount{id: $AWS_ACCOUNT_ID})
     MERGE (aa)-[r:RESOURCE]->(rnode)
@@ -486,7 +501,11 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
     WITH user
     MERGE (key:AccountAccessKey{accesskeyid: $AccessKeyId})
     ON CREATE SET key.firstseen = timestamp(), key.createdate = $CreateDate
-    SET key.status = $Status, key.lastupdated = $aws_update_tag
+    SET key.status = $Status,
+        key.lastupdated = $aws_update_tag,
+        key.lastuseddate = $LastUsedDate,
+        key.lastusedservice = $LastUsedService,
+        key.lastusedregion = $LastUsedRegion
     WITH user,key
     MERGE (user)-[r:AWS_ACCESS_KEY]->(key)
     ON CREATE SET r.firstseen = timestamp()
@@ -502,6 +521,9 @@ def load_user_access_keys(neo4j_session: neo4j.Session, user_access_keys: Dict, 
                     AccessKeyId=key['AccessKeyId'],
                     CreateDate=str(key['CreateDate']),
                     Status=key['Status'],
+                    LastUsedDate=key['LastUsedDate'],
+                    LastUsedService=key['LastUsedService'],
+                    LastUsedRegion=key['LastUsedRegion'],
                     aws_update_tag=aws_update_tag,
                 )
 
@@ -540,11 +562,12 @@ def transform_policy_data(policy_map: Dict, policy_type: str) -> None:
     for principal_arn, policy_statement_map in policy_map.items():
         logger.debug(f"Transforming IAM {policy_type} policies for principal {principal_arn}")
         for policy_key, statements in policy_statement_map.items():
-            policy_id = transform_policy_id(principal_arn, policy_type, policy_key) \
-                if policy_type == PolicyType.inline.value else policy_key
-            statements = _transform_policy_statements(
-                statements, policy_id,
-            )
+            policy_id = transform_policy_id(
+                principal_arn,
+                policy_type,
+                policy_key,
+            ) if policy_type == PolicyType.inline.value else policy_key
+            policy_statement_map[policy_key] = _transform_policy_statements(statements, policy_id)
 
 
 def transform_policy_id(principal_arn: str, policy_type: str, name: str) -> str:
