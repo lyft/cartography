@@ -31,7 +31,9 @@ def test_build_ingestion_query_complex():
 
                 UNION
                 WITH i, item
-                OPTIONAL MATCH (n0:HelloAsset{id: item.hello_asset_id})
+                OPTIONAL MATCH (n0:HelloAsset)
+                WHERE
+                    n0.id = item.hello_asset_id
                 WITH i, item, n0 WHERE n0 IS NOT NULL
                 MERGE (i)-[r0:ASSOCIATED_WITH]->(n0)
                 ON CREATE SET r0.firstseen = timestamp()
@@ -40,7 +42,9 @@ def test_build_ingestion_query_complex():
 
                 UNION
                 WITH i, item
-                OPTIONAL MATCH (n1:WorldAsset{id: item.world_asset_id})
+                OPTIONAL MATCH (n1:WorldAsset)
+                WHERE
+                    n1.id = item.world_asset_id
                 WITH i, item, n1 WHERE n1 IS NOT NULL
                 MERGE (i)<-[r1:CONNECTED]-(n1)
                 ON CREATE SET r1.firstseen = timestamp()

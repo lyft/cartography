@@ -316,7 +316,7 @@ def sync_policies(
             "Syncing OCI policies for compartment '%s' in account '%s'.", compartment['ocid'], current_tenancy_id,
         )
         data = get_policy_list_data(iam, compartment["ocid"])
-        if(data["Policies"]):
+        if (data["Policies"]):
             load_policies(neo4j_session, data["Policies"], current_tenancy_id, oci_update_tag)
     run_cleanup_job('oci_import_policies_cleanup.json', neo4j_session, common_job_parameters)
 
