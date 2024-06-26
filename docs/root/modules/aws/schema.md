@@ -555,6 +555,12 @@ Representation of an AWS [IAM Role](https://docs.aws.amazon.com/IAM/latest/APIRe
     (AWSRole)-[TRUSTS_AWS_PRINCIPAL]->(AWSPrincipal)
     ```
 
+- Members of an Okta group can assume associated AWS roles if Okta SAML is configured with AWS.
+
+    ```
+    (AWSRole)-[ALLOWED_BY]->(OktaGroup)
+    ```
+
 - AWS Roles are defined in AWS Accounts.
 
     ```
@@ -691,6 +697,9 @@ Representation of an AWS [Access Key](https://docs.aws.amazon.com/IAM/latest/API
 | lastupdated |  Timestamp of the last time the node was updated
 | createdate | Date when access key was created |
 | status | Active: valid for API calls.  Inactive: not valid for API calls|
+| lastuseddate | Date when the key was last used |
+| lastusedservice | The service that was last used with the access key |
+| lastusedregion | The region where the access key was last used |
 | **accesskeyid** | The ID for this access key|
 
 #### Relationships
@@ -1703,6 +1712,7 @@ Represents an Elastic Load Balancer V2 ([Application Load Balancer](https://docs
         ```
         (LoadBalancerV2)-[EXPOSE]->(EC2Instance)
         ```
+`EXPOSE` relationshiohip also holds the protocol, port and TargetGroupArn the load balancer points to.
 
 - LoadBalancerV2's can be part of EC2SecurityGroups but only if their `type` = "application". NLBs don't have SGs.
 
@@ -2863,6 +2873,12 @@ Representation of an AWS [Launch Template Version](https://docs.aws.amazon.com/A
 
         ```
         (AWSAccount)-[RESOURCE]->(LaunchTemplateVersion)
+        ```
+
+- Launch templates have Launch Template Versions
+
+        ```
+        (LaunchTemplate)-[VERSION]->(LaunchTemplateVersion)
         ```
 
 ### ElasticIPAddress
