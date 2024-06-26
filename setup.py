@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = '0.75.0'
+__version__ = '0.92.0'
 
 
 setup(
@@ -22,6 +22,9 @@ setup(
             '*.yaml',
         ],
         'cartography.data.jobs.analysis': [
+            '*.json',
+        ],
+        'cartography.data.jobs.scoped_analysis': [
             '*.json',
         ],
         'cartography.data.jobs.cleanup': [
@@ -60,6 +63,8 @@ setup(
         "crowdstrike-falconpy>=0.5.1",
         "pandas>=1.5.1",
         "python-dateutil",
+        "xmltodict",
+        "duo-client",
     ],
     extras_require={
         ':python_version<"3.7"': [
@@ -79,7 +84,7 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.10',
         'Topic :: Security',
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules',
