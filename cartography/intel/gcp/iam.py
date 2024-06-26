@@ -70,7 +70,7 @@ def get_service_account_last_used_activities(policyanalyzer: Resource,project_id
         if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
-                    "Could not retrieve service accounts on project %s due to permissions issue. Code: %s, Message: %s"
+                    "Could not retrieve service accounts last used activities on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -227,9 +227,9 @@ def get_role_id(role_name: str, project_id: str) -> str:
 
 @timeit
 def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> List[Dict]:
-    try:
-        bindings = []
+    bindings = []
 
+    try:
         req = crm_v1.projects().getIamPolicy(resource=project_id, body={'options': {'requestedPolicyVersion': 3}})
         res = req.execute()
         if res.get('bindings'):
@@ -238,9 +238,37 @@ def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> 
                 binding['parent_id'] = f"projects/{project_id}"
                 bindings.append(binding)
 
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve policy bindings on project %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return bindings
+        else:
+            raise
+
+    try:
         req = crm_v1.projects().get(projectId=project_id)
         res_project = req.execute()
-        if res_project.get('parent', {}).get('type', '') == 'organization':
+    
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve project details on project %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return bindings
+        else:
+            raise
+
+    parent_type = res_project.get('parent', {}).get('type', '')
+    try:
+        if parent_type == 'organization':
             req = crm_v1.organizations().getIamPolicy(resource=f"organizations/{res_project.get('parent', {}).get('id','')}")
             res = req.execute()
             if res.get('bindings'):
@@ -248,7 +276,7 @@ def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> 
                     binding['parent'] = 'organization'
                     binding['parent_id'] = f"organizations/{res_project.get('parent', {}).get('id','')}"
                     bindings.append(binding)
-        elif res_project.get('parent', {}).get('type', '') == 'folder':
+        elif parent_type == 'folder':
             req = crm_v2.folders().getIamPolicy(resource=f"folders/{res_project.get('parent', {}).get('id','')}")
             res = req.execute()
             if res.get('bindings'):
@@ -263,8 +291,8 @@ def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> 
         if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
-                    "Could not retrieve policy bindings on project %s due to permissions issue. Code: %s, Message: %s"
-                ), project_id, err['code'], err['message'],
+                    "Could not retrieve policy bindings on project for parent %s in %s due to permissions issue. Code: %s, Message: %s"
+                ), parent_type, project_id, err['code'], err['message'],
             )
             return bindings
         else:

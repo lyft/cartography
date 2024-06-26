@@ -257,6 +257,14 @@ def get_regional_instance_groups(compute: Resource, project_id: str, region: str
 
         return regional_instance_groups
     except HttpError as e:
+        if e.status_code == 404:
+            logger.warning(
+                (
+                    "Could not retrieve regional instance groups on project %s due to 404. Code: %s, Message: %s"
+                ), project_id, e.status_code, e.reason,
+            )
+            return []
+        
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
@@ -414,6 +422,14 @@ def get_regional_url_maps(compute: Resource, project_id: str, region: str, commo
 
         return regional_url_maps
     except HttpError as e:
+        if e.status_code == 404:
+            logger.warning(
+                (
+                    "Could not retrieve regional url maps on project %s due to 404. Code: %s, Message: %s"
+                ), project_id, e.status_code, e.reason,
+            )
+            return []
+
         err = json.loads(e.content.decode('utf-8'))['error']
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(

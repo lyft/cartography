@@ -457,11 +457,9 @@ def _services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set
 def concurrent_execution(
     service: str, service_func: Any, config: Config, resource: Resource,
     common_job_parameters: Dict, gcp_update_tag: int, project_id: str, policyanalyzer: Resource, crm_v1: Resource,
-    crm_v2: Resource, apikey: Resource,
+    crm_v2: Resource, apikey: Resource, regions: list,
 ):
     logger.info(f"BEGIN processing for service: {service}")
-
-    regions = config.params.get('regions', [])
 
     neo4j_auth = (config.neo4j_user, config.neo4j_password)
     neo4j_driver = GraphDatabase.driver(
@@ -500,6 +498,19 @@ def _sync_single_project(
     :return: Nothing
     """
 
+    all_regions = get_all_regions(resources.compute, project_id)
+
+    regions = []
+    if len(config.params.get('regions', [])) > 0:
+        input_regions = config.params.get('regions', [])
+
+        # INFO: if it's an invalid region in input parameters, ignore those
+        for region in input_regions:
+            if region in all_regions:
+                regions.append(region)
+
+    else:
+        regions = all_regions
     # Determine the resources available on the project.
     enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
     with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
@@ -512,7 +523,7 @@ def _sync_single_project(
                     executor.submit(
                         concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
                             resources, request,
-                        ), common_job_parameters, gcp_update_tag, project_id, resources.policyanalyzer, resources.crm_v1, resources.crm_v2, resources.apikey,
+                        ), common_job_parameters, gcp_update_tag, project_id, resources.policyanalyzer, resources.crm_v1, resources.crm_v2, resources.apikey, regions,
                     ),
                 )
 
@@ -530,6 +541,20 @@ def _sync_single_project(
         label.cleanup_labels(neo4j_session, common_job_parameters, service_name)
 
         del common_job_parameters['service_label']
+
+
+def get_all_regions(compute: Resource, project_id: str):
+    regions = []
+
+    req = compute.regions().list(project=project_id)
+    while req is not None:
+        res = req.execute()
+        for rg in res.get('items', []):
+            regions.append(rg['name'])
+
+        req = compute.regions().list_next(previous_request=req, previous_response=res)
+
+    return regions
 
 
 def _sync_multiple_projects(
