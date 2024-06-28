@@ -33,7 +33,7 @@ def transform_repos(workspace_repos: List[Dict]) -> List[Dict]:
         repo['workspace']['uuid'] = repo['workspace']['uuid'].replace('{','').replace('}','')
         repo['project']['uuid'] = repo['project']['uuid'].replace('{','').replace('}','')
         repo['uuid'] = repo['uuid'].replace('{','').replace('}','')
-        repo['default_branch'] = repo['mainbranch'].get('name',None)
+        repo['default_branch'] = repo.get('mainbranch',{}).get('name',None)
 
     return workspace_repos
 
