@@ -30,7 +30,11 @@ def handle_rate_limit_sleep(token: str) -> None:
     Check the remaining rate limit and sleep if remaining is below threshold
     :param token: The Github API token as string.
     '''
-    response = requests.get('https://api.github.com/rate_limit', headers={'Authorization': f"token {token}"})
+    response = requests.get(
+        'https://api.github.com/rate_limit',
+        headers={'Authorization': f"token {token}"},
+        timeout=_TIMEOUT,
+    )
     response.raise_for_status()
     response_json = response.json()
     rate_limit_obj = response_json['resources']['graphql']

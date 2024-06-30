@@ -79,7 +79,7 @@ def get_extensions(crxcavator_api_key: str, crxcavator_base_url: str, extensions
     Retrieves the detailed information for all the extension_id and version pairs
     :param crxcavator_api_key: The API key to access the CRXcavator service
     :param crxcavator_base_url: The URL for the CRXcavator API
-    :param extensions_list: list of dictonary items containing the extension_id and version pairs
+    :param extensions_list: list of dictionary items containing the extension_id and version pairs
     :return: list containing all metadata for extensions
     """
     extensions_details: List[Dict] = []

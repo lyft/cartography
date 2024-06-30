@@ -62,7 +62,7 @@ export GITHUB_KEY=BASE64ENCODEDKEY
 # You need to set this after starting neo4j once, and resetting
 # the default neo4j password, which is neo4j
 export NEO4j_PASSWORD=...
-# Reenable bash command history
+# Re-enable bash command history
 set -o history
 # Start cartography dependencies
 docker-compose up -d

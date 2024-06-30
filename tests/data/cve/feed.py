@@ -21,7 +21,7 @@ GET_CVE_API_DATA = {
                     },
                     {
                         "lang": "es",
-                        "value": "Existe una vulnerabilidad de secuestro de DLL en ZTE ZXCLOUD iRAI. Un atacante podría colocar un archivo DLL falso en un directorio específico y explotar con éxito esta vulnerabilidad para ejecutar código malicioso.",
+                        "value": "Existe una vulnerabilidad de secuestro de DLL en ZTE ZXCLOUD iRAI. Un atacante podría colocar un archivo DLL false en un directorio específico y explotar con éxito esta vulnerabilidad para ejecutar código malicioso.",
                     },
                 ],
                 "metrics": {
@@ -82,7 +82,7 @@ GET_CVE_API_DATA = {
                     },
                     {
                         "lang": "es",
-                        "value": "El complemento The Depicter Slider – Responsive Image Slider, Video Slider &amp; Post Slider para WordPress es vulnerable a Cross-Site Request Forgery en todas las versiones hasta la 2.0.6 incluida. Esto se debe a una validación nonce faltante o incorrecta en la función \"save\". Esto hace posible que atacantes no autenticados modifiquen la configuración del complemento mediante una solicitud falsificada, siempre que puedan engañar al administrador del sitio para que realice una acción como hacer clic en un enlace. CVE-2023-51491 parece ser un duplicado de este problema.",
+                        "value": "El complemento The Depicter Slider – Responsive Image Slider, Video Slider &amp; Post Slider para WordPress es vulnerable a Cross-Site Request Forgery en todas las versiones hasta la 2.0.6 incluida. Esto se debe a una validación nonce faltante o incorrecta en la función \"save\". Esto have possible que atacantes no autenticados modifiquen la configuración del complemento mediante una solicitud falsificada, siempre que puedan engañar al administrador del sitio para que realice una acción como hacer clic en un enlace. CVE-2023-51491 parece set un duplicado de este problema.",
                     },
                 ],
                 "metrics": {
@@ -279,11 +279,11 @@ GET_CVE_API_DATA = {
                 "descriptions": [
                     {
                         "lang": "en",
-                        "value": "PyCryptodome and pycryptodomex before 3.19.1 allow side-channel leakage for OAEP decryption, exploitable for a Manger attack.",
+                        "value": "PyCryptodome and pycryptodomex before 3.19.1 allow side-channel leakage for OAEP decryption, exploitable for a Manager attack.",
                     },
                     {
                         "lang": "es",
-                        "value": "PyCryptodome y pycryptodomex anteriores a 3.19.1 permiten la fuga de canal lateral para el descifrado OAEP, explotable para un ataque Manger.",
+                        "value": "PyCryptodome y pycryptodomex anteriores a 3.19.1 permiten la fuga de canal lateral para el descifrado OAEP, explotable para un ataque Manager.",
                     },
                 ],
                 "metrics": {},

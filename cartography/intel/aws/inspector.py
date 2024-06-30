@@ -27,7 +27,7 @@ def get_inspector_findings(
         current_aws_account_id: str,
 ) -> List[Dict[str, Any]]:
     """
-    We must list_findings by filtering the request, otherwise the request could tiemout.
+    We must list_findings by filtering the request, otherwise the request could timeout.
     First, we filter by account_id. And since there may be millions of CLOSED findings that may never go away,
     we will only fetch those in ACTIVE or SUPPRESSED statuses.
     list_members will get us all the accounts that

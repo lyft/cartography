@@ -29,7 +29,7 @@ Start [here](https://lyft.github.io/cartography/install.html).
 - [Microsoft Azure](https://lyft.github.io/cartography/modules/azure/index.html) -  CosmosDB, SQL, Storage, Virtual Machine
 - [Kubernetes](https://lyft.github.io/cartography/modules/kubernetes/index.html) - Cluster, Namespace, Service, Pod, Container
 - [PagerDuty](https://lyft.github.io/cartography/modules/pagerduty/index.html) - Users, teams, services, schedules, escalation policies, integrations, vendors
-- [Crowdstrike Falcon](https://lyft.github.io/cartography/modules/crowdstrike/index.html) - Hosts, Spotlight vulnerabilites, CVEs
+- [Crowdstrike Falcon](https://lyft.github.io/cartography/modules/crowdstrike/index.html) - Hosts, Spotlight vulnerabilities, CVEs
 - [NIST CVE](https://lyft.github.io/cartography/modules/cve/index.html) - Common Vulnerabilities and Exposures (CVE) data from NIST database
 - [Lastpass](https://lyft.github.io/cartography/modules/lastpass/index.html) - users
 - [BigFix](https://lyft.github.io/cartography/modules/bigfix/index.html) - Computers
