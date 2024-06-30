@@ -15,6 +15,9 @@ from msrestazure.azure_active_directory import AADTokenCredentials
 logger = logging.getLogger(__name__)
 AUTHORITY_HOST_URI = 'https://login.microsoftonline.com'
 
+# Connect and read timeouts of 60 seconds each; see https://requests.readthedocs.io/en/master/user/advanced/#timeouts
+_TIMEOUT = (60, 60)
+
 
 class Credentials:
 
@@ -46,7 +49,11 @@ class Credentials:
             # This is a last resort, e.g. for MSI authentication
             try:
                 h = {'Authorization': 'Bearer {}'.format(self.arm_credentials.token['access_token'])}
-                r = requests.get('https://management.azure.com/tenants?api-version=2020-01-01', headers=h)
+                r = requests.get(
+                    'https://management.azure.com/tenants?api-version=2020-01-01',
+                    headers=h,
+                    timeout=_TIMEOUT
+                )
                 r2 = r.json()
                 return r2.get('value')[0].get('tenantId')
             except requests.ConnectionError as e:
