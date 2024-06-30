@@ -18,7 +18,7 @@ https://developers.google.com/admin-sdk/directory/v1/reference/users#resource
 | etag | ETag of the resource
 | include_in_global_address_list | Indicates if the user's profile is visible in the G Suite global address list when the contact sharing feature is enabled for the domain. For more information about excluding user profiles, see the administration help center.
 | ip_whitelisted | If true, the user's IP address is white listed.
-| is_admin | Indicates a user with super admininistrator privileges. The isAdmin property can only be edited in the Make a user an administrator operation (makeAdmin method). If edited in the user insert or update methods, the edit is ignored by the API service.
+| is_admin | Indicates a user with super administrator privileges. The isAdmin property can only be edited in the Make a user an administrator operation (makeAdmin method). If edited in the user insert or update methods, the edit is ignored by the API service.
 | is_delegated_admin | Indicates if the user is a delegated administrator.  Delegated administrators are supported by the API but cannot create or undelete users, or make users administrators. These requests are ignored by the API service.  Roles and privileges for administrators are assigned using the Admin console.
 | is_enforced_in_2_sv | Is 2-step verification enforced (Read-only)
 | is_enrolled_in_2_sv | Is enrolled in 2-step verification (Read-only)

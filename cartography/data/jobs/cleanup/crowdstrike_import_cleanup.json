@@ -26,7 +26,7 @@
       "query": "MATCH (:SpotlightVulnerability)<-[hv:HAS_VULNERABILITY]-(:CrowdstrikeHost) WHERE hv.lastupdated <> $UPDATE_TAG WITH hv LIMIT $LIMIT_SIZE DELETE (hv)",
       "iterative": true,
       "iterationsize": 100,
-      "__comment__": "Delete relationship between vulnerabilty and host if host exists and vulnerabilty does not"
+      "__comment__": "Delete relationship between vulnerability and host if host exists and vulnerability does not"
     }
   ],
   "name": "cleanup crowdstrike"

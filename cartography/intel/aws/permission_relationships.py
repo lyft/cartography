@@ -134,7 +134,7 @@ def principal_allowed_on_resource(policies: Dict, resource_arn: str, permissions
 
 
     Arguments:
-        policies {[dict]} -- The policys to evaluate
+        policies {[dict]} -- The policies to evaluate
         resource_arn {str} -- The resource to test the permission against
         permissions {[str]} -- The permissions to evaluate
 

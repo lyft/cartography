@@ -52,7 +52,7 @@
             "iterative": false
         },
         {
-            "__comment__": "if reachability analysis confirmed that is rechable (likelihood = certain) -> Risk = Severity",
+            "__comment__": "if reachability analysis confirmed that is reachable (likelihood = certain) -> Risk = Severity",
             "query": "MATCH (g:GitHubRepository{archived:false})<-[:FOUND_IN]-(s:SemgrepSCAFinding{reachability:'REACHABLE', reachability_check:'REACHABILITY', lastupdated:$UPDATE_TAG})<-[:RESOURCE]-(:SemgrepDeployment{id:$DEPLOYMENT_ID}) SET s.reachability_risk = s.severity return COUNT(*) as TotalCompleted",
             "iterative": false
         },
