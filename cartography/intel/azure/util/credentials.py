@@ -52,7 +52,7 @@ class Credentials:
                 r = requests.get(
                     'https://management.azure.com/tenants?api-version=2020-01-01',
                     headers=h,
-                    timeout=_TIMEOUT
+                    timeout=_TIMEOUT,
                 )
                 r2 = r.json()
                 return r2.get('value')[0].get('tenantId')
