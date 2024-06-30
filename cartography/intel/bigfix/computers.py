@@ -133,14 +133,14 @@ def get_computer_details(
 
 def _get_computer_list_raw_xml(bigfix_api_url: str, headers: Dict[str, str]) -> str:
     list_endpoint = f"{bigfix_api_url}/api/computers"
-    resp = requests.get(list_endpoint, headers=headers, verify=False, timeout=_TIMEOUT)
+    resp = requests.get(list_endpoint, headers=headers, timeout=_TIMEOUT)
     resp.raise_for_status()
     return resp.text
 
 
 def _get_computer_details_raw_xml(bigfix_api_url: str, headers: Dict[str, str], computer_id: str) -> str:
     details_endpoint = f"{bigfix_api_url}/api/computer/{computer_id}"
-    resp = requests.get(details_endpoint, headers=headers, verify=False, timeout=_TIMEOUT)
+    resp = requests.get(details_endpoint, headers=headers, timeout=_TIMEOUT)
     resp.raise_for_status()
     return resp.text
 
