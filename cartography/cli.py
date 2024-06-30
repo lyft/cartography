@@ -647,6 +647,7 @@ class CLI:
         # Kandji config
         if config.kandji_base_uri:
             if config.kandji_token_env_var:
+                # nosemgrep-next-line:python-logger-credential-disclosure
                 logger.debug(
                     "Reading Kandji API token from environment variable '%s'.",
                     config.kandji_token_env_var,
