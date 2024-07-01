@@ -4,15 +4,95 @@ import logging
 from string import Template
 from typing import Dict
 from typing import List
+from collections import namedtuple
+import json
+from typing import Set
 
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
-from cartography.util import run_cleanup_job
+from oauth2client.client import GoogleCredentials
+import googleapiclient.discovery
+
+
 from cartography.util import timeit
+from cartography.util import run_cleanup_job
 
 logger = logging.getLogger(__name__)
+
+Resources = namedtuple('Resources', 'compute container crm_v1 crm_v2 dns storage serviceusage')
+# Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
+# and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
+Services = namedtuple('Services', 'compute storage gke dns')
+service_names = Services(
+    compute='compute.googleapis.com',
+    storage='storage.googleapis.com',
+    gke='container.googleapis.com',
+    dns='dns.googleapis.com',
+)
+
+def _get_serviceusage_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a serviceusage resource object.
+    See: https://cloud.google.com/service-usage/docs/reference/rest/v1/operations/list.
+
+    :param credentials: The GoogleCredentials object
+    :return: A serviceusage resource object
+    """
+    return googleapiclient.discovery.build('serviceusage', 'v1', credentials=credentials, cache_discovery=False)
+
+def get_crm_resource_v1(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a Google Compute Resource Manager v1 resource object to call the Resource Manager API.
+    See https://cloud.google.com/resource-manager/reference/rest/.
+    :param credentials: The GoogleCredentials object
+    :return: A CRM v1 resource object
+    """
+    # cache_discovery=False to suppress extra warnings.
+    # See https://github.com/googleapis/google-api-python-client/issues/299#issuecomment-268915510 and related issues
+    return googleapiclient.discovery.build('cloudresourcemanager', 'v1', credentials=credentials, cache_discovery=False)
+
+
+def get_crm_resource_v2(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a Google Compute Resource Manager v2 resource object to call the Resource Manager API.
+    We need a v2 resource object to query for GCP folders.
+    :param credentials: The GoogleCredentials object
+    :return: A CRM v2 resource object
+    """
+    return googleapiclient.discovery.build('cloudresourcemanager', 'v2', credentials=credentials, cache_discovery=False)
+
+
+def services_enabled_on_project(serviceusage: Resource, project_id: str) -> Set:
+    """
+    Return a list of all Google API services that are enabled on the given project ID.
+    See https://cloud.google.com/service-usage/docs/reference/rest/v1/services/list for data shape.
+    :param serviceusage: the serviceusage resource provider. See https://cloud.google.com/service-usage/docs/overview.
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :return: A set of services that are enabled on the project
+    """
+    try:
+        req = serviceusage.services().list(parent=f'projects/{project_id}', filter='state:ENABLED')
+        services = set()
+        while req is not None:
+            res = req.execute()
+            if 'services' in res:
+                services.update({svc['config']['name'] for svc in res['services']})
+            req = serviceusage.services().list_next(previous_request=req, previous_response=res)
+        return services
+    except googleapiclient.discovery.HttpError as http_error:
+        http_error = json.loads(http_error.content.decode('utf-8'))
+        # This is set to log-level `info` because Google creates many projects under the hood that cartography cannot
+        # audit (e.g. adding a script to a Google spreadsheet causes a project to get created) and we don't need to emit
+        # a warning for these projects.
+        logger.info(
+            f"HttpError when trying to get enabled services on project {project_id}. "
+            f"Code: {http_error['error']['code']}, Message: {http_error['error']['message']}. "
+            f"Skipping.",
+        )
+        return set()
 
 
 @timeit

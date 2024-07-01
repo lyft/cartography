@@ -7,10 +7,42 @@ import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
+from oauth2client.client import GoogleCredentials
+import googleapiclient.discovery
+
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+
+def _get_dns_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a Google Cloud DNS resource object to call the
+    Container API. See: https://cloud.google.com/dns/docs/reference/v1/.
+
+    :param credentials: The GoogleCredentials object
+    :return: A DNS resource object
+    """
+    return googleapiclient.discovery.build('dns', 'v1', credentials=credentials, cache_discovery=False)
+
+@timeit
+def sync_single_project_dns(
+    neo4j_session: neo4j.Session, resources: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict, credentials: GoogleCredentials
+) -> None:
+    """
+    Handles graph sync for a single GCP project DNS resources.
+    :param neo4j_session: The Neo4j session
+    :param resources: namedtuple of the GCP resource objects
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: Other parameters sent to Neo4j
+    :param credentials: The GoogleCredentials object
+    :return: Nothing
+    """
+    dns_cred = _get_dns_resource(credentials)
+    sync(neo4j_session, dns_cred, project_id, gcp_update_tag, common_job_parameters)
 
 
 @timeit
@@ -47,6 +79,16 @@ def get_dns_zones(dns: Resource, project_id: str) -> List[Resource]:
             return []
         else:
             raise
+
+def _get_dns_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a Google Cloud DNS resource object to call the
+    Container API. See: https://cloud.google.com/dns/docs/reference/v1/.
+
+    :param credentials: The GoogleCredentials object
+    :return: A DNS resource object
+    """
+    return googleapiclient.discovery.build('dns', 'v1', credentials=credentials, cache_discovery=False)
 
 
 @timeit
