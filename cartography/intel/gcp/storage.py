@@ -5,12 +5,43 @@ from typing import List
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
-
+from oauth2client.client import GoogleCredentials
+import googleapiclient.discovery
 from cartography.intel.gcp import compute
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
+
+
+def _get_storage_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a Google Cloud Storage resource object to call the Storage API.
+    This is used to pull bucket metadata and IAM Policies
+    as well as list buckets in a specified project.
+    See https://cloud.google.com/storage/docs/json_api/.
+    :param credentials: The GoogleCredentials object
+    :return: A Storage resource object
+    """
+    return googleapiclient.discovery.build('storage', 'v1', credentials=credentials, cache_discovery=False)
+
+def sync_single_project_storage(
+    neo4j_session: neo4j.Session, resources: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict, credentials: GoogleCredentials
+) -> None:
+    """
+    Handles graph sync for a single GCP project on Storage resources.
+    :param neo4j_session: The Neo4j session
+    :param resources: namedtuple of the GCP resource objects
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: Other parameters sent to Neo4j
+    :param The GoogleCredentials object
+    :return: Nothing
+    """
+    storage_cred = _get_storage_resource(credentials)
+    sync_gcp_buckets(neo4j_session, storage_cred, project_id, gcp_update_tag, common_job_parameters)
 
 
 @timeit
@@ -52,6 +83,17 @@ def get_gcp_buckets(storage: Resource, project_id: str) -> Dict:
             return {}
         else:
             raise
+
+def get_storage_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a Google Cloud Storage resource object to call the Storage API.
+    This is used to pull bucket metadata and IAM Policies
+    as well as list buckets in a specified project.
+    See https://cloud.google.com/storage/docs/json_api/.
+    :param credentials: The GoogleCredentials object
+    :return: A Storage resource object
+    """
+    return googleapiclient.discovery.build('storage', 'v1', credentials=credentials, cache_discovery=False)
 
 
 @timeit
