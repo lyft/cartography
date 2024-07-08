@@ -88,7 +88,7 @@ class CartographyNodeSchema(abc.ABC):
         """
         Optional.
         Allows subclasses to specify additional cartography relationships on the node.
-        :return: None if not overriden. Else return the node's OtherRelationships.
+        :return: None if not overridden. Else return the node's OtherRelationships.
         """
         return None
 
@@ -97,6 +97,6 @@ class CartographyNodeSchema(abc.ABC):
         """
         Optional.
         Allows specifying extra labels on the node.
-        :return: None if not overriden. Else return the ExtraNodeLabels specified on the node.
+        :return: None if not overridden. Else return the ExtraNodeLabels specified on the node.
         """
         return None

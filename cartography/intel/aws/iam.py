@@ -354,7 +354,7 @@ def load_roles(
     # but not sync yet.
     # - The inscope attribute - set when the account is being sync.
     # - The foreign attribute - the attribute assignment logic is in aws_foreign_accounts.json analysis job
-    # - Why seperate statement is needed - the arn may point to service level principals ex - ec2.amazonaws.com
+    # - Why separate statement is needed - the arn may point to service level principals ex - ec2.amazonaws.com
     ingest_spnmap_statement = """
     MERGE (aa:AWSAccount{id: $SpnAccountId})
     ON CREATE SET aa.firstseen = timestamp()

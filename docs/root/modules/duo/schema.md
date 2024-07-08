@@ -4,7 +4,7 @@
 
 ### DuoApiHost
 
-Represents a Duo API Host to conain Duo resources.
+Represents a Duo API Host to contain Duo resources.
 
 | Field | Description |
 |-------|--------------|

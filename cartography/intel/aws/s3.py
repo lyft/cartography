@@ -55,7 +55,7 @@ def get_s3_bucket_details(
     Iterates over all S3 buckets. Yields bucket name (string), S3 bucket policies (JSON), ACLs (JSON),
     default encryption policy (JSON), Versioning (JSON), and Public Access Block (JSON)
     """
-    # a local store for s3 clients so that we may re-use clients for an AWS region
+    # a local store for s3 clients so that we may reuse clients for an AWS region
     s3_regional_clients: Dict[Any, Any] = {}
 
     BucketDetail = Tuple[str, Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]
@@ -709,7 +709,7 @@ def load_s3_buckets(neo4j_session: neo4j.Session, data: Dict, current_aws_accoun
     """
 
     # The owner data returned by the API maps to the aws account nickname and not the IAM user
-    # there doesn't seem to be a way to retreive the mapping but we can get the current context account
+    # there doesn't seem to be a way to retrieve the mapping but we can get the current context account
     # so we map to that directly
 
     for bucket in data["Buckets"]:

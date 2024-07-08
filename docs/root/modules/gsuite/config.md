@@ -74,7 +74,7 @@ print(f'Please go to this URL: {auth_url}')
 code = input('Enter the authorization code: ')
 flow.fetch_token(code=code)
 creds = flow.credentials
-print('Testing your credentials by gettings first 10 users in the domain ...')
+print('Testing your credentials by getting first 10 users in the domain ...')
 service = build('admin', 'directory_v1', credentials=creds)
 print('Getting the first 10 users in the domain')
 results = service.users().list(customer='my_customer', maxResults=10,

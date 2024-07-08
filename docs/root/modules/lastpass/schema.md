@@ -32,10 +32,10 @@ Representation of a single User in Lastpass
 | last_pw_change | Timestamp of the last master password change |
 | last_login | Timestamp of the last login |
 | neverloggedin | Flag indicating the user never logged in |
-| disabled | Flag indicating accout is disabled |
+| disabled | Flag indicating account is disabled |
 | admin | Flag for admin account |
 | totalscore | Lastpass security score (max 100) |
-| mpstrength | Master password strenght (max 100) |
+| mpstrength | Master password strength (max 100) |
 | sites | Number of site credentials stored |
 | notes | Number of secured notes stored |
 | formfills | Number of forms stored |

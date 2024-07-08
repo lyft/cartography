@@ -34,7 +34,7 @@ def get_ecs_clusters(
     cluster_arns: List[str],
 ) -> List[Dict[str, Any]]:
     client = boto3_session.client('ecs', region_name=region)
-    # TODO: also include attachment info, and make relationships between the attachements
+    # TODO: also include attachment info, and make relationships between the attachments
     # and the cluster.
     includes = ['SETTINGS', 'CONFIGURATIONS']
     clusters: List[Dict[str, Any]] = []
