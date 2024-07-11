@@ -7,26 +7,22 @@ import neo4j
 import requests
 from requests.exceptions import RequestException
 
+from cartography.intel.gitlab.pagination import paginate_request
 from cartography.util import make_requests_url
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 
 
 @timeit
 def get_repos(access_token:str,project:str):
     """
-    As per the rest api docs:https://docs.gitlab.com/ee/api/repositories.html
+    As per the rest api docs:https://docs.gitlab.com/ee/api/repositories.html#list-repository-tree
+    Pagination: https://docs.gitlab.com/ee/api/rest/index.html#pagination
     """
-    
-    url = f"https://gitlab.example.com/api/v4/projects/{project}/repository/tree?per_page=100"
-
-    response = make_requests_url(url,access_token)
-    repositories = response.json()
-
-    while 'next' in response:
-        response = make_requests_url(response.get('next'),access_token)
-        repositories.extend(response.json())
+    url = f"https://gitlab.com/api/v4/projects/{project}/repository/tree?per_page=100"
+    repositories = paginate_request(url, access_token)
 
     return repositories
 
@@ -47,7 +43,7 @@ def _load_repositories_data(tx: neo4j.Transaction,repos_data:List[Dict],common_j
     re.path = repo.path,
     re.mode = repo.mode,
     re.lastupdated = $UpdateTag
-    
+
     WITH re, repo
     MATCH (project:GitLabProject{id: repo.namespace.id})
     MERGE (project)<-[o:HAS]-(re)
@@ -69,7 +65,7 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 def sync(
         neo4j_session: neo4j.Session,
         project_id:str,
-        gitlab_access_token:str,
+        access_token:str,
         common_job_parameters: Dict[str, Any],
 ) -> None:
     """
@@ -79,6 +75,6 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Gitlab All Repositories")
-    project_repos=get_repos(gitlab_access_token,project_id)
+    project_repos=get_repos(access_token,project_id)
     load_repositories_data(neo4j_session,project_repos,common_job_parameters)
     cleanup(neo4j_session,common_job_parameters)

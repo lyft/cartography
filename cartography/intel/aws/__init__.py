@@ -116,6 +116,7 @@ def _sync_one_account(
                     )
                 else:
                     continue
+
             else:
                 raise ValueError(
                     f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?',

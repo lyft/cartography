@@ -1,22 +1,19 @@
 import logging
-from concurrent.futures import as_completed
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any
-from typing import Dict
-from typing import List
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Dict, List
 
 import neo4j
 from neo4j import GraphDatabase
 from requests import exceptions
 
+import cartography.intel.gitlab.group
 import cartography.intel.gitlab.members
 import cartography.intel.gitlab.projects
-import cartography.intel.gitlab.group
-from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
 from cartography.graph.session import Session
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
+from cartography.util import run_cleanup_job, timeit
+
+from .resources import RESOURCE_FUNCTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +41,13 @@ def _sync_one_gitlab_group(
     common_job_parameters: Dict[str, Any],
     config:Config,
 ):
+    logger.info(f"Syncing Gitlab Group: {common_job_parameters['GITLAB_GROUP_ID']} - {group_name}")
+
     requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
+
+    # BEGIN - Parallel Run
+
+    # Process each service in parallel.
     with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
         futures = []
         for request in requested_syncs:
@@ -69,6 +72,8 @@ def _sync_one_gitlab_group(
         for future in as_completed(futures):
             logger.info(f'Result from Future - Service Processing: {future.result()}')
 
+    # END - Parallel Run
+
     return True
 
 def _sync_multiple_groups(
@@ -79,11 +84,14 @@ def _sync_multiple_groups(
     config: Config,
 ) ->bool:
     for group in groups:
-        common_job_parameters['GROUP_ID']=group.get('id')
+        if common_job_parameters["ACCOUNT_ID"].lower() != group.get('name').lower():
+            continue
+
+        common_job_parameters['GITLAB_GROUP_ID']=group.get('id')
         _sync_one_gitlab_group(neo4j_session,group.get('path'),access_token,common_job_parameters,config)
         run_cleanup_job('gitlab_group_cleanup.json', neo4j_session, common_job_parameters)
 
-        del common_job_parameters['GROUP_ID']
+        del common_job_parameters['GITLAB_GROUP_ID']
 
     return True
 
@@ -102,6 +110,7 @@ def start_gitlab_ingestion(neo4j_session: neo4j.Session, config: Config) -> None
     access_token = config.gitlab_access_token
     common_job_parameters = {
         "WORKSPACE_ID": config.params['workspace']['id_string'],
+        "ACCOUNT_ID": config.params['workspace']['account_id'],
         "UPDATE_TAG": config.update_tag,
     }
 

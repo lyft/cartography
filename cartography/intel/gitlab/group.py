@@ -4,33 +4,29 @@ from typing import Dict
 from typing import List
 
 import neo4j
-import requests
-from requests.exceptions import RequestException
 
-from cartography.util import make_requests_url
+from cartography.intel.gitlab.pagination import paginate_request
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
+
 @timeit
 def get_groups(access_token: str):
     """
     As per the rest api docs:https://docs.gitlab.com/ee/api/api_resources.html
+    Pagination: https://docs.gitlab.com/ee/api/rest/index.html#pagination
     """
-    url = f"https://gitlab.example.com/api/v4/groups?pagelen=100"
-
-    response = make_requests_url(url,access_token)
-    groups = response.json()
-
-    while 'next' in response:
-        response = make_requests_url(response.get('next'),access_token)
-        groups.extend(response.json())
+    url = "https://gitlab.com/api/v4/groups?per_page=100"
+    groups = paginate_request(url, access_token)
 
     return groups
 
+
 def load_group_data(session: neo4j.Session, group_data: List[Dict], common_job_parameters: Dict) -> None:
     session.write_transaction(_load_group_data, group_data, common_job_parameters)
+
 
 def _load_group_data(tx: neo4j.Transaction, group_data: List[Dict], common_job_parameters: Dict):
     ingest_group = """
@@ -60,8 +56,9 @@ def _load_group_data(tx: neo4j.Transaction, group_data: List[Dict], common_job_p
     for group in group_data:
         tx.run(
             ingest_group,
+            id=group.get("id"),
             name=group.get("name"),
-            created_on=group.get('created_at'),
+            created_at=group.get('created_at'),
             path=group.get('path'),
             description=group.get('description'),
             visibility=group.get('visibility'),
@@ -71,8 +68,10 @@ def _load_group_data(tx: neo4j.Transaction, group_data: List[Dict], common_job_p
             workspace_id=common_job_parameters['WORKSPACE_ID'],
         )
 
+
 def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
     run_cleanup_job('gitlab_group_cleanup.json', neo4j_session, common_job_parameters)
+
 
 def sync(
         neo4j_session: neo4j.Session,
