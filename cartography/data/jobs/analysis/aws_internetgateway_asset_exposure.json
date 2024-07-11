@@ -1,0 +1,23 @@
+{
+    "statements": [
+        {
+            "query": "MATCH (ig:AWSInternetGateway)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:AWSOrganization{id: $ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE EXISTS(ig.exposed_internet) WITH ig LIMIT $LIMIT_SIZE REMOVE ig.exposed_internet, ig.exposed_internet_type return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (vpc:AWSVpc)-[:ATTACHED_TO]->(:AWSInternetGateway)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:AWSOrganization{id: $ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE EXISTS(vpc.exposed_internet) WITH vpc LIMIT $LIMIT_SIZE REMOVE vpc.exposed_internet, vpc.exposed_internet_type return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100
+        },
+        {
+            "query": "MATCH (ig:AWSInternetGateway)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:AWSOrganization{id: $ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET ig.exposed_internet = true ,(CASE WHEN NOT 'internet_gateway_endpoint_type' IN coalesce(ig.exposed_internet_type , []) THEN ig END).exposed_internet_type = coalesce(ig.exposed_internet_type , []) + 'internet_gateway_endpoint_type';",
+            "iterative": false
+        },
+        {
+            "query": "MATCH (vpc:AWSVpc)-[:ATTACHED_TO]->(:AWSInternetGateway)<-[:RESOURCE]-(:AWSAccount{id: $AWS_ID})<-[:OWNER]-(:AWSOrganization{id: $ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) SET vpc.exposed_internet = true ,(CASE WHEN NOT 'internet_gateway_endpoint_type' IN coalesce(vpc.exposed_internet_type , []) THEN vpc END).exposed_internet_type = coalesce(vpc.exposed_internet_type , []) + 'internet_gateway_endpoint_type';",
+            "iterative": false
+        }
+    ],
+    "name": "aws internet gateway asset internet exposure"
+}
