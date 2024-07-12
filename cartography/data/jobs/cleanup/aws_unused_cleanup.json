@@ -1,16 +1,28 @@
 {
     "statements": [
         {
-            "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(AWSPrincipal)-[r:POLICY]->(AWSPolicy) WHERE exists(r.unused_permissions) REMOVE r.unused_permissions return COUNT(*) as TotalCompleted",
+            "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:AWSPrincipal)-[r:POLICY]->(:AWSPolicy) WHERE exists(r.unused_permissions) REMOVE r.unused_permissions return COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100,
             "__comment__": "Delete AWS principals unused permisions for policy"
         },
         {
-            "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(AWSPrincipal)-[r:POLICY]->(AWSPolicy) WHERE exists(r.used_permissions) REMOVE r.used_permissions return COUNT(*) as TotalCompleted",
+            "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:OWNER]->(:AWSAccount{id: $AWS_ID})-[:RESOURCE]->(:AWSPrincipal)-[r:POLICY]->(:AWSPolicy) WHERE exists(r.used_permissions) REMOVE r.used_permissions return COUNT(*) as TotalCompleted",
             "iterative": true,
             "iterationsize": 100,
             "__comment__": "Delete AWS principals used permisions for policy"
+        },
+        {
+            "query": "MATCH (:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(:AWSOrganization{id: $ORGANIZATION_ID})-[:RESOURCE]->(:AWSPrincipal)<-[:ASSIGNED_TO]-(:AWSPermissionSet)-[r:ATTACHED_TO]->(aa:AWSAccount{id: $AWS_ID}) WHERE exists(r.unused_permissions) REMOVE r.unused_permissions return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete AWS SSO principals unused permisions for permission set"
+        },
+        {
+            "query": "MATCH (cw:CloudanixWorkspace{id: $WORKSPACE_ID})-[:OWNER]->(org:AWSOrganization{id: $ORGANIZATION_ID})-[:RESOURCE]->(:AWSPrincipal)<-[:ASSIGNED_TO]-(:AWSPermissionSet)-[r:ATTACHED_TO]->(aa:AWSAccount{id: $AWS_ID}) WHERE exists(r.used_permissions) REMOVE r.used_permissions return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Delete AWS SSO principals used permisions for permission set"
         }
     ],
     "name": "cleanup AWS iam principals used and unused properties for policies"
