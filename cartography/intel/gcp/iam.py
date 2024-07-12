@@ -2,17 +2,16 @@ import json
 import logging
 import time
 from datetime import datetime
-from typing import Dict
-from typing import List
+from typing import Dict, List
 
 import neo4j
 from cloudconsolelink.clouds.gcp import GCPLinker
-from googleapiclient.discovery import HttpError
-from googleapiclient.discovery import Resource
+from googleapiclient.discovery import HttpError, Resource
+
+from cartography.util import run_cleanup_job, timeit
 
 from . import label
-from cartography.util import run_cleanup_job
-from cartography.util import timeit
+
 logger = logging.getLogger(__name__)
 gcp_console_link = GCPLinker()
 
@@ -70,7 +69,7 @@ def get_service_account_last_used_activities(policyanalyzer: Resource, project_i
         if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
-                    "Could not retrieve service accounts on project %s due to permissions issue. Code: %s, Message: %s"
+                    "Could not retrieve service accounts last used activities on project %s due to permissions issue. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
@@ -100,6 +99,8 @@ def get_service_account_keys(iam: Resource, project_id: str, service_account: Di
             key['consolelink'] = gcp_console_link.get_console_link(
                 resource_name='service_account_key', project_id=project_id, service_account_unique_id=service_account['uniqueId'],
             )
+            key['validAfterTime'] = key.get('validAfterTime')
+            key['validBeforeTime'] = key.get('validBeforeTime')
 
         service_keys.extend(keys)
 
@@ -227,9 +228,9 @@ def get_role_id(role_name: str, project_id: str) -> str:
 
 @timeit
 def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> List[Dict]:
-    try:
-        bindings = []
+    bindings = []
 
+    try:
         req = crm_v1.projects().getIamPolicy(resource=project_id, body={'options': {'requestedPolicyVersion': 3}})
         res = req.execute()
         if res.get('bindings'):
@@ -238,18 +239,46 @@ def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> 
                 binding['parent_id'] = f"projects/{project_id}"
                 bindings.append(binding)
 
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve policy bindings on project %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return bindings
+        else:
+            raise
+
+    try:
         req = crm_v1.projects().get(projectId=project_id)
         res_project = req.execute()
-        if res_project.get('parent', {}).get('type', '') == 'organization':
-            req = crm_v1.organizations().getIamPolicy(resource=f"organizations/{res_project.get('parent', {}).get('id', '')}")
+    
+    except HttpError as e:
+        err = json.loads(e.content.decode('utf-8'))['error']
+        if err['status'] == 'PERMISSION_DENIED':
+            logger.warning(
+                (
+                    "Could not retrieve project details on project %s due to permissions issue. Code: %s, Message: %s"
+                ), project_id, err['code'], err['message'],
+            )
+            return bindings
+        else:
+            raise
+
+    parent_type = res_project.get('parent', {}).get('type', '')
+    try:
+        if parent_type == 'organization':
+            req = crm_v1.organizations().getIamPolicy(resource=f"organizations/{res_project.get('parent', {}).get('id','')}")
             res = req.execute()
             if res.get('bindings'):
                 for binding in res['bindings']:
                     binding['parent'] = 'organization'
                     binding['parent_id'] = f"organizations/{res_project.get('parent', {}).get('id', '')}"
                     bindings.append(binding)
-        elif res_project.get('parent', {}).get('type', '') == 'folder':
-            req = crm_v2.folders().getIamPolicy(resource=f"folders/{res_project.get('parent', {}).get('id', '')}")
+        elif parent_type == 'folder':
+            req = crm_v2.folders().getIamPolicy(resource=f"folders/{res_project.get('parent', {}).get('id','')}")
             res = req.execute()
             if res.get('bindings'):
                 for binding in res['bindings']:
@@ -263,8 +292,8 @@ def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> 
         if err['status'] == 'PERMISSION_DENIED':
             logger.warning(
                 (
-                    "Could not retrieve policy bindings on project %s due to permissions issue. Code: %s, Message: %s"
-                ), project_id, err['code'], err['message'],
+                    "Could not retrieve policy bindings on project for parent %s in %s due to permissions issue. Code: %s, Message: %s"
+                ), parent_type, project_id, err['code'], err['message'],
             )
             return bindings
         else:

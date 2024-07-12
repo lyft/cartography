@@ -104,6 +104,8 @@ def _sync_one_account(
 
         for func_name in aws_requested_syncs:
             if func_name in RESOURCE_FUNCTIONS:
+                if func_name == "identitystore" and not config.params['workspace'].get('is_identity_sso_used'):
+                    continue
                 # Skip permission relationships and tags for now because they rely on data already being in the graph
                 if func_name not in ['permission_relationships', 'resourcegroupstaggingapi']:
                     futures.append(
@@ -114,6 +116,7 @@ def _sync_one_account(
                     )
                 else:
                     continue
+
             else:
                 raise ValueError(
                     f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?',
@@ -257,6 +260,12 @@ def _sync_one_account(
 
     run_analysis_job(
         'aws_redshift_cluster_asset_exposure.json',
+        neo4j_session,
+        common_job_parameters,
+    )
+
+    run_analysis_job(
+        'aws_internetgateway_asset_exposure.json',
         neo4j_session,
         common_job_parameters,
     )

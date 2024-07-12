@@ -134,7 +134,7 @@ def sync_ec2_images(
         logger.info("Syncing images for region '%s' in account '%s'.", region, current_aws_account_id)
         images_in_use = get_images_in_use(neo4j_session, region, current_aws_account_id)
         imgs = get_images(boto3_session, region)
-        data = transform_images(boto3_session, imgs, images_in_use, region, current_aws_account_id)
+        data.extend(transform_images(boto3_session, imgs, images_in_use, region, current_aws_account_id))
 
     logger.info(f"Total EC2 Images: {len(data)}")
 

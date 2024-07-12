@@ -102,7 +102,7 @@ def sync_client_certificates(
     data = []
     for region in regions:
         certs = get_client_certificates(boto3_session, region)
-        data = transform_client_certificates(certs, region, current_aws_account_id)
+        data.extend(transform_client_certificates(certs, region, current_aws_account_id))
 
     logger.info(f"Total API Gateway Certificates: {len(data)}")
 

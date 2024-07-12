@@ -32,7 +32,7 @@ def get_pubsublite_topics(pubsublite: Resource, project_id: str, regions: list, 
         if e.status_code == 404:
             logger.warning(
                 (
-                    "Could not retrieve pubsublite topics on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve pubsublite topics on project %s due to 404. Code: %s, Message: %s"
                 ), project_id, e.status_code, e.reason,
             )
             return []
@@ -116,7 +116,7 @@ def get_pubsublite_subscriptions(pubsublite: Resource, project_id: str, regions:
         if e.status_code == 404:
             logger.warning(
                 (
-                    "Could not retrieve pubsublite topics on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve pubsublite subscriptions on project %s due to 404. Code: %s, Message: %s"
                 ), project_id, e.status_code, e.reason,
             )
             return []

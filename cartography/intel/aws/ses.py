@@ -41,7 +41,7 @@ def get_ses_identity(boto3_session: boto3.session.Session, region: str) -> List[
 
 
 @timeit
-def transform_identites(boto3_session: boto3.session.Session, idsnames: List[Dict], region: str, current_aws_account_id: str) -> List[Dict]:
+def transform_identities(boto3_session: boto3.session.Session, idsnames: List[Dict], region: str, current_aws_account_id: str) -> List[Dict]:
     identities = []
     resources = []
     try:
@@ -123,7 +123,7 @@ def sync(
         logger.info("Syncing SES for region '%s' in account '%s'.", region, current_aws_account_id)
 
         ids = get_ses_identity(boto3_session, region)
-        identities = transform_identites(boto3_session, ids, region, current_aws_account_id)
+        identities.extend(transform_identities(boto3_session, ids, region, current_aws_account_id))
 
     logger.info(f"Total SES Identities: {len(identities)}")
 

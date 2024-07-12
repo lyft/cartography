@@ -104,13 +104,33 @@ def _build_cleanup_node_and_rel_queries(
         )
 
     # Ensure the node is attached to the sub resource and delete the node
-    query_template = Template(
-        """
-        MATCH (n:$node_label)$sub_resource_link(:$sub_resource_label{$match_sub_res_clause})
-        $selected_rel_clause
-        $delete_action_clause
-        """,
-    )
+    if node_schema.sub_resource_relationship.target_node_label == "AWSAccount":
+        query_template = Template(
+            """
+            MATCH (n:$node_label)$sub_resource_link(:$sub_resource_label{$match_sub_res_clause})
+            <-[:OWNER]-(:AWSOrganization{id: $ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
+            $selected_rel_clause
+            $delete_action_clause
+            """,
+        )
+    elif node_schema.sub_resource_relationship.target_node_label == "GitHubOrganization":
+        query_template = Template(
+            """
+            MATCH (n:$node_label)$sub_resource_link(:$sub_resource_label{$match_sub_res_clause})
+            <-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID})
+            $selected_rel_clause
+            $delete_action_clause
+            """,
+        )
+    else :
+        query_template = Template(
+            """
+            MATCH (n:$node_label)$sub_resource_link(:$sub_resource_label{$match_sub_res_clause})
+            $selected_rel_clause
+            $delete_action_clause
+            """,
+        )
+
     return [
         query_template.safe_substitute(
             node_label=node_schema.label,

@@ -185,7 +185,7 @@ def sync(
         logger.info("Syncing SNS for region '%s' in account '%s'.", region, current_aws_account_id)
 
         tps = get_sns_topic(boto3_session, region)
-        topics = transform_topics(boto3_session, tps, region)
+        topics.extend(transform_topics(boto3_session, tps, region))
 
     logger.info(f"Total SNS Topics: {len(topics)}")
 

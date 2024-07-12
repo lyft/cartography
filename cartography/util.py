@@ -436,7 +436,7 @@ def to_synchronous(*awaitables: Awaitable[Any]) -> List[Any]:
     '''
     return asyncio.get_event_loop().run_until_complete(asyncio.gather(*awaitables))
 
-def make_requests_url(url,access_token):
+def make_requests_url(url: str,access_token: str, return_raw: bool = False):
     try:
         headers = {
             "Accept": "application/json",
@@ -450,8 +450,11 @@ def make_requests_url(url,access_token):
         if response.status_code!=200:
             return {}
 
+        if return_raw:
+            return response
+
         return response.json()
 
     except RequestException as e:
-        logger.info(f"failed to get bitbucket response")
+        logger.info(f"failed to get response: {e}")
         return {}

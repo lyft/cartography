@@ -95,6 +95,7 @@ def _sync_one_subscription(
                         subscription_id,
                     ),
                 )
+
             else:
                 raise ValueError(
                     f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?',

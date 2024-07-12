@@ -30,7 +30,6 @@ class SSMInstancePatchNodeProperties(CartographyNodeProperties):
 class SSMInstancePatchToAWSAccountRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
-
 @dataclass(frozen=True)
 class SSMInstancePatchToAWSAccount(CartographyRelSchema):
     target_node_label: str = 'AWSAccount'

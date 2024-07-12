@@ -144,6 +144,7 @@ class Config:
         refresh_entitlements=False,
         identity_store_region=None,
         bitbucket_access_token=None,
+        gitlab_access_token=None,
         aws_internal_accounts=None,
     ):
         self.neo4j_uri = neo4j_uri
@@ -178,6 +179,7 @@ class Config:
         self.okta_saml_role_regex = okta_saml_role_regex
         self.github_config = github_config
         self.bitbucket_access_token = bitbucket_access_token
+        self.gitlab_access_token = gitlab_access_token
         self.digitalocean_token = digitalocean_token
         self.permission_relationships_file = permission_relationships_file
         self.jamf_base_uri = jamf_base_uri

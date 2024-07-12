@@ -28,13 +28,8 @@ def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> L
     ecr_repositories: List[Dict] = []
     for page in paginator.paginate():
         ecr_repositories.extend(page['repositories'])
-    repositories = []
-    for repo in ecr_repositories:
-        repo['region'] = region
-        repo['consolelink'] = aws_console_link.get_console_link(arn=repo['repositoryArn'])
-        repositories.append(repo)
 
-    return repositories
+    return ecr_repositories
 
 
 @timeit
@@ -57,9 +52,11 @@ def get_ecr_repository_images(boto3_session: boto3.session.Session, region: str,
     ecr_repository_images: List[Dict] = []
     for page in paginator.paginate(repositoryName=repository_name):
         ecr_repository_images.extend(page['imageIds'])
+
     for image in ecr_repository_images:
         image['region'] = region
-        image['consolelink'] = aws_console_link.get_console_link(arn=f"arn:aws:ecr::{current_aws_account_id}:image/{repository_name}")
+        # image['consolelink'] = aws_console_link.get_console_link(arn=f"arn:aws:ecr::{current_aws_account_id}:image/{repository_name}:{image.get('imageTag', image.get('imageDigest'))}")
+
     return ecr_repository_images
 
 
@@ -196,19 +193,19 @@ def sync(
     for region in regions:
         logger.info("Syncing ECR for region '%s' in account '%s'.", region, current_aws_account_id)
         repos = get_ecr_repositories(boto3_session, region)
-        repositories = transform_repositories(repos, region)
+        repositories.extend(transform_repositories(repos, region))
 
     logger.info(f"Total ECR Repositories: {len(repositories)}")
 
     load_ecr_repositories(neo4j_session, repositories, current_aws_account_id, update_tag)
 
-    image_data = {}
-    for repo in repositories:
-        repo_image_obj = get_ecr_repository_images(boto3_session, repo['region'], repo['repositoryName'], current_aws_account_id)
-        image_data[repo['repositoryUri']] = repo_image_obj
+    # image_data = {}
+    # for repo in repositories:
+    #     repo_image_obj = get_ecr_repository_images(boto3_session, repo['region'], repo['repositoryName'], current_aws_account_id)
+    #     image_data[repo['repositoryUri']] = repo_image_obj
 
-    repo_images_list = transform_ecr_repository_images(image_data)
-    load_ecr_repository_images(neo4j_session, repo_images_list, update_tag)
+    # repo_images_list = transform_ecr_repository_images(image_data)
+    # load_ecr_repository_images(neo4j_session, repo_images_list, update_tag)
     cleanup(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

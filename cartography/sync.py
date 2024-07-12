@@ -19,6 +19,7 @@ import cartography.intel.bitbucket
 import cartography.intel.create_indexes
 import cartography.intel.gcp
 import cartography.intel.github
+import cartography.intel.gitlab
 import cloudanix
 from cartography.config import Config
 from cartography.stats import set_stats_client
@@ -109,7 +110,7 @@ class Sync:
             for stage_name, stage_func in self._stages.items():
                 logger.info("Starting sync stage '%s'", stage_name)
                 try:
-                    if stage_name in ['aws', 'azure', 'gcp', 'github', 'bitbucket']:
+                    if stage_name in ['aws', 'azure', 'gcp', 'github', 'bitbucket', 'gitlab']:
 
                         response = stage_func(neo4j_session, config)
                     else:
@@ -337,6 +338,24 @@ def build_bitbucket_sync():
     stages = []
     stages.append(('cloudanix-workspace', cloudanix.run))
     stages.append(('bitbucket', cartography.intel.bitbucket.start_bitbucket_ingestion))
+    stages.append(('analysis', cartography.intel.analysis.run))
+
+    sync.add_stages(stages)
+
+    return sync
+
+
+def build_gitlab_sync():
+    """
+    Build the default cartography sync, which runs all intelligence modules shipped with the cartography package.
+    :rtype: cartography.sync.Sync
+    :return: The default cartography sync object.
+    """
+    sync = Sync()
+
+    stages = []
+    stages.append(('cloudanix-workspace', cloudanix.run))
+    stages.append(('gitlab', cartography.intel.gitlab.start_gitlab_ingestion))
     stages.append(('analysis', cartography.intel.analysis.run))
 
     sync.add_stages(stages)

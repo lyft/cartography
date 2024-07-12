@@ -450,7 +450,9 @@ def load_dns_details(
                 record['arn'] = f"arn:aws:route53:::recordset/{record['id']}"
                 if record is not None:
                     record["Region"] = record_set.get("Region", "global")
+
                 zone_ns_records.append(record)
+
         if zone_a_records:
             load_a_records(neo4j_session, zone_a_records, update_tag)
 
@@ -459,8 +461,10 @@ def load_dns_details(
 
         if zone_cname_records:
             load_cname_records(neo4j_session, zone_cname_records, update_tag)
+
         if zone_ns_records:
             load_ns_records(neo4j_session, zone_ns_records, parsed_zone['name'][:-1], update_tag, zone['consolelink'])
+
     link_aws_resources(neo4j_session, update_tag)
 
 
@@ -538,7 +542,7 @@ def sync(
         logger.info("Syncing Route53 Domains for region '%s' in account '%s'.", region, current_aws_account_id)
 
         dms = get_domains(boto3_session, region)
-        domains = transform_domains(boto3_session, dms, region, current_aws_account_id)
+        domains.extend(transform_domains(boto3_session, dms, region, current_aws_account_id))
 
     logger.info(f"Total Route Domains: {len(domains)}")
 

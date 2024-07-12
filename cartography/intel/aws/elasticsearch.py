@@ -308,7 +308,7 @@ def sync(
     for region in regions:
         client = boto3_session.client('es', region_name=region)
         domains = _get_es_domains(client)
-        data = transform_es_domains(domains, region, current_aws_account_id)
+        data.extend(transform_es_domains(domains, region, current_aws_account_id))
         reserved_instances.extend(get_elasticsearch_reserved_instances(client, region, current_aws_account_id))
 
     logger.info(f"Total ElasticSearch Domains: {len(data)}")

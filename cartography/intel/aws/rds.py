@@ -207,7 +207,7 @@ def sync_rds_security_groups(
     for region in regions:
         logger.info("Syncing RDS security groups for region '%s' in account '%s'.", region, current_aws_account_id)
         sgs = get_rds_security_groups(boto3_session, region)
-        data = transform_rds_sgs(sgs, region, current_aws_account_id)
+        data.extend(transform_rds_sgs(sgs, region, current_aws_account_id))
 
     logger.info(f"Total RDS Security Groups: {len(data)}")
 
@@ -278,7 +278,8 @@ def sync_rds_snapshots(
         for snp in snps:
             attrib = get_rds_snapshot_attributes(boto3_session, snp['DBSnapshotIdentifier'], region)
             attributes.append(attrib)
-        data = transform_snapshots(snps, region)
+
+        data.extend(transform_snapshots(snps, region))
 
     logger.info(f"Total RDS Snapshots: {len(data)}")
 
@@ -887,7 +888,7 @@ def sync_rds_clusters(
     for region in regions:
         logger.info("Syncing RDS for region '%s' in account '%s'.", region, current_aws_account_id)
         cls = get_rds_cluster_data(boto3_session, region)
-        data = transform_clusters(cls, region)
+        data.extend(transform_clusters(cls, region))
 
     logger.info(f"Total RDS Clusters: {len(data)}")
 

@@ -47,7 +47,7 @@ def get_apigateway_locations(apigateway: Resource, project_id: str, common_job_p
         if err.get('status', '') == 'PERMISSION_DENIED' or err.get('message', '') == 'Forbidden':
             logger.warning(
                 (
-                    "Could not retrieve locations on project %s due to permissions issues. Code: %s, Message: %s"
+                    "Could not retrieve api gateway locations on project %s due to permissions issues. Code: %s, Message: %s"
                 ), project_id, err['code'], err['message'],
             )
             return []
