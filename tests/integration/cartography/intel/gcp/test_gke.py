@@ -98,7 +98,7 @@ def test_gke_public_facing(neo4j_session):
     run_analysis_job('gcp_kubernetes_engine_analysis.json', neo4j_session, common_job_parameters)
 
     query1 = """
-    MATCH (cluster:GKECluster)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE cluster.exposed_internet=true
+    MATCH (cluster:GKECluster)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE cluster.exposed_internet=true
     RETURN cluster.name
     """
 

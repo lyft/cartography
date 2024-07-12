@@ -23,9 +23,11 @@ from . import pubsublite
 from . import spanner
 from . import sql
 from . import storage
+from . import workspace
 
 
 RESOURCE_FUNCTIONS: Dict = {
+    'admin': workspace.sync,
     'iam': iam.sync,
     'bigtable': bigtable.sync,
     'cloudfunction': cloudfunction.sync,

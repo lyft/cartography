@@ -166,7 +166,7 @@ def test_cloud_function(neo4j_session):
     cartography.intel.gcp.bigquery.attach_dataset_to_accesses(neo4j_session, TEST_DATASET_ID, accesses_data, TEST_UPDATE_TAG)
 
     query1 = """
-    MATCH (access:GCPAcl)-[a:APPLIES_TO]->(dataset:GCPBigqueryDataset)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE dataset.exposed_internet=true
+    MATCH (access:GCPAcl)-[a:APPLIES_TO]->(dataset:GCPBigqueryDataset)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE dataset.exposed_internet=true
     RETURN dataset.id,dataset.exposed_internet,dataset.exposed_internet_type
     """
     run_analysis_job('gcp_bigquery_dataset_analysis.json', neo4j_session, common_job_parameters)

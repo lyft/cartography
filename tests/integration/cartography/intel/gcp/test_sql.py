@@ -259,7 +259,7 @@ def test_sql_instance_public_facing(neo4j_session):
     run_analysis_job('gcp_sql_instance_analysis.json', neo4j_session, common_job_parameters)
 
     query1 = """
-    MATCH (i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.exposed_internet = true
+    MATCH (i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.exposed_internet = true
     RETURN i.name
     """
 

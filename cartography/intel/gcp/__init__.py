@@ -15,6 +15,12 @@ from neo4j import GraphDatabase
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
+import requests
+import json
+import time
+from google.oauth2 import credentials as creds
+from googleapiclient.discovery import build
+
 from . import apigateway
 from . import bigquery
 from . import bigtable
@@ -52,13 +58,13 @@ from cartography.util import timeit
 logger = logging.getLogger(__name__)
 Resources = namedtuple(
     'Resources', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun  \
-        iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage policyanalyzer',
+        iam admin apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage policyanalyzer',
 )
 
 # Mapping of service short names to their full names as in docs. See https://developers.google.com/apis-explorer,
 # and https://cloud.google.com/service-usage/docs/reference/rest/v1/services#ServiceConfig
 Services = namedtuple(
-    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage policyanalyzer',
+    'Services', 'compute storage gke dns cloudfunction crm_v1 crm_v2 cloudkms cloudrun iam admin apigateway sql bigtable firestore apikey pubsub dataproc cloudmonitoring cloud_logging cloudcdn loadbalancer bigquery dataflow spanner pubsublite cloudtasks serviceusage policyanalyzer',
 )
 service_names = Services(
     compute='compute.googleapis.com',
@@ -71,6 +77,7 @@ service_names = Services(
     cloudkms='cloudkms.googleapis.com',
     cloudrun='run.googleapis.com',
     iam='iam.googleapis.com',
+    admin='admin.googleapis.com',
     apigateway='apigateway.googleapis.com',
     sql='sqladmin.googleapis.com',
     bigtable='bigtableadmin.googleapis.com',
@@ -285,14 +292,51 @@ def _get_iam_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('iam', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _get_admin_resource(credentials: GoogleCredentials) -> Resource:
+def _get_admin_resource(credentials: GoogleCredentials, config: Config) -> Resource:
     """
     Instantiates a Admin resource object
     See: https://developers.google.com/admin-sdk/directory/reference/rest
     :param credentails: The GoogleCredentails object
     :return: A admin resource object
     """
-    return googleapiclient.discovery.build('admin', 'directory_v1', credentials=credentials, cache_discovery=False)
+    now = int(time.time())
+    payload = {
+        "iss": config.credentials['account_email'],
+        "sub": config.credentials.get('impersonated_user', ''),
+        "aud": "https://oauth2.googleapis.com/token",
+        "iat": now,
+        "exp": now + 3600,
+        "scope": "https://www.googleapis.com/auth/admin.directory.user.readonly https://www.googleapis.com/auth/admin.directory.group.readonly https://www.googleapis.com/auth/admin.directory.group.member.readonly"
+    }
+
+    body = {
+        "payload": json.dumps(payload)
+    }
+
+    try:
+        iamcredentials = build('iamcredentials', 'v1', credentials=credentials)
+        signed_jwt = iamcredentials.projects().serviceAccounts().signJwt(name=f"projects/-/serviceAccounts/{config.credentials['account_email']}", body=body).execute()
+    except Exception as e:
+        logger.debug(f"couldn't get signed jwt for {config.credentials['account_email']} - {e}")
+        return googleapiclient.discovery.build('admin', 'directory_v1', credentials=credentials, cache_discovery=False)
+
+    token_url = "https://oauth2.googleapis.com/token"
+    token_data = {
+        "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        "assertion": signed_jwt.get('signedJwt')
+    }
+
+    response = requests.post(token_url, data=token_data)
+
+    if response.status_code == 200:
+        delegated_access_token = response.json()["access_token"]
+    else:
+        logger.debug(f"couldn't get delegated access token for {config.credentials['account_email']} - {response.json()}")
+        return googleapiclient.discovery.build('admin', 'directory_v1', credentials=credentials, cache_discovery=False)
+
+    delegated_credentials = creds.Credentials(delegated_access_token)
+
+    return googleapiclient.discovery.build('admin', 'directory_v1', credentials=delegated_credentials, cache_discovery=False)
 
 
 def _get_apigateway_resource(credentials: GoogleCredentials) -> Resource:
@@ -385,7 +429,7 @@ def _get_pubsublite_resource(credentials: GoogleCredentials) -> Resource:
     return googleapiclient.discovery.build('pubsublite', 'v1', credentials=credentials, cache_discovery=False)
 
 
-def _initialize_resources(credentials: GoogleCredentials) -> Resource:
+def _initialize_resources(credentials: GoogleCredentials, config: Config) -> Resource:
     """
     Create namedtuple of all resource objects necessary for GCP data gathering.
     :param credentials: The GoogleCredentials object
@@ -405,6 +449,7 @@ def _initialize_resources(credentials: GoogleCredentials) -> Resource:
         cloudkms=_get_cloudkms_resource(credentials),
         cloudrun=_get_cloudrun_resource(credentials),
         iam=_get_iam_resource(credentials),
+        admin=_get_admin_resource(credentials, config),
         apigateway=_get_apigateway_resource(credentials),
         cloudfunction=_get_cloudfunction_resource(credentials),
         pubsub=_get_pubsub_resource(credentials),
@@ -574,7 +619,7 @@ def _sync_multiple_projects(
     :return: Nothing
     """
     logger.info("Syncing %d GCP projects.", len(projects))
-    crm.sync_gcp_projects(neo4j_session, projects, gcp_update_tag, common_job_parameters)
+    crm.sync_gcp_projects(neo4j_session, projects, gcp_update_tag, common_job_parameters, resources.crm_v2)
 
     for project in projects:
         if common_job_parameters["GCP_PROJECT_ID"] != project['projectId']:
@@ -688,7 +733,7 @@ def start_gcp_ingestion(neo4j_session: neo4j.Session, config: Config) -> None:
                 common_job_parameters['pagination'][service.get('name', None)] = pagination
         requested_syncs = parse_and_validate_gcp_requested_syncs(gcp_requested_syncs_string[:-1])
 
-    resources = _initialize_resources(credentials)
+    resources = _initialize_resources(credentials, config)
 
     # If we don't have perms to pull Orgs or Folders from GCP, we will skip safely
     crm.sync_gcp_organizations(neo4j_session, resources.crm_v1, config.update_tag, common_job_parameters)

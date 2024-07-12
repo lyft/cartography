@@ -77,6 +77,7 @@ def gcp_process_request(logger, params):
     body = {
         "credentials": {
             'account_email': params['accountEmail'],
+            'impersonated_user': params.get('impersonated_user', ''),
             'token_uri': os.environ['CDX_TOKEN_URI'],
         },
         "neo4j": {

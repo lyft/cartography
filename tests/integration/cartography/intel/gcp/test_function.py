@@ -104,7 +104,7 @@ def test_cloud_function(neo4j_session):
     cartography.intel.gcp.cloudfunction.attach_function_to_binding(neo4j_session, TEST_FUNCTION_ID, bindings_data, TEST_UPDATE_TAG)
 
     query1 = """
-    MATCH (function:GCPFunction)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE function.exposed_internet=true
+    MATCH (function:GCPFunction)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE function.exposed_internet=true
     RETURN function.id,function.exposed_internet,function.exposed_internet_type
     """
     run_analysis_job('gcp_cloud_function_analysis.json', neo4j_session, common_job_parameters)

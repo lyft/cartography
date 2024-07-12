@@ -1,25 +1,25 @@
 {
 	"statements": [
 		{
-			"query": "MATCH (i:GCPSQLInstance{exposed_internet:true})<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH i LIMIT $LIMIT_SIZE REMOVE i.exposed_internet, i.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"query": "MATCH (i:GCPSQLInstance{exposed_internet:true})<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH i LIMIT $LIMIT_SIZE REMOVE i.exposed_internet, i.exposed_internet_type return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 1000
 		},
 		{
-			"query": "MATCH (d:GCPSQLDatabase{exposed_internet:true})<-[r:HAS_DATABASE]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH d LIMIT $LIMIT_SIZE REMOVE d.exposed_internet, d.exposed_internet_type return COUNT(*) as TotalCompleted",
+			"query": "MATCH (d:GCPSQLDatabase{exposed_internet:true})<-[r:HAS_DATABASE]-(:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH d LIMIT $LIMIT_SIZE REMOVE d.exposed_internet, d.exposed_internet_type return COUNT(*) as TotalCompleted",
 			"iterative": true,
 			"iterationsize": 1000
 		},
 		{
-			"query": "MATCH (i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE '0.0.0.0/0' IN i.authorized_networks \nSET i.exposed_internet = true, i.exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'unrestricted_access'",
+			"query": "MATCH (i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE '0.0.0.0/0' IN i.authorized_networks \nSET i.exposed_internet = true, i.exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'unrestricted_access'",
 			"iterative": false
 		},
 		{
-			"query": "MATCH (:GCPPublicIpAddress)<-[:MEMBER_OF_PUBLIC_IP_ADDRESS]-(:GCPFirewall)<-[:RESOURCE]-(:GCPVpc)<-[:VPC_NETWORK]-(i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH i SET i.exposed_internet = true, (CASE WHEN NOT 'public_ip' IN coalesce(i.exposed_internet_type, []) THEN i END).exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'public_ip'",
+			"query": "MATCH (:GCPPublicIpAddress)<-[:MEMBER_OF_PUBLIC_IP_ADDRESS]-(:GCPFirewall)<-[:RESOURCE]-(:GCPVpc)<-[:VPC_NETWORK]-(i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WITH i SET i.exposed_internet = true, (CASE WHEN NOT 'public_ip' IN coalesce(i.exposed_internet_type, []) THEN i END).exposed_internet_type = coalesce(i.exposed_internet_type, []) + 'public_ip'",
 			"iterative": false
 		},
 		{
-			"query": "MATCH (d:GCPSQLDatabase)<-[r:HAS_DATABASE]-(i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.exposed_internet = true \nSET d.exposed_internet = true, d.exposed_internet_type = i.exposed_internet_type",
+			"query": "MATCH (d:GCPSQLDatabase)<-[r:HAS_DATABASE]-(i:GCPSQLInstance)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) \nWHERE i.exposed_internet = true \nSET d.exposed_internet = true, d.exposed_internet_type = i.exposed_internet_type",
 			"iterative": false
 		}
 	],
