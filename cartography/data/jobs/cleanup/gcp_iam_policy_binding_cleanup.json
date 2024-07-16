@@ -1,0 +1,11 @@
+{
+    "statements": [
+        {
+            "query": "MATCH (:GCPUser)-[r:ASSUME_ROLE]->(:GCPRole)<-[:RESOURCE]-(:GCPProject{id: $GCP_PROJECT_ID})<-[:OWNER]-(:GCPOrganization{id:$GCP_ORGANIZATION_ID})<-[:OWNER]-(:CloudanixWorkspace{id: $WORKSPACE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r) return COUNT(*) as TotalCompleted",
+            "iterative": true,
+            "iterationsize": 100,
+            "__comment__": "Remove GCP GCPRole-to-Principal relationships that are out of date."
+        }
+    ],
+    "name": "Cleanup GCP IAM policy bindings."
+}

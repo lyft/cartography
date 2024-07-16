@@ -77,7 +77,8 @@ def gcp_process_request(logger, params):
     body = {
         "credentials": {
             'account_email': params['accountEmail'],
-            'impersonated_user': params.get('impersonated_user', ''),
+            'google_workspace_user_email': params.get('headers', {}).get('X-Cloudanix-Gcp-Workspace-User-Email'),
+            'google_workspace_account_email': params.get('headers', {}).get('X-Cloudanix-Gcp-Workspace-Service-Account'),
             'token_uri': os.environ['CDX_TOKEN_URI'],
         },
         "neo4j": {

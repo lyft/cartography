@@ -254,7 +254,7 @@ def get_policy_bindings(crm_v1: Resource, crm_v2: Resource, project_id: str) -> 
     try:
         req = crm_v1.projects().get(projectId=project_id)
         res_project = req.execute()
-    
+
     except HttpError as e:
         err = json.loads(e.content.decode('utf-8'))['error']
         if err['status'] == 'PERMISSION_DENIED':
@@ -709,6 +709,11 @@ def cleanup_users(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> 
 
 
 @timeit
+def cleanup_policy_binding(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
+    run_cleanup_job('gcp_iam_policy_binding_cleanup.json', neo4j_session, common_job_parameters)
+
+
+@timeit
 def attach_role_to_user(
     neo4j_session: neo4j.Session, role_id: str, user: Dict,
     project_id: str, organization_id: str, gcp_update_tag: int,
@@ -1009,6 +1014,7 @@ def sync(
     load_bindings(neo4j_session, bindings, project_id, organization_id, gcp_update_tag)
     set_used_state(neo4j_session, project_id, common_job_parameters, gcp_update_tag)
 
+    cleanup_policy_binding(neo4j_session, common_job_parameters)
     cleanup_users(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()
