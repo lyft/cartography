@@ -24,7 +24,11 @@ def get_launch_templates(boto3_session: boto3.session.Session, region: str) -> l
     for page in paginator.paginate():
         paginated_templates = page['LaunchTemplates']
         for template in paginated_templates:
-            template_versions = get_launch_template_versions_by_template(boto3_session, template, region)
+            try:
+                template_versions = get_launch_template_versions_by_template(boto3_session, template, region)
+            except Exception as e:
+                logger.warning(f"Failed to get launch template versions for template {template['LaunchTemplateId']}: {e}")
+                template_versions = []
             # Using a key not defined in latest boto3 documentation
             template['GetVersions'] = template_versions
         templates.extend(paginated_templates)
