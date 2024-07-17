@@ -1,4 +1,3 @@
-from datetime import timezone as tz
 from unittest.mock import patch
 
 import boto3
