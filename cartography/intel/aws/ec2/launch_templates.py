@@ -72,9 +72,11 @@ def get_launch_template_versions_by_template(
         template_versions.extend(versions['LaunchTemplateVersions'])
     return template_versions
 
+
 def get_launch_template_versions(templates: list[dict[str, Any]]) -> list[dict[str, Any]]:
     versions: list[dict[str, Any]] = [version for template in templates for version in template['GetVersions']]
     return versions
+
 
 def transform_launch_template_versions(versions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
