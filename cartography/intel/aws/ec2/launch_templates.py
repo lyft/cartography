@@ -22,7 +22,12 @@ def get_launch_templates(boto3_session: boto3.session.Session, region: str) -> l
     paginator = client.get_paginator('describe_launch_templates')
     templates: list[dict[str, Any]] = []
     for page in paginator.paginate():
-        templates.extend(page['LaunchTemplates'])
+        paginated_templates = page['LaunchTemplates']
+        for template in paginated_templates:
+            template_versions = get_launch_template_versions_by_template(boto3_session, template, region)
+            # Using a key not defined in latest boto3 documentation
+            template['GetVersions'] = template_versions
+        templates.extend(paginated_templates)
     return templates
 
 
@@ -55,19 +60,21 @@ def load_launch_templates(
 
 @timeit
 @aws_handle_regions
-def get_launch_template_versions(
+def get_launch_template_versions_by_template(
         boto3_session: boto3.session.Session,
-        templates: list[dict[str, Any]],
+        template: dict[str, Any],
         region: str,
 ) -> list[dict[str, Any]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     v_paginator = client.get_paginator('describe_launch_template_versions')
     template_versions = []
-    for template in templates:
-        for versions in v_paginator.paginate(LaunchTemplateId=template['LaunchTemplateId']):
-            template_versions.extend(versions['LaunchTemplateVersions'])
+    for versions in v_paginator.paginate(LaunchTemplateId=template['LaunchTemplateId']):
+        template_versions.extend(versions['LaunchTemplateVersions'])
     return template_versions
 
+def get_launch_template_versions(templates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    versions: list[dict[str, Any]] = [version for template in templates for version in template['GetVersions']]
+    return versions
 
 def transform_launch_template_versions(versions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
@@ -140,7 +147,7 @@ def sync_ec2_launch_templates(
         templates = transform_launch_templates(templates)
         load_launch_templates(neo4j_session, templates, region, current_aws_account_id, update_tag)
 
-        versions = get_launch_template_versions(boto3_session, templates, region)
+        versions = get_launch_template_versions(templates)
         versions = transform_launch_template_versions(versions)
         load_launch_template_versions(neo4j_session, versions, region, current_aws_account_id, update_tag)
 
