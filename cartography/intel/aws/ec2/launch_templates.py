@@ -18,8 +18,10 @@ logger = logging.getLogger(__name__)
 
 @timeit
 @aws_handle_regions
-def get_launch_templates(boto3_session: boto3.session.Session,
-                         region: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def get_launch_templates(
+    boto3_session: boto3.session.Session,
+    region: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_launch_templates')
     templates: list[dict[str, Any]] = []
