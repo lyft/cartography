@@ -28,7 +28,7 @@ def get_launch_templates(boto3_session: boto3.session.Session, region: str) -> l
                 template_versions = get_launch_template_versions_by_template(boto3_session, template, region)
             except Exception as e:
                 logger.warning(
-                    f"Failed to get launch template versions for {template['LaunchTemplateId']}",
+                    f"Failed to get launch template versions for {template['LaunchTemplateId']}: {e}",
                     exc_info=True,
                 )
                 template_versions = []
