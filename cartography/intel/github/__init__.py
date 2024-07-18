@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import os
 from concurrent.futures import as_completed
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
@@ -45,32 +46,56 @@ def sync_organization(neo4j_session: neo4j.Session, config: Config, auth_data: D
 
         requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
 
-        # Process each service in parallel.
-        with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
-            futures = []
-            for request in requested_syncs:
-                if request in RESOURCE_FUNCTIONS:
-                    futures.append(
-                        executor.submit(
-                            concurrent_execution,
-                            request,
-                            RESOURCE_FUNCTIONS[request],
-                            config,
-                            auth_data['name'],
-                            auth_data['url'],
-                            auth_data['token'],
-                            common_job_parameters,
+        if os.environ.get("LOCAL_RUN", "0") == "1":
+            # BEGIN - Sequential Run
 
-                        ),
-                    )
+            sync_args = {
+                'neo4j_session': neo4j_session,
+                'common_job_parameters': common_job_parameters,
+                'github_api_key': auth_data['token'],
+                'github_url': auth_data['url'],
+                'organization': auth_data['name'],
+            }
+
+            for func_name in requested_syncs:
+                if func_name in RESOURCE_FUNCTIONS:
+                    logger.info(f"Processing {func_name}")
+                    RESOURCE_FUNCTIONS[func_name](**sync_args)
+
                 else:
-                    raise ValueError(
-                        f'Github sync function "{request}" was specified but does not exist. Did you misspell it?',
-                    )
+                    raise ValueError(f'GITHUB sync function "{func_name}" was specified but does not exist. Did you misspell it?')
 
-            for future in as_completed(futures):
-                logger.info(f'Result from Future - Service Processing: {future.result()}')
+            # END - Sequential Run
 
+        else:
+            # BEGIN - Parallel Run
+
+            # Process each service in parallel.
+            with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
+                futures = []
+                for request in requested_syncs:
+                    if request in RESOURCE_FUNCTIONS:
+                        futures.append(
+                            executor.submit(
+                                concurrent_execution,
+                                request,
+                                RESOURCE_FUNCTIONS[request],
+                                config,
+                                auth_data['name'],
+                                auth_data['url'],
+                                auth_data['token'],
+                                common_job_parameters,
+                            ),
+                        )
+                    else:
+                        raise ValueError(
+                            f'Github sync function "{request}" was specified but does not exist. Did you misspell it?',
+                        )
+
+                for future in as_completed(futures):
+                    logger.info(f'Result from Future - Service Processing: {future.result()}')
+
+            # END - Parallel Run
 
     except exceptions.RequestException as e:
         logger.error("Could not complete request to the GitHub API: %s", e)

@@ -1,5 +1,7 @@
 import json
 import logging
+import os
+import time
 from collections import namedtuple
 from concurrent.futures import as_completed
 from concurrent.futures import ThreadPoolExecutor
@@ -10,41 +12,15 @@ from typing import Set
 
 import googleapiclient.discovery
 import neo4j
+import requests
+from google.oauth2 import credentials as creds
+from googleapiclient.discovery import build
 from googleapiclient.discovery import Resource
 from neo4j import GraphDatabase
 from oauth2client.client import ApplicationDefaultCredentialsError
 from oauth2client.client import GoogleCredentials
 
-import requests
-import json
-import time
-from google.oauth2 import credentials as creds
-from googleapiclient.discovery import build
-
-from . import apigateway
-from . import bigquery
-from . import bigtable
-from . import cloud_logging
-from . import cloudcdn
-from . import cloudfunction
-from . import cloudkms
-from . import cloudmonitoring
-from . import cloudrun
-from . import cloudtasks
-from . import compute
-from . import dataflow
-from . import dataproc
-from . import dns
-from . import firestore
-from . import gke
-from . import iam
 from . import label
-from . import loadbalancer
-from . import pubsub
-from . import pubsublite
-from . import spanner
-from . import sql
-from . import storage
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
 from cartography.graph.session import Session
@@ -309,11 +285,11 @@ def _get_admin_resource(google_workspace_credentials: GoogleCredentials, config:
         "aud": "https://oauth2.googleapis.com/token",
         "iat": now,
         "exp": now + 3600,
-        "scope": "https://www.googleapis.com/auth/admin.directory.user.readonly https://www.googleapis.com/auth/admin.directory.group.readonly https://www.googleapis.com/auth/admin.directory.group.member.readonly"
+        "scope": "https://www.googleapis.com/auth/admin.directory.user.readonly https://www.googleapis.com/auth/admin.directory.group.readonly https://www.googleapis.com/auth/admin.directory.group.member.readonly",
     }
 
     body = {
-        "payload": json.dumps(payload)
+        "payload": json.dumps(payload),
     }
 
     try:
@@ -326,7 +302,7 @@ def _get_admin_resource(google_workspace_credentials: GoogleCredentials, config:
     token_url = "https://oauth2.googleapis.com/token"
     token_data = {
         "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        "assertion": signed_jwt.get('signedJwt')
+        "assertion": signed_jwt.get('signedJwt'),
     }
 
     response = requests.post(token_url, data=token_data)
@@ -559,29 +535,52 @@ def _sync_single_project(
 
     else:
         regions = all_regions
-    # Determine the resources available on the project.
-    enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
-    with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
-        futures = []
-        for request in requested_syncs:
-            if request in RESOURCE_FUNCTIONS:
-                # if getattr(service_names, request) in enabled_services:
 
-                futures.append(
-                    executor.submit(
-                        concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
-                            resources, request,
-                        ), common_job_parameters, gcp_update_tag, project_id, resources.policyanalyzer, resources.crm_v1, resources.crm_v2, resources.apikey, regions,
-                    ),
-                )
+    if os.environ.get("LOCAL_RUN", "0") == "1":
+        # BEGIN - Sequential Run
+
+        for func_name in requested_syncs:
+            if func_name in RESOURCE_FUNCTIONS:
+                logger.info(f"Processing {func_name}")
+                if func_name == 'iam':
+                    RESOURCE_FUNCTIONS[func_name](neo4j_session, resources.iam, resources.policyanalyzer, resources.crm_v1, resources.crm_v2, resources.apikey, project_id, gcp_update_tag, common_job_parameters)
+
+                else:
+                    RESOURCE_FUNCTIONS[func_name](neo4j_session, getattr(resources, func_name), project_id, gcp_update_tag, common_job_parameters, regions)
 
             else:
-                raise ValueError(
-                    f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?',
-                )
+                raise ValueError(f'GCP sync function "{func_name}" was specified but does not exist. Did you misspell it?')
 
-        for future in as_completed(futures):
-            logger.info(f'Result from Future - Service Processing: {future.result()}')
+        # END - Sequential Run
+
+    else:
+        # BEGIN - Parallel Run
+
+        # Determine the resources available on the project.
+        enabled_services = _services_enabled_on_project(resources.serviceusage, project_id)
+        with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
+            futures = []
+            for request in requested_syncs:
+                if request in RESOURCE_FUNCTIONS:
+                    # if getattr(service_names, request) in enabled_services:
+
+                    futures.append(
+                        executor.submit(
+                            concurrent_execution, request, RESOURCE_FUNCTIONS[request], config, getattr(
+                                resources, request,
+                            ), common_job_parameters, gcp_update_tag, project_id, resources.policyanalyzer, resources.crm_v1, resources.crm_v2, resources.apikey, regions,
+                        ),
+                    )
+
+                else:
+                    raise ValueError(
+                        f'GCP sync function "{request}" was specified but does not exist. Did you misspell it?',
+                    )
+
+            for future in as_completed(futures):
+                logger.info(f'Result from Future - Service Processing: {future.result()}')
+
+        # END - Parallel Run
 
     for service_name in common_job_parameters['service_labels']:
         common_job_parameters['service_label'] = service_name

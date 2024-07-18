@@ -1,4 +1,5 @@
 import logging
+import os
 from concurrent.futures import as_completed
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
@@ -7,22 +8,8 @@ from typing import List
 from typing import Optional
 
 import neo4j
-from azure.core.exceptions import HttpResponseError
-from azure.graphrbac import GraphRbacManagementClient
-from azure.mgmt.resource import SubscriptionClient
 from neo4j import GraphDatabase
 
-from . import aks
-from . import compute
-from . import cosmosdb
-from . import function_app
-from . import iam
-from . import key_vaults
-from . import monitor
-from . import network
-from . import securitycenter
-from . import sql
-from . import storage
 from . import subscription
 from . import tag
 from . import tenant
@@ -79,30 +66,55 @@ def _sync_one_subscription(
 
     common_job_parameters['Azure_Primary_AD_Domain_Name'] = tenant['defaultDomain']
 
-    with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
-        futures = []
-        for request in requested_syncs:
-            if request in RESOURCE_FUNCTIONS:
-                futures.append(
-                    executor.submit(
-                        concurrent_execution,
-                        request,
-                        RESOURCE_FUNCTIONS[request],
-                        config,
-                        credentials,
-                        common_job_parameters,
-                        update_tag,
-                        subscription_id,
-                    ),
-                )
+    if os.environ.get("LOCAL_RUN", "0") == "1":
+        # BEGIN - Sequential Run
+
+        for func_name in requested_syncs:
+            if func_name in RESOURCE_FUNCTIONS:
+                logger.info(f"Processing {func_name}")
+                if func_name == 'iam':
+                    RESOURCE_FUNCTIONS[func_name](neo4j_session, credentials, subscription_id, update_tag, common_job_parameters)
+
+                elif func_name == 'key_vaults':
+                    RESOURCE_FUNCTIONS[func_name](neo4j_session, credentials, subscription_id, update_tag, common_job_parameters, config.params.get('regions', None))
+
+                else:
+                    RESOURCE_FUNCTIONS[func_name](neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, config.params.get('regions', None))
 
             else:
-                raise ValueError(
-                    f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?',
-                )
+                raise ValueError(f'AZURE sync function "{func_name}" was specified but does not exist. Did you misspell it?')
 
-        for future in as_completed(futures):
-            logger.info(f'Result from Future - Service Processing: {future.result()}')
+        # END - Sequential Run
+
+    else:
+        # BEGIN - Parallel Run
+
+        with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
+            futures = []
+            for request in requested_syncs:
+                if request in RESOURCE_FUNCTIONS:
+                    futures.append(
+                        executor.submit(
+                            concurrent_execution,
+                            request,
+                            RESOURCE_FUNCTIONS[request],
+                            config,
+                            credentials,
+                            common_job_parameters,
+                            update_tag,
+                            subscription_id,
+                        ),
+                    )
+
+                else:
+                    raise ValueError(
+                        f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?',
+                    )
+
+            for future in as_completed(futures):
+                logger.info(f'Result from Future - Service Processing: {future.result()}')
+
+        # END - Parallel Run
 
     # call tag.sync() at the last, don't change position of tag.sync()
     tag.sync(neo4j_session, credentials.arm_credentials, subscription_id, update_tag, common_job_parameters, config)

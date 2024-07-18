@@ -1,4 +1,5 @@
 import logging
+import os
 from concurrent.futures import as_completed
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
@@ -47,29 +48,55 @@ def _sync_one_workspace(
     config:Config,
 ):
     requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
-    with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
-        futures = []
-        for request in requested_syncs:
-            if request in RESOURCE_FUNCTIONS:
-                futures.append(
-                    executor.submit(
-                        concurrent_execution,
-                        request,
-                        RESOURCE_FUNCTIONS[request],
-                        config,
-                        workspace_name,
-                        access_token,
-                        common_job_parameters,
 
-                    ),
-                )
+    if os.environ.get("LOCAL_RUN","0") == "1":
+        # BEGIN - Sequential Run
+
+        sync_args = {
+            'neo4j_session': neo4j_session,
+            'common_job_parameters': common_job_parameters,
+            'workspace_name': workspace_name,
+            'bitbucket_access_token': access_token,
+        }
+
+        for func_name in requested_syncs:
+            if func_name in RESOURCE_FUNCTIONS:
+                logger.info(f"Processing {func_name}")
+                RESOURCE_FUNCTIONS[func_name](**sync_args)
+
             else:
-                raise ValueError(
-                    f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?',
-                )
+                raise ValueError(f'BITBUCKET sync function "{func_name}" was specified but does not exist. Did you misspell it?')
 
-        for future in as_completed(futures):
-            logger.info(f'Result from Future - Service Processing: {future.result()}')
+        # END - Sequential Run
+
+    else:
+        # BEGIN - Parallel Run
+
+        # Process each service in parallel.
+        with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
+            futures = []
+            for request in requested_syncs:
+                if request in RESOURCE_FUNCTIONS:
+                    futures.append(
+                        executor.submit(
+                            concurrent_execution,
+                            request,
+                            RESOURCE_FUNCTIONS[request],
+                            config,
+                            workspace_name,
+                            access_token,
+                            common_job_parameters,
+                        ),
+                    )
+                else:
+                    raise ValueError(
+                        f'Azure sync function "{request}" was specified but does not exist. Did you misspell it?',
+                    )
+
+            for future in as_completed(futures):
+                logger.info(f'Result from Future - Service Processing: {future.result()}')
+
+        # END - Parallel Run
 
     return True
 

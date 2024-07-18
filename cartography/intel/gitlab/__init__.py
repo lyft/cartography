@@ -1,6 +1,10 @@
 import logging
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Dict, List
+import os
+from concurrent.futures import as_completed
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
+from typing import Dict
+from typing import List
 
 import neo4j
 from neo4j import GraphDatabase
@@ -9,11 +13,11 @@ from requests import exceptions
 import cartography.intel.gitlab.group
 import cartography.intel.gitlab.members
 import cartography.intel.gitlab.projects
+from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
 from cartography.graph.session import Session
-from cartography.util import run_cleanup_job, timeit
-
-from .resources import RESOURCE_FUNCTIONS
+from cartography.util import run_cleanup_job
+from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
 
@@ -45,34 +49,55 @@ def _sync_one_gitlab_group(
 
     requested_syncs: List[str] = list(RESOURCE_FUNCTIONS.keys())
 
-    # BEGIN - Parallel Run
+    if os.environ.get("LOCAL_RUN","0") == "1":
+        # BEGIN - Sequential Run
 
-    # Process each service in parallel.
-    with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
-        futures = []
-        for request in requested_syncs:
-            if request in RESOURCE_FUNCTIONS:
-                futures.append(
-                    executor.submit(
-                        concurrent_execution,
-                        request,
-                        RESOURCE_FUNCTIONS[request],
-                        config,
-                        group_name,
-                        access_token,
-                        common_job_parameters,
+        sync_args = {
+            'neo4j_session': neo4j_session,
+            'common_job_parameters': common_job_parameters,
+            'group_id': common_job_parameters['GITLAB_GROUP_ID'],
+            'group_name': group_name,
+            'access_token': access_token,
+        }
 
-                    ),
-                )
+        for func_name in requested_syncs:
+            if func_name in RESOURCE_FUNCTIONS:
+                logger.info(f"Processing {func_name}")
+                RESOURCE_FUNCTIONS[func_name](**sync_args)
+
             else:
-                raise ValueError(
-                    f'Gitlab sync function "{request}" was specified but does not exist. Did you misspell it?',
-                )
+                raise ValueError(f'GITLAB sync function "{func_name}" was specified but does not exist. Did you misspell it?')
 
-        for future in as_completed(futures):
-            logger.info(f'Result from Future - Service Processing: {future.result()}')
+        # END - Sequential Run
 
-    # END - Parallel Run
+    else:
+        # BEGIN - Parallel Run
+
+        # Process each service in parallel.
+        with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS)) as executor:
+            futures = []
+            for request in requested_syncs:
+                if request in RESOURCE_FUNCTIONS:
+                    futures.append(
+                        executor.submit(
+                            concurrent_execution,
+                            request,
+                            RESOURCE_FUNCTIONS[request],
+                            config,
+                            group_name,
+                            access_token,
+                            common_job_parameters,
+                        ),
+                    )
+                else:
+                    raise ValueError(
+                        f'Gitlab sync function "{request}" was specified but does not exist. Did you misspell it?',
+                    )
+
+            for future in as_completed(futures):
+                logger.info(f'Result from Future - Service Processing: {future.result()}')
+
+        # END - Parallel Run
 
     return True
 

@@ -1,6 +1,6 @@
 import hashlib
 import logging
-import traceback
+import os
 from concurrent.futures import as_completed
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
@@ -19,6 +19,7 @@ from .ec2.util import get_botocore_config
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
 from cartography.graph.session import Session
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
@@ -91,39 +92,65 @@ def _sync_one_account(
     creds=Dict[str, str],
     config=Config,
 ) -> None:
-    if not regions:
-        regions = _autodiscover_account_regions(boto3_session, current_aws_account_id)
+    regions.sort()
+
+    used_regions = _autodiscover_account_regions(boto3_session, current_aws_account_id)
+    used_regions.sort()
+
+    if regions != used_regions:
+        regions = used_regions
 
     sync_args = _build_aws_sync_kwargs(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
     )
 
-    # Process each service in parallel.
-    with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS) - 2) as executor:
-        futures = []
+    if os.environ.get("LOCAL_RUN", "0") == "1":
+        # BEGIN - Sequential Run
 
         for func_name in aws_requested_syncs:
             if func_name in RESOURCE_FUNCTIONS:
-                if func_name == "identitystore" and not config.params['workspace'].get('is_identity_sso_used'):
-                    continue
                 # Skip permission relationships and tags for now because they rely on data already being in the graph
                 if func_name not in ['permission_relationships', 'resourcegroupstaggingapi']:
-                    futures.append(
-                        executor.submit(
-                            concurrent_execution, func_name,
-                            RESOURCE_FUNCTIONS[func_name], creds, config, **sync_args,
-                        ),
-                    )
+                    logger.info(f"Processing {func_name}")
+                    RESOURCE_FUNCTIONS[func_name](**sync_args)
                 else:
                     continue
-
             else:
-                raise ValueError(
-                    f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?',
-                )
+                raise ValueError(f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?')
 
-        for future in as_completed(futures):
-            logger.info(f'Result from Future - Service Processing: {future.result()}')
+        # END - Sequential Run
+
+    else:
+        # BEGIN - Parallel Run
+
+        # Process each service in parallel.
+        with ThreadPoolExecutor(max_workers=len(RESOURCE_FUNCTIONS) - 2) as executor:
+            futures = []
+
+            for func_name in aws_requested_syncs:
+                if func_name in RESOURCE_FUNCTIONS:
+                    if func_name == "identitystore" and not config.params['workspace'].get('is_identity_sso_used'):
+                        continue
+                    # Skip permission relationships and tags for now because they rely on data already being in the graph
+                    if func_name not in ['permission_relationships', 'resourcegroupstaggingapi']:
+                        futures.append(
+                            executor.submit(
+                                concurrent_execution, func_name,
+                                RESOURCE_FUNCTIONS[func_name], creds, config, **sync_args,
+                            ),
+                        )
+                    else:
+                        continue
+
+                else:
+                    raise ValueError(
+                        f'AWS sync function "{func_name}" was specified but does not exist. Did you misspell it?',
+                    )
+
+            for future in as_completed(futures):
+                logger.info(f'Result from Future - Service Processing: {future.result()}')
+
+        # END - Parallel Run
 
     # MAP IAM permissions
     if 'permission_relationships' in aws_requested_syncs:
@@ -353,11 +380,6 @@ def _sync_multiple_accounts(
 ) -> bool:
     logger.info("Syncing AWS accounts: %s", ', '.join(accounts.values()))
     organizations.sync(neo4j_session, accounts, organization, config.update_tag, common_job_parameters)
-
-    failed_account_ids = []
-    exception_tracebacks = []
-
-    num_accounts = len(accounts)
 
     for profile_name, account_id in accounts.items():
         if account_id != common_job_parameters["AWS_ACCOUNT_ID"]:
