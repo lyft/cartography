@@ -21,7 +21,7 @@ aws_console_link = AWSLinker()
 @timeit
 @aws_handle_regions
 def get_subnet_data(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region)
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     subnets = []
     try:
 

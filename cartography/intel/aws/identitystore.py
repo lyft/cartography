@@ -8,6 +8,7 @@ from typing import List
 import boto3
 import neo4j
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.intel.aws.iam import load_policy_data
 from cartography.intel.aws.iam import transform_policy_data
 from cartography.util import run_cleanup_job
@@ -22,7 +23,7 @@ class PolicyType(enum.Enum):
 
 
 def get_boto3_client(boto3_session: boto3.session.Session, service: str, region: str):
-    client = boto3_session.client(service, region_name=region)
+    client = boto3_session.client(service, region_name=region, config=get_botocore_config())
     return client
 
 
@@ -282,9 +283,9 @@ def _load_identity_center_account_assignments_tx(tx: neo4j.Transaction, assignme
                         p.name = $permissions_set.Name,
                         p.arn = $permissions_set.PermissionSetArn
                 MERGE (a:AWSAccount{id: $assignment.AccountId})
-                    ON CREATE SET 
+                    ON CREATE SET
                         a.firstseen = timestamp()
-                    SET 
+                    SET
                         a.lastupdated = $update_tag
                 WITH p,a
                     MERGE (p)-[r:ATTACHED_TO]->(a)

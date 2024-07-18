@@ -9,6 +9,7 @@ import neo4j
 from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
 from cartography.util import aws_paginate
@@ -29,7 +30,7 @@ def get_rds_reserved_db_instances_data(boto3_session: boto3.session.Session, reg
     """
     Create an RDS boto3 client and grab all the reserved db instances.
     """
-    client = boto3_session.client('rds', region_name=region)
+    client = boto3_session.client('rds', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_reserved_db_instances')
     instances: List[Any] = []
     for page in paginator.paginate():
@@ -115,7 +116,7 @@ def sync_rds_reserved_db_instances(
 @timeit
 @aws_handle_regions
 def get_rds_security_groups(boto3_session: boto3.session.Session, region: str) -> List[Any]:
-    client = boto3_session.client('rds', region_name=region)
+    client = boto3_session.client('rds', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_db_security_groups')
     secgroups: List[Any] = []
     for page in paginator.paginate():
@@ -224,7 +225,7 @@ def sync_rds_security_groups(
 @timeit
 @aws_handle_regions
 def get_rds_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Any]:
-    client = boto3_session.client('rds', region_name=region)
+    client = boto3_session.client('rds', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_db_snapshots')
     snapshots: List[Any] = []
     for page in paginator.paginate():
@@ -236,7 +237,7 @@ def get_rds_snapshots(boto3_session: boto3.session.Session, region: str) -> List
 @aws_handle_regions
 def get_rds_snapshot_attributes(boto3_session: boto3.session.Session, snapshot_id: str, region: str) -> List[Any]:
     try:
-        client = boto3_session.client('rds', region_name=region)
+        client = boto3_session.client('rds', region_name=region, config=get_botocore_config())
         response = client.describe_db_snapshot_attributes(
             DBSnapshotIdentifier=snapshot_id,
         )
@@ -294,7 +295,7 @@ def get_rds_cluster_data(boto3_session: boto3.session.Session, region: str) -> L
     """
     Create an RDS boto3 client and grab all the DBClusters.
     """
-    client = boto3_session.client('rds', region_name=region)
+    client = boto3_session.client('rds', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_db_clusters')
     clusters: List[Any] = []
     for page in paginator.paginate():
@@ -459,7 +460,7 @@ def get_rds_instance_data(boto3_session: boto3.session.Session, region: str) -> 
     """
     Create an RDS boto3 client and grab all the DBInstances.
     """
-    client = boto3_session.client('rds', region_name=region)
+    client = boto3_session.client('rds', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_db_instances')
     instances: List[Any] = []
     for page in paginator.paginate():

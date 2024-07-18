@@ -10,6 +10,7 @@ import neo4j
 from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -21,7 +22,7 @@ aws_console_link = AWSLinker()
 @timeit
 @aws_handle_regions
 def get_sqs_queue_list(boto3_session: boto3.session.Session, region: str) -> List[str]:
-    client = boto3_session.client('sqs', region_name=region)
+    client = boto3_session.client('sqs', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('list_queues')
     queues: List[Any] = []
     for page in paginator.paginate():
@@ -40,11 +41,12 @@ def get_sqs_queue_list(boto3_session: boto3.session.Session, region: str) -> Lis
 def get_sqs_queue_attributes(
         boto3_session: boto3.session.Session,
         queue_urls: List[dict],
+        region: str,
 ) -> Dict[str, Any]:
     """
     Iterates over all SQS queues. Returns a dict with url as key, and attributes as value.
     """
-    client = boto3_session.client('sqs')
+    client = boto3_session.client('sqs', region_name=region, config=get_botocore_config())
 
     queue_attributes: Dict[str, Any] = {}
     for queue_url in queue_urls:
@@ -67,6 +69,7 @@ def get_sqs_queue_attributes(
 def load_sqs_queues(
     neo4j_session: neo4j.Session,
     data: Dict[str, Any],
+    region: str,
     current_aws_account_id: str,
     aws_update_tag: int,
 ) -> None:
@@ -102,6 +105,7 @@ def load_sqs_queues(
     queues: List[Dict] = []
     for url, queue in data.items():
         queue['url'] = url
+        queue['region'] = region
         queue['name'] = queue['QueueArn'].split(':')[-1]
         queue['CreatedTimestamp'] = int(queue['CreatedTimestamp'])
         queue['LastModifiedTimestamp'] = int(queue['LastModifiedTimestamp'])
@@ -170,12 +174,14 @@ def sync(
         queue_urls = get_sqs_queue_list(boto3_session, region)
         if len(queue_urls) == 0:
             continue
+
         data.extend(queue_urls)
+
+        queue_attributes = get_sqs_queue_attributes(boto3_session, queue_urls, region)
+        load_sqs_queues(neo4j_session, queue_attributes, region, current_aws_account_id, update_tag)
 
     logger.info(f"Total SQS Queues: {len(data)}")
 
-    queue_attributes = get_sqs_queue_attributes(boto3_session, queue_urls)
-    load_sqs_queues(neo4j_session, queue_attributes, current_aws_account_id, update_tag)
     cleanup_sqs_queues(neo4j_session, common_job_parameters)
 
     toc = time.perf_counter()

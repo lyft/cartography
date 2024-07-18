@@ -14,6 +14,7 @@ from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 from policyuniverse.policy import Policy
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -28,7 +29,7 @@ def get_lambda_data(boto3_session: boto3.session.Session, region: str) -> List[D
     """
     Create an Lambda boto3 client and grab all the lambda functions.
     """
-    client = boto3_session.client('lambda', region_name=region)
+    client = boto3_session.client('lambda', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('list_functions')
     lambda_functions = []
     for page in paginator.paginate():
@@ -46,7 +47,7 @@ def get_lambda_policies(boto3_session: boto3.session.Session, region: str, lambd
     """
     Fetch policies for lambdas
     """
-    client = boto3_session.client('lambda', region_name=region)
+    client = boto3_session.client('lambda', region_name=region, config=get_botocore_config())
     for lambda_function in lambda_functions:
         try:
             policy = client.get_policy(FunctionName=lambda_function['FunctionArn'])
@@ -155,7 +156,7 @@ def get_lambda_function_details(
 ) -> Generator[Any, Any, None]:
     for lambda_function in data:
         region = lambda_function['region']
-        client = boto3_session.client('lambda', region_name=region)
+        client = boto3_session.client('lambda', region_name=region, config=get_botocore_config())
         function_aliases = get_function_aliases(lambda_function, client)
         event_source_mappings = get_event_source_mappings(lambda_function, client)
         layers = lambda_function.get('Layers', [])

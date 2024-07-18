@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 from policyuniverse.policy import Policy
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.intel.dns import ingest_dns_record_by_fqdn
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
@@ -296,7 +297,7 @@ def sync(
 ) -> None:
     for region in regions:
         logger.info("Syncing Elasticsearch Service for region '%s' in account '%s'.", region, current_aws_account_id)
-        client = boto3_session.client('es', region_name=region)
+        client = boto3_session.client('es', region_name=region, config=get_botocore_config())
         data = _get_es_domains(client)
         _load_es_domains(neo4j_session, data, current_aws_account_id, update_tag)
 
@@ -306,7 +307,7 @@ def sync(
     data = []
     reserved_instances = []
     for region in regions:
-        client = boto3_session.client('es', region_name=region)
+        client = boto3_session.client('es', region_name=region, config=get_botocore_config())
         domains = _get_es_domains(client)
         data.extend(transform_es_domains(domains, region, current_aws_account_id))
         reserved_instances.extend(get_elasticsearch_reserved_instances(client, region, current_aws_account_id))

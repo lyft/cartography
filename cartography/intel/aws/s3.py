@@ -16,13 +16,11 @@ from botocore.exceptions import EndpointConnectionError
 from cloudconsolelink.clouds.aws import AWSLinker
 from policyuniverse.policy import Policy
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
-from cartography.util import run_analysis_job
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
-from cartography.util import to_asynchronous
-from cartography.util import to_synchronous
 
 logger = logging.getLogger(__name__)
 stat_handler = get_stats_client(__name__)
@@ -66,7 +64,7 @@ def get_s3_bucket_details(
         # in us-east-1 region
         client = s3_regional_clients.get(bucket['Region'])
         if not client:
-            client = boto3_session.client('s3', bucket['Region'])
+            client = boto3_session.client('s3', bucket['Region'], config=get_botocore_config())
             s3_regional_clients[bucket['Region']] = client
         acl = get_acl(bucket, client)
         policy = get_policy(bucket, client)

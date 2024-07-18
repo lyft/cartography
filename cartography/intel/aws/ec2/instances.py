@@ -44,7 +44,7 @@ Ec2Data = namedtuple(
 @timeit
 @aws_handle_regions
 def get_ec2_instances(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region)
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     reservations = []
     try:
         paginator = client.get_paginator('describe_instances')

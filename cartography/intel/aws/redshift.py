@@ -8,6 +8,7 @@ import neo4j
 from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -20,7 +21,7 @@ aws_console_link = AWSLinker()
 @aws_handle_regions
 def get_redshift_reserved_node(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     try:
-        client = boto3_session.client('redshift', region_name=region)
+        client = boto3_session.client('redshift', region_name=region, config=get_botocore_config())
         paginator = client.get_paginator('describe_reserved_nodes')
         reserved_nodes: List = []
         for page in paginator.paginate():
@@ -111,7 +112,7 @@ def sync_redshift_reserved_node(
 @timeit
 @aws_handle_regions
 def get_redshift_cluster_data(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('redshift', region_name=region)
+    client = boto3_session.client('redshift', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_clusters')
     clusters: List[Dict] = []
     for page in paginator.paginate():

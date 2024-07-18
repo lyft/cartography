@@ -14,6 +14,7 @@ import neo4j
 from botocore.exceptions import ClientError
 from policyuniverse.policy import Policy
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_kms_key_list(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('kms', region_name=region)
+    client = boto3_session.client('kms', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('list_keys')
     key_list: List[Any] = []
     for page in paginator.paginate():
@@ -53,7 +54,7 @@ def get_kms_key_details(
     """
     for key in kms_key_data:
         region = key['region']
-        client = boto3_session.client('kms', region_name=region)
+        client = boto3_session.client('kms', region_name=region, config=get_botocore_config())
         policy = get_policy(key, client)
         aliases = get_aliases(key, client)
         grants = get_grants(key, client)

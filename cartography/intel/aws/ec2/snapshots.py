@@ -8,6 +8,7 @@ import neo4j
 from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -19,7 +20,7 @@ aws_console_link = AWSLinker()
 @timeit
 @aws_handle_regions
 def get_snapshots(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('ec2', region_name=region)
+    client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
     snapshots = []
     try:
         paginator = client.get_paginator('describe_snapshots')

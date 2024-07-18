@@ -16,6 +16,7 @@ from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 from policyuniverse.policy import Policy
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -29,7 +30,7 @@ aws_console_link = AWSLinker()
 def get_client_certificates(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     certificates = []
     try:
-        client = boto3_session.client('apigateway', region_name=region)
+        client = boto3_session.client('apigateway', region_name=region, config=get_botocore_config())
         paginator = client.get_paginator('get_client_certificates')
 
         page_iterator = paginator.paginate()
@@ -114,15 +115,7 @@ def sync_client_certificates(
 @timeit
 @aws_handle_regions
 def get_apigateway_rest_apis(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    config = Config(
-        region_name=region,
-        retries={
-            'max_attempts': 5,
-            'mode': 'standard',
-        },
-    )
-
-    client = boto3_session.client('apigateway', config=config)
+    client = boto3_session.client('apigateway', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('get_rest_apis')
     apis: List[Any] = []
     for page in paginator.paginate():
@@ -150,14 +143,7 @@ def get_rest_api_details(
     """
 
     for api in rest_apis:
-        config = Config(
-            region_name=api['region'],
-            retries={
-                'max_attempts': 5,
-                'mode': 'standard',
-            },
-        )
-        client = boto3_session.client('apigateway', config=config)
+        client = boto3_session.client('apigateway', region_name=api['region'], config=get_botocore_config())
         stages = get_rest_api_stages(api, client)
         cert = get_rest_api_client_certificate(stages, client)
         certificate = transform_rest_api_client_certificate(cert, api['region'], aws_account_id)

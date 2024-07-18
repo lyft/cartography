@@ -8,6 +8,7 @@ import boto3
 import neo4j
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import batch
 from cartography.util import run_cleanup_job
@@ -23,7 +24,7 @@ aws_console_link = AWSLinker()
 @aws_handle_regions
 def get_ecr_repositories(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     logger.info("Getting ECR repositories for region '%s'.", region)
-    client = boto3_session.client('ecr', region_name=region)
+    client = boto3_session.client('ecr', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_repositories')
     ecr_repositories: List[Dict] = []
     for page in paginator.paginate():
@@ -47,7 +48,7 @@ def transform_repositories(repositories: List[Dict], region: str) -> List[Dict]:
 @aws_handle_regions
 def get_ecr_repository_images(boto3_session: boto3.session.Session, region: str, repository_name: str, current_aws_account_id: str) -> List[Dict]:
     logger.debug("Getting ECR images in repository '%s' for region '%s'.", repository_name, region)
-    client = boto3_session.client('ecr', region_name=region)
+    client = boto3_session.client('ecr', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('list_images')
     ecr_repository_images: List[Dict] = []
     for page in paginator.paginate(repositoryName=repository_name):

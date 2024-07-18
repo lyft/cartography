@@ -11,6 +11,7 @@ import neo4j
 from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 
@@ -22,7 +23,7 @@ aws_console_link = AWSLinker()
 def get_domains(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     domains = []
     try:
-        client = boto3_session.client('route53domains', region_name=region)
+        client = boto3_session.client('route53domains', region_name=region, config=get_botocore_config())
         paginator = client.get_paginator('list_domains')
 
         page_iterator = paginator.paginate()
@@ -40,7 +41,7 @@ def get_domains(boto3_session: boto3.session.Session, region: str) -> List[Dict]
 def transform_domains(boto3_session: boto3.session.Session, dms: List[Dict], region: str, account_id: str) -> List[Dict]:
     domains = []
     try:
-        client = boto3_session.client('route53domains', region_name=region)
+        client = boto3_session.client('route53domains', region_name=region, config=get_botocore_config())
         for domain in dms:
             domain['arn'] = domain['DomainName']
             console_arn = f"arn:aws:route53:{region}:{account_id}:domains/{domain['DomainName']}"

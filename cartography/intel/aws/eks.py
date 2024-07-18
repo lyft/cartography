@@ -10,6 +10,7 @@ from cloudconsolelink.clouds.aws import AWSLinker
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.models.aws.eks.clusters import EKSClusterSchema
 from cartography.models.aws.eks.nodegroups import EKSClusterNodeGroupSchema
 from cartography.util import aws_handle_regions
@@ -23,7 +24,7 @@ aws_console_link = AWSLinker()
 @timeit
 @aws_handle_regions
 def get_eks_clusters(boto3_session: boto3.session.Session, region: str) -> List[str]:
-    client = boto3_session.client('eks', region_name=region)
+    client = boto3_session.client('eks', region_name=region, config=get_botocore_config())
     clusters: List[str] = []
     paginator = client.get_paginator('list_clusters')
     for page in paginator.paginate():
@@ -40,7 +41,7 @@ def get_eks_clusters(boto3_session: boto3.session.Session, region: str) -> List[
 
 @timeit
 def get_eks_describe_cluster(boto3_session: boto3.session.Session, region: str, cluster_name: str) -> Dict:
-    client = boto3_session.client('eks', region_name=region)
+    client = boto3_session.client('eks', region_name=region, config=get_botocore_config())
     response = client.describe_cluster(name=cluster_name)
     response['cluster']['region'] = region
     response['cluster']['consolelink'] = aws_console_link.get_console_link(arn=response['cluster']['arn'])
@@ -99,7 +100,7 @@ def transform(cluster_data: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 @timeit
 def get_eks_cluster_nodegroups(boto3_session: boto3.session.Session, region: str, cluster_name: str) -> List[str]:
-    client = boto3_session.client('eks', region_name=region)
+    client = boto3_session.client('eks', region_name=region, config=get_botocore_config())
     nodegroups: List[str] = []
     paginator = client.get_paginator('list_nodegroups')
     for page in paginator.paginate(clusterName=cluster_name):
@@ -117,7 +118,7 @@ def get_eks_cluster_nodegroups(boto3_session: boto3.session.Session, region: str
 
 @timeit
 def get_eks_describe_cluster_nodegroup(boto3_session: boto3.session.Session, region: str, cluster_name: str, nodegroup_name: str) -> Dict:
-    client = boto3_session.client('eks', region_name=region)
+    client = boto3_session.client('eks', region_name=region, config=get_botocore_config())
     response = client.describe_nodegroup(clusterName=cluster_name, nodegroupName=nodegroup_name)
     return response['nodegroup']
 
@@ -141,7 +142,7 @@ def load_eks_cluster_nodegroups(
 @timeit
 @aws_handle_regions
 def get_auto_scaling_groups(boto3_session: boto3.session.Session, region: str, auto_scaling_groups: List[str]) -> List[Dict]:
-    client = boto3_session.client('autoscaling', region_name=region)
+    client = boto3_session.client('autoscaling', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_auto_scaling_groups')
     asgs: List[Dict] = []
     try:

@@ -12,6 +12,7 @@ from neo4j import GraphDatabase
 
 from cartography.config import Config
 from cartography.graph.session import Session
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.intel.aws.iam import get_role_tags
 from cartography.util import aws_handle_regions
 from cartography.util import batch
@@ -153,7 +154,7 @@ def get_tags(boto3_session: boto3.session.Session, resource_type: str, region: s
     if resource_type == 'iam:role':
         return get_role_tags(boto3_session)
 
-    client = boto3_session.client('resourcegroupstaggingapi', region_name=region)
+    client = boto3_session.client('resourcegroupstaggingapi', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('get_resources')
     resources: List[Dict] = []
     for page in paginator.paginate(

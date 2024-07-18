@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 @timeit
 @aws_handle_regions
 def get_ec2_auto_scaling_groups(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
-    client = boto3_session.client('autoscaling', region_name=region)
+    client = boto3_session.client('autoscaling', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('describe_auto_scaling_groups')
     asgs: List[Dict] = []
     try:

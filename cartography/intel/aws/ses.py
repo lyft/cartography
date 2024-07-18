@@ -11,6 +11,7 @@ from botocore.exceptions import ConnectTimeoutError
 from botocore.exceptions import EndpointConnectionError
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -24,9 +25,7 @@ aws_console_link = AWSLinker()
 def get_ses_identity(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     identity_names = []
     try:
-        config = Config(connect_timeout=10, retries={'max_attempts': 0})
-
-        client = boto3_session.client('ses', config=config, region_name=region)
+        client = boto3_session.client('ses', region_name=region, config=get_botocore_config())
         paginator = client.get_paginator('list_identities')
 
         page_iterator = paginator.paginate()
@@ -45,8 +44,7 @@ def transform_identities(boto3_session: boto3.session.Session, idsnames: List[Di
     identities = []
     resources = []
     try:
-        config = Config(connect_timeout=10, retries={'max_attempts': 0})
-        client = boto3_session.client('ses', config=config, region_name=region)
+        client = boto3_session.client('ses', region_name=region, config=get_botocore_config())
         for identity_name in idsnames:
             identities.append({'name': identity_name})
         dkim_attributes = client.get_identity_dkim_attributes(Identities=idsnames).get('DkimAttributes', {})

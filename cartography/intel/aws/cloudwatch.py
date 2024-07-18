@@ -8,6 +8,7 @@ import neo4j
 from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
@@ -21,7 +22,7 @@ aws_console_link = AWSLinker()
 def get_event_buses(boto3_session: boto3.session.Session, region):
     response = {}
     try:
-        client = boto3_session.client('events', region_name=region)
+        client = boto3_session.client('events', region_name=region, config=get_botocore_config())
         response = client.list_event_buses()
 
     except ClientError as e:
@@ -92,7 +93,7 @@ def cleanup_event_buses(neo4j_session: neo4j.Session, common_job_parameters: Dic
 def get_event_rules(boto3_session: boto3.session.Session, region, account_id):
     event_rules = []
     try:
-        client = boto3_session.client('events', region_name=region)
+        client = boto3_session.client('events', region_name=region, config=get_botocore_config())
         paginator = client.get_paginator('list_rules')
 
         page_iterator = paginator.paginate()
@@ -168,7 +169,7 @@ def cleanup_event_rules(neo4j_session: neo4j.Session, common_job_parameters: Dic
 def get_log_groups(boto3_session: boto3.session.Session, region):
     log_groups = []
     try:
-        client = boto3_session.client('logs', region_name=region)
+        client = boto3_session.client('logs', region_name=region, config=get_botocore_config())
         paginator = client.get_paginator('describe_log_groups')
 
         page_iterator = paginator.paginate()
@@ -189,7 +190,7 @@ def get_log_groups(boto3_session: boto3.session.Session, region):
 def transform_log_groups(boto3_session: boto3.session.Session, groups: List, region: str) -> List[Dict]:
     log_groups = []
     try:
-        kms_client = boto3_session.client('kms', region_name=region)
+        kms_client = boto3_session.client('kms', region_name=region, config=get_botocore_config())
         for log_group in groups:
             log_group['arn'] = log_group['arn']
             log_group['arn'].replace('/', '$252F')
@@ -258,7 +259,7 @@ def cleanup_log_groups(neo4j_session: neo4j.Session, common_job_parameters: Dict
 def get_metrics(boto3_session: boto3.session.Session, region):
     metrics = []
     try:
-        client = boto3_session.client('cloudwatch', region_name=region)
+        client = boto3_session.client('cloudwatch', region_name=region, config=get_botocore_config())
         paginator = client.get_paginator('list_metrics')
 
         page_iterator = paginator.paginate()
@@ -330,7 +331,7 @@ def cleanup_metrics(neo4j_session: neo4j.Session, common_job_parameters: Dict) -
 def get_cloudwatch_alarm(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     alarms = []
     try:
-        client = boto3_session.client('cloudwatch', region_name=region)
+        client = boto3_session.client('cloudwatch', region_name=region, config=get_botocore_config())
         paginator = client.get_paginator('describe_alarms')
 
         page_iterator = paginator.paginate()
@@ -403,7 +404,7 @@ def cleanup_cloudwatch_alarm(neo4j_session: neo4j.Session, common_job_parameters
 def get_cloudwatch_flowlogs(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     flowlogs = []
     try:
-        client = boto3_session.client('ec2', region_name=region)
+        client = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
         paginator = client.get_paginator('describe_flow_logs')
 
         page_iterator = paginator.paginate()

@@ -9,6 +9,7 @@ import neo4j
 from botocore.exceptions import ClientError
 from cloudconsolelink.clouds.aws import AWSLinker
 
+from cartography.intel.aws.ec2.util import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import camel_to_snake
 from cartography.util import dict_date_to_epoch
@@ -23,7 +24,7 @@ aws_console_link = AWSLinker()
 @aws_handle_regions
 def get_ecs_clusters(boto3_session: boto3.session.Session, region: str) -> List[Dict]:
     try:
-        client = boto3_session.client('ecs', region_name=region)
+        client = boto3_session.client('ecs', region_name=region, config=get_botocore_config())
         paginator = client.get_paginator('list_clusters')
         cluster_arns: List[str] = []
 
@@ -52,7 +53,7 @@ def get_ecs_container_instances(
     boto3_session: boto3.session.Session,
     region: str,
 ) -> List[Dict[str, Any]]:
-    client = boto3_session.client('ecs', region_name=region)
+    client = boto3_session.client('ecs', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('list_container_instances')
     container_instances: List[Dict[str, Any]] = []
     container_instance_arns: List[str] = []
@@ -73,7 +74,7 @@ def get_ecs_container_instances(
 @timeit
 @aws_handle_regions
 def get_ecs_services(cluster_arn: str, boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
-    client = boto3_session.client('ecs', region_name=region)
+    client = boto3_session.client('ecs', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('list_services')
     services: List[Dict[str, Any]] = []
     service_arns: List[str] = []
@@ -92,7 +93,7 @@ def get_ecs_services(cluster_arn: str, boto3_session: boto3.session.Session, reg
 @timeit
 @aws_handle_regions
 def get_ecs_task_definitions(boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
-    client = boto3_session.client('ecs', region_name=region)
+    client = boto3_session.client('ecs', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('list_task_definitions')
     task_definitions: List[Dict[str, Any]] = []
     task_definition_arns: List[str] = []
@@ -109,7 +110,7 @@ def get_ecs_task_definitions(boto3_session: boto3.session.Session, region: str) 
 @timeit
 @aws_handle_regions
 def get_ecs_tasks(cluster_arn: str, boto3_session: boto3.session.Session, region: str) -> List[Dict[str, Any]]:
-    client = boto3_session.client('ecs', region_name=region)
+    client = boto3_session.client('ecs', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('list_tasks')
     tasks: List[Dict[str, Any]] = []
     task_arns: List[str] = []
@@ -569,7 +570,7 @@ def sync(
     includes = ['SETTINGS', 'CONFIGURATIONS']
     for i in range(0, len(cluster_arns)):
         region = cluster_arns[i]['region']
-        client = boto3_session.client('ecs', region_name=region)
+        client = boto3_session.client('ecs', region_name=region, config=get_botocore_config())
         cluster_arn_chunk = [cluster_arns[i]['arn']]
         cluster_chunk = client.describe_clusters(clusters=cluster_arn_chunk, include=includes)
         clusters_data = cluster_chunk.get('clusters', [])
