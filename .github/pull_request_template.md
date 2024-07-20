@@ -1,20 +1,25 @@
 ### Summary
+> Describe your changes.
 
-> Describe your changes
 
-### Related issues
-- > Link any realted github issues
-___
-Read through our [developer docs](https://lyft.github.io/cartography/dev/developer-guide.html)
 
-- [ ] PR Title starts with "Fixes: [issue number]"
+### Related issues or links
+> Include links to relevant issues or other pages.
 
-If you are modifying or implementing a new intel module
+- https://github.com/lyft/cartography/issues/...
+
+
+### Proof that this works
+> We can merge your change in faster if we see that it works. For example, if making a change to the graph, include a
+> screenshot showing what the graph looked like before and after your changes. You can also include console log traces
+> showing what happened before and after your changes.
+
+
+
+### Checklist
+
+- [ ] Update/add unit or integration tests
+
+If you are modifying or implementing an intel module:
 - [ ] Update the [schema](https://github.com/lyft/cartography/tree/master/docs/root/modules) and [readme](https://github.com/lyft/cartography/blob/master/docs/schema/README.md)
-- [ ] Use our NodeSchema [data model](https://lyft.github.io/cartography/dev/writing-intel-modules.html#defining-a-node)
-- [ ] Use specialized functions `get_`, `transform_`, `load_`, and `cleanup_` functions
-- [ ] Add [tests](https://lyft.github.io/cartography/dev/writing-intel-modules.html#making-tests)
-  - [ ] Unit tests: Test your `transform_` function with sample data
-  - [ ] Integration tests
-    - [ ] Use our test [helper functions](https://github.com/lyft/cartography/blob/master/tests/integration/util.py)
-    - [ ] Test a cleanup job
+- [ ] Use the NodeSchema [data model](https://lyft.github.io/cartography/dev/writing-intel-modules.html#defining-a-node)
