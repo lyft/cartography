@@ -49,7 +49,7 @@ def get_teams(org: str, api_url: str, token: str) -> Tuple[PaginatedGraphqlData,
 
 @timeit
 def _get_team_repos_for_multiple_teams(
-        team_raw_data: List[Dict[str, Any]],
+        team_raw_data: list[dict[str, Any]],
         org: str,
         api_url: str,
         token: str,
