@@ -53,15 +53,15 @@ def _get_team_repos_for_multiple_teams(
         org: str,
         api_url: str,
         token: str,
-) -> dict[str, list[RepoPermission]]:
-    result: dict[str, list[RepoPermission]] = {}
+) -> dict[str, set[RepoPermission]]:
+    result: dict[str, set[RepoPermission]] = {}
     for team in team_raw_data:
         team_name = team['slug']
         repo_count = team['repositories']['totalCount']
 
         if repo_count == 0:
             # This team has access to no repos so let's move on
-            result[team_name] = []
+            result[team_name] = set()
             continue
 
         repo_urls = []
@@ -81,6 +81,8 @@ def _get_team_repos_for_multiple_teams(
                 # The `or []` is because `.edges` can be None.
                 for edge in team_repos.edges or []:
                     repo_permissions.append(edge['permission'])
+                # We're done! Break out of the retry loop.
+                break
 
             except TypeError:
                 # Handles issue #1334
@@ -93,7 +95,7 @@ def _get_team_repos_for_multiple_teams(
                 sleep(current_try ** 2)
 
         # Shape = [(repo_url, 'WRITE'), ...]]
-        result[team_name] = [RepoPermission(url, perm) for url, perm in zip(repo_urls, repo_permissions)]
+        result[team_name] = {RepoPermission(url, perm) for url, perm in zip(repo_urls, repo_permissions)}
     return result
 
 
@@ -143,7 +145,7 @@ def _get_team_repos(org: str, api_url: str, token: str, team: str) -> PaginatedG
 def transform_teams(
         team_paginated_data: PaginatedGraphqlData,
         org_data: Dict[str, Any],
-        team_repo_data: Dict[str, Any],
+        team_repo_data: dict[str, set[RepoPermission]],
 ) -> List[Dict[str, Any]]:
     result = []
     for team in team_paginated_data.nodes:
