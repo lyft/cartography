@@ -5,6 +5,13 @@ import pytest
 
 from cartography.intel.github.teams import _get_team_repos_for_multiple_teams
 from cartography.intel.github.teams import RepoPermission
+from cartography.intel.github.teams import transform_teams
+from cartography.intel.github.util import PaginatedGraphqlData
+
+TEST_ORG_DATA = {
+    'url': 'https://github.com/testorg',
+    'login': 'testorg',
+}
 
 
 @patch('cartography.intel.github.teams._get_team_repos')
@@ -30,7 +37,7 @@ def test_get_team_repos_team_with_no_repos(mock_get_team_repos):
         'test-org',
         'https://api.github.com',
         'test-token',
-    ) == {'team1': set()}
+    ) == {'team1': []}
     mock_get_team_repos.assert_not_called()
 
 
@@ -50,10 +57,10 @@ def test_get_team_repos_happy_path(mock_get_team_repos):
         'https://api.github.com',
         'test-token',
     ) == {
-        'team1': {
+        'team1': [
             RepoPermission('https://github.com/org/repo1', 'WRITE'),
             RepoPermission('https://github.com/org/repo2', 'READ'),
-        },
+        ],
     }
 
     # Assert that we did not retry because this was the happy path
@@ -83,3 +90,131 @@ def test_get_team_repos_github_returns_none(mock_sleep, mock_get_team_repos):
     # Assert that we retry and give up
     assert mock_get_team_repos.call_count == 5
     assert mock_sleep.call_count == 4
+
+
+def test_transform_teams_empty_team_data():
+    # Arrange
+    team_paginated_data = PaginatedGraphqlData(nodes=[], edges=[])
+    team_repo_data: dict[str, list[RepoPermission]] = {}
+
+    # Act + assert
+    assert transform_teams(team_paginated_data, TEST_ORG_DATA, team_repo_data) == []
+
+
+def test_transform_teams_team_with_no_repos():
+    # Arrange
+    team_paginated_data = PaginatedGraphqlData(
+        nodes=[
+            {
+                'slug': 'team1',
+                'url': 'https://github.com/testorg/team1',
+                'description': 'Test Team 1',
+                'repositories': {'totalCount': 0},
+            },
+        ],
+        edges=[],
+    )
+    team_repo_data = {'team1': []}
+
+    # Act + Assert
+    assert transform_teams(team_paginated_data, TEST_ORG_DATA, team_repo_data) == [
+        {
+            'name': 'team1',
+            'url': 'https://github.com/testorg/team1',
+            'description': 'Test Team 1',
+            'repo_count': 0,
+            'org_url': 'https://github.com/testorg',
+            'org_login': 'testorg',
+        },
+    ]
+
+
+def test_transform_teams_team_with_repos():
+    # Arrange
+    team_paginated_data = PaginatedGraphqlData(
+        nodes=[
+            {
+                'slug': 'team1',
+                'url': 'https://github.com/testorg/team1',
+                'description': 'Test Team 1',
+                'repositories': {'totalCount': 2},
+            },
+        ],
+        edges=[],
+    )
+    team_repo_data = {
+        'team1': [
+            RepoPermission('https://github.com/testorg/repo1', 'READ'),
+            RepoPermission('https://github.com/testorg/repo2', 'WRITE'),
+        ],
+    }
+
+    # Act
+    assert transform_teams(team_paginated_data, TEST_ORG_DATA, team_repo_data) == [
+        {
+            'name': 'team1',
+            'url': 'https://github.com/testorg/team1',
+            'description': 'Test Team 1',
+            'repo_count': 2,
+            'org_url': 'https://github.com/testorg',
+            'org_login': 'testorg',
+            'READ': 'https://github.com/testorg/repo1',
+        },
+        {
+            'name': 'team1',
+            'url': 'https://github.com/testorg/team1',
+            'description': 'Test Team 1',
+            'repo_count': 2,
+            'org_url': 'https://github.com/testorg',
+            'org_login': 'testorg',
+            'WRITE': 'https://github.com/testorg/repo2',
+        },
+    ]
+
+
+def test_transform_teams_multiple_teams():
+    # Arrange
+    team_paginated_data = PaginatedGraphqlData(
+        nodes=[
+            {
+                'slug': 'team1',
+                'url': 'https://github.com/testorg/team1',
+                'description': 'Test Team 1',
+                'repositories': {'totalCount': 1},
+            },
+            {
+                'slug': 'team2',
+                'url': 'https://github.com/testorg/team2',
+                'description': 'Test Team 2',
+                'repositories': {'totalCount': 0},
+            },
+        ],
+        edges=[],
+    )
+    team_repo_data = {
+        'team1': [
+            RepoPermission('https://github.com/testorg/repo1', 'ADMIN'),
+        ],
+        'team2': [],
+    }
+
+    # Act + assert
+    assert transform_teams(team_paginated_data, TEST_ORG_DATA, team_repo_data) == [
+        {
+            'name': 'team1',
+            'url': 'https://github.com/testorg/team1',
+            'description': 'Test Team 1',
+            'repo_count': 1,
+            'org_url': 'https://github.com/testorg',
+            'org_login': 'testorg',
+            'ADMIN': 'https://github.com/testorg/repo1',
+        },
+        {
+            'name': 'team2',
+            'url': 'https://github.com/testorg/team2',
+            'description': 'Test Team 2',
+            'repo_count': 0,
+            'org_url': 'https://github.com/testorg',
+            'org_login': 'testorg',
+        },
+    ]
