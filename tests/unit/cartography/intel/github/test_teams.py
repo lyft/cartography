@@ -30,7 +30,7 @@ def test_get_team_repos_team_with_no_repos(mock_get_team_repos):
         'test-org',
         'https://api.github.com',
         'test-token',
-    ) == {'team1': []}
+    ) == {'team1': set()}
     mock_get_team_repos.assert_not_called()
 
 
