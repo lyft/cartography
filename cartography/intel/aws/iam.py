@@ -271,6 +271,11 @@ def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
         try:
             role_data = client.get_role(RoleName=role.get("RoleName")).get("Role")
             role['RoleLastUsed'] = role_data.get("RoleLastUsed")
+
+            if role_data.get('Path', '').startswith('/aws-service-role/'):
+                #Skip this roles from IAM-JIT, because we can't edit the trust policy for this roles
+                role['isServiceRole'] = True
+
         except Exception as e:
             logger.warning(f'Failed to get role info. {e}')
     return {'Roles': roles}
@@ -456,6 +461,7 @@ def load_roles(
     SET rnode.name = $RoleName, rnode.path = $Path,
     rnode.lastuseddate = $LastUsedDate, rnode.lastusedregion = $LastUsedRegion,
     rnode.external_access = $ExternalAccess,
+    rnode.is_service_role = $IsServiceRole,
     rnode.external_accounts = $ExternalAccounts
     SET rnode.lastupdated = $aws_update_tag
     WITH rnode
@@ -489,6 +495,7 @@ def load_roles(
             ExternalAccess=role["ExternalAccess"],
             ExternalAccounts=role["ExternalAccounts"] if role["ExternalAccess"] else None,
             Path=role["Path"],
+            IsServiceRole=role.get("isServiceRole", False),
             region="global",
             LastUsedDate=role["RoleLastUsed"].get('LastUsedDate') if 'RoleLastUsed' in role else None,
             LastUsedRegion=role["RoleLastUsed"].get('Region') if 'RoleLastUsed' in role else None,
