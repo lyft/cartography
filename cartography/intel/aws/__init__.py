@@ -10,11 +10,11 @@ import boto3
 import botocore.exceptions
 import neo4j
 
-from . import ec2
-from . import organizations
-from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
-from cartography.intel.aws.util.common import get_botocore_config
+from cartography.intel.aws import ec2
+from cartography.intel.aws import organizations
+from cartography.intel.aws.resources import RESOURCE_FUNCTIONS
+from cartography.intel.aws.util.boto3 import get_botocore_config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata

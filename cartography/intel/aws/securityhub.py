@@ -6,7 +6,7 @@ import boto3
 import neo4j
 from dateutil import parser
 
-from cartography.intel.aws.util.common import get_botocore_config
+from cartography.intel.aws.util.boto3 import get_botocore_config
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 

@@ -6,7 +6,7 @@ import boto3
 import neo4j
 
 from cartography.graph.job import GraphJob
-from cartography.intel.aws.util.common import get_botocore_config
+from cartography.intel.aws.util.boto3 import get_botocore_config
 from cartography.models.aws.ec2.keypairs import EC2KeyPairSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit

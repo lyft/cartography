@@ -3,7 +3,7 @@ from typing import List
 
 import boto3
 
-from cartography.intel.aws.util.common import get_botocore_config
+from cartography.intel.aws.util.boto3 import get_botocore_config
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)

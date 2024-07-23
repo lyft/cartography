@@ -6,7 +6,7 @@ from typing import List
 import boto3
 import neo4j
 
-from cartography.intel.aws.util.common import get_botocore_config
+from cartography.intel.aws.util.boto3 import get_botocore_config
 from cartography.stats import get_stats_client
 from cartography.util import aws_handle_regions
 from cartography.util import aws_paginate

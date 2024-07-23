@@ -1,7 +1,5 @@
 from typing import List
 
-import botocore.config
-
 from cartography.intel.aws.resources import RESOURCE_FUNCTIONS
 
 
@@ -21,12 +19,3 @@ def parse_and_validate_aws_requested_syncs(aws_requested_syncs: str) -> List[str
                 f'Our full list of valid values is: {valid_syncs}.',
             )
     return validated_resources
-
-
-def get_botocore_config() -> botocore.config.Config:
-    return botocore.config.Config(
-        read_timeout=360,
-        retries={
-            'max_attempts': 10,
-        },
-    )

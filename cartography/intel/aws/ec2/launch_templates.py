@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
-from cartography.intel.aws.util.common import get_botocore_config
+from cartography.intel.aws.util.boto3 import get_botocore_config
 from cartography.models.aws.ec2.launch_template_versions import LaunchTemplateVersionSchema
 from cartography.models.aws.ec2.launch_templates import LaunchTemplateSchema
 from cartography.util import aws_handle_regions
