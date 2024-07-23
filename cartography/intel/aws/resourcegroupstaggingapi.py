@@ -128,7 +128,7 @@ def get_tags(boto3_session: boto3.session.Session, resource_type: str, region: s
     if resource_type == 'iam:role':
         return get_role_tags(boto3_session)
 
-    client = boto3_session.client('resourcegroupstaggingapi', region_name=region)
+    client = boto3_session.client('resourcegroupstaggingapi', region_name=region, config=get_botocore_config())
     paginator = client.get_paginator('get_resources')
     resources: List[Dict] = []
     for page in paginator.paginate(

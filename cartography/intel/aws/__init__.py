@@ -12,6 +12,7 @@ import neo4j
 
 from . import ec2
 from . import organizations
+from .ec2.util import get_botocore_config
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
 from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
@@ -121,7 +122,7 @@ def _autodiscover_accounts(
     logger.info("Trying to autodiscover accounts.")
     try:
         # Fetch all accounts
-        client = boto3_session.client('organizations')
+        client = boto3_session.client('organizations', config=get_botocore_config())
         paginator = client.get_paginator('list_accounts')
         accounts: List[Dict] = []
         for page in paginator.paginate():
