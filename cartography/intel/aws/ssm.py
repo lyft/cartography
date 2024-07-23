@@ -8,7 +8,7 @@ import neo4j
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
-from cartography.intel.aws import get_botocore_config
+from cartography.intel.aws.util.common import get_botocore_config
 from cartography.models.aws.ssm.instance_information import SSMInstanceInformationSchema
 from cartography.models.aws.ssm.instance_patch import SSMInstancePatchSchema
 from cartography.util import aws_handle_regions

@@ -6,7 +6,7 @@ from typing import List
 import boto3
 import neo4j
 
-from cartography.intel.aws import get_botocore_config
+from cartography.intel.aws.util.common import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import camel_to_snake
 from cartography.util import dict_date_to_epoch

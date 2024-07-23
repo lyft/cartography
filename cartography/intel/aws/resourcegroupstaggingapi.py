@@ -7,6 +7,7 @@ import boto3
 import neo4j
 
 from cartography.intel.aws.iam import get_role_tags
+from cartography.intel.aws.util.common import get_botocore_config
 from cartography.util import aws_handle_regions
 from cartography.util import batch
 from cartography.util import run_cleanup_job

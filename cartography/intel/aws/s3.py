@@ -16,7 +16,7 @@ from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
 from policyuniverse.policy import Policy
 
-from cartography.intel.aws import get_botocore_config
+from cartography.intel.aws.util.common import get_botocore_config
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_job

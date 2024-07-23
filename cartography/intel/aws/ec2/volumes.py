@@ -8,8 +8,8 @@ import neo4j
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
-from cartography.intel.aws import get_botocore_config
 from cartography.intel.aws.util.arns import build_arn
+from cartography.intel.aws.util.common import get_botocore_config
 from cartography.models.aws.ec2.volumes import EBSVolumeSchema
 from cartography.util import aws_handle_regions
 from cartography.util import timeit

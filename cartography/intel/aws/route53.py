@@ -8,6 +8,7 @@ import boto3
 import botocore
 import neo4j
 
+from cartography.intel.aws.util.common import get_botocore_config
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 

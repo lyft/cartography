@@ -14,7 +14,8 @@ from . import ec2
 from . import organizations
 from .resources import RESOURCE_FUNCTIONS
 from cartography.config import Config
-from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs, get_botocore_config
+from cartography.intel.aws.util.common import get_botocore_config
+from cartography.intel.aws.util.common import parse_and_validate_aws_requested_syncs
 from cartography.stats import get_stats_client
 from cartography.util import merge_module_sync_metadata
 from cartography.util import run_analysis_and_ensure_deps

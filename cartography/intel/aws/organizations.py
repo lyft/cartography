@@ -5,7 +5,7 @@ import boto3
 import botocore.exceptions
 import neo4j
 
-from cartography.intel.aws import get_botocore_config
+from cartography.intel.aws.util.common import get_botocore_config
 from cartography.util import timeit
 
 logger = logging.getLogger(__name__)
