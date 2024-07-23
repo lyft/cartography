@@ -8,7 +8,7 @@ from typing import List
 import boto3
 import neo4j
 
-from .util import get_botocore_config
+from .. import get_botocore_config
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
 from cartography.models.aws.ec2.networkinterfaces import EC2NetworkInterfaceSchema

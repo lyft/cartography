@@ -6,7 +6,7 @@ from typing import List
 import boto3
 import neo4j
 
-from .util import get_botocore_config
+from .. import get_botocore_config
 from cartography.graph.job import GraphJob
 from cartography.models.aws.ec2.securitygroup_instance import EC2SecurityGroupInstanceSchema
 from cartography.util import aws_handle_regions
