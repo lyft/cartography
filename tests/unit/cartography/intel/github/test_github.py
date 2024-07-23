@@ -10,8 +10,6 @@ import pytest
 from requests import Response
 from requests.exceptions import HTTPError
 
-import cartography.intel.github.util
-
 from cartography.intel.github.util import _GRAPHQL_RATE_LIMIT_REMAINING_THRESHOLD
 from cartography.intel.github.util import fetch_all
 from cartography.intel.github.util import handle_rate_limit_sleep
