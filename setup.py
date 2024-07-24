@@ -61,6 +61,7 @@ setup(
         "kubernetes>=22.6.0",
         "pdpyras>=4.3.0",
         "crowdstrike-falconpy>=0.5.1",
+        "pandas>=1.5.1",
         "python-dateutil",
         "xmltodict",
         "duo-client",

@@ -1,0 +1,15 @@
+{
+  "statements": [
+    {
+      "query": "MATCH (h:Rapid7Host) WHERE h.lastupdated <> $UPDATE_TAG WITH h LIMIT $LIMIT_SIZE DETACH DELETE (h)",
+      "iterative": true,
+      "iterationsize": 100
+    },
+    {
+      "query": "MATCH (:AzureVirtualMachine)-[r:PRESENT_IN]->(:Rapid7Host{id: $AZURE_RESOURCE_ID}) WHERE r.lastupdated <> $UPDATE_TAG WITH r LIMIT $LIMIT_SIZE DELETE (r)",
+      "iterative": true,
+      "iterationsize": 100
+    }
+  ],
+  "name": "cleanup rapid7"
+}
