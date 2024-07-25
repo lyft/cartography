@@ -19,7 +19,7 @@ SCA_RESPONSE = {
                 "name": "org/repository",
                 "url": "https: //github.com/org/repository",
             },
-            "line_of_code_url": "https: //github.com/org/repository/blob/71bbed12f950de8335006d7f91112263d8504f1b/src/packages/components/AccountsTable/constants.tsx#L274", # noqa E501
+            "line_of_code_url": "https: //github.com/org/repository/blob/71bbed12f950de8335006d7f91112263d8504f1b/src/packages/components/AccountsTable/constants.tsx#L274",  # noqa E501
             "first_seen_scan_id": 30469982,
             "state": "unresolved",
             "triage_state": "untriaged",
@@ -73,7 +73,7 @@ SCA_RESPONSE = {
                     "start_col": 37,
                     "end_line": 274,
                     "end_col": 62,
-                    "url": "https: //github.com/org/repository/blob/commit_id/src/packages/linked-accounts/components/LinkedAccountsTable/constants.tsx#L274", # noqa E501
+                    "url": "https: //github.com/org/repository/blob/commit_id/src/packages/linked-accounts/components/LinkedAccountsTable/constants.tsx#L274",  # noqa E501
                 },
                 "external_ticket": None,
             },
@@ -92,6 +92,6 @@ USAGES = [
         "start_col": 37,
         "end_line": 274,
         "end_col": 62,
-        "url": "https: //github.com/org/repository/blob/commit_id/src/packages/linked-accounts/components/LinkedAccountsTable/constants.tsx#L274", # noqa E501
+        "url": "https: //github.com/org/repository/blob/commit_id/src/packages/linked-accounts/components/LinkedAccountsTable/constants.tsx#L274",  # noqa E501
     },
 ]
