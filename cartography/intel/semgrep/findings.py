@@ -198,7 +198,7 @@ def transform_sca_vulns(raw_vulns: List[Dict[str, Any]]) -> Tuple[List[Dict[str,
                 usage_dict["url"] = url
                 usages.append(usage_dict)
             vulns.append(sca_vuln)
-        except Exception as e:
+        except KeyError as e:
             logger.warning(f"Error transforming Semgrep SCA vuln {vuln}: {e}")
             continue
     return vulns, usages
