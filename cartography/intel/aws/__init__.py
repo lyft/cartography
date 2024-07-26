@@ -94,11 +94,14 @@ def _sync_one_account(
 ) -> None:
     regions.sort()
 
-    used_regions = _autodiscover_account_regions(boto3_session, current_aws_account_id)
-    used_regions.sort()
+    enabled_regions = _autodiscover_account_regions(boto3_session, current_aws_account_id)
+    enabled_regions.sort()
 
-    if regions != used_regions:
-        regions = used_regions
+    allowed_regions = get_allowed_regions(boto3_session)
+    allowed_regions.sort()
+
+    if regions != allowed_regions:
+        regions = allowed_regions
 
     sync_args = _build_aws_sync_kwargs(
         neo4j_session, boto3_session, regions, current_aws_account_id, update_tag, common_job_parameters,
@@ -321,7 +324,30 @@ def _autodiscover_account_regions(boto3_session: boto3.session.Session, account_
             account_id,
         )
         raise
+
     return regions
+
+
+# Get list of all regions where API calls are not blocked
+def get_allowed_regions(boto3_session: boto3.session.Session):
+    all_regions = ec2.get_ec2_regions(boto3_session)
+
+    allowed_regions = []
+
+    # Check for EC2 instances in each region to determine if the region is enabled
+    for region in all_regions:
+        try:
+            ec2_region = boto3_session.client('ec2', region_name=region, config=get_botocore_config())
+            ec2_region.describe_vpcs()
+            allowed_regions.append(region)
+
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] in ['UnauthorizedOperation', 'AccessDenied']:
+                print(f"Access denied or region restricted: {region}")
+            else:
+                print(f"Unexpected error occurred in region {region}: {e}")
+
+    return allowed_regions
 
 
 def _autodiscover_accounts(

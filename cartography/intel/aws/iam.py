@@ -267,13 +267,15 @@ def get_role_list_data(boto3_session: boto3.session.Session) -> Dict:
     roles: List[Dict] = []
     for page in paginator.paginate():
         roles.extend(page['Roles'])
+
+    service_role_types = ["/aws-service-role/"]
     for role in roles:
         try:
             role_data = client.get_role(RoleName=role.get("RoleName")).get("Role")
             role['RoleLastUsed'] = role_data.get("RoleLastUsed")
 
-            if role_data.get('Path', '').startswith('/aws-service-role/'):
-                #Skip this roles from IAM-JIT, because we can't edit the trust policy for this roles
+            if any(service_role_type in role_data.get('Path', '') for service_role_type in service_role_types):
+                #Skip this roles from IAM-JIT, because we can't edit the trust policy for these types of roles
                 role['isServiceRole'] = True
 
         except Exception as e:
