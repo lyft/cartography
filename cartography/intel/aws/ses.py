@@ -5,7 +5,6 @@ from typing import List
 
 import boto3
 import neo4j
-from botocore.client import Config
 from botocore.exceptions import ClientError
 from botocore.exceptions import ConnectTimeoutError
 from botocore.exceptions import EndpointConnectionError
@@ -62,7 +61,7 @@ def transform_identities(boto3_session: boto3.session.Session, idsnames: List[Di
 
             resources.append(identity)
     except (ClientError, ConnectTimeoutError, EndpointConnectionError) as e:
-        logger.error(f'Failed to call SES list_identities: {region} - {e}')
+        logger.error(f'Failed to call SES get_identity_dkim_attributes: {region} - {e}')
 
     return resources
 
@@ -116,9 +115,14 @@ def sync(
 
     logger.info("Syncing SES for account '%s', at %s.", current_aws_account_id, tic)
 
+    ses_enabled_regions = ["af-south-1", "ap-northeast-1", "ap-northeast-2", "ap-northeast-3", "ap-south-1", "ap-southeast-1", "ap-southeast-2", "ap-southeast-3", "ca-central-1", "eu-central-1", "eu-north-1", "eu-south-1", "eu-west-1", "eu-west-2", "eu-west-3", "il-central-1", "me-south-1", "sa-east-1", "us-east-1", "us-east-2", "us-west-1", "us-west-2"]
+
     identities = []
     for region in regions:
         logger.info("Syncing SES for region '%s' in account '%s'.", region, current_aws_account_id)
+
+        if region not in ses_enabled_regions:
+            continue
 
         ids = get_ses_identity(boto3_session, region)
         identities.extend(transform_identities(boto3_session, ids, region, current_aws_account_id))
