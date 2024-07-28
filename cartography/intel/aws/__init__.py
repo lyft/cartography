@@ -342,7 +342,7 @@ def get_allowed_regions(boto3_session: boto3.session.Session):
             allowed_regions.append(region)
 
         except botocore.exceptions.ClientError as e:
-            if e.response['Error']['Code'] in ['UnauthorizedOperation', 'AccessDenied']:
+            if e.response['Error']['Code'] in ['UnauthorizedOperation', 'AccessDenied', 'AccessDeniedException', 'AuthorizationError']:
                 print(f"Access denied or region restricted: {region}")
             else:
                 print(f"Unexpected error occurred in region {region}: {e}")

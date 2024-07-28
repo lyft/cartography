@@ -85,7 +85,7 @@ def load_load_balancer_v2s(
     """
     for lb in data:
         region = lb.get('region', '')
-        load_balancer_id = lb["DNSName"]
+        load_balancer_id = lb.get("DNSName")
         load_balancer_arn = lb["LoadBalancerArn"]
 
         neo4j_session.run(
@@ -124,10 +124,10 @@ def load_load_balancer_v2s(
                     update_tag=update_tag,
                 )
 
-        if lb['Listeners']:
+        if lb.get('Listeners'):
             load_load_balancer_v2_listeners(neo4j_session, load_balancer_id, lb['Listeners'], update_tag)
 
-        if lb['TargetGroups']:
+        if lb.get('TargetGroups'):
             load_load_balancer_v2_target_groups(
                 neo4j_session, load_balancer_id, lb['TargetGroups'],
                 current_aws_account_id, update_tag,
