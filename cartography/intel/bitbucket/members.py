@@ -6,41 +6,49 @@ from typing import List
 import neo4j
 import requests
 from requests.exceptions import RequestException
-
+from clouduniqueid.clouds.bitbucket import BitbucketUniqueId
 from cartography.util import make_requests_url
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
+bitbucket_linker = BitbucketUniqueId()
 
 
 @timeit
-def get_workspace_members(access_token:str,workspace:str):
+def get_workspace_members(access_token: str, workspace: str):
     url = f"https://api.bitbucket.org/2.0/workspaces/{workspace}/members?pagelen=100"
 
-    response = make_requests_url(url,access_token)
+    response = make_requests_url(url, access_token)
     members = response.get('values', [])
 
     while 'next' in response:
-        response = make_requests_url(response.get('next'),access_token)
+        response = make_requests_url(response.get('next'), access_token)
         members.extend(response.get('values', []))
 
     return members
 
 
-def transform_members(workspace_members: List[Dict]) -> List[Dict]:
+def transform_members(workspace_members: List[Dict], workspace: str) -> List[Dict]:
     for member in workspace_members:
-        member['workspace']['uuid'] = member['workspace']['uuid'].replace('{','').replace('}','')
-        member['user']['uuid'] = member['user']['uuid'].replace('{','').replace('}','')
+        member['workspace']['uuid'] = member['workspace']['uuid'].replace('{', '').replace('}', '')
+        member['user']['uuid'] = member['user']['uuid'].replace('{', '').replace('}', '')
+
+        data = {
+            "workspace": workspace,
+            "member": member["user"]["display_name"]
+
+        }
+        member['id'] = bitbucket_linker.get_unique_id(service="bitbucket", data=data, resource_type="member")
 
     return workspace_members
 
 
-def load_members_data(session: neo4j.Session, members_data:List[Dict],common_job_parameters:Dict) -> None:
-    session.write_transaction(_load_members_data, members_data,  common_job_parameters)
+def load_members_data(session: neo4j.Session, members_data: List[Dict], common_job_parameters: Dict) -> None:
+    session.write_transaction(_load_members_data, members_data, common_job_parameters)
 
 
-def _load_members_data(tx: neo4j.Transaction,members_data:List[Dict],common_job_parameters:Dict):
-    ingest_workspace="""
+def _load_members_data(tx: neo4j.Transaction, members_data: List[Dict], common_job_parameters: Dict):
+    ingest_workspace = """
     UNWIND $membersData as member
     MERGE (mem:BitbucketMember{id: member.user.uuid})
     ON CREATE SET mem.firstseen = timestamp()
@@ -72,8 +80,8 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 
 def sync(
         neo4j_session: neo4j.Session,
-        workspace_name:str,
-        bitbucket_access_token:str,
+        workspace_name: str,
+        bitbucket_access_token: str,
         common_job_parameters: Dict[str, Any],
 ) -> None:
     """
@@ -83,7 +91,7 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Bitbucket All workspace members")
-    workspace_members=get_workspace_members(bitbucket_access_token,workspace_name)
-    workspace_members=transform_members(workspace_members)
-    load_members_data(neo4j_session,workspace_members,common_job_parameters)
-    cleanup(neo4j_session,common_job_parameters)
+    workspace_members = get_workspace_members(bitbucket_access_token, workspace_name)
+    workspace_members = transform_members(workspace_members)
+    load_members_data(neo4j_session, workspace_members, common_job_parameters)
+    cleanup(neo4j_session, common_job_parameters)

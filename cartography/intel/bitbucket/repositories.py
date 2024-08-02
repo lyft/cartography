@@ -2,7 +2,7 @@ import logging
 from typing import Any
 from typing import Dict
 from typing import List
-
+from clouduniqueid.clouds.bitbucket import BitbucketUniqueId
 import neo4j
 import requests
 from requests.exceptions import RequestException
@@ -12,40 +12,51 @@ from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
 
+bitbucket_linker = BitbucketUniqueId()
+
 
 @timeit
-def get_repos(access_token:str,workspace:str):
+def get_repos(access_token: str, workspace: str):
     # https://developer.atlassian.com/cloud/bitbucket/rest/api-group-repositories/#api-repositories-workspace-get
     url = f"https://api.bitbucket.org/2.0/repositories/{workspace}?pagelen=100"
 
-    response = make_requests_url(url,access_token)
+    response = make_requests_url(url, access_token)
     repositories = response.get('values', [])
 
     while 'next' in response:
-        response = make_requests_url(response.get('next'),access_token)
+        response = make_requests_url(response.get('next'), access_token)
         repositories.extend(response.get('values', []))
 
     return repositories
 
 
-def transform_repos(workspace_repos: List[Dict]) -> List[Dict]:
+def transform_repos(workspace_repos: List[Dict], workspace: str) -> List[Dict]:
     for repo in workspace_repos:
-        repo['workspace']['uuid'] = repo['workspace']['uuid'].replace('{','').replace('}','')
-        repo['project']['uuid'] = repo['project']['uuid'].replace('{','').replace('}','')
-        repo['uuid'] = repo['uuid'].replace('{','').replace('}','')
+        repo['workspace']['uuid'] = repo['workspace']['uuid'].replace('{', '').replace('}', '')
+        repo['project']['uuid'] = repo['project']['uuid'].replace('{', '').replace('}', '')
+        repo['uuid'] = repo['uuid'].replace('{', '').replace('}', '')
+
+        data = {
+            "workspace": workspace,
+            "project": repo['project']['uuid'],
+            "repository": repo['uuid']
+
+        }
 
         if repo is not None and repo.get('mainbranch') is not None:
-            repo['default_branch'] = repo.get('mainbranch',{}).get('name',None)
+            repo['default_branch'] = repo.get('mainbranch', {}).get('name', None)
+
+        repo['id'] = bitbucket_linker.get_unique_id(service="bitbucket", data=data, resource_type="member")
 
     return workspace_repos
 
 
-def load_repositories_data(session: neo4j.Session, repos_data:List[Dict],common_job_parameters:Dict) -> None:
-    session.write_transaction(_load_repositories_data, repos_data,  common_job_parameters)
+def load_repositories_data(session: neo4j.Session, repos_data: List[Dict], common_job_parameters: Dict) -> None:
+    session.write_transaction(_load_repositories_data, repos_data, common_job_parameters)
 
 
-def _load_repositories_data(tx: neo4j.Transaction,repos_data:List[Dict],common_job_parameters:Dict):
-    ingest_repositories="""
+def _load_repositories_data(tx: neo4j.Transaction, repos_data: List[Dict], common_job_parameters: Dict):
+    ingest_repositories = """
     UNWIND $reposData as repo
     MERGE (re:BitbucketRepository{id:repo.uuid})
     ON CREATE SET re.firstseen = timestamp(),
@@ -84,8 +95,8 @@ def cleanup(neo4j_session: neo4j.Session, common_job_parameters: Dict) -> None:
 
 def sync(
         neo4j_session: neo4j.Session,
-        workspace_name:str,
-        bitbucket_access_token:str,
+        workspace_name: str,
+        bitbucket_access_token: str,
         common_job_parameters: Dict[str, Any],
 ) -> None:
     """
@@ -95,7 +106,7 @@ def sync(
     :return: Nothing
     """
     logger.info("Syncing Bitbucket All Repositories")
-    workspace_repos=get_repos(bitbucket_access_token,workspace_name)
-    workspace_repos=transform_repos(workspace_repos)
-    load_repositories_data(neo4j_session,workspace_repos,common_job_parameters)
-    cleanup(neo4j_session,common_job_parameters)
+    workspace_repos = get_repos(bitbucket_access_token, workspace_name)
+    workspace_repos = transform_repos(workspace_repos)
+    load_repositories_data(neo4j_session, workspace_repos, common_job_parameters)
+    cleanup(neo4j_session, common_job_parameters)
