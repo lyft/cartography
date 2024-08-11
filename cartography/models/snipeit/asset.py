@@ -33,10 +33,7 @@ class SnipeitAssetNodeProperties(CartographyNodeProperties):
 ###
 # (:SnipeitAsset)<-[:ASSET]-(:SnipeitTenant)
 ###
-
-dataclass(frozen=True)
-
-
+@dataclass(frozen=True)
 class SnipeitTenantToSnipeitAssetRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 

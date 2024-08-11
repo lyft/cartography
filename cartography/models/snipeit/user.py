@@ -25,9 +25,7 @@ class SnipeitUserNodeProperties(CartographyNodeProperties):
     username: PropertyRef = PropertyRef('username')
 
 
-dataclass(frozen=True)
-
-
+@dataclass(frozen=True)
 class SnipeitTenantToSnipeitUserRelProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
