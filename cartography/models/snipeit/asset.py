@@ -45,27 +45,27 @@ class SnipeitTenantToSnipeitAssetRel(CartographyRelSchema):
         {'id': PropertyRef('TENANT_ID', set_in_kwargs=True)},
     )
     direction: LinkDirection = LinkDirection.INWARD
-    rel_label: str = "ASSET"
+    rel_label: str = "HAS_ASSET"
     properties: SnipeitTenantToSnipeitAssetRelProperties = SnipeitTenantToSnipeitAssetRelProperties()
 
 
 ###
-# (:SnipeitAsset)<-[:HAS_CHECKED_OUT]-(:SnipeitUser)
+# (:SnipeitUser)-[:HAS_CHECKED_OUT]->(:SnipeitAsset)
 ###
 @dataclass(frozen=True)
-class SnipeitAssetToSnipeitUserProperties(CartographyRelProperties):
+class SnipeitUserToSnipeitAssetProperties(CartographyRelProperties):
     lastupdated: PropertyRef = PropertyRef('lastupdated', set_in_kwargs=True)
 
 
 @dataclass(frozen=True)
-class SnipeitAssetToSnipeitUserRel(CartographyRelSchema):
+class SnipeitUserToSnipeitAssetRel(CartographyRelSchema):
     target_node_label: str = 'SnipeitUser'
     target_node_matcher: TargetNodeMatcher = make_target_node_matcher(
         {'email': PropertyRef('assigned_to.email')},
     )
     direction: LinkDirection = LinkDirection.INWARD
     rel_label: str = "HAS_CHECKED_OUT"
-    properties: SnipeitAssetToSnipeitUserProperties = SnipeitAssetToSnipeitUserProperties()
+    properties: SnipeitUserToSnipeitAssetProperties = SnipeitUserToSnipeitAssetProperties()
 
 
 ###
@@ -76,6 +76,6 @@ class SnipeitAssetSchema(CartographyNodeSchema):
     sub_resource_relationship: SnipeitTenantToSnipeitAssetRel = SnipeitTenantToSnipeitAssetRel()
     other_relationships: OtherRelationships = OtherRelationships(
         [
-            SnipeitAssetToSnipeitUserRel(),
+            SnipeitUserToSnipeitAssetRel(),
         ],
     )
