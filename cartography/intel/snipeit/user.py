@@ -17,8 +17,20 @@ logger = logging.getLogger(__name__)
 
 @timeit
 def get(base_uri: str, token: str) -> List[Dict]:
-    response = call_snipeit_api("/api/v1/users", base_uri, token)
-    return response["rows"]
+    api_endpoint = "/api/v1/users"
+    results: List[Dict[str, Any]] = []
+    while True:
+        offset = len(results)
+        api_endpoint = f"{api_endpoint}?order='asc'&offset={offset}"
+        response = call_snipeit_api(api_endpoint, base_uri, token)
+        results.extend(response['rows'])
+
+        total = response['total']
+        results_count = len(results)
+        if results_count >= total:
+            break
+
+    return results
 
 
 @timeit

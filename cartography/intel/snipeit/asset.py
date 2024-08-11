@@ -17,9 +17,21 @@ logger = logging.getLogger(__name__)
 
 
 @timeit
-def get(base_uri: str, token: str) -> List[Dict[str, Any]]:
-    response = call_snipeit_api("/api/v1/hardware", base_uri, token)
-    return response["rows"]
+def get(base_uri: str, token: str) -> List[Dict]:
+    api_endpoint = "/api/v1/hardware"
+    results: List[Dict[str, Any]] = []
+    while True:
+        offset = len(results)
+        api_endpoint = f"{api_endpoint}?order='asc'&offset={offset}"
+        response = call_snipeit_api(api_endpoint, base_uri, token)
+        results.extend(response['rows'])
+
+        total = response['total']
+        results_count = len(results)
+        if results_count >= total:
+            break
+
+    return results
 
 
 @timeit
@@ -28,8 +40,6 @@ def load_assets(
     common_job_parameters: Dict,
     data: List[Dict[str, Any]],
 ) -> None:
-    logger.debug(data[0])
-
     # Create the SnipeIT Tenant
     load(
         neo4j_session,
