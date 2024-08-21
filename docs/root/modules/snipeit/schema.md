@@ -41,15 +41,15 @@ Representation of a SnipeIT asset.
 - All SnipeIT users and asset are linked to a SnipeIT Tenant
 
     ```cypher
-    (:SnipeitTenant)-[:HAS_USER]->(:SnipeitUser)
+    (:SnipeitUser)<-[:HAS_USER]-(:SnipeitTenant)
     ```
 
     ```cypher
-    (:SnipeitTenant)-[:HAS_ASSET]->(:SnipeitAsset)
+    (:SnipeitAsset)<-[:HAS_ASSET]-(:SnipeitTenant)
     ```
 
 - A SnipeIT user can check-out one or more assets
 
     ```cypher
-    (:SnipeitUser)-[:HAS_CHECKED_OUT]->(:SnipeitAsset)
+    (:SnipeitAsset)<-[:HAS_CHECKED_OUT]-(:SnipeitUser)
     ```
