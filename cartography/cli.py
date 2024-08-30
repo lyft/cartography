@@ -221,6 +221,16 @@ class CLI:
             ),
         )
         parser.add_argument(
+            '--azure-requested-syncs',
+            type=str,
+            default=None,
+            help=(
+                'Comma-separated list of Azure resources to sync. Example 1: "compute,sql,storage".\
+                     See the full list available in source code at cartography.intel.azure.resources.'
+                ' If not specified, cartography by default will run all azure sync modules available.'
+            ),
+        )
+        parser.add_argument(
             '--crxcavator-api-base-uri',
             type=str,
             default='https://api.crxcavator.io/v1',
