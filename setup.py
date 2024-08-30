@@ -64,6 +64,7 @@ setup(
         "python-dateutil",
         "xmltodict",
         "duo-client",
+        "pandas",
     ],
     extras_require={
         ':python_version<"3.7"': [

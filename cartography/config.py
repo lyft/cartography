@@ -137,6 +137,9 @@ class Config:
         azure_client_secret=None,
         aws_requested_syncs=None,
         analysis_job_directory=None,
+        bmchelix_token=None,
+        bmchelix_api_url=None,
+        bmchelix_verify_cert=None,
         crxcavator_api_base_uri=None,
         crxcavator_api_key=None,
         oci_sync_all_profiles=None,
@@ -196,6 +199,9 @@ class Config:
         self.azure_client_secret = azure_client_secret
         self.aws_requested_syncs = aws_requested_syncs
         self.analysis_job_directory = analysis_job_directory
+        self.bmchelix_token = bmchelix_token
+        self.bmchelix_api_url = bmchelix_api_url
+        self.bmchelix_verify_cert = bmchelix_verify_cert
         self.crxcavator_api_base_uri = crxcavator_api_base_uri
         self.crxcavator_api_key = crxcavator_api_key
         self.oci_sync_all_profiles = oci_sync_all_profiles
