@@ -2,46 +2,44 @@ default_language_version:
   # force all unspecified python hooks to run python3
   python: python3
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
+-   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
-      - id: check-docstring-first
-      - id: check-executables-have-shebangs
-      - id: check-merge-conflict
-      - id: check-vcs-permalinks
-      - id: check-yaml
-      - id: debug-statements
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-      - id: detect-private-key
-      - id: check-added-large-files
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.1.0
+    -   id: check-docstring-first
+    -   id: check-executables-have-shebangs
+    -   id: check-merge-conflict
+    -   id: check-vcs-permalinks
+    -   id: check-yaml
+    -   id: debug-statements
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+-   repo: https://github.com/pycqa/flake8
+    rev: 7.1.1
     hooks:
-      - id: flake8
-  - repo: https://github.com/pre-commit/mirrors-autopep8
+    -   id: flake8
+-   repo: https://github.com/pre-commit/mirrors-autopep8
     rev: v2.0.4
     hooks:
-      - id: autopep8
+    -   id: autopep8
         # disable a few rewrites which will cause autopep8 to reflow
-        args: [--in-place, "--ignore=E265,E501,W504"]
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.16.0
+        args: [--in-place, '--ignore=E265,E501,W504']
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.17.0
     hooks:
       - id: pyupgrade
         args: [--py36-plus]
-  - repo: https://github.com/asottile/add-trailing-comma
+-   repo: https://github.com/asottile/add-trailing-comma
     rev: v3.1.0
     hooks:
       - id: add-trailing-comma
         args: [--py36-plus]
-  - repo: https://github.com/asottile/reorder_python_imports
+-   repo: https://github.com/asottile/reorder_python_imports
     rev: v3.13.0
     hooks:
       - id: reorder-python-imports
         args: [--py3-plus]
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.1
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
     hooks:
       - id: mypy
         additional_dependencies:
