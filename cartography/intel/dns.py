@@ -33,7 +33,7 @@ def ingest_dns_record_by_fqdn(
                               dns_node_additional_label="ESDomain")
 
     :param neo4j_session: Neo4j session object
-    :param update_tag: Update tag to set the node with and childs
+    :param update_tag: Update tag to set the node with and children
     :param fqdn: the fqdn record to add
     :param points_to_record: parent record to set DNS_POINTS_TO relationship to. Can be None
     :param record_label: the label of the node to attach to a DNS record, e.g. "ESDomain"
@@ -72,7 +72,7 @@ def _link_ip_to_A_record(neo4j_session: neo4j.Session, update_tag: int, ip_list:
     Link A record to to its IP
 
     :param neo4j_session: Neo4j session object
-    :param update_tag: Update tag to set the node with and childs
+    :param update_tag: Update tag to set the node with and children
     :param ip_list: List of IP to link
     :param parent_record: parent record to set DNS_POINTS_TO relationship to
     """
@@ -109,7 +109,7 @@ def ingest_dns_record(
     :param name: record name
     :param value: record value
     :param type: record type
-    :param update_tag: Update tag to set the node with and childs
+    :param update_tag: Update tag to set the node with and children
     :param points_to_record: parent record to set DNS_POINTS_TO relationship to. Can be None
     :param record_label: the label of the node to attach to a DNS record
     :param dns_node_additional_label: The specific label of the DNSRecord, e.g. AWSDNSRecord.

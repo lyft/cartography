@@ -163,7 +163,7 @@ Representation of an AWS [Inspector Finding](https://docs.aws.amazon.com/inspect
 |portrange|Port range affected for network findings|
 |portrangebegin|Beginning of the port range affected for network findings|
 |portrangeend|End of the port range affected for network findings|
-|vulnerabilityid|Vulnerability ID associdated with the finding for package findings|
+|vulnerabilityid|Vulnerability ID associated with the finding for package findings|
 |referenceurls|Reference URLs for the found vulnerabilities|
 |relatedvulnerabilities|A list of any related vulnerabilities|
 |source|Source for the vulnerability|
@@ -393,7 +393,7 @@ Representation of an [AWS Policy](https://docs.aws.amazon.com/IAM/latest/APIRefe
 | createdate | ISO 8601 date-time when the policy was created|
 | type | "inline" or "managed" - the type of policy it is|
 | arn | The arn for this object |
-| **id** | The unique identifer for a policy. If the policy is managed this will be the Arn. If the policy is inline this will calculated as _AWSPrincipal_/inline_policy/_PolicyName_|
+| **id** | The unique identifier for a policy. If the policy is managed this will be the Arn. If the policy is inline this will calculated as _AWSPrincipal_/inline_policy/_PolicyName_|
 
 
 #### Relationships
@@ -1027,7 +1027,7 @@ Representation of an AWS [EC2 Key Pair](https://docs.aws.amazon.com/AWSEC2/lates
         (AWSAccount)-[RESOURCE]->(EC2KeyPair)
         ```
 
-- EC2 key pairs can be used to log in to AWS EC2 isntances.
+- EC2 key pairs can be used to log in to AWS EC2 instances.
 
         ```
         (EC2KeyPair)-[SSH_LOGIN_TO]->(EC2Instance)
@@ -1231,7 +1231,7 @@ Representation of an AWS EC2 [Subnet](https://docs.aws.amazon.com/AWSEC2/latest/
 
 ### AWSInternetGateway
 
- Representation of an AWS [Interent Gateway](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InternetGateway.html).
+ Representation of an AWS [Internet Gateway](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InternetGateway.html).
 
  | Field | Description |
  |--------|-----------|
@@ -2223,7 +2223,7 @@ Representation of an AWS [KMS Key](https://docs.aws.amazon.com/kms/latest/APIRef
         (AWSAccount)-[RESOURCE]->(KMSKey)
         ```
 
-- AWS KMS Key may also be refered as KMSAlias via aliases.
+- AWS KMS Key may also be referred as KMSAlias via aliases.
 
         ```
         (KMSKey)-[KNOWN_AS]->(KMSAlias)
@@ -2249,7 +2249,7 @@ Representation of an AWS [KMS Key Alias](https://docs.aws.amazon.com/kms/latest/
 
 #### Relationships
 
-- AWS KMS Key may also be refered as KMSAlias via aliases.
+- AWS KMS Key may also be referred as KMSAlias via aliases.
 
         ```
         (KMSKey)-[KNOWN_AS]->(KMSAlias)

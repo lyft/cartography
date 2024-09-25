@@ -266,7 +266,7 @@ def test_ec2_iaminstanceprofiles(mock_get_instances, neo4j_session):
     # Arrange
     boto3_session = MagicMock()
     create_test_account(neo4j_session, TEST_ACCOUNT_ID, TEST_UPDATE_TAG)
-    data_iam = tests.data.aws.iam.INSTACE['Roles']
+    data_iam = tests.data.aws.iam.INSTANCE['Roles']
     sync_ec2_instances(
         neo4j_session,
         boto3_session,
