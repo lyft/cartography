@@ -1,6 +1,6 @@
 import argparse
 import getpass
-import logging
+import logging.config
 import os
 import sys
 from typing import Optional
@@ -109,6 +109,14 @@ class CLI:
                 'The name of the database in Neo4j to connect to. If not specified, uses the config settings of your '
                 'Neo4j database itself to infer which database is set to default. '
                 'See https://neo4j.com/docs/api/python-driver/4.4/api.html#database.'
+            ),
+        )
+        parser.add_argument(
+            '--logging-config',
+            type=str,
+            default=None,
+            help=(
+                'Path to file containing Python logging configuration'
             ),
         )
         parser.add_argument(
@@ -558,6 +566,9 @@ class CLI:
         # TODO support parameter lookup in environment variables if not present on command line
         config: argparse.Namespace = self.parser.parse_args(argv)
         # Logging config
+        if config.logging_config:
+            logging.config.fileConfig(config.logging_config)
+            logger.info("Using logging config from %s", config.logging_config)
         if config.verbose:
             logging.getLogger('cartography').setLevel(logging.DEBUG)
         elif config.quiet:
@@ -778,9 +789,5 @@ def main(argv=None):
     :rtype: int
     :return: The return code.
     """
-    logging.basicConfig(level=logging.INFO)
-    logging.getLogger('botocore').setLevel(logging.WARNING)
-    logging.getLogger('googleapiclient').setLevel(logging.WARNING)
-    logging.getLogger('neo4j').setLevel(logging.WARNING)
     argv = argv if argv is not None else sys.argv[1:]
     sys.exit(CLI(prog='cartography').main(argv))
