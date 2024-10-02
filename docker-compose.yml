@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   neo4j:
-    image: neo4j:4.4.5-community
+    image: neo4j:4.4-community
     restart: unless-stopped
     ports:
       - 7474:7474
@@ -12,6 +12,7 @@ services:
       - ./.compose/neo4j/import:/import
       - ./.compose/neo4j/logs:/logs
       - ./.compose/neo4j/plugins:/plugins
+    user: "${UID}:${GID}"
     environment:
       # Raise memory limits:
       - NEO4J_dbms_memory_pagecache_size=1G

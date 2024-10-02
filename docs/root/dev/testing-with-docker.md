@@ -12,7 +12,7 @@ the image.
 
     ```bash
     # Make sure you don't forget the '.' (represents current directory)
-    docker build -t lyft/cartography .
+    docker build -t lyft/cartography . -f dev.Dockerfile
     ```
 
 1. Start up the docker-compose dev environment
