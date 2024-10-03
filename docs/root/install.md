@@ -1,28 +1,115 @@
-# Cartography Installation On Test Machine
+# Install and Run Cartography On Test Machine
 
 .. _cartography-installation:
 
-Time to set up a test machine to run Cartography. Cartography _should_ work on both Linux and Windows, but bear in mind we've only tested it on Linux so far.
+Time to set up a test machine to run Cartography.
+
+## Option 1: docker-compose (preferred)
+![dockercompose-flow.png](images/dockercompose-flow.png)
+Quickly spin up a Cartography container + a Neo4j database container using docker-compose and run your first sync.
+
+1. Build the cartography Dockerfile.
+
+    ```bash
+    git clone https://github.com/lyft/cartography
+    cd cartography
+    # Make sure you don't forget the '.' (represents current directory)
+    docker build -t lyft/cartography .
+    ```
+
+1. Start up the docker-compose environment.
+
+    ```bash
+    docker-compose up -d
+    ```
+
+1. Configure and run Cartography.
+
+    See the configuration section of [each relevant intel module](https://lyft.github.io/cartography/modules) to set up each data source. In this example we will use [AWS](https://lyft.github.io/cartography/modules/aws/config.html).
+
+    This command runs cartography on an AWS profile called "1234_testprofile" on region us-east-1.
+
+    ```bash
+    docker-compose run -e AWS_PROFILE=1234_testprofile -e AWS_DEFAULT_REGION=us-east-1 cartography --neo4j-uri bolt://cartography-neo4j-1:7687
+    ```
+
+    The `-e` switches allow you to supply environment variables to the `cartography` container via `docker-compose`. If things work, your terminal will look like this where you see log messages displaying how many assets are being loaded to the graph:
+
+    ![docker-compose-run.png](images/docker-compose-run.png)
+
+    ### Notes:
+
+    - You pass in environment variables to the cartography container using the docker-compose format like this: `-e VARIABLE1 -e VARIABLE2=value2`.
+
+    - `cartography-neo4j-1` is how the Cartography docker container knows how to reach the Neo4j container in docker-compose.
+
+    - AWS things
+
+      - `AWS_DEFAULT_REGION` must be specified.
+      - Our docker-compose.yml maps in `~/.aws/` on your host machine to `/var/cartography/.aws` in the cartography container, so the container has access to AWS profile and credential files.
+    - You can view a full list of Cartography's CLI arguments by running `docker-compose run cartography --help`.
+
+1. View the graph.
+
+   You can view the graph while it is still syncing by visiting http://localhost:7474. Try a query like
+
+    ```cypher
+    match (i:AWSRole)--(c:AWSAccount) return *
+   ```
+
+    It should look like this:
+
+    ![dockercompose-result.png](images/dockercompose-result.png)
+
+1. **Optional**: If you want to configure the Neo4j container itself, you can do this via the `.compose` directory, which is
+git ignored. neo4j config, logs, etc are all located at `.compose/neo4j/...`
+
+1. **Optional**: You can supply additional environment variables via `docker-compose` like this:
+    ```bash
+    # Temporarily disable bash command history
+    set +o history
+    # See the cartography github configuration intel module docs
+    export GITHUB_KEY=BASE64ENCODEDKEY
+    # You need to set this after starting neo4j once, and resetting
+    # the default neo4j password, which is neo4j
+    export NEO4j_PASSWORD=...
+    # Reenable bash command history
+    set -o history
+    # Start cartography dependencies
+    docker-compose up -d
+    # Run cartography
+    docker-compose run -e GITHUB_KEY -e NEO4j_PASSWORD cartography cartography --github-config-env-var GITHUB_KEY --neo4j-uri bolt://neo4j:7687 --neo4j-password-env-var NEO4j_PASSWORD --neo4j-user neo4j
+    ```
+
+
+Read on to see [other things you can do with Cartography](#things-to-do-next).
+
+
+## Option 2: Native install
+
+Do this if you prefer to install and manage all the dependencies yourself. Cartography _should_ work on Linux, Mac, and Windows, but bear in mind we haven't tested much on Windows so far.
+
+![yourowntestmachine.png](images/yourowntestmachine.png)
 
 1. Ensure that you have Python 3.10 set up on your machine.
 
-    - Older or newer versions of Python may work but are not explicitly supported. You will probably have more luck with newer versions.
+    Older or newer versions of Python may work but are not explicitly supported. You will probably have more luck with newer versions.
 
-1. **Run the Neo4j graph database version 4.4.\*** or higher on your server. 4.3 and lower will _not_ work.
+1. Run Neo4j graph database version 4.4 or higher. 4.3 and lower will _not_ work.
 
         ⚠️ Neo4j 5.x will probably work since it's included in our test suite, but we do not explicitly support it yet.
 
-    1. If you prefer **Docker** (recommended), run `docker run --publish=7474:7474 --publish=7687:7687 -v data:/data --env=NEO4J_AUTH=none neo4j:4.4-community` to spin up a Neo4j container. Refer to the Neo4j Docker [official docs](https://github.com/neo4j/docker-neo4j) for more information.
+    1. We recommend running Neo4j as a Docker container so that you save time and don't need to install Java. Run `docker run --publish=7474:7474 --publish=7687:7687 -v data:/data --env=NEO4J_AUTH=none neo4j:4.4-community`. Refer to the Neo4j Docker [official docs](https://github.com/neo4j/docker-neo4j) for more information.
 
         - Note that we are just playing around here on a test instance and have specified `--env=NEO4J_AUTH=none` to turn off authentication.
 
         - If you experience very slow write performance using an ARM-based machine like an M1 Mac, you should use an ARM image. Neo4j keeps ARM builds [here](https://hub.docker.com/r/arm64v8/neo4j/).
 
-    1. Else if you prefer a **manual install**,
+    1. Otherwise, if you prefer a **Neo4j install from scratch**,
 
-        1. Neo4j requires a JVM (JDK/JRE 11 or higher) to be installed. One option is to install [Amazon Coretto 11](https://docs.aws.amazon.com/corretto/latest/corretto-11-ug/what-is-corretto-11.html).
+        1. Neo4j requires a JVM (JDK/JRE 11 or higher). One option is [Amazon Coretto 11](https://docs.aws.amazon.com/corretto/latest/corretto-11-ug/what-is-corretto-11.html).
 
-            ⚠️ Make sure you have `JAVA_HOME` environment variable set. The following works for Mac OS: `export JAVA_HOME=$(/usr/libexec/java_home)`
+            ⚠️ Make sure you have the `JAVA_HOME` environment variable set. The following works for Mac OS: `export JAVA_HOME=$(/usr/libexec/java_home)`
 
         1. Go to the [Neo4j download page](https://neo4j.com/download-center/#community), and download Neo4j Community Edition 4.4.\*.
 
@@ -30,41 +117,54 @@ Time to set up a test machine to run Cartography. Cartography _should_ work on b
 
             ⚠️ For local testing, you might want to turn off authentication via property `dbms.security.auth_enabled` in file NEO4J_PATH/conf/neo4j.conf
 
-1. Configure your data sources. See the configuration section of [each relevant intel module](https://lyft.github.io/cartography/modules) for more details.
+1. Install cartography to the current Python virtual environment with `pip install cartography`.
 
-1. **Get and run Cartography**
+    We recommend creating a separate venv for just Cartography and its dependencies. You can read about venvs [here](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#create-and-use-virtual-environments), and searching on how to use tools like pyenv and pyenv-virtualenv.
 
-    1. Run `pip install cartography`
+1. Configure your data sources.
 
-        - This will install cartography in the current Python virtual environment. We recommend creating a separate virtual environment for just Cartography and its dependencies.
+    See the configuration section of [each relevant intel module](https://lyft.github.io/cartography/modules) for more details. In this example we will use [AWS](https://lyft.github.io/cartography/modules/aws/config.html).
 
-    1. Finally, let's sync some data into the test graph. In this example we will use AWS. Refer to each module's [specific configuration section](https://lyft.github.io/cartography/modules) on how to set them up.
+1. Run cartography.
 
-        - For one account using the `default` profile defined in your AWS config file, run
+    - For a specific AWS account defined as a separate profile in your AWS config file, set the `AWS_PROFILE` environment variable, for example this command runs cartography on an AWS profile called "1234_testprofile" on region us-east-1.
 
-            ```
-            cartography --neo4j-uri bolt://localhost:7687
-            ```
+        ```bash
+        AWS_PROFILE=1234_testprofile AWS_DEFAULT_REGION=us-east-1 cartography --neo4j-uri bolt://localhost:7687
+        ```
 
-        - Or for a specific account defined as a separate profile in your AWS config file, set the `AWS_PROFILE` environment variable, for example
+    - For one account using the `default` profile defined in your AWS config file, run
 
-            ```
-            AWS_PROFILE=other-profile cartography --neo4j-uri <uri for your neo4j instance; usually bolt://localhost:7687>
-            ```
+        ```bash
+        cartography --neo4j-uri bolt://localhost:7687
+        ```
 
-        - For more than one AWS account, run
+    - For more than one AWS account, run
 
-            ```
-            AWS_CONFIG_FILE=/path/to/your/aws/config cartography --neo4j-uri <uri for your neo4j instance; usually bolt://localhost:7687> --aws-sync-all-profiles
-            ```
+        ```bash
+        AWS_CONFIG_FILE=/path/to/your/aws/config cartography --neo4j-uri bolt://localhost:7687 --aws-sync-all-profiles
+        ```
 
-        You can view a full list of Cartography's CLI arguments by running `cartography --help`
+    You can view a full list of Cartography's CLI arguments by running `cartography --help`.
 
-        If everything worked, the sync will pull data from your configured accounts and ingest data to Neo4j! This process might take a long time if your account has a lot of assets.
+    If everything worked, the sync will pull data from your configured accounts and ingest data to Neo4j! This process might take a long time if your account has a lot of assets.
+    ![nativeinstall-run.png](images/nativeinstall-run.png)
 
-        If you encounter errors, review these references:
-        - Ensure your ~/.aws/credentials and ~/.aws/config files are set up correctly: https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html
-        - Review the various AWS environment variables: https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html
-        - Cartography uses the boto3 Python library to access AWS, so remember that boto3's standard order of precedence when retrieving credentials applies: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials
+1. View the graph.
+    You can view the graph while it is still syncing by visiting http://localhost:7474. Try a query like
 
-    1. Enjoy! Next set up other data providers, see our [Operations Guide](ops.html) for tips on running Cartography in production, view our [usage instructions](https://lyft.github.io/cartography/usage/tutorial.html) and [schema](https://lyft.github.io/cartography/usage/schema.html) for querying help, and think of [applications](https://lyft.github.io/cartography/usage/applications.html) to build around it.
+    ```cypher
+    match (i:AWSRole)--(c:AWSAccount) return *
+   ```
+
+    It should look like this:
+
+    ![dockercompose-result.png](images/dockercompose-result.png)
+
+## Things to do next
+Here's some ideas to get the most out of Cartography:
+- [Set up other data providers](https://lyft.github.io/cartography/modules)
+- View our [Operations Guide](ops.html) for tips on running Cartography in production
+- Read our [usage instructions](https://lyft.github.io/cartography/usage/tutorial.html) and [schema](https://lyft.github.io/cartography/usage/schema.html) to learn how to query the graph
+- Think of [applications](https://lyft.github.io/cartography/usage/applications.html) to build around it
+- Consider [writing your own Cartography custom modules](dev/writing-intel-modules.md)

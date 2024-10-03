@@ -7,6 +7,7 @@ ARG gid=10001
 
 COPY . /var/cartography
 WORKDIR /var/cartography
+ENV HOME=/var/cartography
 
 RUN pip install -U -e .
 

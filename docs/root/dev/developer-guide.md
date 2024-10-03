@@ -1,14 +1,10 @@
 # Cartography Developer Guide
 
-## Testing
-
-_If you'd like to test using Docker and Docker Compose, see [here](testing-with-docker.html)_
-
 ### Running from source
 
 1. **Install**
 
-    Follow steps 1 and 2 in [Installation](../install.html#cartography-installation). Ensure that you have JVM 11 installed and Neo4j Community Edition 4.4 is running on your local machine.
+    Follow steps 1 and 2 of the [native Install Steps](../install.html#option-2-native-install) so that you get Neo4j and Python set up. It's up to you if you want to install Neo4j from scratch, though Docker is easier to manage.
 
 2. **Clone the source code**
 
@@ -66,7 +62,7 @@ After completing the section above, you are now able to manually test intel modu
 
 ## Implementing custom sync commands
 
-By default, cartography will try to sync every intel module included as part of the default sync. If you're not using certain intel modules you can create a custom sync script and invoke it using the cartography CLI. For example, if you're only interested in the AWS intel module you can create a sync script, `custom_sync.py`, that looks like this:
+By default, cartography will try to sync every intel module included as part of the default sync. If you're not using certain intel modules, you can create a custom sync script and invoke it using the cartography CLI. For example, if you're only interested in the AWS intel module you can create a sync script, `custom_sync.py`, that looks like this:
 
 ```python
 from cartography import cli
