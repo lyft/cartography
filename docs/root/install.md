@@ -23,10 +23,7 @@ Quickly spin up a Cartography container + a Neo4j database container using docke
     docker-compose up -d
     ```
 
-    This command is quirky. It may error out with permission problems, so you may need to run it several times until it works:
-    ![quirkydockererror.png](images/quirkydockererror.png)
-
-   (If you know how to fix this please submit a PR <3)
+    If you encounter quirky behavior with this command where it errors out with permission problems, you may need to configure your Docker Desktop/Rancher Desktop/etc to use a different virtual machine volume setting: try virtiofs on Mac.
 
 1. Configure and run Cartography.
 
