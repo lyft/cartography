@@ -23,6 +23,11 @@ Quickly spin up a Cartography container + a Neo4j database container using docke
     docker-compose up -d
     ```
 
+    This command is quirky. It may error out with permission problems, so you may need to run it several times until it works:
+    ![quirkydockererror.png](images/quirkydockererror.png)
+
+   (If you know how to fix this please submit a PR <3)
+
 1. Configure and run Cartography.
 
     See the configuration section of [each relevant intel module](https://lyft.github.io/cartography/modules) to set up each data source. In this example we will use [AWS](https://lyft.github.io/cartography/modules/aws/config.html).
@@ -33,7 +38,11 @@ Quickly spin up a Cartography container + a Neo4j database container using docke
     docker-compose run -e AWS_PROFILE=1234_testprofile -e AWS_DEFAULT_REGION=us-east-1 cartography --neo4j-uri bolt://cartography-neo4j-1:7687
     ```
 
-    The `-e` switches allow you to supply environment variables to the `cartography` container via `docker-compose`. If things work, your terminal will look like this where you see log messages displaying how many assets are being loaded to the graph:
+    The `-e` switches allow you to supply environment variables to the `cartography` container via `docker-compose`.
+
+    If you get a connection error like `ValueError: Cannot resolve address cartography-neo4j-1:7687`, you may need to wait a bit for the Neo4j container to be ready. Run `docker ps` periodically to check on it and then retry the `docker-compose run ..` command.
+
+    If things work, your terminal will look like this where you see log messages displaying how many assets are being loaded to the graph:
 
     ![docker-compose-run.png](images/docker-compose-run.png)
 
