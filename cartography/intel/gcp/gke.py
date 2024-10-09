@@ -6,9 +6,59 @@ import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
 
+from oauth2client.client import GoogleCredentials
+import googleapiclient.discovery
+
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
 logger = logging.getLogger(__name__)
+
+def _get_container_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a Google Cloud Container resource object to call the
+    Container API. See: https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/.
+
+    :param credentials: The GoogleCredentials object
+    :return: A Container resource object
+    """
+    return googleapiclient.discovery.build('container', 'v1', credentials=credentials, cache_discovery=False)
+
+def sync_single_project_gke(
+    neo4j_session: neo4j.Session, resources: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict, credentials: GoogleCredentials
+) -> None:
+    """
+    Handles graph sync for a single GCP project GKE resources.
+    :param neo4j_session: The Neo4j session
+    :param resources: namedtuple of the GCP resource objects
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: Other parameters sent to Neo4j
+    :param credentials: The GoogleCredentials object
+    :return: Nothing
+    """
+    container_cred = _get_container_resource(credentials)
+    sync_gke_clusters(neo4j_session, container_cred, project_id, gcp_update_tag, common_job_parameters)
+
+def sync_single_project_gke(
+    neo4j_session: neo4j.Session, resources: Resource, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict, credentials: GoogleCredentials
+) -> None:
+    """
+    Handles graph sync for a single GCP project GKE resources.
+    :param neo4j_session: The Neo4j session
+    :param resources: namedtuple of the GCP resource objects
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: Other parameters sent to Neo4j
+    :param credentials: the GoogleCredentials object
+    :return: Nothing
+    """
+    # Determine the resources available on the project.
+    container_cred = _get_container_resource(credentials)
+    sync_gke_clusters(neo4j_session, container_cred, project_id, gcp_update_tag, common_job_parameters)
 
 
 @timeit
@@ -40,6 +90,17 @@ def get_gke_clusters(container: Resource, project_id: str) -> Dict:
             return {}
         else:
             raise
+
+def _get_container_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a Google Cloud Container resource object to call the
+    Container API. See: https://cloud.google.com/kubernetes-engine/docs/reference/rest/v1/.
+
+    :param credentials: The GoogleCredentials object
+    :return: A Container resource object
+    """
+    return googleapiclient.discovery.build('container', 'v1', credentials=credentials, cache_discovery=False)
+
 
 
 @timeit
