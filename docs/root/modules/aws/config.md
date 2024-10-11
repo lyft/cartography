@@ -4,9 +4,17 @@
 
 Follow these steps to analyze AWS assets with Cartography.
 
+In a nutshell, Cartography uses the [boto3](https://github.com/boto/boto3) library to retrieve assets from AWS and respects all settings and credentials passed to boto3. If you've used boto3 before, then you're already very familiar with setting up Cartography for AWS.
+
+### Very helpful references
+- Ensure your ~/.aws/credentials and ~/.aws/config files are set up correctly: https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-files.html
+- Review the various AWS environment variables: https://docs.aws.amazon.com/cli/v1/userguide/cli-configure-envvars.html
+- Refer to boto3's standard order of precedence when retrieving credentials: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials
+
 ### Single AWS Account Setup
 
-1. Set up an AWS identity (user, group, or role) for Cartography to use.  Ensure that this identity has the built-in AWS [SecurityAudit policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor) (arn:aws:iam::aws:policy/SecurityAudit) attached.  This policy grants access to read security config metadata. The SecurityAudit policy does not yet containe permissions for `inspector2`, so you will also need the [AmazonInspector2ReadOnlyAccess policy](https://docs.aws.amazon.com/inspector/latest/user/security-iam-awsmanpol.html#security-iam-awsmanpol-AmazonInspector2ReadOnlyAccess).
+1. Set up an AWS identity (user, group, or role) for Cartography to use. Ensure that this identity has the built-in AWS [SecurityAudit policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor) (arn:aws:iam::aws:policy/SecurityAudit) attached. This policy grants access to read security config metadata.
+   1. If you want to use AWS Inspector, the SecurityAudit policy does not yet contain permissions for `inspector2`, so you will also need the [AmazonInspector2ReadOnlyAccess policy](https://docs.aws.amazon.com/inspector/latest/user/security-iam-awsmanpol.html#security-iam-awsmanpol-AmazonInspector2ReadOnlyAccess).
 1. Set up AWS credentials to this identity on your server, using a `config` and `credential` file.  For details, see AWS' [official guide](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
 1. [Optional] Configure AWS Retry settings using `AWS_MAX_ATTEMPTS` and `AWS_RETRY_MODE` environment variables. This helps in API Rate Limit throttling and TooManyRequestException related errors. For details, see AWS' [official guide](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#using-environment-variables).
 
