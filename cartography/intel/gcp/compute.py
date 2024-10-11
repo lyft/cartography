@@ -13,9 +13,12 @@ from typing import Set
 import neo4j
 from googleapiclient.discovery import HttpError
 from googleapiclient.discovery import Resource
+import googleapiclient.discovery
+from oauth2client.client import GoogleCredentials
 
 from cartography.util import run_cleanup_job
 from cartography.util import timeit
+
 
 logger = logging.getLogger(__name__)
 InstanceUriPrefix = namedtuple('InstanceUriPrefix', 'zone_name project_id')
@@ -42,6 +45,32 @@ def _get_error_reason(http_error: HttpError) -> str:
         logger.warning(f"HttpError: {data}")
         return ''
     return reason
+
+def _get_compute_resource(credentials: GoogleCredentials) -> Resource:
+    """
+    Instantiates a Google Compute resource object to call the Compute API. This is used to pull zone, instance, and
+    networking data. See https://cloud.google.com/compute/docs/reference/rest/v1/.
+    :param credentials: The GoogleCredentials object
+    :return: A Compute resource object
+    """
+    return googleapiclient.discovery.build('compute', 'v1', credentials=credentials, cache_discovery=False)
+
+def sync_single_project_compute(
+    neo4j_session: neo4j.Session, project_id: str, gcp_update_tag: int,
+    common_job_parameters: Dict, credentials: GoogleCredentials
+) -> None:
+    """
+    Handles graph sync for a single GCP project on Compute resources.
+    :param neo4j_session: The Neo4j session
+    :param project_id: The project ID number to sync.  See  the `projectId` field in
+    https://cloud.google.com/resource-manager/reference/rest/v1/projects
+    :param gcp_update_tag: The timestamp value to set our new Neo4j nodes with
+    :param common_job_parameters: Other parameters sent to Neo4j
+    :param The GoogleCredentials object
+    :return: Nothing
+    """
+    compute_cred = _get_compute_resource(credentials)
+    sync(neo4j_session, compute_cred, project_id, gcp_update_tag, common_job_parameters)
 
 
 @timeit
