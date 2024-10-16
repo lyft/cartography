@@ -11,6 +11,9 @@ from requests.exceptions import ReadTimeout
 
 from cartography.client.core.tx import load
 from cartography.graph.job import GraphJob
+from cartography.intel.semgrep.dependencies import get_dependencies
+from cartography.intel.semgrep.dependencies import load_dependencies
+from cartography.intel.semgrep.dependencies import transform_dependencies
 from cartography.models.semgrep.deployment import SemgrepDeploymentSchema
 from cartography.models.semgrep.findings import SemgrepSCAFindingSchema
 from cartography.models.semgrep.locations import SemgrepSCALocationSchema
@@ -282,6 +285,11 @@ def sync(
     load_semgrep_sca_vulns(neo4j_sesion, vulns, deployment_id, update_tag)
     load_semgrep_sca_usages(neo4j_sesion, usages, deployment_id, update_tag)
     run_scoped_analysis_job('semgrep_sca_risk_analysis.json', neo4j_sesion, common_job_parameters)
+
+    raw_deps = get_dependencies(semgrep_app_token, deployment_id)
+    deps = transform_dependencies(raw_deps)
+    load_dependencies(neo4j_sesion, deps, deployment_id, update_tag)
+
     cleanup(neo4j_sesion, common_job_parameters)
     merge_module_sync_metadata(
         neo4j_session=neo4j_sesion,
